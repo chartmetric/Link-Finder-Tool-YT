@@ -6,14 +6,17 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ProfileMatch } from './profileMatch';
+import type { SearchMethodUsage } from './searchMethodUsage';
 import type { SearchSource } from './searchSource';
 
-export interface MusicianSearchResponse {
-  musician: string;
+export interface ProfileSearchResponse {
+  subject: string;
   query: string;
   searchedAt: Date;
   profiles: ProfileMatch[];
   sources: SearchSource[];
   totalFound: number;
   highConfidenceCount: number;
+  methodsUsed: SearchMethodUsage[];
+  estimatedCostUsd: number;
 }

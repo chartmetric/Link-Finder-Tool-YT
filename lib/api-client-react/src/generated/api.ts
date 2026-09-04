@@ -21,8 +21,8 @@ import type {
 
 import type {
   HealthStatus,
-  MusicianSearchInput,
-  MusicianSearchResponse
+  ProfileSearchInput,
+  ProfileSearchResponse
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -130,26 +130,26 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
-export const getSearchMusicianProfilesUrl = () => {
+export const getSearchProfilesUrl = () => {
 
 
 
 
-  return `/api/musicians/search`
+  return `/api/profiles/search`
 }
 
 /**
- * Searches Google through Serper.dev and ranks the likely official profile for each target platform.
- * @summary Find a musician's Instagram, TikTok, and YouTube profiles
+ * Searches selected discovery providers, expands a known social handle through ScrapeCreators, and independently verifies candidates.
+ * @summary Find Instagram, TikTok, and YouTube profiles from a name, known handle, or both
  */
-export const searchMusicianProfiles = async (musicianSearchInput: MusicianSearchInput, options?: Parameters<typeof customFetch>[1]): Promise<MusicianSearchResponse> => {
+export const searchProfiles = async (profileSearchInput: ProfileSearchInput, options?: Parameters<typeof customFetch>[1]): Promise<ProfileSearchResponse> => {
 
-  return customFetch<MusicianSearchResponse>(getSearchMusicianProfilesUrl(),
+  return customFetch<ProfileSearchResponse>(getSearchProfilesUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(musicianSearchInput)
+    body: JSON.stringify(profileSearchInput)
   }
 );}
 
@@ -157,11 +157,11 @@ export const searchMusicianProfiles = async (musicianSearchInput: MusicianSearch
 
 
 
-export const getSearchMusicianProfilesMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof searchMusicianProfiles>>, TError,{data: BodyType<MusicianSearchInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof searchMusicianProfiles>>, TError,{data: BodyType<MusicianSearchInput>}, TContext> => {
+export const getSearchProfilesMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof searchProfiles>>, TError,{data: BodyType<ProfileSearchInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof searchProfiles>>, TError,{data: BodyType<ProfileSearchInput>}, TContext> => {
 
-const mutationKey = ['searchMusicianProfiles'];
+const mutationKey = ['searchProfiles'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -171,10 +171,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof searchMusicianProfiles>>, {data: BodyType<MusicianSearchInput>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof searchProfiles>>, {data: BodyType<ProfileSearchInput>}> = (props) => {
           const {data} = props ?? {};
 
-          return  searchMusicianProfiles(data,requestOptions)
+          return  searchProfiles(data,requestOptions)
         }
 
 
@@ -184,21 +184,21 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type SearchMusicianProfilesMutationResult = NonNullable<Awaited<ReturnType<typeof searchMusicianProfiles>>>
-    export type SearchMusicianProfilesMutationBody = BodyType<MusicianSearchInput>
-    export type SearchMusicianProfilesMutationError = ErrorType<void>
+    export type SearchProfilesMutationResult = NonNullable<Awaited<ReturnType<typeof searchProfiles>>>
+    export type SearchProfilesMutationBody = BodyType<ProfileSearchInput>
+    export type SearchProfilesMutationError = ErrorType<void>
 
     /**
- * @summary Find a musician's Instagram, TikTok, and YouTube profiles
+ * @summary Find Instagram, TikTok, and YouTube profiles from a name, known handle, or both
  */
-export const useSearchMusicianProfiles = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof searchMusicianProfiles>>, TError,{data: BodyType<MusicianSearchInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useSearchProfiles = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof searchProfiles>>, TError,{data: BodyType<ProfileSearchInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof searchMusicianProfiles>>,
+        Awaited<ReturnType<typeof searchProfiles>>,
         TError,
-        {data: BodyType<MusicianSearchInput>},
+        {data: BodyType<ProfileSearchInput>},
         TContext
       > => {
-      return useMutation(getSearchMusicianProfilesMutationOptions(options));
+      return useMutation(getSearchProfilesMutationOptions(options));
     }
 

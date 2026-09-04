@@ -20,4 +20,5 @@ export interface ProfileMatch {
      */
   confidence: number;
   signals: string[];
+  methods: string[];
 }

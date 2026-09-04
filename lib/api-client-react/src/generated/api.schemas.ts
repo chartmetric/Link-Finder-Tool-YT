@@ -9,12 +9,45 @@ export interface HealthStatus {
   status: string;
 }
 
-export interface MusicianSearchInput {
+/**
+ * Platform where the known handle belongs
+ */
+export type ProfileSearchInputHandlePlatform = typeof ProfileSearchInputHandlePlatform[keyof typeof ProfileSearchInputHandlePlatform];
+
+
+export const ProfileSearchInputHandlePlatform = {
+  instagram: 'instagram',
+  tiktok: 'tiktok',
+  youtube: 'youtube',
+  x: 'x',
+  twitter: 'twitter',
+  facebook: 'facebook',
+} as const;
+
+export type ProfileSearchInputMethodsItem = typeof ProfileSearchInputMethodsItem[keyof typeof ProfileSearchInputMethodsItem];
+
+
+export const ProfileSearchInputMethodsItem = {
+  serper: 'serper',
+  tavily: 'tavily',
+  gemini: 'gemini',
+  scrapecreators: 'scrapecreators',
+} as const;
+
+export interface ProfileSearchInput {
   /**
      * @minLength 2
      * @maxLength 120
      */
-  musician: string;
+  subject?: string;
+  /**
+     * Known social handle, with or without a leading @
+     * @minLength 2
+     * @maxLength 120
+     */
+  handle?: string;
+  /** Platform where the known handle belongs */
+  handlePlatform?: ProfileSearchInputHandlePlatform;
   /** @maxLength 100 */
   location?: string;
   /**
@@ -22,6 +55,7 @@ export interface MusicianSearchInput {
      * @maxLength 2
      */
   country?: string;
+  methods?: ProfileSearchInputMethodsItem[];
 }
 
 export type ProfileMatchCategory = typeof ProfileMatchCategory[keyof typeof ProfileMatchCategory];
@@ -44,6 +78,24 @@ export interface ProfileMatch {
      */
   confidence: number;
   signals: string[];
+  methods: string[];
+}
+
+export type SearchMethodUsageStatus = typeof SearchMethodUsageStatus[keyof typeof SearchMethodUsageStatus];
+
+
+export const SearchMethodUsageStatus = {
+  used: 'used',
+  unavailable: 'unavailable',
+  failed: 'failed',
+} as const;
+
+export interface SearchMethodUsage {
+  method: string;
+  label: string;
+  status: SearchMethodUsageStatus;
+  estimatedCostUsd: number;
+  costNote: string;
 }
 
 export interface SearchSource {
@@ -52,13 +104,15 @@ export interface SearchSource {
   snippet: string;
 }
 
-export interface MusicianSearchResponse {
-  musician: string;
+export interface ProfileSearchResponse {
+  subject: string;
   query: string;
   searchedAt: string;
   profiles: ProfileMatch[];
   sources: SearchSource[];
   totalFound: number;
   highConfidenceCount: number;
+  methodsUsed: SearchMethodUsage[];
+  estimatedCostUsd: number;
 }
 

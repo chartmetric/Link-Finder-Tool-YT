@@ -1,6 +1,6 @@
-# Musician Social Finder
+# Profile Finder
 
-Searches Google through Serper.dev and returns the strongest official Instagram, TikTok, and YouTube URLs for a musician.
+Searches Google through Serper.dev and returns the strongest official Instagram, TikTok, and YouTube URLs for people, creators, teams, and brands.
 
 ## Run & Operate
 
@@ -32,11 +32,13 @@ Searches Google through Serper.dev and returns the strongest official Instagram,
 
 - Serper is called only from the API server so the API key never reaches browsers.
 - Results are ranked from name matches, official wording, recognized domains, and Google position, then cross-checked by Gemini in online mode when OpenRouter is configured.
+- Users can choose Serper, Tavily, ScrapeCreators, or all discovery methods. Every choice receives separate Gemini and DeepSeek V4 Flash online verification passes; results show provenance and rough per-run cost.
+- Searches accept a subject name, a known handle plus its source platform, or both. Known handles use ScrapeCreators `/v1/find-social-profiles` with a 7-day cache preference (0 cached or 10 live credits).
 - Missing Serper configuration returns an explicit 503 setup state rather than mocked search results.
 
 ## Product
 
-Search by musician name with optional location and country hints, inspect the best Instagram, TikTok, and YouTube matches, copy URLs, and export results.
+Search by any public name with optional location and country hints, inspect the best Instagram, TikTok, and YouTube matches, copy URLs, and export results.
 
 ## User preferences
 

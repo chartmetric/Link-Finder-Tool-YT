@@ -5,8 +5,8 @@ import * as z from 'zod';
 import { Search, MapPin, Globe, ExternalLink, Copy, Check, Download, AlertCircle, Loader2, Hash, MonitorPlay } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { useSearchMusicianProfiles } from '@workspace/api-client-react';
-import type { ProfileMatch } from '@workspace/api-client-react';
+import { useSearchProfiles } from '@workspace/api-client-react';
+import type { ProfileMatch, ProfileSearchInputMethodsItem } from '@workspace/api-client-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,9 +18,20 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const searchSchema = z.object({
-  musician: z.string().min(2, 'Name must be at least 2 characters').max(120),
+  subject: z.string().max(120),
+  handle: z.string().max(120),
+  handlePlatform: z.enum(['instagram', 'tiktok', 'youtube', 'x', 'twitter', 'facebook']),
   location: z.string().max(100).optional(),
   country: z.string().length(2, 'Must be 2 letters').optional().or(z.literal('')),
+  method: z.enum(['all', 'serper', 'tavily', 'gemini', 'scrapecreators']),
+}).superRefine((values, context) => {
+  if (values.subject.trim().length < 2 && values.handle.trim().replace(/^@/, '').length < 2) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['subject'],
+      message: 'Enter a name, a known handle, or both',
+    });
+  }
 });
 
 type SearchFormValues = z.infer<typeof searchSchema>;
@@ -32,13 +43,16 @@ export default function Home() {
   const form = useForm<SearchFormValues>({
     resolver: zodResolver(searchSchema),
     defaultValues: {
-      musician: '',
+      subject: '',
+      handle: '',
+      handlePlatform: 'instagram',
       location: '',
       country: '',
+      method: 'all',
     },
   });
 
-  const { mutate, data: responseData, isPending, error } = useSearchMusicianProfiles();
+  const { mutate, data: responseData, isPending, error } = useSearchProfiles();
 
   // Orval passes { data } on success directly
   const data = responseData;
@@ -46,9 +60,18 @@ export default function Home() {
   const onSubmit = (values: SearchFormValues) => {
     // clean up empty string for country
     const payload = {
-      musician: values.musician,
+      ...(values.subject.trim() ? { subject: values.subject.trim() } : {}),
+      ...(values.handle.trim()
+        ? {
+            handle: values.handle.trim().replace(/^@/, ''),
+            handlePlatform: values.handlePlatform,
+          }
+        : {}),
       ...(values.location ? { location: values.location } : {}),
       ...(values.country ? { country: values.country.toUpperCase() } : {}),
+      methods: (values.method === 'all'
+        ? ['serper', 'tavily', 'scrapecreators']
+        : [values.method]) as ProfileSearchInputMethodsItem[],
     };
     mutate({ data: payload });
   };
@@ -86,7 +109,7 @@ export default function Home() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `${data.musician.replace(/\s+/g, '_')}_profiles.csv`);
+    link.setAttribute('download', `${data.subject.replace(/\s+/g, '_')}_profiles.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -113,31 +136,92 @@ export default function Home() {
           </div>
           <div>
             <h1 className="font-serif text-2xl font-bold leading-none tracking-wide text-foreground">
-              Musician Finder
+              Profile Finder
             </h1>
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mt-1">
-              Social & Streaming Intel
+              Official Social Discovery
             </p>
           </div>
         </div>
 
-        <div className="w-full lg:w-auto flex-1 max-w-3xl">
+        <div className="w-full lg:w-auto flex-1 max-w-5xl">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col sm:flex-row gap-3 w-full">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col sm:flex-row sm:flex-wrap gap-3 w-full">
               <FormField
                 control={form.control}
-                name="musician"
+                name="subject"
                 render={({ field }) => (
-                  <FormItem className="flex-1 space-y-0">
+                  <FormItem className="flex-1 min-w-[220px] space-y-0">
                     <FormControl>
                       <div className="relative group rounded-md transition-all duration-200 hover:shadow-md hover:shadow-primary/5 focus-within:shadow-md focus-within:shadow-primary/10">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input 
-                          placeholder="e.g. Aphex Twin" 
+                          placeholder="Person, creator, team, or brand" 
                           className="pl-9 h-11 bg-card text-base font-medium rounded-lg" 
                           {...field} 
                         />
                       </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="handle"
+                render={({ field }) => (
+                  <FormItem className="sm:w-44 space-y-0">
+                    <FormControl>
+                      <div className="relative group rounded-md transition-all duration-200 hover:shadow-md focus-within:shadow-md">
+                        <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Known handle"
+                          aria-label="Known social handle"
+                          className="pl-9 h-11 bg-card rounded-lg"
+                          {...field}
+                        />
+                      </div>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="handlePlatform"
+                render={({ field }) => (
+                  <FormItem className="sm:w-32 space-y-0">
+                    <FormControl>
+                      <select
+                        aria-label="Known handle platform"
+                        className="h-11 w-full rounded-lg border border-input bg-card px-3 text-sm font-medium shadow-sm outline-none focus:ring-2 focus:ring-ring"
+                        {...field}
+                      >
+                        <option value="instagram">Instagram</option>
+                        <option value="tiktok">TikTok</option>
+                        <option value="youtube">YouTube</option>
+                        <option value="x">X</option>
+                        <option value="twitter">Twitter</option>
+                        <option value="facebook">Facebook</option>
+                      </select>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="method"
+                render={({ field }) => (
+                  <FormItem className="sm:w-60 space-y-0">
+                    <FormControl>
+                      <select
+                        aria-label="Search method"
+                        className="h-11 w-full rounded-lg border border-input bg-card px-3 text-sm font-medium shadow-sm outline-none focus:ring-2 focus:ring-ring"
+                        {...field}
+                      >
+                        <option value="all">All + dual verification · ~$0.05</option>
+                        <option value="serper">Serper + dual verify · ~$0.021</option>
+                        <option value="tavily">Tavily + dual verify · ~$0.042</option>
+                        <option value="scrapecreators">ScrapeCreators + dual verify · 0–10 credits + ~$0.018</option>
+                      </select>
                     </FormControl>
                   </FormItem>
                 )}
@@ -196,22 +280,22 @@ export default function Home() {
             </div>
             <h2 className="font-serif text-4xl mb-4 text-foreground">Find the official links.</h2>
             <p className="text-lg text-muted-foreground mb-10 leading-relaxed">
-              Cut through fan pages and unofficial accounts. Find the strongest official Instagram, TikTok, and YouTube matches for any musician.
+              Cut through fan pages and unofficial accounts. Find the strongest official Instagram, TikTok, and YouTube matches for any person, creator, team, or brand.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <span className="text-sm font-medium text-muted-foreground mr-2 self-center">Try:</span>
               <Badge variant="outline" className="cursor-pointer hover:bg-muted py-1.5 px-3" onClick={() => {
-                form.setValue('musician', 'Radiohead');
+                form.setValue('subject', 'Serena Williams');
                 form.setValue('location', '');
                 form.setValue('country', '');
                 form.handleSubmit(onSubmit)();
-              }}>Radiohead</Badge>
+              }}>Serena Williams</Badge>
               <Badge variant="outline" className="cursor-pointer hover:bg-muted py-1.5 px-3" onClick={() => {
-                form.setValue('musician', 'Four Tet');
-                form.setValue('location', 'London');
-                form.setValue('country', 'UK');
+                form.setValue('subject', 'Red Bull Racing');
+                form.setValue('location', 'Milton Keynes');
+                form.setValue('country', 'GB');
                 form.handleSubmit(onSubmit)();
-              }}>Four Tet (London, UK)</Badge>
+              }}>Red Bull Racing</Badge>
             </div>
           </div>
         )}
@@ -249,7 +333,7 @@ export default function Home() {
                 <CardDescription className="text-foreground/80 mt-2 text-base">
                   {is503 
                     ? 'Live search is not configured yet. Add the SERPERDEV_API_KEY secret, then try again.'
-                    : 'An unexpected error occurred while searching for the musician. Please try again later.'}
+                    : 'An unexpected error occurred while searching for profiles. Please try again later.'}
                 </CardDescription>
               </div>
             </CardHeader>
@@ -262,7 +346,7 @@ export default function Home() {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border pb-6">
               <div>
                 <h2 className="font-serif text-4xl font-bold mb-2">
-                  {data.musician}
+                  {data.subject}
                 </h2>
                 <div className="flex flex-wrap items-center gap-3 text-sm">
                   <Badge variant="secondary" className="px-2.5 py-1">
@@ -274,6 +358,25 @@ export default function Home() {
                   <span className="text-muted-foreground text-xs">
                     Searched at {new Date(data.searchedAt).toLocaleTimeString()}
                   </span>
+                  <Badge variant="outline" className="px-2.5 py-1">
+                    Est. ${data.estimatedCostUsd.toFixed(3)}
+                  </Badge>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {data.methodsUsed.map((method) => (
+                    <Badge
+                      key={method.method}
+                      variant={method.status === 'used' ? 'secondary' : 'outline'}
+                      title={method.costNote}
+                      className={method.status !== 'used' ? 'opacity-60' : ''}
+                    >
+                      {method.label}: {method.status === 'used' ? 'used' : method.status}
+                      {' · '}
+                      {method.estimatedCostUsd > 0
+                        ? `~$${method.estimatedCostUsd.toFixed(3)}`
+                        : method.costNote}
+                    </Badge>
+                  ))}
                 </div>
               </div>
 
@@ -363,6 +466,11 @@ export default function Home() {
                                     {sig}
                                   </span>
                                 ))}
+                                 {profile.methods.map((method) => (
+                                   <span key={method} className="text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-sm bg-primary/10 text-primary">
+                                     {method}
+                                   </span>
+                                 ))}
                               </div>
                               
                               <TooltipProvider>

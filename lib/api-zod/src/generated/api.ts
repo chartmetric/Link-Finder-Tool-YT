@@ -18,33 +18,39 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
- * Searches Google through Serper.dev and ranks the likely official profile for each target platform.
- * @summary Find a musician's Instagram, TikTok, and YouTube profiles
+ * Searches selected discovery providers, expands a known social handle through ScrapeCreators, and independently verifies candidates.
+ * @summary Find Instagram, TikTok, and YouTube profiles from a name, known handle, or both
  */
-export const searchMusicianProfilesBodyMusicianMin = 2;
-export const searchMusicianProfilesBodyMusicianMax = 120;
+export const searchProfilesBodySubjectMin = 2;
+export const searchProfilesBodySubjectMax = 120;
 
-export const searchMusicianProfilesBodyLocationMax = 100;
+export const searchProfilesBodyHandleMin = 2;
+export const searchProfilesBodyHandleMax = 120;
 
-export const searchMusicianProfilesBodyCountryDefault = `us`;
-export const searchMusicianProfilesBodyCountryMin = 2;
-export const searchMusicianProfilesBodyCountryMax = 2;
+export const searchProfilesBodyLocationMax = 100;
+
+export const searchProfilesBodyCountryDefault = `us`;
+export const searchProfilesBodyCountryMin = 2;
+export const searchProfilesBodyCountryMax = 2;
 
 
 
-export const SearchMusicianProfilesBody = zod.object({
-  "musician": zod.string().min(searchMusicianProfilesBodyMusicianMin).max(searchMusicianProfilesBodyMusicianMax),
-  "location": zod.string().max(searchMusicianProfilesBodyLocationMax).optional(),
-  "country": zod.string().min(searchMusicianProfilesBodyCountryMin).max(searchMusicianProfilesBodyCountryMax).default(searchMusicianProfilesBodyCountryDefault)
+export const SearchProfilesBody = zod.object({
+  "subject": zod.string().min(searchProfilesBodySubjectMin).max(searchProfilesBodySubjectMax).optional(),
+  "handle": zod.string().min(searchProfilesBodyHandleMin).max(searchProfilesBodyHandleMax).optional().describe('Known social handle, with or without a leading @'),
+  "handlePlatform": zod.enum(['instagram', 'tiktok', 'youtube', 'x', 'twitter', 'facebook']).optional().describe('Platform where the known handle belongs'),
+  "location": zod.string().max(searchProfilesBodyLocationMax).optional(),
+  "country": zod.string().min(searchProfilesBodyCountryMin).max(searchProfilesBodyCountryMax).default(searchProfilesBodyCountryDefault),
+  "methods": zod.array(zod.enum(['serper', 'tavily', 'gemini', 'scrapecreators'])).optional()
 })
 
-export const searchMusicianProfilesResponseProfilesItemConfidenceMin = 0;
-export const searchMusicianProfilesResponseProfilesItemConfidenceMax = 100;
+export const searchProfilesResponseProfilesItemConfidenceMin = 0;
+export const searchProfilesResponseProfilesItemConfidenceMax = 100;
 
 
 
-export const SearchMusicianProfilesResponse = zod.object({
-  "musician": zod.string(),
+export const SearchProfilesResponse = zod.object({
+  "subject": zod.string(),
   "query": zod.string(),
   "searchedAt": zod.coerce.date(),
   "profiles": zod.array(zod.object({
@@ -54,8 +60,9 @@ export const SearchMusicianProfilesResponse = zod.object({
   "url": zod.string(),
   "displayUrl": zod.string(),
   "snippet": zod.string(),
-  "confidence": zod.number().min(searchMusicianProfilesResponseProfilesItemConfidenceMin).max(searchMusicianProfilesResponseProfilesItemConfidenceMax),
-  "signals": zod.array(zod.string())
+  "confidence": zod.number().min(searchProfilesResponseProfilesItemConfidenceMin).max(searchProfilesResponseProfilesItemConfidenceMax),
+  "signals": zod.array(zod.string()),
+  "methods": zod.array(zod.string())
 })),
   "sources": zod.array(zod.object({
   "title": zod.string(),
@@ -63,7 +70,15 @@ export const SearchMusicianProfilesResponse = zod.object({
   "snippet": zod.string()
 })),
   "totalFound": zod.number(),
-  "highConfidenceCount": zod.number()
+  "highConfidenceCount": zod.number(),
+  "methodsUsed": zod.array(zod.object({
+  "method": zod.string(),
+  "label": zod.string(),
+  "status": zod.enum(['used', 'unavailable', 'failed']),
+  "estimatedCostUsd": zod.number(),
+  "costNote": zod.string()
+})),
+  "estimatedCostUsd": zod.number()
 })
 
 

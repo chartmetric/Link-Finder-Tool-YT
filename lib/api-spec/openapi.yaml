@@ -10,8 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
-  - name: musician-search
-    description: Musician profile discovery
+  - name: profile-search
+    description: Public profile discovery
 paths:
   /healthz:
     get:
@@ -26,27 +26,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
-  /musicians/search:
+  /profiles/search:
     post:
-      operationId: searchMusicianProfiles
-      tags: [musician-search]
-      summary: Find a musician's Instagram, TikTok, and YouTube profiles
-      description: Searches Google through Serper.dev and ranks the likely official profile for each target platform.
+      operationId: searchProfiles
+      tags: [profile-search]
+      summary: Find Instagram, TikTok, and YouTube profiles from a name, known handle, or both
+      description: Searches selected discovery providers, expands a known social handle through ScrapeCreators, and independently verifies candidates.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MusicianSearchInput"
+              $ref: "#/components/schemas/ProfileSearchInput"
       responses:
         "200":
           description: Ranked profile matches
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MusicianSearchResponse"
+                $ref: "#/components/schemas/ProfileSearchResponse"
         "400":
-          description: Invalid musician name
+          description: Invalid person, creator, team, or brand name
         "503":
           description: Serper API key is not configured
 components:
@@ -58,13 +58,22 @@ components:
           type: string
       required:
         - status
-    MusicianSearchInput:
+    ProfileSearchInput:
       type: object
       properties:
-        musician:
+        subject:
           type: string
           minLength: 2
           maxLength: 120
+        handle:
+          type: string
+          minLength: 2
+          maxLength: 120
+          description: Known social handle, with or without a leading @
+        handlePlatform:
+          type: string
+          enum: [instagram, tiktok, youtube, x, twitter, facebook]
+          description: Platform where the known handle belongs
         location:
           type: string
           maxLength: 100
@@ -73,8 +82,11 @@ components:
           minLength: 2
           maxLength: 2
           default: us
-      required:
-        - musician
+        methods:
+          type: array
+          items:
+            type: string
+            enum: [serper, tavily, gemini, scrapecreators]
     ProfileMatch:
       type: object
       properties:
@@ -99,6 +111,10 @@ components:
           type: array
           items:
             type: string
+        methods:
+          type: array
+          items:
+            type: string
       required:
         - platform
         - category
@@ -108,6 +124,27 @@ components:
         - snippet
         - confidence
         - signals
+        - methods
+    SearchMethodUsage:
+      type: object
+      properties:
+        method:
+          type: string
+        label:
+          type: string
+        status:
+          type: string
+          enum: [used, unavailable, failed]
+        estimatedCostUsd:
+          type: number
+        costNote:
+          type: string
+      required:
+        - method
+        - label
+        - status
+        - estimatedCostUsd
+        - costNote
     SearchSource:
       type: object
       properties:
@@ -121,10 +158,10 @@ components:
         - title
         - url
         - snippet
-    MusicianSearchResponse:
+    ProfileSearchResponse:
       type: object
       properties:
-        musician:
+        subject:
           type: string
         query:
           type: string
@@ -143,12 +180,20 @@ components:
           type: number
         highConfidenceCount:
           type: number
+        methodsUsed:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchMethodUsage"
+        estimatedCostUsd:
+          type: number
       required:
-        - musician
+        - subject
         - query
         - searchedAt
         - profiles
         - sources
         - totalFound
         - highConfidenceCount
+        - methodsUsed
+        - estimatedCostUsd
 
