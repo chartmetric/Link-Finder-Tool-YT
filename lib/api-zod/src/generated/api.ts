@@ -18,8 +18,8 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
- * Searches Google through Serper.dev and ranks likely official musician profiles.
- * @summary Find a musician's social and streaming profiles
+ * Searches Google through Serper.dev and ranks the likely official profile for each target platform.
+ * @summary Find a musician's Instagram, TikTok, and YouTube profiles
  */
 export const searchMusicianProfilesBodyMusicianMin = 2;
 export const searchMusicianProfilesBodyMusicianMax = 120;
@@ -49,7 +49,7 @@ export const SearchMusicianProfilesResponse = zod.object({
   "searchedAt": zod.coerce.date(),
   "profiles": zod.array(zod.object({
   "platform": zod.string(),
-  "category": zod.enum(['social', 'streaming', 'music', 'website']),
+  "category": zod.enum(['social']),
   "title": zod.string(),
   "url": zod.string(),
   "displayUrl": zod.string(),

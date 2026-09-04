@@ -139,8 +139,8 @@ export const getSearchMusicianProfilesUrl = () => {
 }
 
 /**
- * Searches Google through Serper.dev and ranks likely official musician profiles.
- * @summary Find a musician's social and streaming profiles
+ * Searches Google through Serper.dev and ranks the likely official profile for each target platform.
+ * @summary Find a musician's Instagram, TikTok, and YouTube profiles
  */
 export const searchMusicianProfiles = async (musicianSearchInput: MusicianSearchInput, options?: Parameters<typeof customFetch>[1]): Promise<MusicianSearchResponse> => {
 
@@ -189,7 +189,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type SearchMusicianProfilesMutationError = ErrorType<void>
 
     /**
- * @summary Find a musician's social and streaming profiles
+ * @summary Find a musician's Instagram, TikTok, and YouTube profiles
  */
 export const useSearchMusicianProfiles = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof searchMusicianProfiles>>, TError,{data: BodyType<MusicianSearchInput>}, TContext>, request?: SecondParameter<typeof customFetch>}

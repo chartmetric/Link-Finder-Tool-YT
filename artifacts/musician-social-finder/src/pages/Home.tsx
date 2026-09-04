@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Search, MapPin, Globe, ExternalLink, Copy, Check, Download, AlertCircle, Loader2, Music, Hash, Radio, MonitorPlay } from 'lucide-react';
+import { Search, MapPin, Globe, ExternalLink, Copy, Check, Download, AlertCircle, Loader2, Hash, MonitorPlay } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useSearchMusicianProfiles } from '@workspace/api-client-react';
@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -25,15 +25,8 @@ const searchSchema = z.object({
 
 type SearchFormValues = z.infer<typeof searchSchema>;
 
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  social: <Hash className="w-4 h-4" />,
-  streaming: <Radio className="w-4 h-4" />,
-  music: <Music className="w-4 h-4" />,
-  website: <Globe className="w-4 h-4" />,
-};
-
 export default function Home() {
-  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [activePlatform, setActivePlatform] = useState<string>('all');
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
   const form = useForm<SearchFormValues>({
@@ -102,9 +95,9 @@ export default function Home() {
 
   const filteredProfiles = useMemo(() => {
     if (!data?.profiles) return [];
-    if (activeCategory === 'all') return data.profiles;
-    return data.profiles.filter((p) => p.category === activeCategory);
-  }, [data, activeCategory]);
+    if (activePlatform === 'all') return data.profiles;
+    return data.profiles.filter((p) => p.platform.toLowerCase() === activePlatform);
+  }, [data, activePlatform]);
 
   const hasError = !!error;
   const errorObj = error as any;
@@ -203,7 +196,7 @@ export default function Home() {
             </div>
             <h2 className="font-serif text-4xl mb-4 text-foreground">Find the official links.</h2>
             <p className="text-lg text-muted-foreground mb-10 leading-relaxed">
-              Cut through fan pages and unofficial accounts. Instantly verify a musician's footprint across social media, streaming platforms, and official websites.
+              Cut through fan pages and unofficial accounts. Find the strongest official Instagram, TikTok, and YouTube matches for any musician.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <span className="text-sm font-medium text-muted-foreground mr-2 self-center">Try:</span>
@@ -255,7 +248,7 @@ export default function Home() {
                 </CardTitle>
                 <CardDescription className="text-foreground/80 mt-2 text-base">
                   {is503 
-                    ? 'The backend is returning a 503 error, which usually indicates the SERPER_API_KEY environment variable is not configured. Please set it in your Replit secrets.'
+                    ? 'Live search is not configured yet. Add the SERPERDEV_API_KEY secret, then try again.'
                     : 'An unexpected error occurred while searching for the musician. Please try again later.'}
                 </CardDescription>
               </div>
@@ -299,13 +292,12 @@ export default function Home() {
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
               {/* Left Column: Results List */}
               <div className="xl:col-span-2 flex flex-col gap-6">
-                <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full">
-                  <TabsList className="w-full sm:w-auto grid grid-cols-5 h-12 p-1 bg-card border">
+                <Tabs value={activePlatform} onValueChange={setActivePlatform} className="w-full">
+                  <TabsList className="w-full sm:w-auto grid grid-cols-4 h-12 p-1 bg-card border">
                     <TabsTrigger value="all" className="h-full rounded-md text-sm">All</TabsTrigger>
-                    <TabsTrigger value="social" className="h-full rounded-md text-sm">Social</TabsTrigger>
-                    <TabsTrigger value="streaming" className="h-full rounded-md text-sm">Stream</TabsTrigger>
-                    <TabsTrigger value="music" className="h-full rounded-md text-sm">Music</TabsTrigger>
-                    <TabsTrigger value="website" className="h-full rounded-md text-sm">Web</TabsTrigger>
+                    <TabsTrigger value="instagram" className="h-full rounded-md text-sm">Instagram</TabsTrigger>
+                    <TabsTrigger value="tiktok" className="h-full rounded-md text-sm">TikTok</TabsTrigger>
+                    <TabsTrigger value="youtube" className="h-full rounded-md text-sm">YouTube</TabsTrigger>
                   </TabsList>
                 </Tabs>
 
@@ -330,7 +322,7 @@ export default function Home() {
                               <div>
                                 <div className="flex items-center gap-2 mb-1.5">
                                   <span className="text-muted-foreground">
-                                    {CATEGORY_ICONS[profile.category] || <Globe className="w-4 h-4" />}
+                                    <Hash className="w-4 h-4" />
                                   </span>
                                   <Badge variant="outline" className="text-xs uppercase tracking-wider font-semibold border-primary/20 text-primary bg-primary/5">
                                     {profile.platform}

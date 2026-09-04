@@ -30,8 +30,8 @@ paths:
     post:
       operationId: searchMusicianProfiles
       tags: [musician-search]
-      summary: Find a musician's social and streaming profiles
-      description: Searches Google through Serper.dev and ranks likely official musician profiles.
+      summary: Find a musician's Instagram, TikTok, and YouTube profiles
+      description: Searches Google through Serper.dev and ranks the likely official profile for each target platform.
       requestBody:
         required: true
         content:
@@ -82,7 +82,7 @@ components:
           type: string
         category:
           type: string
-          enum: [social, streaming, music, website]
+          enum: [social]
         title:
           type: string
         url:

@@ -15,7 +15,7 @@ router.post("/musicians/search", async (req, res): Promise<void> => {
     return;
   }
 
-  const apiKey = process.env.SERPER_API_KEY;
+  const apiKey = process.env.SERPERDEV_API_KEY ?? process.env.SERPER_API_KEY;
   if (!apiKey) {
     res.status(503).json({
       error: "Serper is not configured yet.",
@@ -25,7 +25,21 @@ router.post("/musicians/search", async (req, res): Promise<void> => {
   }
 
   try {
-    const result = await findMusicianProfiles({ ...input.data, apiKey });
+    let result;
+    try {
+      result = await findMusicianProfiles({
+        ...input.data,
+        apiKey,
+        openrouterApiKey: process.env.OPENROUTER_API_KEY,
+      });
+    } catch (error) {
+      if (process.env.OPENROUTER_API_KEY) {
+        req.log.warn({ err: error }, "Gemini online verification unavailable; retrying with Serper only");
+        result = await findMusicianProfiles({ ...input.data, apiKey });
+      } else {
+        throw error;
+      }
+    }
     res.json(SearchMusicianProfilesResponse.parse(result));
   } catch (error) {
     req.log.error({ err: error }, "Musician profile search failed");

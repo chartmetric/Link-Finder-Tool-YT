@@ -29,9 +29,6 @@ export type ProfileMatchCategory = typeof ProfileMatchCategory[keyof typeof Prof
 
 export const ProfileMatchCategory = {
   social: 'social',
-  streaming: 'streaming',
-  music: 'music',
-  website: 'website',
 } as const;
 
 export interface ProfileMatch {

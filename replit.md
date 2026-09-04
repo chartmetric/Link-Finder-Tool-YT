@@ -1,6 +1,6 @@
 # Musician Social Finder
 
-Searches Google through Serper.dev and ranks likely official social, streaming, and music URLs for a musician.
+Searches Google through Serper.dev and returns the strongest official Instagram, TikTok, and YouTube URLs for a musician.
 
 ## Run & Operate
 
@@ -9,7 +9,8 @@ Searches Google through Serper.dev and ranks likely official social, streaming, 
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required secret: `SERPER_API_KEY` — Serper.dev API key
+- Required secret: `SERPERDEV_API_KEY` — Serper.dev API key
+- Optional verification secret: `OPENROUTER_API_KEY` — enables Gemini online cross-checking
 
 ## Stack
 
@@ -30,12 +31,12 @@ Searches Google through Serper.dev and ranks likely official social, streaming, 
 ## Architecture decisions
 
 - Serper is called only from the API server so the API key never reaches browsers.
-- Results are ranked from name matches, official wording, recognized domains, and Google position; content URLs are penalized.
+- Results are ranked from name matches, official wording, recognized domains, and Google position, then cross-checked by Gemini in online mode when OpenRouter is configured.
 - Missing Serper configuration returns an explicit 503 setup state rather than mocked search results.
 
 ## Product
 
-Search by musician name with optional location and country hints, filter ranked profiles by category, inspect evidence, copy URLs, and export results.
+Search by musician name with optional location and country hints, inspect the best Instagram, TikTok, and YouTube matches, copy URLs, and export results.
 
 ## User preferences
 
@@ -43,7 +44,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-- Live results require the `SERPER_API_KEY` secret.
+- Live results require `SERPERDEV_API_KEY`; Gemini verification uses `OPENROUTER_API_KEY`.
 
 ## Pointers
 
