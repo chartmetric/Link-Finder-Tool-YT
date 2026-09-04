@@ -1,6 +1,6 @@
-# [Project name]
+# Musician Social Finder
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Searches Google through Serper.dev and ranks likely official social, streaming, and music URLs for a musician.
 
 ## Run & Operate
 
@@ -9,7 +9,7 @@ _Replace the heading above with the project's name, and this line with one sente
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required secret: `SERPER_API_KEY` — Serper.dev API key
 
 ## Stack
 
@@ -22,15 +22,20 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/musician-social-finder` — React frontend
+- `artifacts/api-server/src/routes/musicians.ts` — search endpoint
+- `artifacts/api-server/src/lib/musician-search.ts` — Serper query, URL classification, and confidence scoring
+- `lib/api-spec/openapi.yaml` — API contract
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Serper is called only from the API server so the API key never reaches browsers.
+- Results are ranked from name matches, official wording, recognized domains, and Google position; content URLs are penalized.
+- Missing Serper configuration returns an explicit 503 setup state rather than mocked search results.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Search by musician name with optional location and country hints, filter ranked profiles by category, inspect evidence, copy URLs, and export results.
 
 ## User preferences
 
@@ -38,7 +43,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Live results require the `SERPER_API_KEY` secret.
 
 ## Pointers
 

@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Musician Social Finder"
+description = "A focused research tool that searches Google through Serper.dev for a musician and organizes likely official social, streaming, and music profile URLs with confidence signals and export tools."
+version = "1.0.0"
+id = "artifacts/musician-social-finder"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21667
+
+[services.development]
+run = "pnpm --filter @workspace/musician-social-finder run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/musician-social-finder", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/musician-social-finder/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21667"
+BASE_PATH = "/"

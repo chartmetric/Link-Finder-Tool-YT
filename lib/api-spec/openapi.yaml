@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: musician-search
+    description: Musician profile discovery
 paths:
   /healthz:
     get:
@@ -24,6 +26,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /musicians/search:
+    post:
+      operationId: searchMusicianProfiles
+      tags: [musician-search]
+      summary: Find a musician's social and streaming profiles
+      description: Searches Google through Serper.dev and ranks likely official musician profiles.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MusicianSearchInput"
+      responses:
+        "200":
+          description: Ranked profile matches
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MusicianSearchResponse"
+        "400":
+          description: Invalid musician name
+        "503":
+          description: Serper API key is not configured
 components:
   schemas:
     HealthStatus:
@@ -33,4 +58,97 @@ components:
           type: string
       required:
         - status
+    MusicianSearchInput:
+      type: object
+      properties:
+        musician:
+          type: string
+          minLength: 2
+          maxLength: 120
+        location:
+          type: string
+          maxLength: 100
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+          default: us
+      required:
+        - musician
+    ProfileMatch:
+      type: object
+      properties:
+        platform:
+          type: string
+        category:
+          type: string
+          enum: [social, streaming, music, website]
+        title:
+          type: string
+        url:
+          type: string
+        displayUrl:
+          type: string
+        snippet:
+          type: string
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 100
+        signals:
+          type: array
+          items:
+            type: string
+      required:
+        - platform
+        - category
+        - title
+        - url
+        - displayUrl
+        - snippet
+        - confidence
+        - signals
+    SearchSource:
+      type: object
+      properties:
+        title:
+          type: string
+        url:
+          type: string
+        snippet:
+          type: string
+      required:
+        - title
+        - url
+        - snippet
+    MusicianSearchResponse:
+      type: object
+      properties:
+        musician:
+          type: string
+        query:
+          type: string
+        searchedAt:
+          type: string
+          format: date-time
+        profiles:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProfileMatch"
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchSource"
+        totalFound:
+          type: number
+        highConfidenceCount:
+          type: number
+      required:
+        - musician
+        - query
+        - searchedAt
+        - profiles
+        - sources
+        - totalFound
+        - highConfidenceCount
 
