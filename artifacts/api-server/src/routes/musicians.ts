@@ -27,6 +27,7 @@ router.post("/profiles/search", async (req, res): Promise<void> => {
       tavilyApiKey: process.env.TAVILY_WEB_SEARCH_API_KEY,
       openrouterApiKey: process.env.OPENROUTER_API_KEY,
       scrapeCreatorsApiKey: process.env.SCRAPECREATORS_API_KEY,
+      socialCrawlApiKey: process.env.SOCIALCRAWL_API_KEY,
     });
     res.json(SearchProfilesResponse.parse(result));
   } catch (error) {

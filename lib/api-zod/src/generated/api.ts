@@ -41,7 +41,7 @@ export const SearchProfilesBody = zod.object({
   "handlePlatform": zod.enum(['instagram', 'tiktok', 'youtube', 'x', 'twitter', 'facebook']).optional().describe('Platform where the known handle belongs'),
   "location": zod.string().max(searchProfilesBodyLocationMax).optional(),
   "country": zod.string().min(searchProfilesBodyCountryMin).max(searchProfilesBodyCountryMax).default(searchProfilesBodyCountryDefault),
-  "methods": zod.array(zod.enum(['serper', 'tavily', 'gemini', 'scrapecreators'])).optional()
+  "methods": zod.array(zod.enum(['serper', 'tavily', 'gemini', 'scrapecreators', 'socialcrawl'])).optional()
 })
 
 export const searchProfilesResponseProfilesItemConfidenceMin = 0;

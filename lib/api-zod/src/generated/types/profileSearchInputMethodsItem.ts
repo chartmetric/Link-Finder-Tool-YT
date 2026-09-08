@@ -14,4 +14,5 @@ export const ProfileSearchInputMethodsItem = {
   tavily: 'tavily',
   gemini: 'gemini',
   scrapecreators: 'scrapecreators',
+  socialcrawl: 'socialcrawl',
 } as const;

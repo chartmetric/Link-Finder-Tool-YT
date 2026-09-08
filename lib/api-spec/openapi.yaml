@@ -86,7 +86,7 @@ components:
           type: array
           items:
             type: string
-            enum: [serper, tavily, gemini, scrapecreators]
+            enum: [serper, tavily, gemini, scrapecreators, socialcrawl]
     ProfileMatch:
       type: object
       properties:

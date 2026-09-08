@@ -23,7 +23,7 @@ const searchSchema = z.object({
   handlePlatform: z.enum(['instagram', 'tiktok', 'youtube', 'x', 'twitter', 'facebook']),
   location: z.string().max(100).optional(),
   country: z.string().length(2, 'Must be 2 letters').optional().or(z.literal('')),
-  method: z.enum(['all', 'serper', 'tavily', 'gemini', 'scrapecreators']),
+  method: z.enum(['all', 'serper', 'tavily', 'gemini', 'scrapecreators', 'socialcrawl']),
 }).superRefine((values, context) => {
   if (values.subject.trim().length < 2 && values.handle.trim().replace(/^@/, '').length < 2) {
     context.addIssue({
@@ -70,7 +70,7 @@ export default function Home() {
       ...(values.location ? { location: values.location } : {}),
       ...(values.country ? { country: values.country.toUpperCase() } : {}),
       methods: (values.method === 'all'
-        ? ['serper', 'tavily', 'scrapecreators']
+        ? ['serper', 'tavily', 'scrapecreators', 'socialcrawl']
         : [values.method]) as ProfileSearchInputMethodsItem[],
     };
     mutate({ data: payload });
@@ -217,10 +217,11 @@ export default function Home() {
                         className="h-11 w-full rounded-lg border border-input bg-card px-3 text-sm font-medium shadow-sm outline-none focus:ring-2 focus:ring-ring"
                         {...field}
                       >
-                        <option value="all">All + dual verification · ~$0.05</option>
+                        <option value="all">All + dual verification · ~$0.05 + credits</option>
                         <option value="serper">Serper + dual verify · ~$0.021</option>
                         <option value="tavily">Tavily + dual verify · ~$0.042</option>
                         <option value="scrapecreators">ScrapeCreators + dual verify · 0–10 credits + ~$0.018</option>
+                        <option value="socialcrawl">SocialCrawl + dual verify · 3 credits + ~$0.018</option>
                       </select>
                     </FormControl>
                   </FormItem>

@@ -315,6 +315,7 @@ export async function findProfiles(input: {
   tavilyApiKey?: string;
   openrouterApiKey?: string;
   scrapeCreatorsApiKey?: string;
+  socialCrawlApiKey?: string;
 }) {
   const cleanHandle = input.handle?.trim().replace(/^@/, "");
   const subject = input.subject?.trim() || (cleanHandle ? `@${cleanHandle}` : "");
@@ -322,7 +323,7 @@ export async function findProfiles(input: {
   const targets = ["Instagram", "TikTok", "YouTube"];
   const selected = input.methods?.length
     ? input.methods
-    : ["serper", "tavily", "gemini", "scrapecreators"];
+    : ["serper", "tavily", "gemini", "scrapecreators", "socialcrawl"];
   const queries = targets.map(
     (platform) => `${subject}${locationHint} official ${platform}`,
   );
@@ -332,10 +333,12 @@ export async function findProfiles(input: {
     gemini: { label: "Gemini Verification", estimatedCostUsd: 0.01, costNote: "Automatic separate verification pass; web search and token charges vary" },
     deepseek: { label: "DeepSeek Verification", estimatedCostUsd: 0.008, costNote: "Automatic independent pass using V4 Flash 0731, capped Exa search, and token usage" },
     scrapecreators: { label: "ScrapeCreators", estimatedCostUsd: 0, costNote: "0 cached or 10 live credits; dollar cost depends on your credit pack" },
+    socialcrawl: { label: "SocialCrawl", estimatedCostUsd: 0, costNote: "3 credits for Instagram, TikTok, and YouTube searches; dollar cost depends on your credit pack" },
   } as const;
-  const methodKeys = ["serper", "tavily", "gemini", "deepseek", "scrapecreators"] as const;
+  const methodKeys = ["serper", "tavily", "gemini", "deepseek", "scrapecreators", "socialcrawl"] as const;
   const statuses = new Map<string, "used" | "unavailable" | "failed">();
   let scrapeCreatorsCreditsCharged: number | undefined;
+  let socialCrawlCreditsCharged: number | undefined;
   const organic: Array<SerperOrganicResult & { method: string }> = [];
 
   const runSearches = async (
@@ -395,6 +398,86 @@ export async function findProfiles(input: {
     }
   };
 
+  const runSocialCrawl = async () => {
+    if (!input.socialCrawlApiKey) {
+      statuses.set("socialcrawl", "unavailable");
+      return;
+    }
+    const endpoints = [
+      { platform: "Instagram", path: "/instagram/search/profiles" },
+      { platform: "TikTok", path: "/tiktok/search/users" },
+      { platform: "YouTube", path: "/youtube/search" },
+    ] as const;
+    try {
+      const responses = await Promise.all(endpoints.map(async ({ platform, path }) => {
+        const params = new URLSearchParams({ query: subject });
+        const response = await fetch(`https://www.socialcrawl.dev/v1${path}?${params}`, {
+          headers: { "x-api-key": input.socialCrawlApiKey! },
+          signal: AbortSignal.timeout(35_000),
+        });
+        if (!response.ok) throw new Error(`SocialCrawl ${platform} failed (${response.status})`);
+        const data = (await response.json()) as {
+          credits_used?: number;
+          data?: {
+            items?: Array<{
+              author?: {
+                username?: string | null;
+                display_name?: string | null;
+                bio?: string | null;
+                verified?: boolean | null;
+                followers?: number | null;
+                url?: string | null;
+              };
+              post?: {
+                author?: {
+                  username?: string | null;
+                  display_name?: string | null;
+                  bio?: string | null;
+                  verified?: boolean | null;
+                  followers?: number | null;
+                  url?: string | null;
+                };
+                ext?: { channel_id?: string | null };
+              };
+            }>;
+          };
+        };
+        return { platform, data };
+      }));
+      socialCrawlCreditsCharged = responses.reduce(
+        (sum, response) => sum + (response.data.credits_used ?? 0),
+        0,
+      );
+      for (const { platform, data } of responses) {
+        for (const item of data.data?.items ?? []) {
+          const author = item.author ?? item.post?.author;
+          const username = author?.username?.replace(/^@/, "");
+          const channelId = item.post?.ext?.channel_id;
+          const url = author?.url
+            ?? (platform === "Instagram" && username ? `https://www.instagram.com/${username}` : undefined)
+            ?? (platform === "TikTok" && username ? `https://www.tiktok.com/@${username}` : undefined)
+            ?? (platform === "YouTube" && username ? `https://www.youtube.com/@${username}` : undefined)
+            ?? (platform === "YouTube" && channelId ? `https://www.youtube.com/channel/${channelId}` : undefined);
+          if (!url) continue;
+          organic.push({
+            title: `${author?.display_name ?? username ?? subject} on ${platform}`,
+            link: url,
+            snippet: [
+              author?.bio,
+              author?.verified ? "Verified profile" : undefined,
+              author?.followers ? `${author.followers.toLocaleString()} followers` : undefined,
+            ].filter(Boolean).join(" · "),
+            position: author?.verified ? 1 : 5,
+            method: "socialcrawl",
+          });
+        }
+      }
+      statuses.set("socialcrawl", "used");
+    } catch {
+      statuses.set("socialcrawl", "failed");
+    }
+  };
+
   await Promise.all([
     selected.includes("serper")
       ? input.serperApiKey
@@ -429,6 +512,9 @@ export async function findProfiles(input: {
       : Promise.resolve(),
     selected.includes("scrapecreators")
       ? runScrapeCreators()
+      : Promise.resolve(),
+    selected.includes("socialcrawl")
+      ? runSocialCrawl()
       : Promise.resolve(),
   ]);
 
@@ -542,6 +628,9 @@ export async function findProfiles(input: {
       ...methodMeta[method],
       ...(method === "scrapecreators" && scrapeCreatorsCreditsCharged !== undefined
         ? { costNote: `${scrapeCreatorsCreditsCharged} credits charged for this request` }
+        : {}),
+      ...(method === "socialcrawl" && socialCrawlCreditsCharged !== undefined
+        ? { costNote: `${socialCrawlCreditsCharged} credits charged for this request` }
         : {}),
       status: statuses.get(method) ?? "failed",
     }));
