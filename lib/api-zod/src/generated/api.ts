@@ -82,3 +82,36 @@ export const SearchProfilesResponse = zod.object({
 })
 
 
+/**
+ * @summary List existing profiles with Instagram accounts
+ */
+export const listExistingProfilesQueryQueryMax = 120;
+
+export const listExistingProfilesQueryPageDefault = 1;
+
+export const listExistingProfilesQueryLimitDefault = 25;
+export const listExistingProfilesQueryLimitMax = 100;
+
+
+
+export const ListExistingProfilesQueryParams = zod.object({
+  "query": zod.coerce.string().max(listExistingProfilesQueryQueryMax).optional(),
+  "page": zod.coerce.number().int().min(1).default(listExistingProfilesQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listExistingProfilesQueryLimitMax).default(listExistingProfilesQueryLimitDefault)
+})
+
+export const ListExistingProfilesResponse = zod.object({
+  "profiles": zod.array(zod.object({
+  "profileId": zod.number(),
+  "profileName": zod.string(),
+  "profileTypes": zod.string(),
+  "accountUrl": zod.string(),
+  "handle": zod.string()
+})),
+  "page": zod.number(),
+  "limit": zod.number(),
+  "hasMore": zod.boolean(),
+  "query": zod.string()
+})
+
+

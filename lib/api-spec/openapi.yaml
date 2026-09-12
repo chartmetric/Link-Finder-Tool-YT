@@ -49,6 +49,39 @@ paths:
           description: Invalid person, creator, team, or brand name
         "503":
           description: Serper API key is not configured
+  /profiles:
+    get:
+      operationId: listExistingProfiles
+      tags: [profile-search]
+      summary: List existing profiles with Instagram accounts
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+            maxLength: 120
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+      responses:
+        "200":
+          description: Existing profiles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExistingProfilePage"
+        "503":
+          description: ClickHouse is not configured
 components:
   schemas:
     HealthStatus:
@@ -87,6 +120,36 @@ components:
           items:
             type: string
             enum: [serper, tavily, gemini, scrapecreators, socialcrawl]
+    ExistingProfile:
+      type: object
+      properties:
+        profileId:
+          type: number
+        profileName:
+          type: string
+        profileTypes:
+          type: string
+        accountUrl:
+          type: string
+        handle:
+          type: string
+      required: [profileId, profileName, profileTypes, accountUrl, handle]
+    ExistingProfilePage:
+      type: object
+      properties:
+        profiles:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExistingProfile"
+        page:
+          type: number
+        limit:
+          type: number
+        hasMore:
+          type: boolean
+        query:
+          type: string
+      required: [profiles, page, limit, hasMore, query]
     ProfileMatch:
       type: object
       properties:

@@ -59,6 +59,22 @@ export interface ProfileSearchInput {
   methods?: ProfileSearchInputMethodsItem[];
 }
 
+export interface ExistingProfile {
+  profileId: number;
+  profileName: string;
+  profileTypes: string;
+  accountUrl: string;
+  handle: string;
+}
+
+export interface ExistingProfilePage {
+  profiles: ExistingProfile[];
+  page: number;
+  limit: number;
+  hasMore: boolean;
+  query: string;
+}
+
 export type ProfileMatchCategory = typeof ProfileMatchCategory[keyof typeof ProfileMatchCategory];
 
 
@@ -116,4 +132,20 @@ export interface ProfileSearchResponse {
   methodsUsed: SearchMethodUsage[];
   estimatedCostUsd: number;
 }
+
+export type ListExistingProfilesParams = {
+/**
+ * @maxLength 120
+ */
+query?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
 

@@ -20,7 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ExistingProfilePage,
   HealthStatus,
+  ListExistingProfilesParams,
   ProfileSearchInput,
   ProfileSearchResponse
 } from './api.schemas';
@@ -201,4 +203,88 @@ export const useSearchProfiles = <TError = ErrorType<void>,
       > => {
       return useMutation(getSearchProfilesMutationOptions(options));
     }
+
+export const getListExistingProfilesUrl = (params?: ListExistingProfilesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/profiles?${stringifiedParams}` : `/api/profiles`
+}
+
+/**
+ * @summary List existing profiles with Instagram accounts
+ */
+export const listExistingProfiles = async (params?: ListExistingProfilesParams, options?: Parameters<typeof customFetch>[1]): Promise<ExistingProfilePage> => {
+
+  return customFetch<ExistingProfilePage>(getListExistingProfilesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListExistingProfilesQueryKey = (params?: ListExistingProfilesParams,) => {
+    return [
+    `/api/profiles`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListExistingProfilesQueryOptions = <TData = Awaited<ReturnType<typeof listExistingProfiles>>, TError = ErrorType<void>>(params?: ListExistingProfilesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listExistingProfiles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListExistingProfilesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listExistingProfiles>>> = ({ signal }) => listExistingProfiles(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listExistingProfiles>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListExistingProfilesQueryResult = NonNullable<Awaited<ReturnType<typeof listExistingProfiles>>>
+export type ListExistingProfilesQueryError = ErrorType<void>
+
+
+/**
+ * @summary List existing profiles with Instagram accounts
+ */
+
+export function useListExistingProfiles<TData = Awaited<ReturnType<typeof listExistingProfiles>>, TError = ErrorType<void>>(
+ params?: ListExistingProfilesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listExistingProfiles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListExistingProfilesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 

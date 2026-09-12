@@ -6,7 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './existingProfile';
+export * from './existingProfilePage';
 export * from './healthStatus';
+export * from './listExistingProfilesParams';
 export * from './profileMatch';
 export * from './profileMatchCategory';
 export * from './profileSearchInput';
