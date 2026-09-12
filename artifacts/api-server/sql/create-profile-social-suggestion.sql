@@ -1,6 +1,4 @@
-CREATE DATABASE IF NOT EXISTS poc_new_vertical;
-
-CREATE TABLE IF NOT EXISTS poc_new_vertical.profile_social_suggestion
+CREATE TABLE IF NOT EXISTS poc_new_verticals.profile_social_suggestion
 (
     suggestion_id UUID DEFAULT generateUUIDv4(),
     profile_id UInt32,

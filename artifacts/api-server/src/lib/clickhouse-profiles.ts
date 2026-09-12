@@ -260,7 +260,7 @@ export async function approveProfileSuggestions(input: {
     .join("\n");
 
   const response = await clickHouseRequest(
-    `INSERT INTO poc_new_vertical.profile_social_suggestion FORMAT JSONEachRow\n${rows}`,
+    `INSERT INTO poc_new_verticals.profile_social_suggestion FORMAT JSONEachRow\n${rows}`,
   );
   if (!response.ok) {
     throw new Error(`CLICKHOUSE_INSERT_FAILED:${response.status}:${await response.text()}`);
