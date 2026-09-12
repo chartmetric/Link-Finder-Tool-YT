@@ -59,12 +59,22 @@ export interface ProfileSearchInput {
   methods?: ProfileSearchInputMethodsItem[];
 }
 
+export interface ExistingProfileAccount {
+  platform: string;
+  handle: string;
+  accountUrl: string;
+  source: string;
+}
+
 export interface ExistingProfile {
   profileId: number;
   profileName: string;
   profileTypes: string;
-  accountUrl: string;
-  handle: string;
+  tier: number;
+  tierRank: number;
+  /** @nullable */
+  instagramFollowers: number | null;
+  accounts: ExistingProfileAccount[];
 }
 
 export interface ExistingProfilePage {
@@ -73,6 +83,39 @@ export interface ExistingProfilePage {
   limit: number;
   hasMore: boolean;
   query: string;
+}
+
+export interface ProfileSuggestionInput {
+  platform: string;
+  handle: string;
+  accountUrl: string;
+  sourceVendors: string[];
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  confidence: number;
+  /** @minimum 0 */
+  estimatedCostUsd: number;
+  sourceDetails: string;
+}
+
+export interface ProfileSuggestionApproval {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  profileName: string;
+  /**
+     * @minItems 1
+     * @maxItems 20
+     */
+  suggestions: ProfileSuggestionInput[];
+}
+
+export interface ProfileSuggestionApprovalResult {
+  inserted: number;
+  approvedAt: string;
 }
 
 export type ProfileMatchCategory = typeof ProfileMatchCategory[keyof typeof ProfileMatchCategory];
@@ -147,5 +190,28 @@ page?: number;
  * @maximum 100
  */
 limit?: number;
+/**
+ * @minimum 1
+ * @maximum 5
+ */
+tier?: number;
+sortBy?: ListExistingProfilesSortBy;
+sortDirection?: ListExistingProfilesSortDirection;
 };
+
+export type ListExistingProfilesSortBy = typeof ListExistingProfilesSortBy[keyof typeof ListExistingProfilesSortBy];
+
+
+export const ListExistingProfilesSortBy = {
+  tier_rank: 'tier_rank',
+  name: 'name',
+} as const;
+
+export type ListExistingProfilesSortDirection = typeof ListExistingProfilesSortDirection[keyof typeof ListExistingProfilesSortDirection];
+
+
+export const ListExistingProfilesSortDirection = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
 

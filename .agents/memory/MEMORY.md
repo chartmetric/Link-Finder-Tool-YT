@@ -1,0 +1,1 @@
+- [Musician catalog ranking](musician-catalog-ranking.md) — use precomputed tier rank for interactive ordering; fetch Instagram followers only for the visible page.

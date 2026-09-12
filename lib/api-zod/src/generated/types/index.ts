@@ -7,15 +7,21 @@
  */
 
 export * from './existingProfile';
+export * from './existingProfileAccount';
 export * from './existingProfilePage';
 export * from './healthStatus';
 export * from './listExistingProfilesParams';
+export * from './listExistingProfilesSortBy';
+export * from './listExistingProfilesSortDirection';
 export * from './profileMatch';
 export * from './profileMatchCategory';
 export * from './profileSearchInput';
 export * from './profileSearchInputHandlePlatform';
 export * from './profileSearchInputMethodsItem';
 export * from './profileSearchResponse';
+export * from './profileSuggestionApproval';
+export * from './profileSuggestionApprovalResult';
+export * from './profileSuggestionInput';
 export * from './searchMethodUsage';
 export * from './searchMethodUsageStatus';
 export * from './searchSource';

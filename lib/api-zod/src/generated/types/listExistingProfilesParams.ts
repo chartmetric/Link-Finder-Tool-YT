@@ -5,6 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ListExistingProfilesSortBy } from './listExistingProfilesSortBy';
+import type { ListExistingProfilesSortDirection } from './listExistingProfilesSortDirection';
 
 export type ListExistingProfilesParams = {
 /**
@@ -20,4 +22,11 @@ page?: number;
  * @maximum 100
  */
 limit?: number;
+/**
+ * @minimum 1
+ * @maximum 5
+ */
+tier?: number;
+sortBy?: ListExistingProfilesSortBy;
+sortDirection?: ListExistingProfilesSortDirection;
 };

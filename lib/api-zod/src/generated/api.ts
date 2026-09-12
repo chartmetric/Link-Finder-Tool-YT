@@ -83,7 +83,7 @@ export const SearchProfilesResponse = zod.object({
 
 
 /**
- * @summary List existing profiles with Instagram accounts
+ * @summary List musicians with their existing linked accounts
  */
 export const listExistingProfilesQueryQueryMax = 120;
 
@@ -92,12 +92,18 @@ export const listExistingProfilesQueryPageDefault = 1;
 export const listExistingProfilesQueryLimitDefault = 25;
 export const listExistingProfilesQueryLimitMax = 100;
 
+export const listExistingProfilesQueryTierMax = 5;
 
+export const listExistingProfilesQuerySortByDefault = `tier_rank`;
+export const listExistingProfilesQuerySortDirectionDefault = `asc`;
 
 export const ListExistingProfilesQueryParams = zod.object({
   "query": zod.coerce.string().max(listExistingProfilesQueryQueryMax).optional(),
   "page": zod.coerce.number().int().min(1).default(listExistingProfilesQueryPageDefault),
-  "limit": zod.coerce.number().int().min(1).max(listExistingProfilesQueryLimitMax).default(listExistingProfilesQueryLimitDefault)
+  "limit": zod.coerce.number().int().min(1).max(listExistingProfilesQueryLimitMax).default(listExistingProfilesQueryLimitDefault),
+  "tier": zod.coerce.number().int().min(1).max(listExistingProfilesQueryTierMax).optional(),
+  "sortBy": zod.enum(['tier_rank', 'name']).default(listExistingProfilesQuerySortByDefault),
+  "sortDirection": zod.enum(['asc', 'desc']).default(listExistingProfilesQuerySortDirectionDefault)
 })
 
 export const ListExistingProfilesResponse = zod.object({
@@ -105,13 +111,60 @@ export const ListExistingProfilesResponse = zod.object({
   "profileId": zod.number(),
   "profileName": zod.string(),
   "profileTypes": zod.string(),
+  "tier": zod.number(),
+  "tierRank": zod.number(),
+  "instagramFollowers": zod.number().nullable(),
+  "accounts": zod.array(zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
   "accountUrl": zod.string(),
-  "handle": zod.string()
+  "source": zod.string()
+}))
 })),
   "page": zod.number(),
   "limit": zod.number(),
   "hasMore": zod.boolean(),
   "query": zod.string()
+})
+
+
+/**
+ * @summary Approve and store previewed profile suggestions
+ */
+
+
+
+export const ApproveProfileSuggestionsParams = zod.object({
+  "profileId": zod.coerce.number().int().min(1)
+})
+
+export const approveProfileSuggestionsBodyProfileNameMax = 200;
+
+export const approveProfileSuggestionsBodySuggestionsItemConfidenceMin = 0;
+export const approveProfileSuggestionsBodySuggestionsItemConfidenceMax = 100;
+
+export const approveProfileSuggestionsBodySuggestionsItemEstimatedCostUsdMin = 0;
+
+export const approveProfileSuggestionsBodySuggestionsMax = 20;
+
+
+
+export const ApproveProfileSuggestionsBody = zod.object({
+  "profileName": zod.string().min(1).max(approveProfileSuggestionsBodyProfileNameMax),
+  "suggestions": zod.array(zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "accountUrl": zod.string(),
+  "sourceVendors": zod.array(zod.string()),
+  "confidence": zod.number().min(approveProfileSuggestionsBodySuggestionsItemConfidenceMin).max(approveProfileSuggestionsBodySuggestionsItemConfidenceMax),
+  "estimatedCostUsd": zod.number().min(approveProfileSuggestionsBodySuggestionsItemEstimatedCostUsdMin),
+  "sourceDetails": zod.string()
+})).min(1).max(approveProfileSuggestionsBodySuggestionsMax)
+})
+
+export const ApproveProfileSuggestionsResponse = zod.object({
+  "inserted": zod.number(),
+  "approvedAt": zod.coerce.date()
 })
 
 

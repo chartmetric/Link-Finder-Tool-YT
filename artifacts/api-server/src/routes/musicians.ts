@@ -1,12 +1,18 @@
 import { Router, type IRouter } from "express";
 import {
+  ApproveProfileSuggestionsBody,
+  ApproveProfileSuggestionsParams,
+  ApproveProfileSuggestionsResponse,
   ListExistingProfilesQueryParams,
   ListExistingProfilesResponse,
   SearchProfilesBody,
   SearchProfilesResponse,
 } from "@workspace/api-zod";
 import { findProfiles } from "../lib/musician-search";
-import { listExistingProfiles } from "../lib/clickhouse-profiles";
+import {
+  approveProfileSuggestions,
+  listExistingProfiles,
+} from "../lib/clickhouse-profiles";
 
 const router: IRouter = Router();
 
@@ -20,9 +26,19 @@ router.get("/profiles", async (req, res): Promise<void> => {
   const query = input.data.query ?? "";
   const page = input.data.page ?? 1;
   const limit = input.data.limit ?? 25;
+  const tier = input.data.tier;
+  const sortBy = input.data.sortBy ?? "tier_rank";
+  const sortDirection = input.data.sortDirection ?? "asc";
 
   try {
-    const result = await listExistingProfiles({ query, page, limit });
+    const result = await listExistingProfiles({
+      query,
+      page,
+      limit,
+      tier,
+      sortBy,
+      sortDirection,
+    });
     res.json(
       ListExistingProfilesResponse.parse({
         ...result,
@@ -34,6 +50,29 @@ router.get("/profiles", async (req, res): Promise<void> => {
   } catch (error) {
     req.log.error({ err: error }, "Existing profile list failed");
     res.status(503).json({ error: "Profile database is temporarily unavailable." });
+  }
+});
+
+router.post("/profiles/:profileId/suggestions", async (req, res): Promise<void> => {
+  const params = ApproveProfileSuggestionsParams.safeParse(req.params);
+  const body = ApproveProfileSuggestionsBody.safeParse(req.body);
+  if (!params.success || !body.success) {
+    res.status(400).json({ error: "Invalid profile suggestions." });
+    return;
+  }
+
+  try {
+    const result = await approveProfileSuggestions({
+      profileId: params.data.profileId,
+      profileName: body.data.profileName,
+      suggestions: body.data.suggestions,
+    });
+    res.json(ApproveProfileSuggestionsResponse.parse(result));
+  } catch (error) {
+    req.log.error({ err: error }, "Profile suggestion approval failed");
+    res.status(503).json({
+      error: "Suggestion storage is unavailable. ClickHouse permissions may need to be updated.",
+    });
   }
 });
 

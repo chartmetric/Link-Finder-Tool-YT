@@ -24,7 +24,9 @@ import type {
   HealthStatus,
   ListExistingProfilesParams,
   ProfileSearchInput,
-  ProfileSearchResponse
+  ProfileSearchResponse,
+  ProfileSuggestionApproval,
+  ProfileSuggestionApprovalResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -220,7 +222,7 @@ export const getListExistingProfilesUrl = (params?: ListExistingProfilesParams,)
 }
 
 /**
- * @summary List existing profiles with Instagram accounts
+ * @summary List musicians with their existing linked accounts
  */
 export const listExistingProfiles = async (params?: ListExistingProfilesParams, options?: Parameters<typeof customFetch>[1]): Promise<ExistingProfilePage> => {
 
@@ -267,7 +269,7 @@ export type ListExistingProfilesQueryError = ErrorType<void>
 
 
 /**
- * @summary List existing profiles with Instagram accounts
+ * @summary List musicians with their existing linked accounts
  */
 
 export function useListExistingProfiles<TData = Awaited<ReturnType<typeof listExistingProfiles>>, TError = ErrorType<void>>(
@@ -287,4 +289,76 @@ export function useListExistingProfiles<TData = Awaited<ReturnType<typeof listEx
 
 
 
+
+export const getApproveProfileSuggestionsUrl = (profileId: number,) => {
+
+
+
+
+  return `/api/profiles/${profileId}/suggestions`
+}
+
+/**
+ * @summary Approve and store previewed profile suggestions
+ */
+export const approveProfileSuggestions = async (profileId: number,
+    profileSuggestionApproval: ProfileSuggestionApproval, options?: Parameters<typeof customFetch>[1]): Promise<ProfileSuggestionApprovalResult> => {
+
+  return customFetch<ProfileSuggestionApprovalResult>(getApproveProfileSuggestionsUrl(profileId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(profileSuggestionApproval)
+  }
+);}
+
+
+
+
+
+export const getApproveProfileSuggestionsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveProfileSuggestions>>, TError,{profileId: number;data: BodyType<ProfileSuggestionApproval>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveProfileSuggestions>>, TError,{profileId: number;data: BodyType<ProfileSuggestionApproval>}, TContext> => {
+
+const mutationKey = ['approveProfileSuggestions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveProfileSuggestions>>, {profileId: number;data: BodyType<ProfileSuggestionApproval>}> = (props) => {
+          const {profileId,data} = props ?? {};
+
+          return  approveProfileSuggestions(profileId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveProfileSuggestionsMutationResult = NonNullable<Awaited<ReturnType<typeof approveProfileSuggestions>>>
+    export type ApproveProfileSuggestionsMutationBody = BodyType<ProfileSuggestionApproval>
+    export type ApproveProfileSuggestionsMutationError = ErrorType<void>
+
+    /**
+ * @summary Approve and store previewed profile suggestions
+ */
+export const useApproveProfileSuggestions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveProfileSuggestions>>, TError,{profileId: number;data: BodyType<ProfileSuggestionApproval>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveProfileSuggestions>>,
+        TError,
+        {profileId: number;data: BodyType<ProfileSuggestionApproval>},
+        TContext
+      > => {
+      return useMutation(getApproveProfileSuggestionsMutationOptions(options));
+    }
 

@@ -1,28 +1,123 @@
 import React, { useState } from 'react';
 import {
   useSearchProfiles,
+  useApproveProfileSuggestions,
   type ExistingProfile,
   type ProfileSearchInputMethodsItem,
-  type ProfileSearchResponse
+  type ProfileSearchResponse,
+  type ProfileMatch,
+  type ProfileSearchInputHandlePlatform
 } from '@workspace/api-client-react';
 
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, ChevronDown, ChevronUp, AlertCircle, Hash, AtSign, ArrowRight, Copy, Check } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Loader2, ChevronDown, ChevronUp, AlertCircle, Hash, ArrowRight, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+function getBestCandidate(data: ProfileSearchResponse | undefined, platform: string) {
+  if (!data) return null;
+  const cands = data.profiles.filter(p => p.platform.toLowerCase() === platform);
+  if (cands.length === 0) return null;
+  return cands.sort((a, b) => b.confidence - a.confidence)[0];
+}
+
+function extractSuggestedHandle(candidate: ProfileMatch): string {
+  try {
+    const url = new URL(candidate.url);
+    const parts = url.pathname.split('/').filter(Boolean);
+    if (candidate.platform.toLowerCase() === 'youtube' && parts[0] === 'channel') {
+      return parts[1] ?? candidate.displayUrl;
+    }
+    return (parts.find(part => part.startsWith('@')) ?? parts.at(-1) ?? candidate.displayUrl).replace(/^@/, '');
+  } catch {
+    return candidate.displayUrl.replace(/^@/, '');
+  }
+}
+
+function getApiErrorMessage(error: unknown): string {
+  if (typeof error !== 'object' || error === null) return 'Approval failed';
+  const candidate = error as { message?: string; data?: { error?: string } };
+  return candidate.data?.error ?? candidate.message ?? 'Approval failed';
+}
+
+function renderCandidate(cand: ProfileMatch | null, isLoading: boolean, data?: ProfileSearchResponse) {
+  if (isLoading) return <Skeleton className="h-14 w-full bg-muted/60 rounded-lg" />;
+  
+  if (!data) return (
+    <div className="flex flex-col items-center justify-center h-14 bg-muted/5 border border-dashed border-border/40 rounded-lg">
+       <span className="text-[8px] uppercase tracking-widest text-muted-foreground/30 font-bold">Idle</span>
+    </div>
+  );
+
+  if (!cand) return (
+    <div className="flex flex-col items-center justify-center h-14 bg-muted/20 border border-border/50 rounded-lg">
+       <span className="text-[8px] uppercase tracking-widest text-muted-foreground/50 font-bold">Not Found</span>
+    </div>
+  );
+
+  const allocatedCost = data.estimatedCostUsd / (data.profiles.length || 1);
+
+  return (
+    <div className="flex flex-col gap-1.5 border border-border/80 bg-card p-2 rounded-lg shadow-[0_1px_2px_rgba(0,0,0,0.02)] h-full min-h-[4rem]">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-semibold truncate text-foreground/90 max-w-[120px]" title={cand.displayUrl}>{cand.displayUrl}</span>
+        <Badge className={cn("text-[9px] px-1 py-0 h-4 border shadow-none shrink-0", cand.confidence >= 80 ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" : cand.confidence >= 50 ? "bg-amber-500/10 text-amber-700 border-amber-500/20" : "bg-rose-500/10 text-rose-700 border-rose-500/20")}>
+          {cand.confidence}%
+        </Badge>
+      </div>
+      <div className="flex flex-wrap gap-1 mt-auto">
+        {cand.methods.map(m => (
+          <span key={m} className="text-[8px] uppercase tracking-widest font-bold text-muted-foreground/80 bg-muted px-1.5 py-0.5 rounded-[3px] border border-border/50">{m}</span>
+        ))}
+      </div>
+      <div className="text-[8px] text-muted-foreground/50 font-mono font-medium mt-0.5">Est. ${allocatedCost.toFixed(4)}</div>
+    </div>
+  );
+}
 
 export function ProfileRow({ profile, methods }: { profile: ExistingProfile, methods: ProfileSearchInputMethodsItem[] }) {
   const { mutate, data, isPending, error, isError } = useSearchProfiles();
+  const approveMutation = useApproveProfileSuggestions();
+  
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showAllAccounts, setShowAllAccounts] = useState(false);
+  
+  const [approvalStatus, setApprovalStatus] = useState<'idle'|'approving'|'approved'>('idle');
+  const [approvalError, setApprovalError] = useState<string | null>(null);
+
+  const priority = ['instagram', 'tiktok', 'youtube'];
+  const sortedAccounts = [...(profile.accounts || [])].sort((a, b) => {
+      const aP = priority.indexOf(a.platform.toLowerCase());
+      const bP = priority.indexOf(b.platform.toLowerCase());
+      if (aP !== -1 && bP !== -1) return aP - bP;
+      if (aP !== -1) return -1;
+      if (bP !== -1) return 1;
+      return 0;
+  });
+
+  const accountsToShow = showAllAccounts ? sortedAccounts : sortedAccounts.slice(0, 2);
+  const hiddenCount = sortedAccounts.length - 2;
 
   const handleFetch = () => {
+    const seedAccount = sortedAccounts[0];
+    const compatiblePlatforms = ['instagram', 'tiktok', 'youtube', 'x', 'twitter', 'facebook'];
+    let handlePlatform: ProfileSearchInputHandlePlatform | undefined = undefined;
+
+    if (seedAccount && compatiblePlatforms.includes(seedAccount.platform.toLowerCase())) {
+        handlePlatform = seedAccount.platform.toLowerCase() as ProfileSearchInputHandlePlatform;
+    }
+
+    setApprovalStatus('idle');
+    setApprovalError(null);
+
     mutate({
       data: {
         subject: profile.profileName,
-        handle: profile.handle,
-        handlePlatform: 'instagram', // Default assumption for the database records
-        methods: methods.length > 0 ? methods : ['serper'] // fallback
+        ...(seedAccount?.handle ? { handle: seedAccount.handle } : {}),
+        ...(handlePlatform ? { handlePlatform } : {}),
+        methods: methods.length > 0 ? methods : ['serper']
       }
     }, {
       onSuccess: () => {
@@ -34,84 +129,149 @@ export function ProfileRow({ profile, methods }: { profile: ExistingProfile, met
     });
   };
 
+  const handleApprove = () => {
+    if (!data) return;
+    setApprovalStatus('approving');
+    setApprovalError(null);
+
+    const suggestions = data.profiles.map(p => ({
+        platform: p.platform,
+        handle: extractSuggestedHandle(p),
+        accountUrl: p.url,
+        sourceVendors: p.methods,
+        confidence: p.confidence,
+        estimatedCostUsd: data.estimatedCostUsd / (data.profiles.length || 1),
+        sourceDetails: JSON.stringify({ signals: p.signals, methodsUsed: data.methodsUsed.map(m => m.method) })
+    }));
+
+    approveMutation.mutate({
+        profileId: profile.profileId,
+        data: {
+            profileName: profile.profileName,
+            suggestions
+        }
+    }, {
+        onSuccess: () => {
+            setApprovalStatus('approved');
+        },
+        onError: (err: unknown) => {
+            setApprovalStatus('idle');
+            setApprovalError(getApiErrorMessage(err));
+        }
+    });
+  };
+
   const hasData = !!data;
+  
+  const bestIg = getBestCandidate(data, 'instagram');
+  const bestTt = getBestCandidate(data, 'tiktok');
+  const bestYt = getBestCandidate(data, 'youtube');
 
   return (
     <>
       <TableRow className={cn("group transition-colors", isPending && "bg-primary/5", isExpanded && "bg-muted/30")}>
-        <TableCell className="font-mono text-xs text-muted-foreground py-3 opacity-60 group-hover:opacity-100 transition-opacity">
+        <TableCell className="font-mono text-xs text-muted-foreground py-3 opacity-60 group-hover:opacity-100 transition-opacity align-top">
           {profile.profileId}
         </TableCell>
-        <TableCell className="py-3">
+        <TableCell className="py-3 align-top">
           <div className="font-semibold text-foreground">{profile.profileName}</div>
-          <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mt-0.5 opacity-70">
-            {profile.profileTypes || 'Unknown'}
+          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+            <Badge variant="outline" className="h-4 px-1.5 text-[8px] uppercase tracking-widest font-bold">
+              Tier {profile.tier}
+            </Badge>
+            <span className="text-[9px] text-muted-foreground font-mono">
+              Rank #{profile.tierRank.toLocaleString()}
+            </span>
           </div>
+          <div className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold mt-1.5 opacity-70">
+            IG {profile.instagramFollowers === null
+              ? 'followers unavailable'
+              : `${new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(profile.instagramFollowers)} followers`}
+          </div>
+          
+          {isError && (
+             <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20 cursor-pointer hover:bg-destructive/20 transition-colors shadow-sm text-[9px] uppercase tracking-widest font-bold mt-2" onClick={() => setIsExpanded(!isExpanded)}>
+               Fetch Failed
+             </Badge>
+          )}
         </TableCell>
-        <TableCell className="py-3">
-           {profile.handle ? (
-             <div className="flex items-center gap-1.5 bg-background border border-border/50 rounded px-2 py-1 w-fit shadow-sm">
-               <AtSign className="w-3.5 h-3.5 text-muted-foreground opacity-50" />
-               <span className="font-mono text-xs font-medium">{profile.handle}</span>
-             </div>
+        <TableCell className="py-3 align-top">
+           {sortedAccounts.length === 0 ? (
+             <span className="text-muted-foreground/40 italic text-xs font-medium">None</span>
            ) : (
-             <span className="text-muted-foreground/50 italic text-xs font-medium">None available</span>
+             <div className="flex flex-col gap-1.5">
+               {accountsToShow.map((acc, i) => (
+                  <div key={i} className="flex flex-col gap-0.5 bg-muted/20 border border-border/50 p-1.5 rounded-md shadow-sm">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-primary/80">{acc.platform}</span>
+                      <span className="text-xs font-mono text-foreground/90 truncate">{acc.handle}</span>
+                    </div>
+                    {acc.source && (
+                       <span className="text-[8px] uppercase tracking-widest text-muted-foreground/60 font-bold">via {acc.source}</span>
+                    )}
+                  </div>
+               ))}
+               {!showAllAccounts && hiddenCount > 0 && (
+                  <button onClick={() => setShowAllAccounts(true)} className="text-[9px] text-primary/70 hover:text-primary text-left font-bold uppercase tracking-widest pt-1 transition-colors">
+                     + {hiddenCount} more
+                  </button>
+               )}
+             </div>
            )}
         </TableCell>
-        <TableCell className="py-3">
-          <div className="flex items-center gap-2">
-            {!hasData && !isPending && !isError && (
-               <Badge variant="secondary" className="text-muted-foreground/70 font-bold bg-secondary/30 shadow-none border-border/40 text-[10px] uppercase tracking-widest">
-                 Idle
-               </Badge>
-            )}
-            {isPending && (
-               <Badge variant="outline" className="border-primary/20 text-primary bg-primary/5 flex gap-1.5 items-center px-2 py-0.5 text-[10px] uppercase tracking-widest font-bold shadow-sm">
-                 <Loader2 className="w-3 h-3 animate-spin" /> Enriching
-               </Badge>
-            )}
-            {hasData && (
-               <Badge 
-                 className="bg-emerald-600/10 text-emerald-700 hover:bg-emerald-600/20 border-emerald-600/20 cursor-pointer transition-colors shadow-sm text-[10px] uppercase tracking-widest font-bold" 
-                 onClick={() => setIsExpanded(!isExpanded)}
-               >
-                 {data.profiles.length} Found
-               </Badge>
-            )}
-            {isError && (
-               <Badge 
-                 variant="destructive" 
-                 className="bg-destructive/10 text-destructive border-destructive/20 cursor-pointer hover:bg-destructive/20 transition-colors shadow-sm text-[10px] uppercase tracking-widest font-bold" 
-                 onClick={() => setIsExpanded(!isExpanded)}
-               >
-                 Failed
-               </Badge>
-            )}
-          </div>
+        <TableCell className="align-top py-3">
+          {renderCandidate(bestIg, isPending, data)}
         </TableCell>
-        <TableCell className="text-right py-3">
-          <div className="flex items-center justify-end gap-2">
+        <TableCell className="align-top py-3">
+          {renderCandidate(bestTt, isPending, data)}
+        </TableCell>
+        <TableCell className="align-top py-3">
+          {renderCandidate(bestYt, isPending, data)}
+        </TableCell>
+        <TableCell className="text-right py-3 align-top">
+          <div className="flex flex-col items-end gap-2 w-full">
+            <div className="flex items-center justify-end gap-1 w-full">
+              {hasData && (
+                <Button variant="ghost" size="icon" onClick={() => setIsExpanded(!isExpanded)} className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted shadow-sm border border-transparent hover:border-border">
+                  {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </Button>
+              )}
+              <Button 
+                onClick={handleFetch} 
+                disabled={isPending || methods.length === 0}
+                size="sm"
+                className={cn("h-7 px-3 text-[9px] font-bold uppercase tracking-wider w-full shadow-sm transition-all flex-1", hasData ? "bg-background border border-border text-foreground hover:bg-muted" : "")}
+                variant={hasData ? "secondary" : "default"}
+              >
+                {isPending ? "Running..." : hasData ? "Refetch" : "Fetch Preview"}
+              </Button>
+            </div>
+            
             {hasData && (
-              <Button variant="ghost" size="icon" onClick={() => setIsExpanded(!isExpanded)} className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-background shadow-sm border border-transparent hover:border-border">
-                {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              <Button 
+                onClick={handleApprove}
+                disabled={approvalStatus === 'approving' || approvalStatus === 'approved'}
+                size="sm"
+                className={cn("h-7 px-3 text-[9px] font-bold uppercase tracking-wider w-full shadow-sm transition-all", approvalStatus === 'approved' ? "bg-emerald-600/10 text-emerald-700 hover:bg-emerald-600/10 border border-emerald-600/20" : "")}
+                variant={approvalStatus === 'approved' ? "outline" : "default"}
+              >
+                {approvalStatus === 'approving' ? <Loader2 className="w-3 h-3 animate-spin mr-1.5" /> : null}
+                {approvalStatus === 'approved' ? <><Check className="w-3 h-3 mr-1.5" /> Approved</> : "Approve All"}
               </Button>
             )}
-            <Button 
-              onClick={handleFetch} 
-              disabled={isPending || methods.length === 0}
-              size="sm"
-              className={cn("h-8 px-4 text-xs font-bold uppercase tracking-wider shadow-sm transition-all", hasData ? "bg-background border border-border text-foreground hover:bg-muted" : "")}
-              variant={hasData ? "secondary" : "default"}
-            >
-              {isPending ? "Running..." : hasData ? "Refetch" : "Fetch"}
-            </Button>
+            
+            {approvalError && (
+              <div className="text-[9px] text-destructive bg-destructive/10 border border-destructive/20 p-1.5 rounded-md w-full text-center font-semibold leading-tight shadow-sm mt-1">
+                {approvalError}
+              </div>
+            )}
           </div>
         </TableCell>
       </TableRow>
       
       {isExpanded && (
         <TableRow className="bg-muted/10 hover:bg-muted/10">
-          <TableCell colSpan={5} className="p-0 border-b-2 border-border/80">
+          <TableCell colSpan={7} className="p-0 border-b-2 border-border/80">
              <div className="p-5 border-l-[3px] border-primary ml-0 my-0 bg-card shadow-inner">
                 <ExpandedResult data={data} error={error} />
              </div>
@@ -148,31 +308,45 @@ function ExpandedResult({ data, error }: { data?: ProfileSearchResponse, error?:
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
       {/* Stats Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 text-sm bg-muted/40 p-3 rounded-lg border border-border/60 shadow-sm">
-        <div className="flex flex-wrap items-center gap-6">
-           <div className="flex flex-col gap-1.5">
-             <span className="text-muted-foreground text-[9px] uppercase font-bold tracking-widest">Methods Used</span>
-             <div className="flex flex-wrap gap-1.5">
-               {data.methodsUsed.map(m => (
-                 <Badge key={m.method} variant={m.status === 'used' ? "secondary" : "outline"} className={cn("text-[9px] px-1.5 py-0 bg-background border-border/50", m.status !== 'used' && "opacity-50")}>
-                   {m.method}
-                 </Badge>
-               ))}
+      <div className="flex flex-col gap-4 bg-muted/20 p-4 rounded-lg border border-border/60 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4 text-sm border-b border-border/50 pb-3">
+          <div className="flex flex-wrap items-center gap-6">
+             <div className="flex flex-col gap-1">
+               <span className="text-muted-foreground text-[9px] uppercase font-bold tracking-widest">Total Run Cost</span>
+               <span className="font-mono text-xs font-semibold text-foreground bg-background px-2 py-0.5 border border-border/50 rounded shadow-sm w-fit">${data.estimatedCostUsd.toFixed(4)}</span>
              </div>
-           </div>
-           <div className="h-8 w-px bg-border/50 hidden sm:block" />
-           <div className="flex flex-col gap-1.5">
-             <span className="text-muted-foreground text-[9px] uppercase font-bold tracking-widest">Est. Cost</span>
-             <span className="font-mono text-xs font-semibold text-foreground bg-background px-2 py-0.5 border border-border/50 rounded w-fit">${data.estimatedCostUsd.toFixed(4)}</span>
-           </div>
-           <div className="h-8 w-px bg-border/50 hidden sm:block" />
-           <div className="flex flex-col gap-1.5">
-             <span className="text-muted-foreground text-[9px] uppercase font-bold tracking-widest">Highly Confident</span>
-             <span className="font-mono text-xs font-bold text-emerald-600 bg-emerald-600/10 px-2 py-0.5 border border-emerald-600/20 rounded w-fit">{data.highConfidenceCount}</span>
-           </div>
+             <div className="h-8 w-px bg-border/50 hidden sm:block" />
+             <div className="flex flex-col gap-1">
+               <span className="text-muted-foreground text-[9px] uppercase font-bold tracking-widest">Highly Confident</span>
+               <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-600/10 px-2 py-0.5 border border-emerald-600/20 rounded shadow-sm w-fit">{data.highConfidenceCount}</span>
+             </div>
+          </div>
+          <div className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground/60">
+            {new Date(data.searchedAt).toLocaleTimeString()}
+          </div>
         </div>
-        <div className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground/60">
-          {new Date(data.searchedAt).toLocaleTimeString()}
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+           {data.methodsUsed.map(m => (
+              <div key={m.method} className="bg-background p-3 rounded-md border border-border/60 shadow-sm flex flex-col gap-1.5 relative overflow-hidden">
+                 {m.status === 'used' && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/40" />}
+                 {m.status === 'failed' && <div className="absolute left-0 top-0 bottom-0 w-1 bg-destructive/40" />}
+                 
+                 <div className="flex justify-between items-start gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-widest leading-tight">{m.label || m.method}</span>
+                    <Badge variant={m.status === 'used' ? "secondary" : m.status === 'failed' ? "destructive" : "outline"} className="text-[8px] px-1 py-0 h-4 uppercase shadow-none font-bold">
+                      {m.status}
+                    </Badge>
+                 </div>
+                 
+                 {m.estimatedCostUsd > 0 && (
+                   <div className="text-[10px] font-mono font-bold text-foreground/80">${m.estimatedCostUsd.toFixed(4)}</div>
+                 )}
+                 {m.costNote && (
+                   <div className="text-[9px] text-muted-foreground/80 leading-snug mt-auto pt-1">{m.costNote}</div>
+                 )}
+              </div>
+           ))}
         </div>
       </div>
 

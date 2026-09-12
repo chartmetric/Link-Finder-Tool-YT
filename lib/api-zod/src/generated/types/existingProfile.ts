@@ -5,11 +5,15 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ExistingProfileAccount } from './existingProfileAccount';
 
 export interface ExistingProfile {
   profileId: number;
   profileName: string;
   profileTypes: string;
-  accountUrl: string;
-  handle: string;
+  tier: number;
+  tierRank: number;
+  /** @nullable */
+  instagramFollowers: number | null;
+  accounts: ExistingProfileAccount[];
 }
