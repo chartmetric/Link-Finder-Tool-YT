@@ -55,6 +55,12 @@ paths:
       tags: [profile-search]
       summary: List musicians with their existing linked accounts
       parameters:
+        - name: profileType
+          in: query
+          schema:
+            type: string
+            enum: [musician, brand, creator, actor]
+            default: musician
         - name: query
           in: query
           schema:

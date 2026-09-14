@@ -93,6 +93,7 @@ export const SearchProfilesResponse = zod.object({
 /**
  * @summary List musicians with their existing linked accounts
  */
+export const listExistingProfilesQueryProfileTypeDefault = `musician`;
 export const listExistingProfilesQueryQueryMax = 120;
 
 export const listExistingProfilesQueryPageDefault = 1;
@@ -106,6 +107,7 @@ export const listExistingProfilesQuerySortByDefault = `tier_rank`;
 export const listExistingProfilesQuerySortDirectionDefault = `asc`;
 
 export const ListExistingProfilesQueryParams = zod.object({
+  "profileType": zod.enum(['musician', 'brand', 'creator', 'actor']).default(listExistingProfilesQueryProfileTypeDefault),
   "query": zod.coerce.string().max(listExistingProfilesQueryQueryMax).optional(),
   "page": zod.coerce.number().int().min(1).default(listExistingProfilesQueryPageDefault),
   "limit": zod.coerce.number().int().min(1).max(listExistingProfilesQueryLimitMax).default(listExistingProfilesQueryLimitDefault),

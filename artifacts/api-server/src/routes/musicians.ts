@@ -24,6 +24,7 @@ router.get("/profiles", async (req, res): Promise<void> => {
   }
 
   const query = input.data.query ?? "";
+  const profileType = input.data.profileType ?? "musician";
   const page = input.data.page ?? 1;
   const limit = input.data.limit ?? 25;
   const tier = input.data.tier;
@@ -33,6 +34,7 @@ router.get("/profiles", async (req, res): Promise<void> => {
   try {
     const result = await listExistingProfiles({
       query,
+      profileType,
       page,
       limit,
       tier,

@@ -14,7 +14,14 @@ import { TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, ChevronDown, ChevronUp, AlertCircle, Hash, ArrowRight, Copy, Check } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Loader2, AlertCircle, Hash, ArrowRight, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function getBestCandidate(data: ProfileSearchResponse | undefined, platform: string) {
@@ -87,7 +94,7 @@ export function ProfileRow({ profile, methods }: { profile: ExistingProfile, met
   });
   const approveMutation = useApproveProfileSuggestions();
   
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [showAllAccounts, setShowAllAccounts] = useState(false);
   
   const [approvalStatus, setApprovalStatus] = useState<'idle'|'approving'|'approved'>('idle');
@@ -127,10 +134,10 @@ export function ProfileRow({ profile, methods }: { profile: ExistingProfile, met
       }
     }, {
       onSuccess: () => {
-        setIsExpanded(true);
+        setDetailsOpen(true);
       },
       onError: () => {
-        setIsExpanded(true);
+        setDetailsOpen(true);
       }
     });
   };
@@ -175,7 +182,7 @@ export function ProfileRow({ profile, methods }: { profile: ExistingProfile, met
 
   return (
     <>
-      <TableRow className={cn("group transition-colors", isPending && "bg-primary/5", isExpanded && "bg-muted/30")}>
+      <TableRow className={cn("group transition-colors", isPending && "bg-primary/5")}>
         <TableCell className="py-3 align-top">
           <div className="flex flex-col items-start gap-2 w-full">
             <div className="flex items-center gap-1 w-full">
@@ -189,8 +196,8 @@ export function ProfileRow({ profile, methods }: { profile: ExistingProfile, met
                 {isPending ? "Running..." : hasData ? "Refetch" : "Fetch Preview"}
               </Button>
               {hasData && (
-                <Button variant="ghost" size="icon" onClick={() => setIsExpanded(!isExpanded)} className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted shadow-sm border border-transparent hover:border-border">
-                  {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                <Button variant="outline" size="sm" onClick={() => setDetailsOpen(true)} className="h-7 px-2 text-[8px] uppercase tracking-wider font-bold shrink-0">
+                  Full details
                 </Button>
               )}
             </div>
@@ -230,7 +237,7 @@ export function ProfileRow({ profile, methods }: { profile: ExistingProfile, met
           </div>
           
           {isError && (
-             <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20 cursor-pointer hover:bg-destructive/20 transition-colors shadow-sm text-[9px] uppercase tracking-widest font-bold mt-2" onClick={() => setIsExpanded(!isExpanded)}>
+             <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20 cursor-pointer hover:bg-destructive/20 transition-colors shadow-sm text-[9px] uppercase tracking-widest font-bold mt-2" onClick={() => setDetailsOpen(true)}>
                Fetch Failed
              </Badge>
           )}
@@ -270,15 +277,19 @@ export function ProfileRow({ profile, methods }: { profile: ExistingProfile, met
         </TableCell>
       </TableRow>
       
-      {isExpanded && (
-        <TableRow className="bg-muted/10 hover:bg-muted/10">
-          <TableCell colSpan={6} className="p-0 border-b-2 border-border/80">
-             <div className="p-5 border-l-[3px] border-primary ml-0 my-0 bg-card shadow-inner">
-                <ExpandedResult data={data} error={error} />
-             </div>
-          </TableCell>
-        </TableRow>
-      )}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-w-[min(96vw,1400px)] h-[88vh] flex flex-col p-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-5 pb-4 border-b border-border">
+            <DialogTitle>{profile.profileName} · Full discovery details</DialogTitle>
+            <DialogDescription>
+              Results are grouped by method with status, elapsed time, and estimated cost.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto p-6">
+            <ExpandedResult data={data} error={error} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

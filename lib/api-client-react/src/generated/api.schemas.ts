@@ -180,6 +180,7 @@ export interface ProfileSearchResponse {
 }
 
 export type ListExistingProfilesParams = {
+profileType?: ListExistingProfilesProfileType;
 /**
  * @maxLength 120
  */
@@ -201,6 +202,16 @@ tier?: number;
 sortBy?: ListExistingProfilesSortBy;
 sortDirection?: ListExistingProfilesSortDirection;
 };
+
+export type ListExistingProfilesProfileType = typeof ListExistingProfilesProfileType[keyof typeof ListExistingProfilesProfileType];
+
+
+export const ListExistingProfilesProfileType = {
+  musician: 'musician',
+  brand: 'brand',
+  creator: 'creator',
+  actor: 'actor',
+} as const;
 
 export type ListExistingProfilesSortBy = typeof ListExistingProfilesSortBy[keyof typeof ListExistingProfilesSortBy];
 

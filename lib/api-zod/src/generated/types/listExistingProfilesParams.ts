@@ -5,10 +5,12 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ListExistingProfilesProfileType } from './listExistingProfilesProfileType';
 import type { ListExistingProfilesSortBy } from './listExistingProfilesSortBy';
 import type { ListExistingProfilesSortDirection } from './listExistingProfilesSortDirection';
 
 export type ListExistingProfilesParams = {
+profileType?: ListExistingProfilesProfileType;
 /**
  * @maxLength 120
  */

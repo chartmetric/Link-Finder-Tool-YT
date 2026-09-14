@@ -108,6 +108,7 @@ async function clickHouseJson<T>(
 
 export async function listExistingProfiles(input: {
   query: string;
+  profileType: "musician" | "brand" | "creator" | "actor";
   page: number;
   limit: number;
   tier?: number;
@@ -125,18 +126,17 @@ export async function listExistingProfiles(input: {
     SELECT
       p.id AS profile_id,
       any(p.name) AS profile_name,
-      arrayStringConcat(groupUniqArray(p.profile_type), ', ') AS profile_types,
+      any(pt.profile_type) AS profile_types,
       any(pt.tier) AS tier,
       any(pt.tier_rank) AS tier_rank
     FROM new_vertical.profile p
     INNER JOIN new_vertical.l_profile_tier pt
       ON p.id = pt.profile
-      AND pt.profile_type = 'musician'
+      AND pt.profile_type = '${input.profileType}'
       AND pt.grain = 'global'
     JOIN new_vertical.l_profile_account lpa ON p.id = lpa.profile_id
     JOIN new_vertical.account a ON lpa.account_id = a.id
-    WHERE p.profile_type = 'musician'
-      AND a.platform = 'instagram'
+    WHERE a.platform = 'instagram'
       AND a.account_url IS NOT NULL
       ${input.tier ? `AND pt.tier = ${input.tier}` : "AND pt.tier BETWEEN 1 AND 5"}
       ${input.query.trim() ? `AND (

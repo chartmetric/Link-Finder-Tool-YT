@@ -21,6 +21,7 @@ export default function Home() {
   const [page, setPage] = useState(1);
   const limit = 50;
   const [tier, setTier] = useState<number | undefined>(3);
+  const [profileType, setProfileType] = useState<'musician' | 'brand' | 'creator' | 'actor'>('musician');
   const [sortBy, setSortBy] = useState<'tier_rank' | 'name'>('tier_rank');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -29,7 +30,7 @@ export default function Home() {
   ]);
 
   const { data, isLoading, isError, error, isFetching } = useListExistingProfiles(
-    { query: debouncedQuery, page, limit, tier, sortBy, sortDirection },
+    { query: debouncedQuery, page, limit, tier, profileType, sortBy, sortDirection },
     {
       query: {
         queryKey: getListExistingProfilesQueryKey({
@@ -37,6 +38,7 @@ export default function Home() {
           page,
           limit,
           tier,
+          profileType,
           sortBy,
           sortDirection,
         }),
@@ -47,7 +49,7 @@ export default function Home() {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedQuery, tier, sortBy, sortDirection]);
+  }, [debouncedQuery, tier, profileType, sortBy, sortDirection]);
 
   const toggleMethod = (method: ProfileSearchInputMethodsItem) => {
     setMethods(prev => {
@@ -73,7 +75,7 @@ export default function Home() {
               Find Social Links
             </h1>
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mt-1.5 opacity-80">
-               Musician Catalog · Human Review
+               Profile Catalog · Human Review
             </p>
           </div>
         </div>
@@ -113,7 +115,18 @@ export default function Home() {
            <div className="flex flex-wrap items-center gap-2 px-2">
              <SlidersHorizontal className="w-3.5 h-3.5 text-muted-foreground hidden sm:block" />
              <select
-               aria-label="Filter by musician tier"
+               aria-label="Filter by profile type"
+               value={profileType}
+               onChange={(event) => setProfileType(event.target.value as 'musician' | 'brand' | 'creator' | 'actor')}
+               className="h-9 rounded-md border border-border bg-background px-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-ring"
+             >
+               <option value="musician">Musicians</option>
+               <option value="brand">Brands</option>
+               <option value="creator">Creators</option>
+               <option value="actor">Actors</option>
+             </select>
+             <select
+               aria-label="Filter by tier"
                value={tier ?? ''}
                onChange={(event) => setTier(event.target.value ? Number(event.target.value) : undefined)}
                className="h-9 rounded-md border border-border bg-background px-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-ring"

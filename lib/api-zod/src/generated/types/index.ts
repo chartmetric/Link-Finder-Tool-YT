@@ -11,6 +11,7 @@ export * from './existingProfileAccount';
 export * from './existingProfilePage';
 export * from './healthStatus';
 export * from './listExistingProfilesParams';
+export * from './listExistingProfilesProfileType';
 export * from './listExistingProfilesSortBy';
 export * from './listExistingProfilesSortDirection';
 export * from './profileMatch';
