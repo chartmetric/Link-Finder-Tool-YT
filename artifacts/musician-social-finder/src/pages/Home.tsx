@@ -20,7 +20,7 @@ export default function Home() {
   const debouncedQuery = useDebounce(query, 400);
   const [page, setPage] = useState(1);
   const limit = 50;
-  const [tier, setTier] = useState<number | undefined>(undefined);
+  const [tier, setTier] = useState<number | undefined>(3);
   const [sortBy, setSortBy] = useState<'tier_rank' | 'name'>('tier_rank');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
