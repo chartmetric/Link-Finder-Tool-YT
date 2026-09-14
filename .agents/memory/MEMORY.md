@@ -1,1 +1,2 @@
 - [Musician catalog ranking](musician-catalog-ranking.md) — use precomputed tier rank for interactive ordering; fetch Instagram followers only for the visible page.
+- [Partial enrichment results](partial-enrichment-results.md) — never let one slow discovery or verification provider discard completed provider results.

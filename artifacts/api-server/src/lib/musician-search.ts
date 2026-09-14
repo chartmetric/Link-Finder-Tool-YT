@@ -137,22 +137,29 @@ async function verifyWithOnlineModel(input: {
     },
     body: JSON.stringify({
       model: input.model,
-      max_tokens: 8192,
+      max_tokens: 700,
       temperature: 0,
-      tools: [{
-        type: "openrouter:web_search",
-        parameters: {
-          engine: "exa",
-          mode: "auto",
-          max_uses: 1,
-          max_total_results: 10,
-        },
-      }],
+      ...(input.method === "deepseek"
+        ? { response_format: { type: "json_object" } }
+        : {}),
+      ...(input.method === "gemini"
+        ? {
+            tools: [{
+              type: "openrouter:web_search",
+              parameters: {
+                engine: "exa",
+                mode: "auto",
+                max_uses: 1,
+                max_total_results: 10,
+              },
+            }],
+          }
+        : {}),
       messages: [
         {
           role: "system",
           content:
-            `You are the ${input.method === "gemini" ? "Gemini" : "DeepSeek"} independent verifier for public profiles. Use live web research. Return only valid JSON. Never invent URLs.`,
+            `You are the ${input.method === "gemini" ? "Gemini live-web" : "DeepSeek independent"} verifier for public profiles. ${input.method === "gemini" ? "Use live web research." : "Assess the supplied search evidence independently."} Return only valid JSON. Never invent URLs.`,
         },
         {
           role: "user",
@@ -160,8 +167,8 @@ async function verifyWithOnlineModel(input: {
             task:
               "For each candidate, decide whether it belongs to the named subject. The subject may be a person, creator, athlete, team, company, or brand. Use current online evidence. If the official Instagram, TikTok, or YouTube profile is missing from the candidates, add its correct URL. Return {profiles:[{platform,url,title,verdict,reason}]}; verdict must be official, likely, uncertain, or unrelated.",
             subject: input.subject,
-            candidates: input.profiles
-              .slice(0, input.method === "deepseek" ? 8 : 15)
+            candidates: [...new Map(input.profiles.map((profile) => [profile.url, profile])).values()]
+              .slice(0, 6)
               .map(({ url, title, snippet, platform }) => ({
               url,
               title,
@@ -172,7 +179,7 @@ async function verifyWithOnlineModel(input: {
         },
       ],
     }),
-    signal: AbortSignal.timeout(input.method === "deepseek" ? 75_000 : 25_000),
+      signal: AbortSignal.timeout(20_000),
   });
 
   if (!response.ok) {
@@ -257,7 +264,7 @@ async function discoverWithGeminiOnline(input: {
     headers: { Authorization: `Bearer ${input.apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "google/gemini-3.5-flash",
-      max_tokens: 8192,
+      max_tokens: 1200,
       temperature: 0,
       tools: [{
         type: "openrouter:web_search",
@@ -268,7 +275,7 @@ async function discoverWithGeminiOnline(input: {
         content: `Use live web search to find the official Instagram, TikTok, and YouTube profile URLs for ${input.subject}${input.location ? ` in ${input.location}` : ""}. Return only JSON: {"profiles":[{"platform":"Instagram|TikTok|YouTube","url":"https://...","title":"...","snippet":"evidence","confidence":0-100}]}. Omit platforms you cannot verify.`,
       }],
     }),
-    signal: AbortSignal.timeout(25_000),
+    signal: AbortSignal.timeout(20_000),
   });
   if (!response.ok) throw new Error(`OpenRouter discovery failed (${response.status})`);
   const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
@@ -331,7 +338,7 @@ export async function findProfiles(input: {
     serper: { label: "Serper", estimatedCostUsd: 0.003, costNote: "3 queries at roughly $1 per 1,000 queries" },
     tavily: { label: "Tavily", estimatedCostUsd: 0.024, costNote: "3 basic searches at roughly $0.008 per credit" },
     gemini: { label: "Gemini Verification", estimatedCostUsd: 0.01, costNote: "Automatic separate verification pass; web search and token charges vary" },
-    deepseek: { label: "DeepSeek Verification", estimatedCostUsd: 0.008, costNote: "Automatic independent pass using V4 Flash 0731, capped Exa search, and token usage" },
+    deepseek: { label: "DeepSeek Verification", estimatedCostUsd: 0.008, costNote: "Automatic independent candidate review using V4.1 Flash and token usage" },
     scrapecreators: { label: "ScrapeCreators", estimatedCostUsd: 0, costNote: "0 cached or 10 live credits; dollar cost depends on your credit pack" },
     socialcrawl: { label: "SocialCrawl", estimatedCostUsd: 0, costNote: "3 credits for Instagram, TikTok, and YouTube searches; dollar cost depends on your credit pack" },
   } as const;
@@ -374,7 +381,7 @@ export async function findProfiles(input: {
       });
       const response = await fetch(`https://api.scrapecreators.com/v1/find-social-profiles?${params}`, {
         headers: { "x-api-key": input.scrapeCreatorsApiKey },
-        signal: AbortSignal.timeout(45_000),
+        signal: AbortSignal.timeout(25_000),
       });
       if (!response.ok) throw new Error(`ScrapeCreators failed (${response.status})`);
       const data = (await response.json()) as {
@@ -424,7 +431,7 @@ export async function findProfiles(input: {
         const params = new URLSearchParams({ query: subject });
         const response = await fetch(`https://www.socialcrawl.dev/v1${path}?${params}`, {
           headers: { "x-api-key": input.socialCrawlApiKey! },
-          signal: AbortSignal.timeout(35_000),
+          signal: AbortSignal.timeout(25_000),
         });
         if (!response.ok) throw new Error(`SocialCrawl ${platform} failed (${response.status})`);
         const data = (await response.json()) as {
@@ -570,31 +577,62 @@ export async function findProfiles(input: {
         all.filter((item) => item.platform === profile.platform).indexOf(profile) < 5,
     );
 
-  if (input.openrouterApiKey && profiles.length > 0) {
+  const baseProfiles = profiles;
+  const runVerifier = async (
+    method: "gemini" | "deepseek",
+    model: string,
+  ): Promise<ProfileMatch[]> => {
     const startedAt = performance.now();
-    try {
-      profiles = await verifyWithOnlineModel({
-        subject,
-        profiles,
-        apiKey: input.openrouterApiKey,
-        method: "gemini",
-        model: "google/gemini-3.5-flash",
-      });
-      verifierResults.set("gemini", profiles.filter((profile) => profile.methods.includes("gemini")));
-      statuses.set("gemini", "used");
-    } catch {
-      statuses.set("gemini", "failed");
-    } finally {
-      durations.set("gemini", Math.round(performance.now() - startedAt));
+    if (!input.openrouterApiKey || baseProfiles.length === 0) {
+      statuses.set(method, "unavailable");
+      durations.set(method, 0);
+      return [];
     }
+
+    try {
+      const verified = await Promise.race([
+        verifyWithOnlineModel({
+          subject,
+          profiles: baseProfiles,
+          apiKey: input.openrouterApiKey,
+          method,
+          model,
+        }),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error(`${method.toUpperCase()}_TIMEOUT`)), 20_000);
+        }),
+      ]);
+      const results = verified.filter((profile) => profile.methods.includes(method));
+      verifierResults.set(method, results);
+      statuses.set(method, "used");
+      return results;
+    } catch {
+      statuses.set(method, "failed");
+      return [];
+    } finally {
+      durations.set(method, Math.round(performance.now() - startedAt));
+    }
+  };
+
+  if (baseProfiles.length > 0) {
+    const [geminiVerified, deepseekVerified] = await Promise.all([
+      runVerifier("gemini", "google/gemini-3.5-flash-lite"),
+      runVerifier("deepseek", "deepseek/deepseek-v4.1-flash"),
+    ]);
+    profiles = [...baseProfiles, ...geminiVerified, ...deepseekVerified];
   } else if (selected.includes("gemini") && input.openrouterApiKey) {
     const startedAt = performance.now();
     try {
-      profiles = await discoverWithGeminiOnline({
-        subject,
-        location: input.location,
-        apiKey: input.openrouterApiKey,
-      });
+      profiles = await Promise.race([
+        discoverWithGeminiOnline({
+          subject,
+          location: input.location,
+          apiKey: input.openrouterApiKey,
+        }),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error("GEMINI_TIMEOUT")), 20_000);
+        }),
+      ]);
       verifierResults.set("gemini", profiles);
       statuses.set("gemini", "used");
     } catch {
@@ -602,29 +640,11 @@ export async function findProfiles(input: {
     } finally {
       durations.set("gemini", Math.round(performance.now() - startedAt));
     }
+    statuses.set("deepseek", "unavailable");
+    durations.set("deepseek", 0);
   } else {
     statuses.set("gemini", "unavailable");
     durations.set("gemini", 0);
-  }
-
-  if (input.openrouterApiKey && profiles.length > 0) {
-    const startedAt = performance.now();
-    try {
-      profiles = await verifyWithOnlineModel({
-        subject,
-        profiles,
-        apiKey: input.openrouterApiKey,
-        method: "deepseek",
-        model: "deepseek/deepseek-v4-flash-0731",
-      });
-      verifierResults.set("deepseek", profiles.filter((profile) => profile.methods.includes("deepseek")));
-      statuses.set("deepseek", "used");
-    } catch {
-      statuses.set("deepseek", "failed");
-    } finally {
-      durations.set("deepseek", Math.round(performance.now() - startedAt));
-    }
-  } else {
     statuses.set("deepseek", "unavailable");
     durations.set("deepseek", 0);
   }
