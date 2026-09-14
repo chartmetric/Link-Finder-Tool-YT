@@ -337,6 +337,8 @@ export async function findProfiles(input: {
   } as const;
   const methodKeys = ["serper", "tavily", "gemini", "deepseek", "scrapecreators", "socialcrawl"] as const;
   const statuses = new Map<string, "used" | "unavailable" | "failed">();
+  const durations = new Map<string, number>();
+  const verifierResults = new Map<string, ProfileMatch[]>();
   let scrapeCreatorsCreditsCharged: number | undefined;
   let socialCrawlCreditsCharged: number | undefined;
   const organic: Array<SerperOrganicResult & { method: string }> = [];
@@ -345,18 +347,23 @@ export async function findProfiles(input: {
     method: string,
     runner: (query: string) => Promise<SerperOrganicResult[]>,
   ) => {
+    const startedAt = performance.now();
     try {
       const results = await Promise.all(queries.map(runner));
       organic.push(...results.flat().map((result) => ({ ...result, method })));
       statuses.set(method, "used");
     } catch {
       statuses.set(method, "failed");
+    } finally {
+      durations.set(method, Math.round(performance.now() - startedAt));
     }
   };
 
   const runScrapeCreators = async () => {
+    const startedAt = performance.now();
     if (!input.scrapeCreatorsApiKey || !cleanHandle || !input.handlePlatform) {
       statuses.set("scrapecreators", "unavailable");
+      durations.set("scrapecreators", 0);
       return;
     }
     try {
@@ -395,12 +402,16 @@ export async function findProfiles(input: {
       statuses.set("scrapecreators", "used");
     } catch {
       statuses.set("scrapecreators", "failed");
+    } finally {
+      durations.set("scrapecreators", Math.round(performance.now() - startedAt));
     }
   };
 
   const runSocialCrawl = async () => {
+    const startedAt = performance.now();
     if (!input.socialCrawlApiKey) {
       statuses.set("socialcrawl", "unavailable");
+      durations.set("socialcrawl", 0);
       return;
     }
     const endpoints = [
@@ -475,6 +486,8 @@ export async function findProfiles(input: {
       statuses.set("socialcrawl", "used");
     } catch {
       statuses.set("socialcrawl", "failed");
+    } finally {
+      durations.set("socialcrawl", Math.round(performance.now() - startedAt));
     }
   };
 
@@ -558,6 +571,7 @@ export async function findProfiles(input: {
     );
 
   if (input.openrouterApiKey && profiles.length > 0) {
+    const startedAt = performance.now();
     try {
       profiles = await verifyWithOnlineModel({
         subject,
@@ -566,26 +580,35 @@ export async function findProfiles(input: {
         method: "gemini",
         model: "google/gemini-3.5-flash",
       });
+      verifierResults.set("gemini", profiles.filter((profile) => profile.methods.includes("gemini")));
       statuses.set("gemini", "used");
     } catch {
       statuses.set("gemini", "failed");
+    } finally {
+      durations.set("gemini", Math.round(performance.now() - startedAt));
     }
   } else if (selected.includes("gemini") && input.openrouterApiKey) {
+    const startedAt = performance.now();
     try {
       profiles = await discoverWithGeminiOnline({
         subject,
         location: input.location,
         apiKey: input.openrouterApiKey,
       });
+      verifierResults.set("gemini", profiles);
       statuses.set("gemini", "used");
     } catch {
       statuses.set("gemini", "failed");
+    } finally {
+      durations.set("gemini", Math.round(performance.now() - startedAt));
     }
   } else {
     statuses.set("gemini", "unavailable");
+    durations.set("gemini", 0);
   }
 
   if (input.openrouterApiKey && profiles.length > 0) {
+    const startedAt = performance.now();
     try {
       profiles = await verifyWithOnlineModel({
         subject,
@@ -594,12 +617,16 @@ export async function findProfiles(input: {
         method: "deepseek",
         model: "deepseek/deepseek-v4-flash-0731",
       });
+      verifierResults.set("deepseek", profiles.filter((profile) => profile.methods.includes("deepseek")));
       statuses.set("deepseek", "used");
     } catch {
       statuses.set("deepseek", "failed");
+    } finally {
+      durations.set("deepseek", Math.round(performance.now() - startedAt));
     }
   } else {
     statuses.set("deepseek", "unavailable");
+    durations.set("deepseek", 0);
   }
 
   const merged = new Map<string, ProfileMatch>();
@@ -633,6 +660,21 @@ export async function findProfiles(input: {
         ? { costNote: `${socialCrawlCreditsCharged} credits charged for this request` }
         : {}),
       status: statuses.get(method) ?? "failed",
+      durationMs: durations.get(method) ?? 0,
+      results: method === "gemini" || method === "deepseek"
+        ? (verifierResults.get(method) ?? []).slice(0, 10).map((profile) => ({
+            title: profile.title,
+            url: profile.url,
+            snippet: profile.snippet,
+          }))
+        : organic
+            .filter((result) => result.method === method && result.link)
+            .slice(0, 10)
+            .map((result) => ({
+              title: result.title ?? "Untitled result",
+              url: result.link!,
+              snippet: result.snippet ?? "",
+            })),
     }));
 
   return {

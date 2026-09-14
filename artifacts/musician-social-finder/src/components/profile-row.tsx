@@ -327,9 +327,9 @@ function ExpandedResult({ data, error }: { data?: ProfileSearchResponse, error?:
           </div>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
            {data.methodsUsed.map(m => (
-              <div key={m.method} className="bg-background p-3 rounded-md border border-border/60 shadow-sm flex flex-col gap-1.5 relative overflow-hidden">
+              <div key={m.method} className="bg-background p-3 rounded-md border border-border/60 shadow-sm flex flex-col gap-3 relative overflow-hidden">
                  {m.status === 'used' && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/40" />}
                  {m.status === 'failed' && <div className="absolute left-0 top-0 bottom-0 w-1 bg-destructive/40" />}
                  
@@ -339,12 +339,46 @@ function ExpandedResult({ data, error }: { data?: ProfileSearchResponse, error?:
                       {m.status}
                     </Badge>
                  </div>
-                 
-                 {m.estimatedCostUsd > 0 && (
-                   <div className="text-[10px] font-mono font-bold text-foreground/80">${m.estimatedCostUsd.toFixed(4)}</div>
-                 )}
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded border border-border/50 bg-muted/20 px-2 py-1.5">
+                      <div className="text-[8px] uppercase tracking-widest text-muted-foreground font-bold">Time</div>
+                      <div className="text-[10px] font-mono font-bold mt-0.5">
+                        {m.durationMs >= 1000 ? `${(m.durationMs / 1000).toFixed(1)}s` : `${m.durationMs}ms`}
+                      </div>
+                    </div>
+                    <div className="rounded border border-border/50 bg-muted/20 px-2 py-1.5">
+                      <div className="text-[8px] uppercase tracking-widest text-muted-foreground font-bold">Cost</div>
+                      <div className="text-[10px] font-mono font-bold mt-0.5">${m.estimatedCostUsd.toFixed(4)}</div>
+                    </div>
+                    <div className="rounded border border-border/50 bg-muted/20 px-2 py-1.5">
+                      <div className="text-[8px] uppercase tracking-widest text-muted-foreground font-bold">Results</div>
+                      <div className="text-[10px] font-mono font-bold mt-0.5">{m.results.length}</div>
+                    </div>
+                  </div>
+
+                  {m.results.length > 0 ? (
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                      {m.results.map((result, index) => (
+                        <a
+                          key={`${result.url}-${index}`}
+                          href={result.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block rounded border border-border/50 bg-muted/10 p-2 hover:border-primary/40 hover:bg-primary/5 transition-colors"
+                        >
+                          <div className="text-[10px] font-semibold truncate">{result.title}</div>
+                          <div className="text-[9px] font-mono text-primary/80 truncate mt-0.5">{result.url}</div>
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-[9px] text-muted-foreground border border-dashed border-border/50 rounded p-2 text-center">
+                      No results returned
+                    </div>
+                  )}
                  {m.costNote && (
-                   <div className="text-[9px] text-muted-foreground/80 leading-snug mt-auto pt-1">{m.costNote}</div>
+                    <div className="text-[9px] text-muted-foreground/80 leading-snug mt-auto pt-1 border-t border-border/40">{m.costNote}</div>
                  )}
               </div>
            ))}

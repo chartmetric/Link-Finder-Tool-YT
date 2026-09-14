@@ -150,18 +150,21 @@ export const SearchMethodUsageStatus = {
   failed: 'failed',
 } as const;
 
+export interface SearchSource {
+  title: string;
+  url: string;
+  snippet: string;
+}
+
 export interface SearchMethodUsage {
   method: string;
   label: string;
   status: SearchMethodUsageStatus;
   estimatedCostUsd: number;
   costNote: string;
-}
-
-export interface SearchSource {
-  title: string;
-  url: string;
-  snippet: string;
+  /** @minimum 0 */
+  durationMs: number;
+  results: SearchSource[];
 }
 
 export interface ProfileSearchResponse {

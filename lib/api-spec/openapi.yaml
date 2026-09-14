@@ -314,12 +314,21 @@ components:
           type: number
         costNote:
           type: string
+        durationMs:
+          type: number
+          minimum: 0
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchSource"
       required:
         - method
         - label
         - status
         - estimatedCostUsd
         - costNote
+        - durationMs
+        - results
     SearchSource:
       type: object
       properties:

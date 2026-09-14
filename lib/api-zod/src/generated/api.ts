@@ -47,6 +47,8 @@ export const SearchProfilesBody = zod.object({
 export const searchProfilesResponseProfilesItemConfidenceMin = 0;
 export const searchProfilesResponseProfilesItemConfidenceMax = 100;
 
+export const searchProfilesResponseMethodsUsedItemDurationMsMin = 0;
+
 
 
 export const SearchProfilesResponse = zod.object({
@@ -76,7 +78,13 @@ export const SearchProfilesResponse = zod.object({
   "label": zod.string(),
   "status": zod.enum(['used', 'unavailable', 'failed']),
   "estimatedCostUsd": zod.number(),
-  "costNote": zod.string()
+  "costNote": zod.string(),
+  "durationMs": zod.number().min(searchProfilesResponseMethodsUsedItemDurationMsMin),
+  "results": zod.array(zod.object({
+  "title": zod.string(),
+  "url": zod.string(),
+  "snippet": zod.string()
+}))
 })),
   "estimatedCostUsd": zod.number()
 })

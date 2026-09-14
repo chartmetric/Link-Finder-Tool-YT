@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SearchMethodUsageStatus } from './searchMethodUsageStatus';
+import type { SearchSource } from './searchSource';
 
 export interface SearchMethodUsage {
   method: string;
@@ -13,4 +14,7 @@ export interface SearchMethodUsage {
   status: SearchMethodUsageStatus;
   estimatedCostUsd: number;
   costNote: string;
+  /** @minimum 0 */
+  durationMs: number;
+  results: SearchSource[];
 }
