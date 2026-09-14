@@ -170,8 +170,42 @@ export function ProfileRow({ profile, methods }: { profile: ExistingProfile, met
   return (
     <>
       <TableRow className={cn("group transition-colors", isPending && "bg-primary/5", isExpanded && "bg-muted/30")}>
-        <TableCell className="font-mono text-xs text-muted-foreground py-3 opacity-60 group-hover:opacity-100 transition-opacity align-top">
-          {profile.profileId}
+        <TableCell className="py-3 align-top">
+          <div className="flex flex-col items-start gap-2 w-full">
+            <div className="flex items-center gap-1 w-full">
+              <Button 
+                onClick={handleFetch} 
+                disabled={isPending || methods.length === 0}
+                size="sm"
+                className={cn("h-7 px-3 text-[9px] font-bold uppercase tracking-wider w-full shadow-sm transition-all flex-1", hasData ? "bg-background border border-border text-foreground hover:bg-muted" : "")}
+                variant={hasData ? "secondary" : "default"}
+              >
+                {isPending ? "Running..." : hasData ? "Refetch" : "Fetch Preview"}
+              </Button>
+              {hasData && (
+                <Button variant="ghost" size="icon" onClick={() => setIsExpanded(!isExpanded)} className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted shadow-sm border border-transparent hover:border-border">
+                  {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </Button>
+              )}
+            </div>
+            {hasData && (
+              <Button 
+                onClick={handleApprove}
+                disabled={approvalStatus === 'approving' || approvalStatus === 'approved'}
+                size="sm"
+                className={cn("h-7 px-3 text-[9px] font-bold uppercase tracking-wider w-full shadow-sm transition-all", approvalStatus === 'approved' ? "bg-emerald-600/10 text-emerald-700 hover:bg-emerald-600/10 border border-emerald-600/20" : "")}
+                variant={approvalStatus === 'approved' ? "outline" : "default"}
+              >
+                {approvalStatus === 'approving' ? <Loader2 className="w-3 h-3 animate-spin mr-1.5" /> : null}
+                {approvalStatus === 'approved' ? <><Check className="w-3 h-3 mr-1.5" /> Approved</> : "Approve All"}
+              </Button>
+            )}
+            {approvalError && (
+              <div className="text-[9px] text-destructive bg-destructive/10 border border-destructive/20 p-1.5 rounded-md w-full text-center font-semibold leading-tight shadow-sm">
+                {approvalError}
+              </div>
+            )}
+          </div>
         </TableCell>
         <TableCell className="py-3 align-top">
           <div className="font-semibold text-foreground">{profile.profileName}</div>
@@ -228,50 +262,11 @@ export function ProfileRow({ profile, methods }: { profile: ExistingProfile, met
         <TableCell className="align-top py-3">
           {renderCandidate(bestYt, isPending, data)}
         </TableCell>
-        <TableCell className="text-right py-3 align-top">
-          <div className="flex flex-col items-end gap-2 w-full">
-            <div className="flex items-center justify-end gap-1 w-full">
-              {hasData && (
-                <Button variant="ghost" size="icon" onClick={() => setIsExpanded(!isExpanded)} className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted shadow-sm border border-transparent hover:border-border">
-                  {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                </Button>
-              )}
-              <Button 
-                onClick={handleFetch} 
-                disabled={isPending || methods.length === 0}
-                size="sm"
-                className={cn("h-7 px-3 text-[9px] font-bold uppercase tracking-wider w-full shadow-sm transition-all flex-1", hasData ? "bg-background border border-border text-foreground hover:bg-muted" : "")}
-                variant={hasData ? "secondary" : "default"}
-              >
-                {isPending ? "Running..." : hasData ? "Refetch" : "Fetch Preview"}
-              </Button>
-            </div>
-            
-            {hasData && (
-              <Button 
-                onClick={handleApprove}
-                disabled={approvalStatus === 'approving' || approvalStatus === 'approved'}
-                size="sm"
-                className={cn("h-7 px-3 text-[9px] font-bold uppercase tracking-wider w-full shadow-sm transition-all", approvalStatus === 'approved' ? "bg-emerald-600/10 text-emerald-700 hover:bg-emerald-600/10 border border-emerald-600/20" : "")}
-                variant={approvalStatus === 'approved' ? "outline" : "default"}
-              >
-                {approvalStatus === 'approving' ? <Loader2 className="w-3 h-3 animate-spin mr-1.5" /> : null}
-                {approvalStatus === 'approved' ? <><Check className="w-3 h-3 mr-1.5" /> Approved</> : "Approve All"}
-              </Button>
-            )}
-            
-            {approvalError && (
-              <div className="text-[9px] text-destructive bg-destructive/10 border border-destructive/20 p-1.5 rounded-md w-full text-center font-semibold leading-tight shadow-sm mt-1">
-                {approvalError}
-              </div>
-            )}
-          </div>
-        </TableCell>
       </TableRow>
       
       {isExpanded && (
         <TableRow className="bg-muted/10 hover:bg-muted/10">
-          <TableCell colSpan={7} className="p-0 border-b-2 border-border/80">
+          <TableCell colSpan={6} className="p-0 border-b-2 border-border/80">
              <div className="p-5 border-l-[3px] border-primary ml-0 my-0 bg-card shadow-inner">
                 <ExpandedResult data={data} error={error} />
              </div>

@@ -174,20 +174,19 @@ export default function Home() {
             <Table className="min-w-[1200px]">
               <TableHeader className="bg-muted/30 sticky top-0 z-10 backdrop-blur-md border-b border-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-20 font-mono text-[9px] uppercase tracking-widest font-bold py-4">Ref ID</TableHead>
-                  <TableHead className="w-[12%] min-w-[140px] text-[9px] uppercase tracking-widest font-bold py-4">Musician</TableHead>
+                  <TableHead className="w-[11%] min-w-[145px] text-[9px] uppercase tracking-widest font-bold py-4">Action</TableHead>
+                  <TableHead className="w-[13%] min-w-[150px] text-[9px] uppercase tracking-widest font-bold py-4">Profile</TableHead>
                   <TableHead className="w-[18%] min-w-[180px] text-[9px] uppercase tracking-widest font-bold py-4">Existing Handles</TableHead>
                   <TableHead className="w-[15%] min-w-[160px] text-[9px] uppercase tracking-widest font-bold py-4">Suggested Instagram</TableHead>
                   <TableHead className="w-[15%] min-w-[160px] text-[9px] uppercase tracking-widest font-bold py-4">Suggested TikTok</TableHead>
                   <TableHead className="w-[15%] min-w-[160px] text-[9px] uppercase tracking-widest font-bold py-4">Suggested YouTube</TableHead>
-                  <TableHead className="text-right min-w-[120px] text-[9px] uppercase tracking-widest font-bold py-4">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   Array.from({ length: 15 }).map((_, i) => (
                     <TableRow key={i} className="border-border/40">
-                      <TableCell><Skeleton className="h-3 w-10 bg-muted" /></TableCell>
+                      <TableCell><Skeleton className="h-8 w-full bg-muted rounded-md" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-24 bg-muted" /><Skeleton className="h-2 w-16 mt-2 bg-muted/60" /></TableCell>
                       <TableCell><Skeleton className="h-12 w-full bg-muted rounded-md" /></TableCell>
                       <TableCell><Skeleton className="h-14 w-full bg-muted rounded-lg" /></TableCell>
