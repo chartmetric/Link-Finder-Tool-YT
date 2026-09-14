@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   useSearchProfiles,
+  searchProfiles,
   useApproveProfileSuggestions,
   type ExistingProfile,
   type ProfileSearchInputMethodsItem,
@@ -78,7 +79,12 @@ function renderCandidate(cand: ProfileMatch | null, isLoading: boolean, data?: P
 }
 
 export function ProfileRow({ profile, methods }: { profile: ExistingProfile, methods: ProfileSearchInputMethodsItem[] }) {
-  const { mutate, data, isPending, error, isError } = useSearchProfiles();
+  const { mutate, data, isPending, error, isError } = useSearchProfiles({
+    mutation: {
+      mutationFn: ({ data: input }) =>
+        searchProfiles(input, { signal: AbortSignal.timeout(65_000) }),
+    },
+  });
   const approveMutation = useApproveProfileSuggestions();
   
   const [isExpanded, setIsExpanded] = useState(false);

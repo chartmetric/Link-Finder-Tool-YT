@@ -89,8 +89,11 @@ router.post("/profiles/search", async (req, res): Promise<void> => {
     return;
   }
 
+  const timeoutMs = 60_000;
+  let timeout: NodeJS.Timeout | undefined;
+
   try {
-    const result = await findProfiles({
+    const search = findProfiles({
       ...input.data,
       serperApiKey: process.env.SERPERDEV_API_KEY ?? process.env.SERPER_API_KEY,
       tavilyApiKey: process.env.TAVILY_WEB_SEARCH_API_KEY,
@@ -98,12 +101,25 @@ router.post("/profiles/search", async (req, res): Promise<void> => {
       scrapeCreatorsApiKey: process.env.SCRAPECREATORS_API_KEY,
       socialCrawlApiKey: process.env.SOCIALCRAWL_API_KEY,
     });
+    const deadline = new Promise<never>((_, reject) => {
+      timeout = setTimeout(
+        () => reject(new Error("PROFILE_SEARCH_TIMEOUT")),
+        timeoutMs,
+      );
+    });
+    const result = await Promise.race([search, deadline]);
     res.json(SearchProfilesResponse.parse(result));
   } catch (error) {
     req.log.error({ err: error }, "Profile search failed");
-    res.status(502).json({
-      error: "Google search is temporarily unavailable. Please try again.",
+    const timedOut =
+      error instanceof Error && error.message === "PROFILE_SEARCH_TIMEOUT";
+    res.status(timedOut ? 504 : 502).json({
+      error: timedOut
+        ? "Profile search exceeded 60 seconds. Try fewer discovery methods or retry."
+        : "Profile discovery is temporarily unavailable. Please try again.",
     });
+  } finally {
+    if (timeout) clearTimeout(timeout);
   }
 });
 
