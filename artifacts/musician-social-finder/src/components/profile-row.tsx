@@ -354,6 +354,7 @@ function normalizeComparisonUrl(url: string): string {
 function MethodComparison({ data }: { data: ProfileSearchResponse }) {
   const serper = data.methodsUsed.find(method => method.method === 'serper');
   const gemini = data.methodsUsed.find(method => method.method === 'gemini');
+  const scrapeCreators = data.methodsUsed.find(method => method.method === 'scrapecreators');
   const platforms = ['Instagram', 'TikTok', 'YouTube'] as const;
 
   const firstForPlatform = (
@@ -385,16 +386,27 @@ function MethodComparison({ data }: { data: ProfileSearchResponse }) {
           const serperProfile = data.profiles.find(
             profile => profile.platform.toLowerCase() === platform.toLowerCase() && profile.methods.includes('serper'),
           );
+          const scrapeCreatorsProfile = data.profiles.find(
+            profile => profile.platform.toLowerCase() === platform.toLowerCase() && profile.methods.includes('scrapecreators'),
+          );
           const matches = Boolean(
             serperResult
             && geminiResult
             && normalizeComparisonUrl(serperResult.url) === normalizeComparisonUrl(geminiResult.url),
           );
-          const state = matches ? 'match' : serperResult && geminiResult ? 'different' : 'missing';
+          const state = matches
+            ? 'match'
+            : serperResult && geminiResult
+              ? 'different'
+              : scrapeCreatorsProfile
+                ? 'recovered'
+                : 'missing';
           const stateClasses = state === 'match'
             ? 'border-emerald-500/40 bg-emerald-500/5'
             : state === 'different'
               ? 'border-amber-500/40 bg-amber-500/5'
+              : state === 'recovered'
+                ? 'border-teal-500/40 bg-teal-500/5'
               : 'border-border bg-muted/20';
 
           return (
@@ -407,9 +419,10 @@ function MethodComparison({ data }: { data: ProfileSearchResponse }) {
                     'h-5 text-[8px] font-bold uppercase',
                     state === 'match' && 'border-emerald-500/30 text-emerald-700',
                     state === 'different' && 'border-amber-500/30 text-amber-700',
+                    state === 'recovered' && 'border-teal-500/30 text-teal-700',
                   )}
                 >
-                  {state === 'match' ? 'Matched' : state === 'different' ? 'Different' : 'Missing'}
+                  {state === 'match' ? 'Matched' : state === 'different' ? 'Different' : state === 'recovered' ? 'Deep check' : 'Missing'}
                 </Badge>
               </div>
               <div className="space-y-2">
@@ -453,6 +466,35 @@ function MethodComparison({ data }: { data: ProfileSearchResponse }) {
                 {serperProfile?.identityVerificationNote && (
                   <div className="rounded border border-amber-500/30 bg-amber-500/5 px-2 py-1.5 text-[9px] font-medium text-amber-800">
                     Verification unavailable: {serperProfile.identityVerificationNote}
+                  </div>
+                )}
+                {scrapeCreatorsProfile && (
+                  <div className="rounded border border-teal-500/25 bg-background/80 p-2">
+                    <div className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest text-teal-700">
+                      <Sparkles className="h-3 w-3" />
+                      ScrapeCreators deep check
+                    </div>
+                    <a
+                      href={scrapeCreatorsProfile.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 block truncate text-[10px] font-mono text-teal-700 hover:underline"
+                      title={scrapeCreatorsProfile.url}
+                    >
+                      {scrapeCreatorsProfile.url}
+                    </a>
+                    <div className="mt-1 text-[8px] text-muted-foreground">
+                      {scrapeCreatorsProfile.signals.join(' · ')}
+                    </div>
+                  </div>
+                )}
+                {!scrapeCreatorsProfile && scrapeCreators?.status === 'used' && state === 'missing' && (
+                  <div className="rounded border border-teal-500/20 bg-teal-500/5 p-2">
+                    <div className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest text-teal-700">
+                      <Sparkles className="h-3 w-3" />
+                      ScrapeCreators deep check
+                    </div>
+                    <div className="mt-1 text-[10px] text-muted-foreground">No linked account found</div>
                   </div>
                 )}
               </div>

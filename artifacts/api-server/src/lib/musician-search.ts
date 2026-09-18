@@ -355,16 +355,16 @@ async function fetchIdentityMetadata(input: {
 }): Promise<IdentityMetadata | undefined> {
   const platform = input.platform.toLowerCase();
   const path = platform === "instagram"
-    ? "/instagram/search/profiles"
+    ? "/instagram/profile"
     : platform === "tiktok"
-      ? "/tiktok/search/users"
+      ? "/tiktok/profile"
       : platform === "youtube"
-        ? "/youtube/search"
+        ? "/youtube/channel"
         : undefined;
   if (!path) return undefined;
   const expectedHandle = profileHandleFromUrl(input.url).toLowerCase();
   const response = await fetch(
-    `https://www.socialcrawl.dev/v1${path}?${new URLSearchParams({ query: expectedHandle })}`,
+    `https://api.scrapecreators.com/v1${path}?${new URLSearchParams({ handle: expectedHandle })}`,
     {
       headers: { "x-api-key": input.apiKey },
       signal: AbortSignal.timeout(12_000),
@@ -376,46 +376,49 @@ async function fetchIdentityMetadata(input: {
     } | undefined;
     throw new Error(failure?.error?.message ?? `Metadata lookup failed (${response.status})`);
   }
-  const payload = (await response.json()) as {
-    data?: {
-      items?: Array<{
-        author?: {
-          username?: string | null;
-          display_name?: string | null;
-          avatar_url?: string | null;
-          bio?: string | null;
-          verified?: boolean | null;
-          followers?: number | null;
-          url?: string | null;
-        };
-        post?: {
-          author?: {
-            username?: string | null;
-            display_name?: string | null;
-            avatar_url?: string | null;
-            bio?: string | null;
-            verified?: boolean | null;
-            followers?: number | null;
-            url?: string | null;
-          };
-        };
-      }>;
+  const payload = (await response.json()) as any;
+  if (platform === "instagram") {
+    const user = payload.data?.user;
+    if (!user) return undefined;
+    return {
+      platform: input.platform,
+      handle: user.username ?? expectedHandle,
+      ...(user.full_name ? { displayName: user.full_name } : {}),
+      ...(user.biography ? { bio: user.biography } : {}),
+      ...(user.profile_pic_url_hd || user.profile_pic_url
+        ? { imageUrl: user.profile_pic_url_hd ?? user.profile_pic_url }
+        : {}),
+      url: `https://www.instagram.com/${user.username ?? expectedHandle}/`,
+      ...(user.edge_followed_by?.count !== undefined ? { followers: user.edge_followed_by.count } : {}),
+      ...(user.is_verified !== undefined ? { verified: user.is_verified } : {}),
     };
-  };
-  const candidates = (payload.data?.items ?? []).map((item) => item.author ?? item.post?.author).filter(Boolean);
-  const author = candidates.find((item) =>
-    item?.username?.replace(/^@/, "").toLowerCase() === expectedHandle,
-  ) ?? candidates[0];
-  if (!author) return undefined;
+  }
+  if (platform === "tiktok") {
+    const user = payload.user;
+    if (!user) return undefined;
+    return {
+      platform: input.platform,
+      handle: user.uniqueId ?? expectedHandle,
+      ...(user.nickname ? { displayName: user.nickname } : {}),
+      ...(user.signature ? { bio: user.signature } : {}),
+      ...(user.avatarLarger || user.avatarMedium || user.avatarThumb
+        ? { imageUrl: user.avatarLarger ?? user.avatarMedium ?? user.avatarThumb }
+        : {}),
+      url: `https://www.tiktok.com/@${user.uniqueId ?? expectedHandle}`,
+      ...(payload.stats?.followerCount !== undefined ? { followers: payload.stats.followerCount } : {}),
+      ...(user.verified !== undefined ? { verified: user.verified } : {}),
+    };
+  }
+  if (!payload.channel && !payload.name) return undefined;
   return {
     platform: input.platform,
-    handle: author.username?.replace(/^@/, "") ?? expectedHandle,
-    ...(author.display_name ? { displayName: author.display_name } : {}),
-    ...(author.bio ? { bio: author.bio } : {}),
-    ...(author.avatar_url ? { imageUrl: author.avatar_url } : {}),
-    url: author.url ?? input.url,
-    ...(author.followers !== null && author.followers !== undefined ? { followers: author.followers } : {}),
-    ...(author.verified !== null && author.verified !== undefined ? { verified: author.verified } : {}),
+    handle: payload.handle?.replace(/^@/, "") ?? expectedHandle,
+    ...(payload.name ? { displayName: payload.name } : {}),
+    ...(payload.description ? { bio: payload.description } : {}),
+    ...(payload.avatar?.image?.sources?.at(-1)?.url ? { imageUrl: payload.avatar.image.sources.at(-1).url } : {}),
+    url: payload.channel ?? input.url,
+    ...(payload.subscriberCount !== undefined ? { followers: payload.subscriberCount } : {}),
+    ...(payload.isVerified !== undefined ? { verified: payload.isVerified } : {}),
   };
 }
 
@@ -767,6 +770,75 @@ export async function findProfiles(input: {
 
   profiles = [...profiles, ...geminiDiscovery];
 
+  const referencePlatformForFallback = targetsForPlatform(input.handlePlatform);
+  const fallbackPlatforms = targets.filter(
+    (platform) =>
+      platform !== referencePlatformForFallback
+      && !geminiDiscovery.some((profile) => profile.platform === platform),
+  );
+  if (
+    fallbackPlatforms.length > 0
+    && !selected.includes("scrapecreators")
+    && input.scrapeCreatorsApiKey
+    && cleanHandle
+    && input.handlePlatform
+  ) {
+    const startedAt = performance.now();
+    try {
+      const params = new URLSearchParams({
+        platform: input.handlePlatform,
+        handle: cleanHandle,
+        cache_max_age: "7d",
+      });
+      const response = await fetch(`https://api.scrapecreators.com/v1/find-social-profiles?${params}`, {
+        headers: { "x-api-key": input.scrapeCreatorsApiKey },
+        signal: AbortSignal.timeout(25_000),
+      });
+      if (!response.ok) throw new Error(`ScrapeCreators deep check failed (${response.status})`);
+      const data = (await response.json()) as {
+        credits_charged?: number;
+        profiles?: Array<{
+          platform?: string;
+          handle?: string;
+          url?: string;
+          confidence?: number;
+          evidence?: string[];
+        }>;
+      };
+      scrapeCreatorsCreditsCharged = data.credits_charged;
+      profiles.push(...(data.profiles ?? []).flatMap((profile): ProfileMatch[] => {
+        const platform = targetsForPlatform(profile.platform);
+        if (!profile.url || !platform || !fallbackPlatforms.includes(platform)) return [];
+        try {
+          const url = new URL(profile.url);
+          return [{
+            platform,
+            category: "social",
+            title: `${profile.handle ? `@${profile.handle}` : subject} on ${platform}`,
+            url: profile.url,
+            displayUrl: `${url.hostname.replace(/^www\./, "")}${url.pathname}`.replace(/\/$/, ""),
+            snippet: `ScrapeCreators evidence: ${(profile.evidence ?? []).join(", ") || "linked social profile"}`,
+            confidence: Math.max(20, Math.min(99, Math.round((profile.confidence ?? 0.7) * 100))),
+            signals: [
+              "Recovered by ScrapeCreators deep check",
+              ...(profile.evidence ?? []).map((evidence) => `Evidence: ${evidence.replaceAll("_", " ")}`),
+            ],
+            methods: ["scrapecreators"],
+          }];
+        } catch {
+          return [];
+        }
+      }));
+      statuses.set("scrapecreators", "used");
+      selected.push("scrapecreators");
+    } catch {
+      statuses.set("scrapecreators", "failed");
+      selected.push("scrapecreators");
+    } finally {
+      durations.set("scrapecreators", Math.round(performance.now() - startedAt));
+    }
+  }
+
   const merged = new Map<string, ProfileMatch>();
   for (const profile of profiles) {
     const key = `${profile.platform}:${new URL(profile.url).pathname.replace(/\/$/, "").toLowerCase()}`;
@@ -783,7 +855,7 @@ export async function findProfiles(input: {
     (a, b) => b.confidence - a.confidence || b.methods.length - a.methods.length,
   );
 
-  if (input.socialCrawlApiKey && input.knownProfileUrl && input.handlePlatform) {
+  if (input.scrapeCreatorsApiKey && input.knownProfileUrl && input.handlePlatform) {
     const referencePlatform = targetsForPlatform(input.handlePlatform);
     const geminiPlatforms = new Set(geminiDiscovery.map((profile) => profile.platform));
     const disputed = targets
@@ -804,7 +876,7 @@ export async function findProfiles(input: {
         reference = await fetchIdentityMetadata({
           platform: referencePlatform,
           url: input.knownProfileUrl,
-          apiKey: input.socialCrawlApiKey,
+          apiKey: input.scrapeCreatorsApiKey,
         });
       } catch (error) {
         referenceFailure = error instanceof Error ? error.message : "Identity metadata lookup failed";
@@ -816,7 +888,7 @@ export async function findProfiles(input: {
           const candidate = await fetchIdentityMetadata({
             platform: profile.platform,
             url: profile.url,
-            apiKey: input.socialCrawlApiKey!,
+            apiKey: input.scrapeCreatorsApiKey!,
           });
           return candidate
             ? { url: profile.url, comparison: compareIdentity(reference, candidate) }
@@ -879,6 +951,15 @@ export async function findProfiles(input: {
             url: profile.url,
             snippet: profile.snippet,
           }))
+        : method === "scrapecreators"
+          ? profiles
+              .filter((profile) => profile.methods.includes("scrapecreators"))
+              .slice(0, 10)
+              .map((profile) => ({
+                title: profile.title,
+                url: profile.url,
+                snippet: profile.snippet,
+              }))
         : organic
             .filter((result) => result.method === method && result.link)
             .slice(0, 30)
