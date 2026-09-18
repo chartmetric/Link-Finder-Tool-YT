@@ -21,7 +21,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-const GEMINI_SEARCH_PROMPT = `Use live web search to find the official Instagram, TikTok, and YouTube profile URLs for {{subject}}{{location}}.
+const GEMINI_SEARCH_PROMPT = `Use live web search to find the official Instagram, TikTok, and YouTube profile URLs for {{creator_name}}{{location_context}}.
 
 Return only JSON:
 {
@@ -37,6 +37,10 @@ Return only JSON:
 }
 
 Omit platforms you cannot verify. Never invent URLs.`;
+
+const SERPER_SEARCH_QUERIES = `{{creator_name}}{{location_context}} official Instagram
+{{creator_name}}{{location_context}} official TikTok
+{{creator_name}}{{location_context}} official YouTube`;
 
 export default function Home() {
   const [promptOpen, setPromptOpen] = useState(false);
@@ -255,14 +259,31 @@ export default function Home() {
       <Dialog open={promptOpen} onOpenChange={setPromptOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Gemini Online Search prompt</DialogTitle>
+            <DialogTitle>Discovery prompts and queries</DialogTitle>
             <DialogDescription>
-              Dynamic values are shown as template parameters in double braces.
+              Dynamic values are shown in double braces. creator_name is the creator or entity name, not a profile URL. location_context is optional, such as " in Japan".
             </DialogDescription>
           </DialogHeader>
-          <pre className="max-h-[65vh] overflow-auto whitespace-pre-wrap rounded-lg border border-border bg-muted/30 p-4 text-xs leading-6 font-mono">
-            {GEMINI_SEARCH_PROMPT}
-          </pre>
+          <div className="max-h-[65vh] space-y-5 overflow-auto pr-1">
+            <section className="space-y-2">
+              <div>
+                <h3 className="text-sm font-semibold">Serper search queries</h3>
+                <p className="text-xs text-muted-foreground">Serper receives three separate search strings, one per platform. It does not use an AI prompt.</p>
+              </div>
+              <pre className="whitespace-pre-wrap rounded-lg border border-border bg-muted/30 p-4 text-xs leading-6 font-mono">
+                {SERPER_SEARCH_QUERIES}
+              </pre>
+            </section>
+            <section className="space-y-2">
+              <div>
+                <h3 className="text-sm font-semibold">Gemini Online Search prompt</h3>
+                <p className="text-xs text-muted-foreground">Gemini receives one prompt covering Instagram, TikTok, and YouTube.</p>
+              </div>
+              <pre className="whitespace-pre-wrap rounded-lg border border-border bg-muted/30 p-4 text-xs leading-6 font-mono">
+                {GEMINI_SEARCH_PROMPT}
+              </pre>
+            </section>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
