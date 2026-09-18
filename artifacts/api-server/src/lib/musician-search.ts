@@ -263,7 +263,7 @@ async function discoverWithGeminiOnline(input: {
     method: "POST",
     headers: { Authorization: `Bearer ${input.apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "google/gemini-3.5-flash",
+      model: "google/gemini-3.5-flash-lite",
       max_tokens: 1200,
       temperature: 0,
       tools: [{
@@ -272,7 +272,7 @@ async function discoverWithGeminiOnline(input: {
       }],
       messages: [{
         role: "user",
-        content: `Use live web search to find the official Instagram, TikTok, and YouTube profile URLs for ${input.subject}${input.location ? ` in ${input.location}` : ""}. Return only JSON: {"profiles":[{"platform":"Instagram|TikTok|YouTube","url":"https://...","title":"...","snippet":"evidence","confidence":0-100}]}. Omit platforms you cannot verify.`,
+        content: `Use live web search to find the official Instagram, TikTok, and YouTube profile URLs for ${input.subject}${input.location ? ` in ${input.location}` : ""}. Return only JSON: {"profiles":[{"platform":"Instagram|TikTok|YouTube","url":"https://...","title":"...","snippet":"evidence","confidence":0-100}]}. Omit platforms you cannot verify. Never invent URLs.`,
       }],
     }),
     signal: AbortSignal.timeout(20_000),
@@ -346,6 +346,7 @@ export async function findProfiles(input: {
   const statuses = new Map<string, "used" | "unavailable" | "failed">();
   const durations = new Map<string, number>();
   const verifierResults = new Map<string, ProfileMatch[]>();
+  let geminiDiscovery: ProfileMatch[] = [];
   let scrapeCreatorsCreditsCharged: number | undefined;
   let socialCrawlCreditsCharged: number | undefined;
   const organic: Array<SerperOrganicResult & { method: string }> = [];
@@ -498,6 +499,28 @@ export async function findProfiles(input: {
     }
   };
 
+  const runGeminiDiscovery = async () => {
+    const startedAt = performance.now();
+    if (!input.openrouterApiKey) {
+      statuses.set("gemini", "unavailable");
+      durations.set("gemini", 0);
+      return;
+    }
+    try {
+      geminiDiscovery = await discoverWithGeminiOnline({
+        subject,
+        location: input.location,
+        apiKey: input.openrouterApiKey,
+      });
+      verifierResults.set("gemini", geminiDiscovery);
+      statuses.set("gemini", "used");
+    } catch {
+      statuses.set("gemini", "failed");
+    } finally {
+      durations.set("gemini", Math.round(performance.now() - startedAt));
+    }
+  };
+
   await Promise.all([
     selected.includes("serper")
       ? input.serperApiKey
@@ -535,6 +558,9 @@ export async function findProfiles(input: {
       : Promise.resolve(),
     selected.includes("socialcrawl")
       ? runSocialCrawl()
+      : Promise.resolve(),
+    selected.includes("gemini")
+      ? runGeminiDiscovery()
       : Promise.resolve(),
   ]);
 
@@ -577,77 +603,7 @@ export async function findProfiles(input: {
         all.filter((item) => item.platform === profile.platform).indexOf(profile) < 5,
     );
 
-  const baseProfiles = profiles;
-  const runVerifier = async (
-    method: "gemini" | "deepseek",
-    model: string,
-  ): Promise<ProfileMatch[]> => {
-    const startedAt = performance.now();
-    if (!input.openrouterApiKey || baseProfiles.length === 0) {
-      statuses.set(method, "unavailable");
-      durations.set(method, 0);
-      return [];
-    }
-
-    try {
-      const verified = await Promise.race([
-        verifyWithOnlineModel({
-          subject,
-          profiles: baseProfiles,
-          apiKey: input.openrouterApiKey,
-          method,
-          model,
-        }),
-        new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error(`${method.toUpperCase()}_TIMEOUT`)), 20_000);
-        }),
-      ]);
-      const results = verified.filter((profile) => profile.methods.includes(method));
-      verifierResults.set(method, results);
-      statuses.set(method, "used");
-      return results;
-    } catch {
-      statuses.set(method, "failed");
-      return [];
-    } finally {
-      durations.set(method, Math.round(performance.now() - startedAt));
-    }
-  };
-
-  if (baseProfiles.length > 0) {
-    const [geminiVerified, deepseekVerified] = await Promise.all([
-      runVerifier("gemini", "google/gemini-3.5-flash-lite"),
-      runVerifier("deepseek", "deepseek/deepseek-v4.1-flash"),
-    ]);
-    profiles = [...baseProfiles, ...geminiVerified, ...deepseekVerified];
-  } else if (selected.includes("gemini") && input.openrouterApiKey) {
-    const startedAt = performance.now();
-    try {
-      profiles = await Promise.race([
-        discoverWithGeminiOnline({
-          subject,
-          location: input.location,
-          apiKey: input.openrouterApiKey,
-        }),
-        new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error("GEMINI_TIMEOUT")), 20_000);
-        }),
-      ]);
-      verifierResults.set("gemini", profiles);
-      statuses.set("gemini", "used");
-    } catch {
-      statuses.set("gemini", "failed");
-    } finally {
-      durations.set("gemini", Math.round(performance.now() - startedAt));
-    }
-    statuses.set("deepseek", "unavailable");
-    durations.set("deepseek", 0);
-  } else {
-    statuses.set("gemini", "unavailable");
-    durations.set("gemini", 0);
-    statuses.set("deepseek", "unavailable");
-    durations.set("deepseek", 0);
-  }
+  profiles = [...profiles, ...geminiDiscovery];
 
   const merged = new Map<string, ProfileMatch>();
   for (const profile of profiles) {
@@ -664,12 +620,8 @@ export async function findProfiles(input: {
   profiles = [...merged.values()].sort(
     (a, b) => b.confidence - a.confidence || b.methods.length - a.methods.length,
   );
-  profiles = targets
-    .map((platform) => profiles.find((profile) => profile.platform === platform))
-    .filter((profile): profile is ProfileMatch => Boolean(profile));
-
   const methodsUsed = methodKeys
-    .filter((method) => selected.includes(method) || method === "gemini" || method === "deepseek")
+    .filter((method) => selected.includes(method))
     .map((method) => ({
       method,
       ...methodMeta[method],

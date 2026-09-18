@@ -24,9 +24,11 @@ import {
 import { Loader2, AlertCircle, Hash, ArrowRight, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-function getBestCandidate(data: ProfileSearchResponse | undefined, platform: string) {
+function getBestCandidate(data: ProfileSearchResponse | undefined, platform: string, method: string) {
   if (!data) return null;
-  const cands = data.profiles.filter(p => p.platform.toLowerCase() === platform);
+  const cands = data.profiles.filter(
+    p => p.platform.toLowerCase() === platform && p.methods.includes(method),
+  );
   if (cands.length === 0) return null;
   return cands.sort((a, b) => b.confidence - a.confidence)[0];
 }
@@ -50,7 +52,12 @@ function getApiErrorMessage(error: unknown): string {
   return candidate.data?.error ?? candidate.message ?? 'Approval failed';
 }
 
-function renderCandidate(cand: ProfileMatch | null, isLoading: boolean, data?: ProfileSearchResponse) {
+function renderCandidate(
+  cand: ProfileMatch | null,
+  isLoading: boolean,
+  data: ProfileSearchResponse | undefined,
+  method: 'serper' | 'gemini',
+) {
   if (isLoading) return <Skeleton className="h-14 w-full bg-muted/60 rounded-lg" />;
   
   if (!data) return (
@@ -65,10 +72,13 @@ function renderCandidate(cand: ProfileMatch | null, isLoading: boolean, data?: P
     </div>
   );
 
-  const allocatedCost = data.estimatedCostUsd / (data.profiles.length || 1);
+  const methodDetails = data.methodsUsed.find(item => item.method === method);
 
   return (
-    <div className="flex flex-col gap-1.5 border border-border/80 bg-card p-2 rounded-lg shadow-[0_1px_2px_rgba(0,0,0,0.02)] h-full min-h-[4rem]">
+    <div className="flex flex-col gap-1.5 border border-border/80 bg-card p-2 rounded-lg shadow-[0_1px_2px_rgba(0,0,0,0.02)] h-full min-h-[5rem]">
+      <span className="text-[8px] uppercase tracking-widest font-bold text-muted-foreground">
+        {method === 'serper' ? 'Primary · Serper' : 'Secondary · Gemini'}
+      </span>
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-semibold truncate text-foreground/90 max-w-[120px]" title={cand.displayUrl}>{cand.displayUrl}</span>
         <Badge className={cn("text-[9px] px-1 py-0 h-4 border shadow-none shrink-0", cand.confidence >= 80 ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" : cand.confidence >= 50 ? "bg-amber-500/10 text-amber-700 border-amber-500/20" : "bg-rose-500/10 text-rose-700 border-rose-500/20")}>
@@ -80,7 +90,22 @@ function renderCandidate(cand: ProfileMatch | null, isLoading: boolean, data?: P
           <span key={m} className="text-[8px] uppercase tracking-widest font-bold text-muted-foreground/80 bg-muted px-1.5 py-0.5 rounded-[3px] border border-border/50">{m}</span>
         ))}
       </div>
-      <div className="text-[8px] text-muted-foreground/50 font-mono font-medium mt-0.5">Est. ${allocatedCost.toFixed(4)}</div>
+      <div className="text-[8px] text-muted-foreground/50 font-mono font-medium mt-0.5">
+        Est. ${(methodDetails?.estimatedCostUsd ?? 0).toFixed(4)}
+      </div>
+    </div>
+  );
+}
+
+function renderComparison(
+  data: ProfileSearchResponse | undefined,
+  platform: string,
+  isLoading: boolean,
+) {
+  return (
+    <div className="grid grid-cols-2 gap-2 min-w-[330px]">
+      {renderCandidate(getBestCandidate(data, platform, 'serper'), isLoading, data, 'serper')}
+      {renderCandidate(getBestCandidate(data, platform, 'gemini'), isLoading, data, 'gemini')}
     </div>
   );
 }
@@ -176,10 +201,6 @@ export function ProfileRow({ profile, methods }: { profile: ExistingProfile, met
 
   const hasData = !!data;
   
-  const bestIg = getBestCandidate(data, 'instagram');
-  const bestTt = getBestCandidate(data, 'tiktok');
-  const bestYt = getBestCandidate(data, 'youtube');
-
   return (
     <>
       <TableRow className={cn("group transition-colors", isPending && "bg-primary/5")}>
@@ -267,13 +288,13 @@ export function ProfileRow({ profile, methods }: { profile: ExistingProfile, met
            )}
         </TableCell>
         <TableCell className="align-top py-3">
-          {renderCandidate(bestIg, isPending, data)}
+          {renderComparison(data, 'instagram', isPending)}
         </TableCell>
         <TableCell className="align-top py-3">
-          {renderCandidate(bestTt, isPending, data)}
+          {renderComparison(data, 'tiktok', isPending)}
         </TableCell>
         <TableCell className="align-top py-3">
-          {renderCandidate(bestYt, isPending, data)}
+          {renderComparison(data, 'youtube', isPending)}
         </TableCell>
       </TableRow>
       

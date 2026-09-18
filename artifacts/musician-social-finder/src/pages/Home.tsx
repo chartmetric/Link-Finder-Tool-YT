@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Database, ChevronLeft, ChevronRight, Activity, ServerCrash, Settings2, SlidersHorizontal } from 'lucide-react';
+import { Search, Database, ChevronLeft, ChevronRight, Activity, ServerCrash, Settings2, SlidersHorizontal, FileText } from 'lucide-react';
 
 import {
   getListExistingProfilesQueryKey,
@@ -10,12 +10,36 @@ import { useDebounce } from '@/hooks/use-debounce';
 
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProfileRow } from '@/components/profile-row';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+
+const GEMINI_SEARCH_PROMPT = `Use live web search to find the official Instagram, TikTok, and YouTube profile URLs for {{subject}}{{location}}.
+
+Return only JSON:
+{
+  "profiles": [
+    {
+      "platform": "Instagram|TikTok|YouTube",
+      "url": "https://...",
+      "title": "...",
+      "snippet": "evidence",
+      "confidence": 0-100
+    }
+  ]
+}
+
+Omit platforms you cannot verify. Never invent URLs.`;
 
 export default function Home() {
+  const [promptOpen, setPromptOpen] = useState(false);
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 400);
   const [page, setPage] = useState(1);
@@ -25,9 +49,7 @@ export default function Home() {
   const [sortBy, setSortBy] = useState<'tier_rank' | 'name'>('tier_rank');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  const [methods, setMethods] = useState<ProfileSearchInputMethodsItem[]>([
-    'serper', 'tavily', 'scrapecreators', 'socialcrawl'
-  ]);
+  const methods: ProfileSearchInputMethodsItem[] = ['serper', 'gemini'];
 
   const { data, isLoading, isError, error, isFetching } = useListExistingProfiles(
     { query: debouncedQuery, page, limit, tier, profileType, sortBy, sortDirection },
@@ -51,18 +73,6 @@ export default function Home() {
     setPage(1);
   }, [debouncedQuery, tier, profileType, sortBy, sortDirection]);
 
-  const toggleMethod = (method: ProfileSearchInputMethodsItem) => {
-    setMethods(prev => {
-      if (prev.includes(method)) {
-         if (prev.length === 1) return prev; // prevent zero selection
-         return prev.filter(m => m !== method);
-      }
-      return [...prev, method];
-    });
-  }
-
-  const allMethods: ProfileSearchInputMethodsItem[] = ['serper', 'tavily', 'scrapecreators', 'socialcrawl'];
-
   return (
     <div className="min-h-[100dvh] bg-background text-foreground flex flex-col font-sans selection:bg-primary/20">
       <header className="border-b border-border/80 bg-card px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-6 sticky top-0 z-20 shadow-[0_1px_4px_rgba(0,0,0,0.02)]">
@@ -85,17 +95,17 @@ export default function Home() {
             <Settings2 className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-[9px] uppercase font-bold tracking-widest text-muted-foreground">Discovery Engine Setup</span>
           </div>
-          <div className="flex flex-wrap gap-x-6 gap-y-2 items-center">
-            {allMethods.map(m => (
-              <label key={m} className="flex items-center gap-2.5 text-sm cursor-pointer group">
-                <Checkbox 
-                  checked={methods.includes(m)}
-                  onCheckedChange={() => toggleMethod(m)}
-                  className="group-hover:border-primary transition-colors data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground rounded border-border"
-                />
-                <span className="capitalize text-xs font-bold tracking-wide select-none group-hover:text-primary transition-colors text-foreground/80">{m}</span>
-              </label>
-            ))}
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="rounded-md border border-border bg-background px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider">
+              Primary · Serper
+            </span>
+            <span className="rounded-md border border-border bg-background px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider">
+              Secondary · Gemini Online
+            </span>
+            <Button variant="outline" size="sm" onClick={() => setPromptOpen(true)} className="h-7 text-[9px] font-bold uppercase tracking-wider">
+              <FileText className="mr-1.5 h-3 w-3" />
+              View prompt
+            </Button>
           </div>
         </div>
       </header>
@@ -184,15 +194,15 @@ export default function Home() {
           )}
 
           <div className="overflow-auto flex-1 absolute inset-0">
-            <Table className="min-w-[1200px]">
+            <Table className="min-w-[1750px]">
               <TableHeader className="bg-muted/30 sticky top-0 z-10 backdrop-blur-md border-b border-border/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="w-[11%] min-w-[145px] text-[9px] uppercase tracking-widest font-bold py-4">Action</TableHead>
                   <TableHead className="w-[13%] min-w-[150px] text-[9px] uppercase tracking-widest font-bold py-4">Profile</TableHead>
                   <TableHead className="w-[18%] min-w-[180px] text-[9px] uppercase tracking-widest font-bold py-4">Existing Handles</TableHead>
-                  <TableHead className="w-[15%] min-w-[160px] text-[9px] uppercase tracking-widest font-bold py-4">Suggested Instagram</TableHead>
-                  <TableHead className="w-[15%] min-w-[160px] text-[9px] uppercase tracking-widest font-bold py-4">Suggested TikTok</TableHead>
-                  <TableHead className="w-[15%] min-w-[160px] text-[9px] uppercase tracking-widest font-bold py-4">Suggested YouTube</TableHead>
+                  <TableHead className="min-w-[350px] text-[9px] uppercase tracking-widest font-bold py-4">Suggested Instagram · Serper vs Gemini</TableHead>
+                  <TableHead className="min-w-[350px] text-[9px] uppercase tracking-widest font-bold py-4">Suggested TikTok · Serper vs Gemini</TableHead>
+                  <TableHead className="min-w-[350px] text-[9px] uppercase tracking-widest font-bold py-4">Suggested YouTube · Serper vs Gemini</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -242,6 +252,19 @@ export default function Home() {
           </div>
         </div>
       </main>
+      <Dialog open={promptOpen} onOpenChange={setPromptOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Gemini Online Search prompt</DialogTitle>
+            <DialogDescription>
+              Dynamic values are shown as template parameters in double braces.
+            </DialogDescription>
+          </DialogHeader>
+          <pre className="max-h-[65vh] overflow-auto whitespace-pre-wrap rounded-lg border border-border bg-muted/30 p-4 text-xs leading-6 font-mono">
+            {GEMINI_SEARCH_PROMPT}
+          </pre>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
