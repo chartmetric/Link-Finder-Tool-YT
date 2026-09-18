@@ -130,6 +130,38 @@ export const ProfileMatchCategory = {
   social: 'social',
 } as const;
 
+export type IdentityComparisonStatus = typeof IdentityComparisonStatus[keyof typeof IdentityComparisonStatus];
+
+
+export const IdentityComparisonStatus = {
+  likely: 'likely',
+  uncertain: 'uncertain',
+  mismatch: 'mismatch',
+} as const;
+
+export interface IdentityMetadata {
+  platform: string;
+  handle: string;
+  displayName?: string;
+  bio?: string;
+  imageUrl?: string;
+  url: string;
+  followers?: number;
+  verified?: boolean;
+}
+
+export interface IdentityComparison {
+  status: IdentityComparisonStatus;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  score: number;
+  reasons: string[];
+  reference: IdentityMetadata;
+  candidate: IdentityMetadata;
+}
+
 export interface ProfileMatch {
   platform: string;
   category: ProfileMatchCategory;
@@ -144,6 +176,7 @@ export interface ProfileMatch {
   confidence: number;
   signals: string[];
   methods: string[];
+  identityComparison?: IdentityComparison;
 }
 
 export type SearchMethodUsageStatus = typeof SearchMethodUsageStatus[keyof typeof SearchMethodUsageStatus];

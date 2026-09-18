@@ -609,6 +609,56 @@ function ExpandedResult({ data, error }: { data?: ProfileSearchResponse, error?:
               <p className="text-xs text-muted-foreground/90 line-clamp-2 leading-relaxed border-l-[3px] border-muted pl-3 mb-5 flex-1 font-medium">
                 {p.snippet}
               </p>
+              {p.identityComparison && (
+                <div className={cn(
+                  'mb-4 rounded-lg border p-3',
+                  p.identityComparison.status === 'likely'
+                    ? 'border-emerald-500/30 bg-emerald-500/5'
+                    : p.identityComparison.status === 'uncertain'
+                      ? 'border-amber-500/30 bg-amber-500/5'
+                      : 'border-rose-500/30 bg-rose-500/5',
+                )}>
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <span className="text-[9px] font-bold uppercase tracking-widest">Focused identity check</span>
+                    <Badge variant="outline" className="h-5 text-[8px] font-bold uppercase">
+                      {p.identityComparison.status} · {p.identityComparison.score}/100
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: 'Known identity', identity: p.identityComparison.reference },
+                      { label: 'Serper candidate', identity: p.identityComparison.candidate },
+                    ].map(({ label, identity }) => (
+                      <div key={label} className="min-w-0 rounded-md border border-border/60 bg-background/80 p-2">
+                        <div className="mb-2 text-[8px] font-bold uppercase tracking-widest text-muted-foreground">{label}</div>
+                        <div className="flex gap-2">
+                          {identity.imageUrl ? (
+                            <img
+                              src={identity.imageUrl}
+                              alt={`${identity.displayName ?? identity.handle} profile`}
+                              className="h-10 w-10 shrink-0 rounded-full border border-border object-cover"
+                            />
+                          ) : (
+                            <div className="h-10 w-10 shrink-0 rounded-full border border-dashed border-border bg-muted" />
+                          )}
+                          <div className="min-w-0">
+                            <div className="truncate text-[10px] font-semibold">{identity.displayName ?? 'Name unavailable'}</div>
+                            <div className="truncate text-[9px] font-mono text-muted-foreground">@{identity.handle}</div>
+                            <div className="mt-1 line-clamp-2 text-[9px] text-muted-foreground">{identity.bio ?? 'Bio unavailable'}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {p.identityComparison.reasons.map(reason => (
+                      <span key={reason} className="rounded bg-background/80 px-1.5 py-0.5 text-[8px] font-medium text-muted-foreground">
+                        {reason}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="flex gap-1.5 flex-wrap mt-auto pt-4 border-t border-border/40">
                 {p.signals.map(s => (
                    <span key={s} className="text-[9px] uppercase font-bold tracking-widest bg-secondary text-secondary-foreground px-2 py-0.5 rounded-sm">{s}</span>

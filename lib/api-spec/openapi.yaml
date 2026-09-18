@@ -300,6 +300,8 @@ components:
           type: array
           items:
             type: string
+        identityComparison:
+          $ref: "#/components/schemas/IdentityComparison"
       required:
         - platform
         - category
@@ -310,6 +312,33 @@ components:
         - confidence
         - signals
         - methods
+    IdentityMetadata:
+      type: object
+      properties:
+        platform: { type: string }
+        handle: { type: string }
+        displayName: { type: string }
+        bio: { type: string }
+        imageUrl: { type: string }
+        url: { type: string }
+        followers: { type: number }
+        verified: { type: boolean }
+      required: [platform, handle, url]
+    IdentityComparison:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [likely, uncertain, mismatch]
+        score: { type: number, minimum: 0, maximum: 100 }
+        reasons:
+          type: array
+          items: { type: string }
+        reference:
+          $ref: "#/components/schemas/IdentityMetadata"
+        candidate:
+          $ref: "#/components/schemas/IdentityMetadata"
+      required: [status, score, reasons, reference, candidate]
     SearchMethodUsage:
       type: object
       properties:

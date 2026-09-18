@@ -39,6 +39,24 @@ export type ProfileMatch = {
   confidence: number;
   signals: string[];
   methods: string[];
+  identityComparison?: {
+    status: "likely" | "uncertain" | "mismatch";
+    score: number;
+    reasons: string[];
+    reference: IdentityMetadata;
+    candidate: IdentityMetadata;
+  };
+};
+
+type IdentityMetadata = {
+  platform: string;
+  handle: string;
+  displayName?: string;
+  bio?: string;
+  imageUrl?: string;
+  url: string;
+  followers?: number;
+  verified?: boolean;
 };
 
 const platforms = [
@@ -312,6 +330,132 @@ function targetsForPlatform(value?: string) {
   if (normalized === "tiktok") return "TikTok";
   if (normalized === "youtube") return "YouTube";
   return undefined;
+}
+
+function profileHandleFromUrl(value: string): string {
+  try {
+    const parts = new URL(value).pathname.split("/").filter(Boolean);
+    return (parts.find((part) => part.startsWith("@")) ?? parts.at(-1) ?? "").replace(/^@/, "");
+  } catch {
+    return "";
+  }
+}
+
+function commonPrefixLength(a: string, b: string): number {
+  let index = 0;
+  while (index < a.length && index < b.length && a[index] === b[index]) index += 1;
+  return index;
+}
+
+async function fetchIdentityMetadata(input: {
+  platform: string;
+  url: string;
+  apiKey: string;
+}): Promise<IdentityMetadata | undefined> {
+  const platform = input.platform.toLowerCase();
+  const path = platform === "instagram"
+    ? "/instagram/search/profiles"
+    : platform === "tiktok"
+      ? "/tiktok/search/users"
+      : platform === "youtube"
+        ? "/youtube/search"
+        : undefined;
+  if (!path) return undefined;
+  const expectedHandle = profileHandleFromUrl(input.url).toLowerCase();
+  const response = await fetch(
+    `https://www.socialcrawl.dev/v1${path}?${new URLSearchParams({ query: expectedHandle })}`,
+    {
+      headers: { "x-api-key": input.apiKey },
+      signal: AbortSignal.timeout(12_000),
+    },
+  );
+  if (!response.ok) return undefined;
+  const payload = (await response.json()) as {
+    data?: {
+      items?: Array<{
+        author?: {
+          username?: string | null;
+          display_name?: string | null;
+          avatar_url?: string | null;
+          bio?: string | null;
+          verified?: boolean | null;
+          followers?: number | null;
+          url?: string | null;
+        };
+        post?: {
+          author?: {
+            username?: string | null;
+            display_name?: string | null;
+            avatar_url?: string | null;
+            bio?: string | null;
+            verified?: boolean | null;
+            followers?: number | null;
+            url?: string | null;
+          };
+        };
+      }>;
+    };
+  };
+  const candidates = (payload.data?.items ?? []).map((item) => item.author ?? item.post?.author).filter(Boolean);
+  const author = candidates.find((item) =>
+    item?.username?.replace(/^@/, "").toLowerCase() === expectedHandle,
+  ) ?? candidates[0];
+  if (!author) return undefined;
+  return {
+    platform: input.platform,
+    handle: author.username?.replace(/^@/, "") ?? expectedHandle,
+    ...(author.display_name ? { displayName: author.display_name } : {}),
+    ...(author.bio ? { bio: author.bio } : {}),
+    ...(author.avatar_url ? { imageUrl: author.avatar_url } : {}),
+    url: author.url ?? input.url,
+    ...(author.followers !== null && author.followers !== undefined ? { followers: author.followers } : {}),
+    ...(author.verified !== null && author.verified !== undefined ? { verified: author.verified } : {}),
+  };
+}
+
+function compareIdentity(reference: IdentityMetadata, candidate: IdentityMetadata) {
+  const clean = (value?: string) => (value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const referenceName = clean(reference.displayName);
+  const candidateName = clean(candidate.displayName);
+  const referenceHandle = clean(reference.handle);
+  const candidateHandle = clean(candidate.handle);
+  const referenceBioWords = new Set((reference.bio ?? "").toLowerCase().match(/[a-z0-9]{4,}/g) ?? []);
+  const candidateBioWords = new Set((candidate.bio ?? "").toLowerCase().match(/[a-z0-9]{4,}/g) ?? []);
+  const sharedBioWords = [...referenceBioWords].filter((word) => candidateBioWords.has(word));
+  const reasons: string[] = [];
+  let score = 0;
+
+  if (referenceName && candidateName && (referenceName.includes(candidateName) || candidateName.includes(referenceName))) {
+    score += 35;
+    reasons.push("Display names closely match");
+  }
+  if (referenceHandle === candidateHandle) {
+    score += 35;
+    reasons.push("Handles match exactly");
+  } else if (commonPrefixLength(referenceHandle, candidateHandle) >= 5) {
+    score += 20;
+    reasons.push("Handles share a strong prefix");
+  }
+  if (sharedBioWords.length >= 2) {
+    score += 20;
+    reasons.push(`Bios share: ${sharedBioWords.slice(0, 3).join(", ")}`);
+  } else if (!reference.bio || !candidate.bio) {
+    reasons.push("Bio comparison unavailable");
+  }
+  if (candidate.verified) {
+    score += 10;
+    reasons.push("Candidate is verified");
+  }
+  if (reference.imageUrl && candidate.imageUrl) reasons.push("Both profile images available for visual review");
+  if (reasons.length === 0) reasons.push("No strong identity signals matched");
+
+  return {
+    status: score >= 55 ? "likely" as const : score >= 25 ? "uncertain" as const : "mismatch" as const,
+    score: Math.min(100, score),
+    reasons,
+    reference,
+    candidate,
+  };
 }
 
 export async function findProfiles(input: {
@@ -632,6 +776,56 @@ export async function findProfiles(input: {
   profiles = [...merged.values()].sort(
     (a, b) => b.confidence - a.confidence || b.methods.length - a.methods.length,
   );
+
+  if (input.socialCrawlApiKey && input.knownProfileUrl && input.handlePlatform) {
+    const referencePlatform = targetsForPlatform(input.handlePlatform);
+    const reference = referencePlatform
+      ? await fetchIdentityMetadata({
+          platform: referencePlatform,
+          url: input.knownProfileUrl,
+          apiKey: input.socialCrawlApiKey,
+        })
+      : undefined;
+    if (reference) {
+      const geminiPlatforms = new Set(geminiDiscovery.map((profile) => profile.platform));
+      const disputed = targets
+        .filter((platform) => platform !== referencePlatform && !geminiPlatforms.has(platform))
+        .map((platform) => profiles.find((profile) => {
+          if (profile.platform !== platform || !profile.methods.includes("serper")) return false;
+          try {
+            return !excludedPaths.some((path) => new URL(profile.url).pathname.toLowerCase().includes(path));
+          } catch {
+            return false;
+          }
+        }))
+        .filter((profile): profile is ProfileMatch => Boolean(profile));
+      const comparisons = await Promise.all(disputed.map(async (profile) => {
+        const candidate = await fetchIdentityMetadata({
+          platform: profile.platform,
+          url: profile.url,
+          apiKey: input.socialCrawlApiKey!,
+        });
+        return candidate ? [profile.url, compareIdentity(reference, candidate)] as const : undefined;
+      }));
+      const comparisonByUrl = new Map(comparisons.filter(Boolean) as Array<readonly [string, NonNullable<ProfileMatch["identityComparison"]>]>);
+      profiles = profiles.map((profile) => {
+        const identityComparison = comparisonByUrl.get(profile.url);
+        if (!identityComparison) return profile;
+        const confidenceAdjustment = identityComparison.status === "likely"
+          ? 5
+          : identityComparison.status === "mismatch"
+            ? -12
+            : 0;
+        return {
+          ...profile,
+          confidence: Math.max(5, Math.min(99, profile.confidence + confidenceAdjustment)),
+          signals: [...profile.signals, `Identity check: ${identityComparison.status}`],
+          identityComparison,
+        };
+      });
+    }
+  }
+
   const methodsUsed = methodKeys
     .filter((method) => selected.includes(method))
     .map((method) => ({

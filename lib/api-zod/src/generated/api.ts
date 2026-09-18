@@ -50,6 +50,9 @@ export const SearchProfilesBody = zod.object({
 export const searchProfilesResponseProfilesItemConfidenceMin = 0;
 export const searchProfilesResponseProfilesItemConfidenceMax = 100;
 
+export const searchProfilesResponseProfilesItemIdentityComparisonScoreMin = 0;
+export const searchProfilesResponseProfilesItemIdentityComparisonScoreMax = 100;
+
 export const searchProfilesResponseMethodsUsedItemDurationMsMin = 0;
 
 
@@ -67,7 +70,32 @@ export const SearchProfilesResponse = zod.object({
   "snippet": zod.string(),
   "confidence": zod.number().min(searchProfilesResponseProfilesItemConfidenceMin).max(searchProfilesResponseProfilesItemConfidenceMax),
   "signals": zod.array(zod.string()),
-  "methods": zod.array(zod.string())
+  "methods": zod.array(zod.string()),
+  "identityComparison": zod.object({
+  "status": zod.enum(['likely', 'uncertain', 'mismatch']),
+  "score": zod.number().min(searchProfilesResponseProfilesItemIdentityComparisonScoreMin).max(searchProfilesResponseProfilesItemIdentityComparisonScoreMax),
+  "reasons": zod.array(zod.string()),
+  "reference": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional()
+}),
+  "candidate": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional()
+})
+}).optional()
 })),
   "sources": zod.array(zod.object({
   "title": zod.string(),

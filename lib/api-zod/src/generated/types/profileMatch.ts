@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { IdentityComparison } from './identityComparison';
 import type { ProfileMatchCategory } from './profileMatchCategory';
 
 export interface ProfileMatch {
@@ -21,4 +22,5 @@ export interface ProfileMatch {
   confidence: number;
   signals: string[];
   methods: string[];
+  identityComparison?: IdentityComparison;
 }
