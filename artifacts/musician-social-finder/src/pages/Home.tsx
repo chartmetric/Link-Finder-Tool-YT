@@ -43,7 +43,7 @@ const SERPER_SEARCH_QUERIES = `{{creator_name}}{{location_context}} official Ins
 {{creator_name}}{{location_context}} official YouTube`;
 
 export default function Home() {
-  const [promptOpen, setPromptOpen] = useState(false);
+  const [promptModal, setPromptModal] = useState<'serper' | 'gemini' | null>(null);
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 400);
   const [page, setPage] = useState(1);
@@ -106,9 +106,13 @@ export default function Home() {
             <span className="rounded-md border border-border bg-background px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider">
               Secondary · Gemini Online
             </span>
-            <Button variant="outline" size="sm" onClick={() => setPromptOpen(true)} className="h-7 text-[9px] font-bold uppercase tracking-wider">
+            <Button variant="outline" size="sm" onClick={() => setPromptModal('serper')} className="h-7 text-[9px] font-bold uppercase tracking-wider">
               <FileText className="mr-1.5 h-3 w-3" />
-              View prompt
+              Serper queries
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setPromptModal('gemini')} className="h-7 text-[9px] font-bold uppercase tracking-wider">
+              <FileText className="mr-1.5 h-3 w-3" />
+              Gemini prompt
             </Button>
           </div>
         </div>
@@ -256,34 +260,22 @@ export default function Home() {
           </div>
         </div>
       </main>
-      <Dialog open={promptOpen} onOpenChange={setPromptOpen}>
+      <Dialog open={promptModal !== null} onOpenChange={(open) => !open && setPromptModal(null)}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Discovery prompts and queries</DialogTitle>
+            <DialogTitle>
+              {promptModal === 'serper' ? 'Serper search queries' : 'Gemini Online Search prompt'}
+            </DialogTitle>
             <DialogDescription>
-              Dynamic values are shown in double braces. creator_name is the creator or entity name, not a profile URL. location_context is optional, such as " in Japan".
+              {promptModal === 'serper'
+                ? 'Serper receives three separate search strings, one per platform. It does not use an AI prompt.'
+                : 'Gemini receives one AI prompt covering Instagram, TikTok, and YouTube.'}
+              {' '}Dynamic values are shown in double braces. creator_name is the creator or entity name, not a profile URL. location_context is optional, such as " in Japan".
             </DialogDescription>
           </DialogHeader>
-          <div className="max-h-[65vh] space-y-5 overflow-auto pr-1">
-            <section className="space-y-2">
-              <div>
-                <h3 className="text-sm font-semibold">Serper search queries</h3>
-                <p className="text-xs text-muted-foreground">Serper receives three separate search strings, one per platform. It does not use an AI prompt.</p>
-              </div>
-              <pre className="whitespace-pre-wrap rounded-lg border border-border bg-muted/30 p-4 text-xs leading-6 font-mono">
-                {SERPER_SEARCH_QUERIES}
-              </pre>
-            </section>
-            <section className="space-y-2">
-              <div>
-                <h3 className="text-sm font-semibold">Gemini Online Search prompt</h3>
-                <p className="text-xs text-muted-foreground">Gemini receives one prompt covering Instagram, TikTok, and YouTube.</p>
-              </div>
-              <pre className="whitespace-pre-wrap rounded-lg border border-border bg-muted/30 p-4 text-xs leading-6 font-mono">
-                {GEMINI_SEARCH_PROMPT}
-              </pre>
-            </section>
-          </div>
+          <pre className="max-h-[65vh] overflow-auto whitespace-pre-wrap rounded-lg border border-border bg-muted/30 p-4 text-xs leading-6 font-mono">
+            {promptModal === 'serper' ? SERPER_SEARCH_QUERIES : GEMINI_SEARCH_PROMPT}
+          </pre>
         </DialogContent>
       </Dialog>
     </div>
