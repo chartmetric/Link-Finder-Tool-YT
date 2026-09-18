@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2, AlertCircle, Hash, ArrowRight, Copy, Check } from 'lucide-react';
+import { Loader2, AlertCircle, Hash, ArrowRight, Copy, Check, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function getBestCandidate(data: ProfileSearchResponse | undefined, platform: string, method: string) {
@@ -210,11 +210,15 @@ export function ProfileRow({ profile, methods }: { profile: ExistingProfile, met
               <Button 
                 onClick={handleFetch} 
                 disabled={isPending || methods.length === 0}
-                size="sm"
-                className={cn("h-7 px-3 text-[9px] font-bold uppercase tracking-wider w-full shadow-sm transition-all flex-1", hasData ? "bg-background border border-border text-foreground hover:bg-muted" : "")}
+                size="icon"
+                aria-label={hasData ? "Refetch preview" : "Fetch preview"}
+                title={hasData ? "Refetch preview" : "Fetch preview"}
+                className={cn("h-8 w-8 shrink-0 shadow-sm transition-all", hasData ? "bg-background border border-border text-foreground hover:bg-muted" : "")}
                 variant={hasData ? "secondary" : "default"}
               >
-                {isPending ? "Running..." : hasData ? "Refetch" : "Fetch Preview"}
+                {isPending
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : <Play className="h-3.5 w-3.5 fill-current" />}
               </Button>
               {hasData && (
                 <Button variant="outline" size="sm" onClick={() => setDetailsOpen(true)} className="h-7 px-2 text-[8px] uppercase tracking-wider font-bold shrink-0">
