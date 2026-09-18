@@ -49,6 +49,11 @@ export interface ProfileSearchInput {
   handle?: string;
   /** Platform where the known handle belongs */
   handlePlatform?: ProfileSearchInputHandlePlatform;
+  /**
+     * Existing social profile URL used as an identity clue
+     * @maxLength 500
+     */
+  knownProfileUrl?: string;
   /** @maxLength 100 */
   location?: string;
   /**

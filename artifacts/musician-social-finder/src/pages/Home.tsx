@@ -23,6 +23,10 @@ import {
 
 const GEMINI_SEARCH_PROMPT = `Use live web search to find the official Instagram, TikTok, and YouTube profile URLs for {{creator_name}}{{location_context}}.
 
+Known {{known_profile_platform}} handle: @{{known_profile_handle}}.
+Known identity profile: {{known_profile_url}}.
+Use the known profile as an identity clue and check whether the same or linked identity appears on other platforms.
+
 Return only JSON:
 {
   "profiles": [
@@ -38,9 +42,9 @@ Return only JSON:
 
 Omit platforms you cannot verify. Never invent URLs.`;
 
-const SERPER_SEARCH_QUERIES = `{{creator_name}}{{location_context}} official Instagram
-{{creator_name}}{{location_context}} official TikTok
-{{creator_name}}{{location_context}} official YouTube`;
+const SERPER_SEARCH_QUERIES = `{{creator_name}}{{location_context}} {{known_profile_url}} @{{known_profile_handle}} {{known_profile_platform}} official Instagram
+{{creator_name}}{{location_context}} {{known_profile_url}} @{{known_profile_handle}} {{known_profile_platform}} official TikTok
+{{creator_name}}{{location_context}} {{known_profile_url}} @{{known_profile_handle}} {{known_profile_platform}} official YouTube`;
 
 export default function Home() {
   const [promptModal, setPromptModal] = useState<'serper' | 'gemini' | null>(null);
@@ -270,7 +274,7 @@ export default function Home() {
               {promptModal === 'serper'
                 ? 'Serper receives three separate search strings, one per platform. It does not use an AI prompt.'
                 : 'Gemini receives one AI prompt covering Instagram, TikTok, and YouTube.'}
-              {' '}Dynamic values are shown in double braces. creator_name is the creator or entity name, not a profile URL. location_context is optional, such as " in Japan".
+              {' '}Dynamic values are shown in double braces. creator_name is the entity name; known_profile_url, known_profile_handle, and known_profile_platform identify an existing account. location_context is optional and currently unavailable for catalog rows.
             </DialogDescription>
           </DialogHeader>
           <pre className="max-h-[65vh] overflow-auto whitespace-pre-wrap rounded-lg border border-border bg-muted/30 p-4 text-xs leading-6 font-mono">

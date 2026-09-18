@@ -160,6 +160,10 @@ components:
           type: string
           enum: [instagram, tiktok, youtube, x, twitter, facebook]
           description: Platform where the known handle belongs
+        knownProfileUrl:
+          type: string
+          maxLength: 500
+          description: Existing social profile URL used as an identity clue
         location:
           type: string
           maxLength: 100

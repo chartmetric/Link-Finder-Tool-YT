@@ -155,6 +155,7 @@ export function ProfileRow({ profile, methods }: { profile: ExistingProfile, met
         subject: profile.profileName,
         ...(seedAccount?.handle ? { handle: seedAccount.handle } : {}),
         ...(handlePlatform ? { handlePlatform } : {}),
+        ...(seedAccount?.accountUrl ? { knownProfileUrl: seedAccount.accountUrl } : {}),
         methods: methods.length > 0 ? methods : ['serper']
       }
     }, {
@@ -319,6 +320,120 @@ export function ProfileRow({ profile, methods }: { profile: ExistingProfile, met
   )
 }
 
+function getPlatformFromUrl(url: string): 'Instagram' | 'TikTok' | 'YouTube' | null {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, '').toLowerCase();
+    if (hostname.endsWith('instagram.com')) return 'Instagram';
+    if (hostname.endsWith('tiktok.com')) return 'TikTok';
+    if (hostname.endsWith('youtube.com') || hostname.endsWith('youtu.be')) return 'YouTube';
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function isAccountUrl(url: string): boolean {
+  try {
+    const pathname = new URL(url).pathname.toLowerCase();
+    return !['/p/', '/reel/', '/video/', '/watch', '/shorts/', '/playlist', '/tag/', '/search', '/explore']
+      .some(fragment => pathname.includes(fragment));
+  } catch {
+    return false;
+  }
+}
+
+function normalizeComparisonUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.hostname.replace(/^www\./, '').toLowerCase()}${parsed.pathname.replace(/\/$/, '').toLowerCase()}`;
+  } catch {
+    return url.toLowerCase();
+  }
+}
+
+function MethodComparison({ data }: { data: ProfileSearchResponse }) {
+  const serper = data.methodsUsed.find(method => method.method === 'serper');
+  const gemini = data.methodsUsed.find(method => method.method === 'gemini');
+  const platforms = ['Instagram', 'TikTok', 'YouTube'] as const;
+
+  const firstForPlatform = (
+    method: typeof serper,
+    platform: typeof platforms[number],
+  ) => method?.results.find(result =>
+    getPlatformFromUrl(result.url) === platform && isAccountUrl(result.url),
+  );
+
+  return (
+    <section className="rounded-lg border border-border/70 bg-card p-4 shadow-sm">
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold">Serper vs Gemini</h3>
+          <p className="mt-0.5 text-[10px] text-muted-foreground">
+            Green means the URLs match, amber means they differ, and gray means a method found nothing.
+          </p>
+        </div>
+        <div className="flex gap-3 text-[9px] font-bold uppercase tracking-wider">
+          <span className="text-emerald-700">● Match</span>
+          <span className="text-amber-700">● Different</span>
+          <span className="text-muted-foreground">● Missing</span>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
+        {platforms.map(platform => {
+          const serperResult = firstForPlatform(serper, platform);
+          const geminiResult = firstForPlatform(gemini, platform);
+          const matches = Boolean(
+            serperResult
+            && geminiResult
+            && normalizeComparisonUrl(serperResult.url) === normalizeComparisonUrl(geminiResult.url),
+          );
+          const state = matches ? 'match' : serperResult && geminiResult ? 'different' : 'missing';
+          const stateClasses = state === 'match'
+            ? 'border-emerald-500/40 bg-emerald-500/5'
+            : state === 'different'
+              ? 'border-amber-500/40 bg-amber-500/5'
+              : 'border-border bg-muted/20';
+
+          return (
+            <div key={platform} className={cn('rounded-lg border p-3', stateClasses)}>
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-widest">{platform}</span>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    'h-5 text-[8px] font-bold uppercase',
+                    state === 'match' && 'border-emerald-500/30 text-emerald-700',
+                    state === 'different' && 'border-amber-500/30 text-amber-700',
+                  )}
+                >
+                  {state === 'match' ? 'Matched' : state === 'different' ? 'Different' : 'Missing'}
+                </Badge>
+              </div>
+              <div className="space-y-2">
+                {[
+                  { label: 'Serper', result: serperResult },
+                  { label: 'Gemini', result: geminiResult },
+                ].map(({ label, result }) => (
+                  <div key={label} className="rounded border border-border/60 bg-background/80 p-2">
+                    <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">{label}</div>
+                    {result ? (
+                      <a href={result.url} target="_blank" rel="noreferrer" className="mt-1 block truncate text-[10px] font-mono text-primary hover:underline" title={result.url}>
+                        {result.url}
+                      </a>
+                    ) : (
+                      <div className="mt-1 text-[10px] text-muted-foreground">No account found</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function ExpandedResult({ data, error }: { data?: ProfileSearchResponse, error?: any }) {
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
@@ -344,6 +459,7 @@ function ExpandedResult({ data, error }: { data?: ProfileSearchResponse, error?:
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+      <MethodComparison data={data} />
       {/* Stats Header */}
       <div className="flex flex-col gap-4 bg-muted/20 p-4 rounded-lg border border-border/60 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4 text-sm border-b border-border/50 pb-3">

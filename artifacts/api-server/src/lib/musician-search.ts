@@ -257,6 +257,9 @@ async function verifyWithOnlineModel(input: {
 async function discoverWithGeminiOnline(input: {
   subject: string;
   location?: string;
+  handle?: string;
+  handlePlatform?: string;
+  knownProfileUrl?: string;
   apiKey: string;
 }): Promise<ProfileMatch[]> {
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -272,7 +275,7 @@ async function discoverWithGeminiOnline(input: {
       }],
       messages: [{
         role: "user",
-        content: `Use live web search to find the official Instagram, TikTok, and YouTube profile URLs for ${input.subject}${input.location ? ` in ${input.location}` : ""}. Return only JSON: {"profiles":[{"platform":"Instagram|TikTok|YouTube","url":"https://...","title":"...","snippet":"evidence","confidence":0-100}]}. Omit platforms you cannot verify. Never invent URLs.`,
+        content: `Use live web search to find the official Instagram, TikTok, and YouTube profile URLs for ${input.subject}${input.location ? ` in ${input.location}` : ""}.${input.knownProfileUrl ? ` Known identity profile: ${input.knownProfileUrl}.` : ""}${input.handle ? ` Known ${input.handlePlatform ?? "social"} handle: @${input.handle}.` : ""} Use the known profile as an identity clue and check whether the same or linked identity appears on other platforms. Return only JSON: {"profiles":[{"platform":"Instagram|TikTok|YouTube","url":"https://...","title":"...","snippet":"evidence","confidence":0-100}]}. Omit platforms you cannot verify. Never invent URLs.`,
       }],
     }),
     signal: AbortSignal.timeout(20_000),
@@ -315,6 +318,7 @@ export async function findProfiles(input: {
   subject?: string;
   handle?: string;
   handlePlatform?: "instagram" | "tiktok" | "youtube" | "x" | "twitter" | "facebook";
+  knownProfileUrl?: string;
   location?: string;
   country?: string;
   methods?: string[];
@@ -327,12 +331,17 @@ export async function findProfiles(input: {
   const cleanHandle = input.handle?.trim().replace(/^@/, "");
   const subject = input.subject?.trim() || (cleanHandle ? `@${cleanHandle}` : "");
   const locationHint = input.location?.trim() ? ` ${input.location.trim()}` : "";
+  const identityHint = [
+    input.knownProfileUrl,
+    cleanHandle ? `@${cleanHandle}` : undefined,
+    input.handlePlatform,
+  ].filter(Boolean).join(" ");
   const targets = ["Instagram", "TikTok", "YouTube"];
   const selected = input.methods?.length
     ? input.methods
     : ["serper", "tavily", "gemini", "scrapecreators", "socialcrawl"];
   const queries = targets.map(
-    (platform) => `${subject}${locationHint} official ${platform}`,
+    (platform) => `${subject}${locationHint}${identityHint ? ` ${identityHint}` : ""} official ${platform}`,
   );
   const methodMeta = {
     serper: { label: "Serper", estimatedCostUsd: 0.003, costNote: "3 queries at roughly $1 per 1,000 queries" },
@@ -510,6 +519,9 @@ export async function findProfiles(input: {
       geminiDiscovery = await discoverWithGeminiOnline({
         subject,
         location: input.location,
+        handle: cleanHandle,
+        handlePlatform: input.handlePlatform,
+        knownProfileUrl: input.knownProfileUrl,
         apiKey: input.openrouterApiKey,
       });
       verifierResults.set("gemini", geminiDiscovery);
@@ -641,7 +653,7 @@ export async function findProfiles(input: {
           }))
         : organic
             .filter((result) => result.method === method && result.link)
-            .slice(0, 10)
+            .slice(0, 30)
             .map((result) => ({
               title: result.title ?? "Untitled result",
               url: result.link!,
