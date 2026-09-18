@@ -60,6 +60,38 @@ type IdentityMetadata = {
   verified?: boolean;
 };
 
+const socialPlatformDefinitions = [
+  {
+    key: "instagram",
+    name: "Instagram",
+    aliases: ["instagram"],
+    scrapeCreatorsProfilePath: "/instagram/profile",
+  },
+  {
+    key: "tiktok",
+    name: "TikTok",
+    aliases: ["tiktok"],
+    scrapeCreatorsProfilePath: "/tiktok/profile",
+  },
+  {
+    key: "youtube",
+    name: "YouTube",
+    aliases: ["youtube"],
+    scrapeCreatorsProfilePath: "/youtube/channel",
+  },
+] as const;
+
+type DiscoveryPlatform = typeof socialPlatformDefinitions[number]["name"];
+
+function platformDefinition(value?: string) {
+  const normalized = value?.toLowerCase();
+  return socialPlatformDefinitions.find((platform) =>
+    platform.key === normalized
+    || platform.name.toLowerCase() === normalized
+    || platform.aliases.some((alias) => alias === normalized),
+  );
+}
+
 const platforms = [
   { host: "instagram.com", name: "Instagram", category: "social" },
   { host: "tiktok.com", name: "TikTok", category: "social" },
@@ -326,11 +358,7 @@ async function discoverWithGeminiOnline(input: {
 }
 
 function targetsForPlatform(value?: string) {
-  const normalized = value?.toLowerCase();
-  if (normalized === "instagram") return "Instagram";
-  if (normalized === "tiktok") return "TikTok";
-  if (normalized === "youtube") return "YouTube";
-  return undefined;
+  return platformDefinition(value)?.name;
 }
 
 function profileHandleFromUrl(value: string): string {
@@ -353,18 +381,12 @@ async function fetchIdentityMetadata(input: {
   url: string;
   apiKey: string;
 }): Promise<IdentityMetadata | undefined> {
-  const platform = input.platform.toLowerCase();
-  const path = platform === "instagram"
-    ? "/instagram/profile"
-    : platform === "tiktok"
-      ? "/tiktok/profile"
-      : platform === "youtube"
-        ? "/youtube/channel"
-        : undefined;
-  if (!path) return undefined;
+  const definition = platformDefinition(input.platform);
+  if (!definition) return undefined;
+  const platform = definition.key;
   const expectedHandle = profileHandleFromUrl(input.url).toLowerCase();
   const response = await fetch(
-    `https://api.scrapecreators.com/v1${path}?${new URLSearchParams({ handle: expectedHandle })}`,
+    `https://api.scrapecreators.com/v1${definition.scrapeCreatorsProfilePath}?${new URLSearchParams({ handle: expectedHandle })}`,
     {
       headers: { "x-api-key": input.apiKey },
       signal: AbortSignal.timeout(12_000),
@@ -422,7 +444,7 @@ async function fetchIdentityMetadata(input: {
   };
 }
 
-function compareIdentity(reference: IdentityMetadata, candidate: IdentityMetadata) {
+function compareIdentity(reference: IdentityMetadata, candidate: IdentityMetadata, evidence: string[] = []) {
   const clean = (value?: string) => (value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const referenceName = clean(reference.displayName);
   const candidateName = clean(candidate.displayName);
@@ -434,6 +456,10 @@ function compareIdentity(reference: IdentityMetadata, candidate: IdentityMetadat
   const reasons: string[] = [];
   let score = 0;
 
+  if (evidence.some((signal) => signal.toLowerCase().includes("link in bio"))) {
+    score += 60;
+    reasons.push("Direct link from the known profile");
+  }
   if (referenceName && candidateName && (referenceName.includes(candidateName) || candidateName.includes(referenceName))) {
     score += 35;
     reasons.push("Display names closely match");
@@ -489,7 +515,7 @@ export async function findProfiles(input: {
     cleanHandle ? `@${cleanHandle}` : undefined,
     input.handlePlatform,
   ].filter(Boolean).join(" ");
-  const targets = ["Instagram", "TikTok", "YouTube"];
+  const targets: DiscoveryPlatform[] = socialPlatformDefinitions.map((platform) => platform.name);
   const selected = input.methods?.length
     ? input.methods
     : ["serper", "tavily", "gemini", "scrapecreators", "socialcrawl"];
@@ -858,17 +884,19 @@ export async function findProfiles(input: {
   if (input.scrapeCreatorsApiKey && input.knownProfileUrl && input.handlePlatform) {
     const referencePlatform = targetsForPlatform(input.handlePlatform);
     const geminiPlatforms = new Set(geminiDiscovery.map((profile) => profile.platform));
-    const disputed = targets
-      .filter((platform) => platform !== referencePlatform && !geminiPlatforms.has(platform))
-      .map((platform) => profiles.find((profile) => {
-        if (profile.platform !== platform || !profile.methods.includes("serper")) return false;
+      const disputed = profiles
+        .filter((profile) => {
+          if (
+            profile.platform === referencePlatform
+            || geminiPlatforms.has(profile.platform)
+            || (!profile.methods.includes("serper") && !profile.methods.includes("scrapecreators"))
+          ) return false;
         try {
           return !excludedPaths.some((path) => new URL(profile.url).pathname.toLowerCase().includes(path));
         } catch {
           return false;
         }
-      }))
-      .filter((profile): profile is ProfileMatch => Boolean(profile));
+        });
     let reference: IdentityMetadata | undefined;
     let referenceFailure: string | undefined;
     if (referencePlatform) {
@@ -891,7 +919,7 @@ export async function findProfiles(input: {
             apiKey: input.scrapeCreatorsApiKey!,
           });
           return candidate
-            ? { url: profile.url, comparison: compareIdentity(reference, candidate) }
+            ? { url: profile.url, comparison: compareIdentity(reference, candidate, profile.signals) }
             : { url: profile.url, note: "No profile metadata returned for this candidate" };
         } catch (error) {
           return {
