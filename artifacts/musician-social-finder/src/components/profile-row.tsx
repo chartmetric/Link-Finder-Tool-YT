@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2, AlertCircle, Hash, ArrowRight, Copy, Check, Play } from 'lucide-react';
+import { Loader2, AlertCircle, Hash, ArrowRight, Copy, Check, Play, Search, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function getBestCandidate(data: ProfileSearchResponse | undefined, platform: string, method: string) {
@@ -413,18 +413,40 @@ function MethodComparison({ data }: { data: ProfileSearchResponse }) {
                 {[
                   { label: 'Serper', result: serperResult },
                   { label: 'Gemini', result: geminiResult },
-                ].map(({ label, result }) => (
-                  <div key={label} className="rounded border border-border/60 bg-background/80 p-2">
-                    <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">{label}</div>
+                ].map(({ label, result }) => {
+                  const isSerper = label === 'Serper';
+                  const MethodIcon = isSerper ? Search : Sparkles;
+                  return (
+                  <div key={label} className={cn(
+                    'rounded border bg-background/80 p-2',
+                    isSerper ? 'border-sky-500/25' : 'border-violet-500/25',
+                  )}>
+                    <div className={cn(
+                      'flex items-center gap-1 text-[8px] font-bold uppercase tracking-widest',
+                      isSerper ? 'text-sky-700' : 'text-violet-700',
+                    )}>
+                      <MethodIcon className="h-3 w-3" />
+                      {label}
+                    </div>
                     {result ? (
-                      <a href={result.url} target="_blank" rel="noreferrer" className="mt-1 block truncate text-[10px] font-mono text-primary hover:underline" title={result.url}>
+                      <a
+                        href={result.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={cn(
+                          'mt-1 block truncate text-[10px] font-mono hover:underline',
+                          isSerper ? 'text-sky-700' : 'text-violet-700',
+                        )}
+                        title={result.url}
+                      >
                         {result.url}
                       </a>
                     ) : (
                       <div className="mt-1 text-[10px] text-muted-foreground">No account found</div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           );
@@ -485,8 +507,16 @@ function ExpandedResult({ data, error }: { data?: ProfileSearchResponse, error?:
                  {m.status === 'used' && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/40" />}
                  {m.status === 'failed' && <div className="absolute left-0 top-0 bottom-0 w-1 bg-destructive/40" />}
                  
-                 <div className="flex justify-between items-start gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-widest leading-tight">{m.label || m.method}</span>
+                  <div className="flex justify-between items-start gap-2">
+                     <span className={cn(
+                       'flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest leading-tight',
+                       m.method === 'serper' && 'text-sky-700',
+                       m.method === 'gemini' && 'text-violet-700',
+                     )}>
+                       {m.method === 'serper' && <Search className="h-3.5 w-3.5" />}
+                       {m.method === 'gemini' && <Sparkles className="h-3.5 w-3.5" />}
+                       {m.label || m.method}
+                     </span>
                     <Badge variant={m.status === 'used' ? "secondary" : m.status === 'failed' ? "destructive" : "outline"} className="text-[8px] px-1 py-0 h-4 uppercase shadow-none font-bold">
                       {m.status}
                     </Badge>
