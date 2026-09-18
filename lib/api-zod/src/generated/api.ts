@@ -95,7 +95,8 @@ export const SearchProfilesResponse = zod.object({
   "followers": zod.number().optional(),
   "verified": zod.boolean().optional()
 })
-}).optional()
+}).optional(),
+  "identityVerificationNote": zod.string().optional()
 })),
   "sources": zod.array(zod.object({
   "title": zod.string(),

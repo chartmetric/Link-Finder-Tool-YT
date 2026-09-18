@@ -302,6 +302,8 @@ components:
             type: string
         identityComparison:
           $ref: "#/components/schemas/IdentityComparison"
+        identityVerificationNote:
+          type: string
       required:
         - platform
         - category

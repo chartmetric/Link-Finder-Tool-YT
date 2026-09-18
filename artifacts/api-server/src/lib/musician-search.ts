@@ -46,6 +46,7 @@ export type ProfileMatch = {
     reference: IdentityMetadata;
     candidate: IdentityMetadata;
   };
+  identityVerificationNote?: string;
 };
 
 type IdentityMetadata = {
@@ -369,7 +370,12 @@ async function fetchIdentityMetadata(input: {
       signal: AbortSignal.timeout(12_000),
     },
   );
-  if (!response.ok) return undefined;
+  if (!response.ok) {
+    const failure = await response.json().catch(() => undefined) as {
+      error?: { message?: string };
+    } | undefined;
+    throw new Error(failure?.error?.message ?? `Metadata lookup failed (${response.status})`);
+  }
   const payload = (await response.json()) as {
     data?: {
       items?: Array<{
@@ -779,38 +785,61 @@ export async function findProfiles(input: {
 
   if (input.socialCrawlApiKey && input.knownProfileUrl && input.handlePlatform) {
     const referencePlatform = targetsForPlatform(input.handlePlatform);
-    const reference = referencePlatform
-      ? await fetchIdentityMetadata({
+    const geminiPlatforms = new Set(geminiDiscovery.map((profile) => profile.platform));
+    const disputed = targets
+      .filter((platform) => platform !== referencePlatform && !geminiPlatforms.has(platform))
+      .map((platform) => profiles.find((profile) => {
+        if (profile.platform !== platform || !profile.methods.includes("serper")) return false;
+        try {
+          return !excludedPaths.some((path) => new URL(profile.url).pathname.toLowerCase().includes(path));
+        } catch {
+          return false;
+        }
+      }))
+      .filter((profile): profile is ProfileMatch => Boolean(profile));
+    let reference: IdentityMetadata | undefined;
+    let referenceFailure: string | undefined;
+    if (referencePlatform) {
+      try {
+        reference = await fetchIdentityMetadata({
           platform: referencePlatform,
           url: input.knownProfileUrl,
           apiKey: input.socialCrawlApiKey,
-        })
-      : undefined;
-    if (reference) {
-      const geminiPlatforms = new Set(geminiDiscovery.map((profile) => profile.platform));
-      const disputed = targets
-        .filter((platform) => platform !== referencePlatform && !geminiPlatforms.has(platform))
-        .map((platform) => profiles.find((profile) => {
-          if (profile.platform !== platform || !profile.methods.includes("serper")) return false;
-          try {
-            return !excludedPaths.some((path) => new URL(profile.url).pathname.toLowerCase().includes(path));
-          } catch {
-            return false;
-          }
-        }))
-        .filter((profile): profile is ProfileMatch => Boolean(profile));
-      const comparisons = await Promise.all(disputed.map(async (profile) => {
-        const candidate = await fetchIdentityMetadata({
-          platform: profile.platform,
-          url: profile.url,
-          apiKey: input.socialCrawlApiKey!,
         });
-        return candidate ? [profile.url, compareIdentity(reference, candidate)] as const : undefined;
+      } catch (error) {
+        referenceFailure = error instanceof Error ? error.message : "Identity metadata lookup failed";
+      }
+    }
+    if (reference) {
+      const comparisons = await Promise.all(disputed.map(async (profile) => {
+        try {
+          const candidate = await fetchIdentityMetadata({
+            platform: profile.platform,
+            url: profile.url,
+            apiKey: input.socialCrawlApiKey!,
+          });
+          return candidate
+            ? { url: profile.url, comparison: compareIdentity(reference, candidate) }
+            : { url: profile.url, note: "No profile metadata returned for this candidate" };
+        } catch (error) {
+          return {
+            url: profile.url,
+            note: error instanceof Error ? error.message : "Candidate metadata lookup failed",
+          };
+        }
       }));
-      const comparisonByUrl = new Map(comparisons.filter(Boolean) as Array<readonly [string, NonNullable<ProfileMatch["identityComparison"]>]>);
+      const comparisonByUrl = new Map(comparisons.filter((item) => item.comparison).map(
+        (item) => [item.url, item.comparison!] as const,
+      ));
+      const noteByUrl = new Map(comparisons.filter((item) => item.note).map(
+        (item) => [item.url, item.note!] as const,
+      ));
       profiles = profiles.map((profile) => {
         const identityComparison = comparisonByUrl.get(profile.url);
-        if (!identityComparison) return profile;
+        const identityVerificationNote = noteByUrl.get(profile.url);
+        if (!identityComparison) return identityVerificationNote
+          ? { ...profile, identityVerificationNote }
+          : profile;
         const confidenceAdjustment = identityComparison.status === "likely"
           ? 5
           : identityComparison.status === "mismatch"
@@ -823,6 +852,11 @@ export async function findProfiles(input: {
           identityComparison,
         };
       });
+    } else if (referenceFailure) {
+      const disputedUrls = new Set(disputed.map((profile) => profile.url));
+      profiles = profiles.map((profile) => disputedUrls.has(profile.url)
+        ? { ...profile, identityVerificationNote: referenceFailure }
+        : profile);
     }
   }
 

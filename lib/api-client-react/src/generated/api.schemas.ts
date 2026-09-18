@@ -177,6 +177,7 @@ export interface ProfileMatch {
   signals: string[];
   methods: string[];
   identityComparison?: IdentityComparison;
+  identityVerificationNote?: string;
 }
 
 export type SearchMethodUsageStatus = typeof SearchMethodUsageStatus[keyof typeof SearchMethodUsageStatus];

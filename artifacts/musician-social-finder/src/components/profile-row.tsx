@@ -382,6 +382,9 @@ function MethodComparison({ data }: { data: ProfileSearchResponse }) {
         {platforms.map(platform => {
           const serperResult = firstForPlatform(serper, platform);
           const geminiResult = firstForPlatform(gemini, platform);
+          const serperProfile = data.profiles.find(
+            profile => profile.platform.toLowerCase() === platform.toLowerCase() && profile.methods.includes('serper'),
+          );
           const matches = Boolean(
             serperResult
             && geminiResult
@@ -447,6 +450,11 @@ function MethodComparison({ data }: { data: ProfileSearchResponse }) {
                   </div>
                   );
                 })}
+                {serperProfile?.identityVerificationNote && (
+                  <div className="rounded border border-amber-500/30 bg-amber-500/5 px-2 py-1.5 text-[9px] font-medium text-amber-800">
+                    Verification unavailable: {serperProfile.identityVerificationNote}
+                  </div>
+                )}
               </div>
             </div>
           );
