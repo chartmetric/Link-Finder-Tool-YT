@@ -13,6 +13,7 @@ export const ProfileSearchInputMethodsItem = {
   serper: 'serper',
   tavily: 'tavily',
   gemini: 'gemini',
+  jev: 'jev',
   scrapecreators: 'scrapecreators',
   socialcrawl: 'socialcrawl',
 } as const;

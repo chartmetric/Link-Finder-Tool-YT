@@ -31,6 +31,7 @@ export const ProfileSearchInputMethodsItem = {
   serper: 'serper',
   tavily: 'tavily',
   gemini: 'gemini',
+  jev: 'jev',
   scrapecreators: 'scrapecreators',
   socialcrawl: 'socialcrawl',
 } as const;
@@ -162,6 +163,33 @@ export interface IdentityComparison {
   candidate: IdentityMetadata;
 }
 
+export type JevVerificationVerdict = typeof JevVerificationVerdict[keyof typeof JevVerificationVerdict];
+
+
+export const JevVerificationVerdict = {
+  verified: 'verified',
+  likely: 'likely',
+  uncertain: 'uncertain',
+  mismatch: 'mismatch',
+} as const;
+
+export type JevVerificationProbabilities = {[key: string]: number};
+
+export interface JevVerification {
+  verdict: JevVerificationVerdict;
+  /**
+     * @minimum 0
+     * @maximum 1
+     */
+  sameIdentityProbability: number;
+  /**
+     * @minimum 0
+     * @maximum 1
+     */
+  verdictConfidence: number;
+  probabilities: JevVerificationProbabilities;
+}
+
 export interface ProfileMatch {
   platform: string;
   category: ProfileMatchCategory;
@@ -178,6 +206,7 @@ export interface ProfileMatch {
   methods: string[];
   identityComparison?: IdentityComparison;
   identityVerificationNote?: string;
+  jevVerification?: JevVerification;
 }
 
 export type SearchMethodUsageStatus = typeof SearchMethodUsageStatus[keyof typeof SearchMethodUsageStatus];

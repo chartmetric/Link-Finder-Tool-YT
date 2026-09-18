@@ -47,6 +47,12 @@ export type ProfileMatch = {
     candidate: IdentityMetadata;
   };
   identityVerificationNote?: string;
+  jevVerification?: {
+    verdict: "verified" | "likely" | "uncertain" | "mismatch";
+    sameIdentityProbability: number;
+    verdictConfidence: number;
+    probabilities: Record<string, number>;
+  };
 };
 
 type IdentityMetadata = {
@@ -526,17 +532,19 @@ export async function findProfiles(input: {
     serper: { label: "Serper", estimatedCostUsd: 0.003, costNote: "3 queries at roughly $1 per 1,000 queries" },
     tavily: { label: "Tavily", estimatedCostUsd: 0.024, costNote: "3 basic searches at roughly $0.008 per credit" },
     gemini: { label: "Gemini Verification", estimatedCostUsd: 0.01, costNote: "Automatic separate verification pass; web search and token charges vary" },
+    jev: { label: "JEV Decision", estimatedCostUsd: 0, costNote: "Typed identity decision over gathered evidence; exact OpenRouter usage cost shown" },
     deepseek: { label: "DeepSeek Verification", estimatedCostUsd: 0.008, costNote: "Automatic independent candidate review using V4.1 Flash and token usage" },
     scrapecreators: { label: "ScrapeCreators", estimatedCostUsd: 0, costNote: "0 cached or 10 live credits; dollar cost depends on your credit pack" },
     socialcrawl: { label: "SocialCrawl", estimatedCostUsd: 0, costNote: "3 credits for Instagram, TikTok, and YouTube searches; dollar cost depends on your credit pack" },
   } as const;
-  const methodKeys = ["serper", "tavily", "gemini", "deepseek", "scrapecreators", "socialcrawl"] as const;
+  const methodKeys = ["serper", "tavily", "gemini", "jev", "deepseek", "scrapecreators", "socialcrawl"] as const;
   const statuses = new Map<string, "used" | "unavailable" | "failed">();
   const durations = new Map<string, number>();
   const verifierResults = new Map<string, ProfileMatch[]>();
   let geminiDiscovery: ProfileMatch[] = [];
   let scrapeCreatorsCreditsCharged: number | undefined;
   let socialCrawlCreditsCharged: number | undefined;
+  let jevCostUsd = 0;
   const organic: Array<SerperOrganicResult & { method: string }> = [];
 
   const runSearches = async (
@@ -960,6 +968,100 @@ export async function findProfiles(input: {
     }
   }
 
+  const jevCandidates = profiles.filter((profile) => profile.identityComparison);
+  if (input.openrouterApiKey && jevCandidates.length > 0) {
+    const startedAt = performance.now();
+    try {
+      const questions = Object.fromEntries(jevCandidates.flatMap((profile, index) => [
+        [`candidate_${index}_same_identity`, {
+          type: "noul",
+          instructions: `Evaluate only candidates[${index}] (${profile.url}). Does it belong to the same person, creator, brand, or entity as knownProfileUrl?`,
+          criteria: {
+            true: "The supplied metadata and evidence support the same identity",
+            false: "The evidence supports different identities or is too weak",
+          },
+        }],
+        [`candidate_${index}_verdict`, {
+          type: "choice",
+          instructions: `Evaluate only candidates[${index}] (${profile.url}). Classify its identity match against knownProfileUrl.`,
+          criteria: {
+            verified: "A direct official cross-link or uniquely conclusive evidence",
+            likely: "Multiple strong and consistent identity signals",
+            uncertain: "Some overlap but insufficient evidence",
+            mismatch: "Conflicting or clearly unrelated identity evidence",
+          },
+        }],
+      ]));
+      const response = await fetch("https://openrouter.ai/api/alpha/decisions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${input.openrouterApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "typesafe/jev-1.13",
+          state: {
+            subject,
+            knownProfileUrl: input.knownProfileUrl,
+            candidates: jevCandidates.map((profile, index) => ({
+              index,
+              url: profile.url,
+              methods: profile.methods,
+              metadata: profile.identityComparison,
+              evidence: profile.signals,
+            })),
+          },
+          questions,
+        }),
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!response.ok) throw new Error(`JEV decision failed (${response.status})`);
+      const payload = (await response.json()) as {
+        answers?: Record<string, {
+          noul?: number;
+          choice?: string;
+          confidence?: number;
+          probabilities?: Record<string, number>;
+        }>;
+        usage?: { cost?: number };
+      };
+      jevCostUsd = payload.usage?.cost ?? 0;
+      const verificationByUrl = new Map(jevCandidates.flatMap((profile, index) => {
+        const sameIdentity = payload.answers?.[`candidate_${index}_same_identity`];
+        const verdict = payload.answers?.[`candidate_${index}_verdict`];
+        if (
+          sameIdentity?.noul === undefined
+          || !verdict?.choice
+          || !["verified", "likely", "uncertain", "mismatch"].includes(verdict.choice)
+        ) return [];
+        return [[profile.url, {
+          verdict: verdict.choice as "verified" | "likely" | "uncertain" | "mismatch",
+          sameIdentityProbability: sameIdentity.noul,
+          verdictConfidence: verdict.confidence ?? Math.max(...Object.values(verdict.probabilities ?? { unknown: 0 })),
+          probabilities: verdict.probabilities ?? {},
+        }] as const];
+      }));
+      profiles = profiles.map((profile) => {
+        const jevVerification = verificationByUrl.get(profile.url);
+        return jevVerification
+          ? {
+              ...profile,
+              jevVerification,
+              signals: [...profile.signals, `JEV decision: ${jevVerification.verdict}`],
+            }
+          : profile;
+      });
+      verifierResults.set("jev", profiles.filter((profile) => profile.jevVerification));
+      statuses.set("jev", "used");
+      selected.push("jev");
+    } catch {
+      statuses.set("jev", "failed");
+      selected.push("jev");
+    } finally {
+      durations.set("jev", Math.round(performance.now() - startedAt));
+    }
+  }
+
   const methodsUsed = methodKeys
     .filter((method) => selected.includes(method))
     .map((method) => ({
@@ -971,9 +1073,15 @@ export async function findProfiles(input: {
       ...(method === "socialcrawl" && socialCrawlCreditsCharged !== undefined
         ? { costNote: `${socialCrawlCreditsCharged} credits charged for this request` }
         : {}),
+      ...(method === "jev"
+        ? {
+            estimatedCostUsd: jevCostUsd,
+            costNote: `Exact OpenRouter usage cost: $${jevCostUsd.toFixed(8)}`,
+          }
+        : {}),
       status: statuses.get(method) ?? "failed",
       durationMs: durations.get(method) ?? 0,
-      results: method === "gemini" || method === "deepseek"
+      results: method === "gemini" || method === "jev" || method === "deepseek"
         ? (verifierResults.get(method) ?? []).slice(0, 10).map((profile) => ({
             title: profile.title,
             url: profile.url,

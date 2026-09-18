@@ -176,7 +176,7 @@ components:
           type: array
           items:
             type: string
-            enum: [serper, tavily, gemini, scrapecreators, socialcrawl]
+            enum: [serper, tavily, gemini, jev, scrapecreators, socialcrawl]
     ExistingProfile:
       type: object
       properties:
@@ -304,6 +304,8 @@ components:
           $ref: "#/components/schemas/IdentityComparison"
         identityVerificationNote:
           type: string
+        jevVerification:
+          $ref: "#/components/schemas/JevVerification"
       required:
         - platform
         - category
@@ -341,6 +343,25 @@ components:
         candidate:
           $ref: "#/components/schemas/IdentityMetadata"
       required: [status, score, reasons, reference, candidate]
+    JevVerification:
+      type: object
+      properties:
+        verdict:
+          type: string
+          enum: [verified, likely, uncertain, mismatch]
+        sameIdentityProbability:
+          type: number
+          minimum: 0
+          maximum: 1
+        verdictConfidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        probabilities:
+          type: object
+          additionalProperties:
+            type: number
+      required: [verdict, sameIdentityProbability, verdictConfidence, probabilities]
     SearchMethodUsage:
       type: object
       properties:

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { IdentityComparison } from './identityComparison';
+import type { JevVerification } from './jevVerification';
 import type { ProfileMatchCategory } from './profileMatchCategory';
 
 export interface ProfileMatch {
@@ -24,4 +25,5 @@ export interface ProfileMatch {
   methods: string[];
   identityComparison?: IdentityComparison;
   identityVerificationNote?: string;
+  jevVerification?: JevVerification;
 }

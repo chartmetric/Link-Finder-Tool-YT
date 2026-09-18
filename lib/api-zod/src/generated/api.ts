@@ -44,7 +44,7 @@ export const SearchProfilesBody = zod.object({
   "knownProfileUrl": zod.string().max(searchProfilesBodyKnownProfileUrlMax).optional().describe('Existing social profile URL used as an identity clue'),
   "location": zod.string().max(searchProfilesBodyLocationMax).optional(),
   "country": zod.string().min(searchProfilesBodyCountryMin).max(searchProfilesBodyCountryMax).default(searchProfilesBodyCountryDefault),
-  "methods": zod.array(zod.enum(['serper', 'tavily', 'gemini', 'scrapecreators', 'socialcrawl'])).optional()
+  "methods": zod.array(zod.enum(['serper', 'tavily', 'gemini', 'jev', 'scrapecreators', 'socialcrawl'])).optional()
 })
 
 export const searchProfilesResponseProfilesItemConfidenceMin = 0;
@@ -52,6 +52,12 @@ export const searchProfilesResponseProfilesItemConfidenceMax = 100;
 
 export const searchProfilesResponseProfilesItemIdentityComparisonScoreMin = 0;
 export const searchProfilesResponseProfilesItemIdentityComparisonScoreMax = 100;
+
+export const searchProfilesResponseProfilesItemJevVerificationSameIdentityProbabilityMin = 0;
+export const searchProfilesResponseProfilesItemJevVerificationSameIdentityProbabilityMax = 1;
+
+export const searchProfilesResponseProfilesItemJevVerificationVerdictConfidenceMin = 0;
+export const searchProfilesResponseProfilesItemJevVerificationVerdictConfidenceMax = 1;
 
 export const searchProfilesResponseMethodsUsedItemDurationMsMin = 0;
 
@@ -96,7 +102,13 @@ export const SearchProfilesResponse = zod.object({
   "verified": zod.boolean().optional()
 })
 }).optional(),
-  "identityVerificationNote": zod.string().optional()
+  "identityVerificationNote": zod.string().optional(),
+  "jevVerification": zod.object({
+  "verdict": zod.enum(['verified', 'likely', 'uncertain', 'mismatch']),
+  "sameIdentityProbability": zod.number().min(searchProfilesResponseProfilesItemJevVerificationSameIdentityProbabilityMin).max(searchProfilesResponseProfilesItemJevVerificationSameIdentityProbabilityMax),
+  "verdictConfidence": zod.number().min(searchProfilesResponseProfilesItemJevVerificationVerdictConfidenceMin).max(searchProfilesResponseProfilesItemJevVerificationVerdictConfidenceMax),
+  "probabilities": zod.record(zod.string(), zod.number())
+}).optional()
 })),
   "sources": zod.array(zod.object({
   "title": zod.string(),

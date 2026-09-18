@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2, AlertCircle, Hash, ArrowRight, Copy, Check, Play, Search, Sparkles } from 'lucide-react';
+import { Loader2, AlertCircle, Hash, ArrowRight, Copy, Check, Play, Search, Sparkles, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function getBestCandidate(data: ProfileSearchResponse | undefined, platform: string, method: string) {
@@ -562,9 +562,11 @@ function ExpandedResult({ data, error }: { data?: ProfileSearchResponse, error?:
                        'flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest leading-tight',
                        m.method === 'serper' && 'text-sky-700',
                        m.method === 'gemini' && 'text-violet-700',
+                       m.method === 'jev' && 'text-orange-700',
                      )}>
                        {m.method === 'serper' && <Search className="h-3.5 w-3.5" />}
                        {m.method === 'gemini' && <Sparkles className="h-3.5 w-3.5" />}
+                       {m.method === 'jev' && <ShieldCheck className="h-3.5 w-3.5" />}
                        {m.label || m.method}
                      </span>
                     <Badge variant={m.status === 'used' ? "secondary" : m.status === 'failed' ? "destructive" : "outline"} className="text-[8px] px-1 py-0 h-4 uppercase shadow-none font-bold">
@@ -707,6 +709,33 @@ function ExpandedResult({ data, error }: { data?: ProfileSearchResponse, error?:
                       </span>
                     ))}
                   </div>
+                  {p.jevVerification && (
+                    <div className="mt-3 rounded-md border border-orange-500/30 bg-orange-500/5 p-2.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-orange-700">
+                          <ShieldCheck className="h-3.5 w-3.5" />
+                          JEV typed decision
+                        </div>
+                        <Badge variant="outline" className="h-5 border-orange-500/30 text-[8px] font-bold uppercase text-orange-700">
+                          {p.jevVerification.verdict}
+                        </Badge>
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-[9px]">
+                        <div className="rounded border border-border/50 bg-background/80 px-2 py-1.5">
+                          <div className="uppercase tracking-wider text-muted-foreground">Same identity</div>
+                          <div className="mt-0.5 font-mono font-bold">
+                            {(p.jevVerification.sameIdentityProbability * 100).toFixed(0)}%
+                          </div>
+                        </div>
+                        <div className="rounded border border-border/50 bg-background/80 px-2 py-1.5">
+                          <div className="uppercase tracking-wider text-muted-foreground">Decision confidence</div>
+                          <div className="mt-0.5 font-mono font-bold">
+                            {(p.jevVerification.verdictConfidence * 100).toFixed(0)}%
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               <div className="flex gap-1.5 flex-wrap mt-auto pt-4 border-t border-border/40">
