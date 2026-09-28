@@ -113,6 +113,7 @@ router.post("/profiles/search", async (req, res): Promise<void> => {
     const search = findProfiles({
       ...input.data,
       ...resolved,
+      excludeReferencePlatform: urlOnly,
       serperApiKey: process.env.SERPERDEV_API_KEY ?? process.env.SERPER_API_KEY,
       tavilyApiKey: process.env.TAVILY_WEB_SEARCH_API_KEY,
       openrouterApiKey: process.env.OPENROUTER_API_KEY,

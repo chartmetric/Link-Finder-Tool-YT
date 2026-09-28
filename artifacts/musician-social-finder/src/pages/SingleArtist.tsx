@@ -3,15 +3,25 @@ import { Link } from 'wouter';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, CircleAlert, Clipboard, Compass, ExternalLink, Fingerprint, Instagram, Link2, Radar, RefreshCw, SearchCheck, ShieldCheck, Sparkles, Youtube } from 'lucide-react';
+import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, CircleAlert, Clipboard, Compass, ExternalLink, Fingerprint, Link2, Radar, RefreshCw, SearchCheck, ShieldCheck, Sparkles } from 'lucide-react';
+import { SiInstagram, SiTiktok, SiYoutube } from 'react-icons/si';
 import { searchProfiles, type ProfileMatch, type ProfileSearchResponse } from '@workspace/api-client-react';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 
 const platforms = [
-  { name: 'Instagram', icon: Instagram },
-  { name: 'TikTok', icon: Activity },
-  { name: 'YouTube', icon: Youtube },
+  { name: 'Instagram', icon: SiInstagram },
+  { name: 'TikTok', icon: SiTiktok },
+  { name: 'YouTube', icon: SiYoutube },
 ] as const;
+
+function platformFromUrl(value: string) {
+  try {
+    const host = new URL(value).hostname.toLowerCase().replace(/^(www|m)\./, '');
+    return platforms.find(platform => host === `${platform.name.toLowerCase()}.com`)?.name;
+  } catch {
+    return undefined;
+  }
+}
 
 function isProfileUrl(value: string) {
   try {
@@ -36,7 +46,7 @@ type SearchValues = z.infer<typeof searchSchema>;
 
 const stages = [
   { title: 'Reading the reference', detail: 'Resolving the profile URL as the identity clue.' },
-  { title: 'Searching across platforms', detail: 'Looking for possible Instagram, TikTok and YouTube accounts.' },
+  { title: 'Searching missing platforms', detail: 'Looking for accounts on the platforms you did not provide.' },
   { title: 'Comparing the evidence', detail: 'Checking candidate signals and identity overlap.' },
   { title: 'Preparing the review', detail: 'Waiting for the complete response and verification.' },
 ];
@@ -68,6 +78,7 @@ function Candidate({ candidate, index }: { candidate: ProfileMatch; index: numbe
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
   const comparison = candidate.identityComparison;
   const jev = candidate.jevVerification;
+  const Icon = platforms.find(platform => platform.name.toLowerCase() === candidate.platform.toLowerCase())?.icon ?? Link2;
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(candidate.url);
@@ -83,7 +94,7 @@ function Candidate({ candidate, index }: { candidate: ProfileMatch; index: numbe
     <article className="inv-candidate" data-testid={`card-candidate-${index}`}>
       <div className="inv-candidate-top">
         <div style={{ minWidth: 0 }}>
-          <div className="inv-candidate-label">Candidate {String(index + 1).padStart(2, '0')} / {candidate.platform}</div>
+          <div className="inv-candidate-label"><Icon size={14} aria-hidden="true" /> Candidate {String(index + 1).padStart(2, '0')} / {candidate.platform}</div>
           <h4 data-testid={`text-candidate-title-${index}`}>{candidate.title || cleanDisplayUrl(candidate.url)}</h4>
           <a data-testid={`link-candidate-${index}`} className="inv-candidate-link" href={candidate.url} target="_blank" rel="noopener noreferrer">
             {candidate.displayUrl || cleanDisplayUrl(candidate.url)} <ArrowUpRight size={13} aria-hidden="true" />
@@ -178,8 +189,13 @@ export default function SingleArtist() {
   }
 
   const stage = getStage(elapsed);
-  const sortedProfiles = result ? [...result.profiles].sort((a, b) => b.confidence - a.confidence) : [];
-  const sources = result?.sources ?? [];
+  const referencePlatform = platformFromUrl(searchedUrl);
+  const availablePlatforms = platforms.filter(platform => platform.name !== referencePlatform);
+  const draftPlatform = platformFromUrl(form.watch('url'));
+  const sortedProfiles = result ? result.profiles
+    .filter(profile => profile.platform.toLowerCase() !== referencePlatform?.toLowerCase())
+    .sort((a, b) => b.confidence - a.confidence) : [];
+  const sources = (result?.sources ?? []).filter(source => platformFromUrl(source.url) !== referencePlatform);
 
   return (
     <div className="investigation">
@@ -201,7 +217,7 @@ export default function SingleArtist() {
           <div className="inv-hero-copy">
             <div className="inv-eyebrow inv-mono">The investigation desk / 01</div>
             <h1 id="investigation-title">Start with<br /><em>one link.</em></h1>
-            <p className="inv-hero-desc">A single known profile can open the trail. Search for connected accounts, inspect the evidence, and decide what belongs to the same person.</p>
+            <p className="inv-hero-desc">Give us one known profile. We’ll look for their accounts on the other platforms, then show the evidence behind each suggestion.</p>
             <div className="inv-hero-foot inv-mono">
               <span><Fingerprint size={15} /> Identity-first search</span>
               <span><ShieldCheck size={15} /> Evidence over assumptions</span>
@@ -210,9 +226,9 @@ export default function SingleArtist() {
           <div className="inv-visual" aria-hidden="true">
             <div className="inv-orbit three" /><div className="inv-orbit two" /><div className="inv-orbit one" />
             <div className="inv-orbit-core"><Radar size={38} strokeWidth={1.6} /></div>
-            <div className="inv-float ig"><Instagram size={14} /> Instagram</div>
-            <div className="inv-float tt"><Activity size={14} /> TikTok</div>
-            <div className="inv-float yt"><Youtube size={15} /> YouTube</div>
+            <div className="inv-float ig"><SiInstagram size={14} /> Instagram</div>
+            <div className="inv-float tt"><SiTiktok size={14} /> TikTok</div>
+            <div className="inv-float yt"><SiYoutube size={15} /> YouTube</div>
             <div className="inv-visual-caption inv-mono">Reference / discovery / verification</div>
           </div>
         </section>
@@ -239,11 +255,11 @@ export default function SingleArtist() {
                         {status === 'pending' ? 'Investigating' : 'Investigate link'} <ArrowRight size={16} />
                       </button>
                     </div>
-                    <p className="inv-input-hint">The URL is used as the identity clue. Results are suggestions for human review, not automatic approvals.</p>
+                    <p className="inv-input-hint">Your link stays the reference. Only accounts on other platforms are returned as suggestions for human review.</p>
                   </div>
                   <div className="inv-search-aside">
-                    <span className="inv-mono">Search scope</span>
-                    <strong>Instagram</strong><strong>TikTok</strong><strong>YouTube</strong>
+                    <span className="inv-mono">{draftPlatform ? `Finding links beyond ${draftPlatform}` : 'Search scope'}</span>
+                    {platforms.filter(platform => platform.name !== draftPlatform).map(({ name, icon: Icon }) => <strong key={name}><Icon size={13} aria-hidden="true" /> {name}</strong>)}
                   </div>
                 </div>
                 <div className="inv-search-bottom inv-mono"><span>SEARCH INPUT / ONE PROFILE URL</span><span>REQUESTED DISCOVERY / <b>SERPER + GEMINI</b></span></div>
@@ -282,22 +298,27 @@ export default function SingleArtist() {
                   <div className="inv-results-meta"><span className="inv-meta-pill" data-testid="text-searched-at">{new Date(result.searchedAt).toLocaleString()}</span></div>
                 </div>
                 <div className="inv-summary">
-                  <div className="inv-summary-lead"><span>Reference profile</span><h3 data-testid="text-result-subject">{result.subject || cleanDisplayUrl(searchedUrl)}</h3><p title={searchedUrl}>{cleanDisplayUrl(searchedUrl)}</p></div>
-                  <div className="inv-summary-stat"><span>Candidates</span><strong data-testid="text-total-found">{result.totalFound}</strong></div>
-                  <div className="inv-summary-stat"><span>High search score</span><strong data-testid="text-high-confidence">{result.highConfidenceCount}</strong></div>
+                  <div className="inv-summary-lead"><span>Known {referencePlatform} profile</span><h3 data-testid="text-result-subject">{result.subject || cleanDisplayUrl(searchedUrl)}</h3><p title={searchedUrl}>{referencePlatform === 'Instagram' ? <SiInstagram size={12} /> : referencePlatform === 'TikTok' ? <SiTiktok size={12} /> : referencePlatform === 'YouTube' ? <SiYoutube size={12} /> : null}{cleanDisplayUrl(searchedUrl)}</p></div>
+                  <div className="inv-summary-stat"><span>Other-platform candidates</span><strong data-testid="text-total-found">{sortedProfiles.length}</strong></div>
+                  <div className="inv-summary-stat"><span>High search score</span><strong data-testid="text-high-confidence">{sortedProfiles.filter(profile => profile.confidence >= 80).length}</strong></div>
                   <div className="inv-summary-stat"><span>Est. cost</span><strong data-testid="text-estimated-cost" style={{ fontSize: 16 }}>${result.estimatedCostUsd.toFixed(4)}</strong></div>
                 </div>
                 <div className="inv-results-layout">
                   <div>
-                    {sortedProfiles.length === 0 && <div className="inv-empty-card" data-testid="status-no-candidates"><span className="inv-state-icon"><Compass size={23} /></span><div className="inv-state-copy"><h3>No candidate accounts returned</h3><p>This search completed without profile matches. Review the provider statuses and sources alongside this result, or try another known profile URL.</p><button type="button" className="inv-retry" onClick={form.handleSubmit(runSearch)} data-testid="button-retry-empty"><RefreshCw size={14} /> Run this search again</button></div></div>}
-                    {platforms.map(({ name, icon: Icon }) => {
+                    {sortedProfiles.length === 0 && <div className="inv-empty-card" data-testid="status-no-candidates"><span className="inv-state-icon"><Compass size={23} /></span><div className="inv-state-copy"><h3>No other-platform accounts found</h3><p>This search did not return profile links on the other platforms. Review the provider statuses or try another known profile URL.</p><button type="button" className="inv-retry" onClick={form.handleSubmit(runSearch)} data-testid="button-retry-empty"><RefreshCw size={14} /> Run this search again</button></div></div>}
+                    {availablePlatforms.map(({ name, icon: Icon }) => {
                       const matches = sortedProfiles.filter(p => p.platform.toLowerCase() === name.toLowerCase());
                       return <div className="inv-result-section" key={name}>
                         <div className="inv-result-section-header"><h3><Icon size={18} /> {name}</h3><span className="inv-result-count">{matches.length} {matches.length === 1 ? 'CANDIDATE' : 'CANDIDATES'}</span></div>
-                        {matches.length ? matches.map((candidate, i) => <Candidate key={`${candidate.url}-${i}`} candidate={candidate} index={sortedProfiles.indexOf(candidate)} />) : <div className="inv-no-platform" data-testid={`status-no-${name.toLowerCase()}`}>No {name} candidate returned in this search.</div>}
+                        {matches.length ? <>
+                          <Candidate candidate={matches[0]} index={sortedProfiles.indexOf(matches[0])} />
+                          {matches.length > 1 && <details className="inv-alternatives"><summary>{matches.length - 1} other possible {name} {matches.length === 2 ? 'profile' : 'profiles'} <ChevronDown size={14} /></summary>
+                            {matches.slice(1).map(candidate => <Candidate key={candidate.url} candidate={candidate} index={sortedProfiles.indexOf(candidate)} />)}
+                          </details>}
+                        </> : <div className="inv-no-platform" data-testid={`status-no-${name.toLowerCase()}`}>No {name} candidate returned in this search.</div>}
                       </div>;
                     })}
-                    {sortedProfiles.filter(p => !platforms.some(platform => platform.name.toLowerCase() === p.platform.toLowerCase())).map((candidate, i) => <Candidate key={`${candidate.url}-other-${i}`} candidate={candidate} index={sortedProfiles.indexOf(candidate)} />)}
+                    {sortedProfiles.filter(p => !availablePlatforms.some(platform => platform.name.toLowerCase() === p.platform.toLowerCase())).map((candidate, i) => <Candidate key={`${candidate.url}-other-${i}`} candidate={candidate} index={sortedProfiles.indexOf(candidate)} />)}
                   </div>
                   <aside className="inv-sidebar">
                     <div className="inv-aside-card" data-testid="section-provider-statuses">
@@ -310,7 +331,10 @@ export default function SingleArtist() {
                     </div>
                     <div className="inv-aside-card" data-testid="section-search-sources">
                       <div className="inv-aside-title"><ExternalLink size={15} /> Search sources <span style={{ marginLeft: 'auto' }}>{sources.length}</span></div>
-                      {sources.length ? sources.map((source, i) => <a key={`${source.url}-${i}`} className="inv-source" href={source.url} target="_blank" rel="noopener noreferrer" data-testid={`link-search-source-${i}`}><strong>{source.title || cleanDisplayUrl(source.url)}</strong><span>{cleanDisplayUrl(source.url)}</span></a>) : <p className="inv-method-note" style={{ marginTop: 15 }}>No source links were returned.</p>}
+                      {sources.length ? sources.map((source, i) => {
+                        const Icon = platforms.find(platform => platform.name === platformFromUrl(source.url))?.icon ?? Link2;
+                        return <a key={`${source.url}-${i}`} className="inv-source" href={source.url} target="_blank" rel="noopener noreferrer" data-testid={`link-search-source-${i}`}><strong><Icon size={12} aria-hidden="true" /> {source.title || cleanDisplayUrl(source.url)}</strong><span>{cleanDisplayUrl(source.url)}</span></a>;
+                      }) : <p className="inv-method-note" style={{ marginTop: 15 }}>No source links were returned.</p>}
                     </div>
                     <div className="inv-aside-card"><div className="inv-aside-title"><Sparkles size={15} /> Review note</div><p className="inv-method-note" style={{ marginTop: 14, fontSize: 11 }}>Confidence and verification are different signals. Open each candidate’s evidence and visit the profile before making a decision.</p></div>
                   </aside>

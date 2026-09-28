@@ -313,6 +313,7 @@ async function verifyWithOnlineModel(input: {
 
 async function discoverWithGeminiOnline(input: {
   subject: string;
+  targets: DiscoveryPlatform[];
   location?: string;
   handle?: string;
   handlePlatform?: string;
@@ -332,7 +333,7 @@ async function discoverWithGeminiOnline(input: {
       }],
       messages: [{
         role: "user",
-        content: `Use live web search to find the official Instagram, TikTok, and YouTube profile URLs for ${input.subject}${input.location ? ` in ${input.location}` : ""}.${input.knownProfileUrl ? ` Known identity profile: ${input.knownProfileUrl}.` : ""}${input.handle ? ` Known ${input.handlePlatform ?? "social"} handle: @${input.handle}.` : ""} Use the known profile as an identity clue and check whether the same or linked identity appears on other platforms. Return only JSON: {"profiles":[{"platform":"Instagram|TikTok|YouTube","url":"https://...","title":"...","snippet":"evidence","confidence":0-100}]}. Omit platforms you cannot verify. Never invent URLs.`,
+        content: `Use live web search to find the official ${input.targets.join(" and ")} profile URLs for ${input.subject}${input.location ? ` in ${input.location}` : ""}.${input.knownProfileUrl ? ` Known identity profile: ${input.knownProfileUrl}.` : ""}${input.handle ? ` Known ${input.handlePlatform ?? "social"} handle: @${input.handle}.` : ""} Use the known profile as an identity clue. Return only profiles on ${input.targets.join(" or ")}; do not return the known profile or posts/videos. Return only JSON: {"profiles":[{"platform":"${input.targets.join("|")}","url":"https://...","title":"...","snippet":"evidence","confidence":0-100}]}. Omit platforms you cannot verify. Never invent URLs.`,
       }],
     }),
     signal: AbortSignal.timeout(20_000),
@@ -346,6 +347,7 @@ async function discoverWithGeminiOnline(input: {
     try {
       const url = new URL(item.url);
       const platform = targetsForPlatform(item.platform)!;
+      if (!input.targets.includes(platform)) return [];
       return [{
         platform,
         category: "social",
@@ -365,6 +367,26 @@ async function discoverWithGeminiOnline(input: {
 
 function targetsForPlatform(value?: string) {
   return platformDefinition(value)?.name;
+}
+
+function isTargetProfileUrl(value: string, targets: DiscoveryPlatform[]): boolean {
+  try {
+    const url = new URL(value);
+    const recognized = classifyUrl(url);
+    if (!recognized || !targets.includes(recognized.name)) return false;
+    const parts = url.pathname.split("/").filter(Boolean);
+    if (recognized.name === "Instagram") {
+      return parts.length === 1 && /^[\w.]{2,120}$/.test(parts[0])
+        && !["p", "reel", "reels", "stories", "explore", "direct", "accounts"].includes(parts[0].toLowerCase());
+    }
+    if (recognized.name === "TikTok") {
+      return parts.length === 1 && /^@[\w.-]{2,120}$/.test(parts[0]);
+    }
+    return (parts.length === 1 && /^@[\w.-]{2,120}$/.test(parts[0]))
+      || (parts.length === 2 && ["channel", "c", "user"].includes(parts[0].toLowerCase()) && /^[\w-]{2,120}$/.test(parts[1]));
+  } catch {
+    return false;
+  }
 }
 
 function profileHandleFromUrl(value: string): string {
@@ -553,6 +575,7 @@ export async function findProfiles(input: {
   handle?: string;
   handlePlatform?: "instagram" | "tiktok" | "youtube" | "x" | "twitter" | "facebook";
   knownProfileUrl?: string;
+  excludeReferencePlatform?: boolean;
   location?: string;
   country?: string;
   methods?: string[];
@@ -570,16 +593,21 @@ export async function findProfiles(input: {
     cleanHandle ? `@${cleanHandle}` : undefined,
     input.handlePlatform,
   ].filter(Boolean).join(" ");
-  const targets: DiscoveryPlatform[] = socialPlatformDefinitions.map((platform) => platform.name);
+  const referencePlatform = input.excludeReferencePlatform ? targetsForPlatform(input.handlePlatform) : undefined;
+  const targets: DiscoveryPlatform[] = socialPlatformDefinitions
+    .map((platform) => platform.name)
+    .filter((platform) => platform !== referencePlatform);
   const selected = input.methods?.length
     ? input.methods
     : ["serper", "tavily", "gemini", "scrapecreators", "socialcrawl"];
   const queries = targets.map(
-    (platform) => `${subject}${locationHint}${identityHint ? ` ${identityHint}` : ""} official ${platform}`,
+    (platform) => input.excludeReferencePlatform
+      ? `${subject}${locationHint}${cleanHandle ? ` @${cleanHandle}` : ""} official site:${platform === "Instagram" ? "instagram.com" : platform === "YouTube" ? "youtube.com/@" : "tiktok.com/@"}`
+      : `${subject}${locationHint}${identityHint ? ` ${identityHint}` : ""} official ${platform}`,
   );
   const methodMeta = {
-    serper: { label: "Serper", estimatedCostUsd: 0.003, costNote: "3 queries at roughly $1 per 1,000 queries" },
-    tavily: { label: "Tavily", estimatedCostUsd: 0.024, costNote: "3 basic searches at roughly $0.008 per credit" },
+    serper: { label: "Serper", estimatedCostUsd: targets.length * 0.001, costNote: `${targets.length} queries at roughly $1 per 1,000 queries` },
+    tavily: { label: "Tavily", estimatedCostUsd: targets.length * 0.008, costNote: `${targets.length} basic searches at roughly $0.008 per credit` },
     gemini: { label: "Gemini Verification", estimatedCostUsd: 0.01, costNote: "Automatic separate verification pass; web search and token charges vary" },
     jev: { label: "JEV Decision", estimatedCostUsd: 0, costNote: "Typed identity decision over gathered evidence; exact OpenRouter usage cost shown" },
     deepseek: { label: "DeepSeek Verification", estimatedCostUsd: 0.008, costNote: "Automatic independent candidate review using V4.1 Flash and token usage" },
@@ -754,6 +782,7 @@ export async function findProfiles(input: {
     try {
       geminiDiscovery = await discoverWithGeminiOnline({
         subject,
+        targets,
         location: input.location,
         handle: cleanHandle,
         handlePlatform: input.handlePlatform,
@@ -814,7 +843,7 @@ export async function findProfiles(input: {
 
   const query = queries.join(" | ");
   const sources = organic
-    .filter((result) => result.link)
+    .filter((result) => result.link && (!input.excludeReferencePlatform || isTargetProfileUrl(result.link, targets)))
     .map((result) => ({
       title: result.title ?? "Untitled result",
       url: result.link!,
@@ -828,6 +857,7 @@ export async function findProfiles(input: {
         const url = new URL(result.link);
         const recognized = classifyUrl(url);
         if (!recognized) return [];
+        if (input.excludeReferencePlatform && !isTargetProfileUrl(result.link, targets)) return [];
         const ranked = rankResult(result, subject, url, recognized);
         return [{
           platform: recognized.name,
@@ -891,7 +921,8 @@ export async function findProfiles(input: {
       scrapeCreatorsCreditsCharged = data.credits_charged;
       profiles.push(...(data.profiles ?? []).flatMap((profile): ProfileMatch[] => {
         const platform = targetsForPlatform(profile.platform);
-        if (!profile.url || !platform || !fallbackPlatforms.includes(platform)) return [];
+        if (!profile.url || !platform || !fallbackPlatforms.includes(platform)
+          || (input.excludeReferencePlatform && !isTargetProfileUrl(profile.url, targets))) return [];
         try {
           const url = new URL(profile.url);
           return [{
@@ -922,6 +953,9 @@ export async function findProfiles(input: {
     }
   }
 
+  if (input.excludeReferencePlatform) {
+    profiles = profiles.filter((profile) => isTargetProfileUrl(profile.url, targets));
+  }
   const merged = new Map<string, ProfileMatch>();
   for (const profile of profiles) {
     const key = `${profile.platform}:${new URL(profile.url).pathname.replace(/\/$/, "").toLowerCase()}`;
@@ -1146,7 +1180,8 @@ export async function findProfiles(input: {
                 snippet: profile.snippet,
               }))
         : organic
-            .filter((result) => result.method === method && result.link)
+            .filter((result) => result.method === method && result.link
+              && (!input.excludeReferencePlatform || isTargetProfileUrl(result.link, targets)))
             .slice(0, 30)
             .map((result) => ({
               title: result.title ?? "Untitled result",
