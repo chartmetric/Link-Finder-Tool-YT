@@ -41,7 +41,7 @@ export const SearchProfilesBody = zod.object({
   "subject": zod.string().min(searchProfilesBodySubjectMin).max(searchProfilesBodySubjectMax).optional(),
   "handle": zod.string().min(searchProfilesBodyHandleMin).max(searchProfilesBodyHandleMax).optional().describe('Known social handle, with or without a leading @'),
   "handlePlatform": zod.enum(['instagram', 'tiktok', 'youtube', 'x', 'twitter', 'facebook']).optional().describe('Platform where the known handle belongs'),
-  "knownProfileUrl": zod.string().max(searchProfilesBodyKnownProfileUrlMax).optional().describe('Existing social profile URL used as an identity clue'),
+  "knownProfileUrl": zod.string().max(searchProfilesBodyKnownProfileUrlMax).optional().describe('Existing Instagram, TikTok, or YouTube profile URL. May be submitted alone; the server resolves the account name and handle.'),
   "location": zod.string().max(searchProfilesBodyLocationMax).optional(),
   "country": zod.string().min(searchProfilesBodyCountryMin).max(searchProfilesBodyCountryMax).default(searchProfilesBodyCountryDefault),
   "methods": zod.array(zod.enum(['serper', 'tavily', 'gemini', 'jev', 'scrapecreators', 'socialcrawl'])).optional()

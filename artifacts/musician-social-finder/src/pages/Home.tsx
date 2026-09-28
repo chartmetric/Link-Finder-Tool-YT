@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Database, ChevronLeft, ChevronRight, Activity, ServerCrash, Settings2, SlidersHorizontal, FileText } from 'lucide-react';
+import { Search, Database, ChevronLeft, ChevronRight, Activity, ServerCrash, Settings2, SlidersHorizontal, FileText, ArrowUpRight, Link2 } from 'lucide-react';
+import { Link } from 'wouter';
 
 import {
   getListExistingProfilesQueryKey,
@@ -98,6 +99,10 @@ export default function Home() {
           </div>
         </div>
 
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <Link href="/single-artist" data-testid="link-single-artist" className="group flex items-center justify-between gap-4 rounded-xl border border-primary/20 bg-primary px-4 py-3 text-primary-foreground shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md">
+          <span className="flex items-center gap-3"><span className="grid h-8 w-8 place-items-center rounded-lg bg-primary-foreground/15"><Link2 className="h-4 w-4" /></span><span><strong className="block text-xs font-extrabold tracking-tight">Investigate one link</strong><small className="block text-[9px] opacity-75 mt-0.5">Start with a known profile URL</small></span></span><ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+        </Link>
         <div className="flex flex-col gap-2 bg-muted/30 px-4 py-3 rounded-xl border border-border/60 shadow-sm">
           <div className="flex items-center gap-2">
             <Settings2 className="w-3.5 h-3.5 text-muted-foreground" />
@@ -119,6 +124,7 @@ export default function Home() {
               Gemini prompt
             </Button>
           </div>
+        </div>
         </div>
       </header>
 

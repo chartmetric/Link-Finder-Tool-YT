@@ -376,6 +376,55 @@ function profileHandleFromUrl(value: string): string {
   }
 }
 
+export function parseKnownProfileUrl(value: string): {
+  platform: "instagram" | "tiktok" | "youtube";
+  handle: string;
+  url: string;
+} | undefined {
+  try {
+    const url = new URL(value.trim());
+    if (url.protocol !== "https:" && url.protocol !== "http:") return undefined;
+    const host = url.hostname.toLowerCase().replace(/^www\./, "").replace(/^m\./, "");
+    const parts = url.pathname.split("/").filter(Boolean);
+    const platform = host === "instagram.com"
+      ? "instagram"
+      : host === "tiktok.com"
+        ? "tiktok"
+        : host === "youtube.com"
+          ? "youtube"
+          : undefined;
+    if (!platform) return undefined;
+    const handle = platform === "youtube"
+      ? parts.length === 1 && parts[0]?.startsWith("@") ? parts[0].slice(1) : ""
+      : platform === "tiktok"
+        ? parts.length === 1 && parts[0]?.startsWith("@") ? parts[0].slice(1) : ""
+        : parts.length === 1 ? parts[0] : "";
+    if (!handle || !/^[\w.-]{2,120}$/.test(handle)) return undefined;
+    if (platform === "instagram" && ["explore", "reels", "reel", "p", "stories", "direct", "accounts"].includes(handle.toLowerCase())) return undefined;
+    return { platform, handle, url: url.toString() };
+  } catch {
+    return undefined;
+  }
+}
+
+export async function resolveKnownProfileIdentity(value: string, apiKey: string) {
+  const parsed = parseKnownProfileUrl(value);
+  if (!parsed) return undefined;
+  const metadata = await fetchIdentityMetadata({
+    platform: parsed.platform,
+    url: parsed.url,
+    apiKey,
+  });
+  if (!metadata) return undefined;
+  if (metadata.handle.toLowerCase() !== parsed.handle.toLowerCase()) return undefined;
+  return {
+    subject: metadata.displayName?.trim() || `@${parsed.handle}`,
+    handle: parsed.handle,
+    handlePlatform: parsed.platform,
+    knownProfileUrl: parsed.url,
+  };
+}
+
 function commonPrefixLength(a: string, b: string): number {
   let index = 0;
   while (index < a.length && index < b.length && a[index] === b[index]) index += 1;

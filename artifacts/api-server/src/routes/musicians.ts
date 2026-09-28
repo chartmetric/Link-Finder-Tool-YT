@@ -8,7 +8,7 @@ import {
   SearchProfilesBody,
   SearchProfilesResponse,
 } from "@workspace/api-zod";
-import { findProfiles } from "../lib/musician-search";
+import { findProfiles, parseKnownProfileUrl, resolveKnownProfileIdentity } from "../lib/musician-search";
 import {
   approveProfileSuggestions,
   listExistingProfiles,
@@ -85,18 +85,34 @@ router.post("/profiles/search", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Enter a name, a known social handle, or both." });
     return;
   }
-  if (!input.data.subject?.trim() && !input.data.handle?.trim()) {
-    req.log.warn("Profile search missing both name and handle");
-    res.status(400).json({ error: "Enter a name, a known social handle, or both." });
+  const urlOnly = !input.data.subject?.trim() && !input.data.handle?.trim();
+  if (urlOnly && !input.data.knownProfileUrl) {
+    res.status(400).json({ error: "Enter a name, a known social handle, or a profile URL." });
+    return;
+  }
+  if (urlOnly && !parseKnownProfileUrl(input.data.knownProfileUrl!)) {
+    res.status(400).json({ error: "Enter an Instagram, TikTok, or YouTube profile URL (not a post, video, or channel ID)." });
     return;
   }
 
-  const timeoutMs = 60_000;
+  const timeoutMs = urlOnly ? 50_000 : 60_000;
   let timeout: NodeJS.Timeout | undefined;
 
   try {
+    if (urlOnly && !process.env.SCRAPECREATORS_API_KEY) {
+      res.status(503).json({ error: "Profile URL lookup is unavailable; ScrapeCreators is not configured." });
+      return;
+    }
+    const resolved = urlOnly
+      ? await resolveKnownProfileIdentity(input.data.knownProfileUrl!, process.env.SCRAPECREATORS_API_KEY!)
+      : undefined;
+    if (urlOnly && !resolved) {
+      res.status(422).json({ error: "Could not read an account at that profile URL. Check the link and try again." });
+      return;
+    }
     const search = findProfiles({
       ...input.data,
+      ...resolved,
       serperApiKey: process.env.SERPERDEV_API_KEY ?? process.env.SERPER_API_KEY,
       tavilyApiKey: process.env.TAVILY_WEB_SEARCH_API_KEY,
       openrouterApiKey: process.env.OPENROUTER_API_KEY,

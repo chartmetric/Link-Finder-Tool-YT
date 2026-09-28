@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 import Home from '@/pages/Home';
+import SingleArtist from '@/pages/SingleArtist';
 
 // We'll create a minimal NotFound page if one doesn't exist.
 function NotFound() {
@@ -25,6 +26,7 @@ function Router() {
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/" component={Home} />
+        <Route path="/single-artist" component={SingleArtist} />
         <Route component={NotFound} />
       </Switch>
     </RoutedErrorBoundary>

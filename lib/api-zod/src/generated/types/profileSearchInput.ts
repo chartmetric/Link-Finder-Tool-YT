@@ -23,7 +23,7 @@ export interface ProfileSearchInput {
   /** Platform where the known handle belongs */
   handlePlatform?: ProfileSearchInputHandlePlatform;
   /**
-     * Existing social profile URL used as an identity clue
+     * Existing Instagram, TikTok, or YouTube profile URL. May be submitted alone; the server resolves the account name and handle.
      * @maxLength 500
      */
   knownProfileUrl?: string;
