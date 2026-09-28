@@ -444,6 +444,7 @@ export async function resolveKnownProfileIdentity(value: string, apiKey: string)
     handle: parsed.handle,
     handlePlatform: parsed.platform,
     knownProfileUrl: parsed.url,
+    referenceMetadata: metadata,
   };
 }
 
@@ -575,6 +576,7 @@ export async function findProfiles(input: {
   handle?: string;
   handlePlatform?: "instagram" | "tiktok" | "youtube" | "x" | "twitter" | "facebook";
   knownProfileUrl?: string;
+  referenceMetadata?: IdentityMetadata;
   excludeReferencePlatform?: boolean;
   location?: string;
   country?: string;
@@ -608,7 +610,7 @@ export async function findProfiles(input: {
   const methodMeta = {
     serper: { label: "Serper", estimatedCostUsd: targets.length * 0.001, costNote: `${targets.length} queries at roughly $1 per 1,000 queries` },
     tavily: { label: "Tavily", estimatedCostUsd: targets.length * 0.008, costNote: `${targets.length} basic searches at roughly $0.008 per credit` },
-    gemini: { label: "Gemini Verification", estimatedCostUsd: 0.01, costNote: "Automatic separate verification pass; web search and token charges vary" },
+    gemini: { label: "Gemini Online Discovery", estimatedCostUsd: 0.01, costNote: "Web search for profile links; JEV checks identity separately when profile metadata is readable" },
     jev: { label: "JEV Decision", estimatedCostUsd: 0, costNote: "Typed identity decision over gathered evidence; exact OpenRouter usage cost shown" },
     deepseek: { label: "DeepSeek Verification", estimatedCostUsd: 0.008, costNote: "Automatic independent candidate review using V4.1 Flash and token usage" },
     scrapecreators: { label: "ScrapeCreators", estimatedCostUsd: 0, costNote: "0 cached or 10 live credits; dollar cost depends on your credit pack" },
@@ -622,6 +624,7 @@ export async function findProfiles(input: {
   let scrapeCreatorsCreditsCharged: number | undefined;
   let socialCrawlCreditsCharged: number | undefined;
   let jevCostUsd = 0;
+  let jevStatusNote: string | undefined;
   const organic: Array<SerperOrganicResult & { method: string }> = [];
 
   const runSearches = async (
@@ -975,22 +978,24 @@ export async function findProfiles(input: {
   if (input.scrapeCreatorsApiKey && input.knownProfileUrl && input.handlePlatform) {
     const referencePlatform = targetsForPlatform(input.handlePlatform);
     const geminiPlatforms = new Set(geminiDiscovery.map((profile) => profile.platform));
-      const disputed = profiles
-        .filter((profile) => {
-          if (
-            profile.platform === referencePlatform
-            || geminiPlatforms.has(profile.platform)
-            || (!profile.methods.includes("serper") && !profile.methods.includes("scrapecreators"))
-          ) return false;
+    const candidatesToCompare = profiles
+      .filter((profile) => {
+        if (
+          profile.platform === referencePlatform
+          || (!input.excludeReferencePlatform && geminiPlatforms.has(profile.platform))
+          || (!input.excludeReferencePlatform && !profile.methods.includes("serper") && !profile.methods.includes("scrapecreators"))
+        ) return false;
         try {
-          return !excludedPaths.some((path) => new URL(profile.url).pathname.toLowerCase().includes(path));
+          return input.excludeReferencePlatform
+            ? isTargetProfileUrl(profile.url, targets)
+            : !excludedPaths.some((path) => new URL(profile.url).pathname.toLowerCase().includes(path));
         } catch {
           return false;
         }
-        });
-    let reference: IdentityMetadata | undefined;
+      });
+    let reference: IdentityMetadata | undefined = input.referenceMetadata;
     let referenceFailure: string | undefined;
-    if (referencePlatform) {
+    if (referencePlatform && !reference) {
       try {
         reference = await fetchIdentityMetadata({
           platform: referencePlatform,
@@ -1002,7 +1007,7 @@ export async function findProfiles(input: {
       }
     }
     if (reference) {
-      const comparisons = await Promise.all(disputed.map(async (profile) => {
+      const comparisons = await Promise.all(candidatesToCompare.map(async (profile) => {
         try {
           const candidate = await fetchIdentityMetadata({
             platform: profile.platform,
@@ -1044,14 +1049,24 @@ export async function findProfiles(input: {
         };
       });
     } else if (referenceFailure) {
-      const disputedUrls = new Set(disputed.map((profile) => profile.url));
-      profiles = profiles.map((profile) => disputedUrls.has(profile.url)
+      const candidateUrls = new Set(candidatesToCompare.map((profile) => profile.url));
+      profiles = profiles.map((profile) => candidateUrls.has(profile.url)
         ? { ...profile, identityVerificationNote: referenceFailure }
         : profile);
     }
   }
 
   const jevCandidates = profiles.filter((profile) => profile.identityComparison);
+  if (input.excludeReferencePlatform && !selected.includes("jev")) selected.push("jev");
+  if (input.excludeReferencePlatform && !input.openrouterApiKey) {
+    statuses.set("jev", "unavailable");
+    jevStatusNote = "JEV is not configured for this search.";
+  } else if (input.excludeReferencePlatform && jevCandidates.length === 0) {
+    statuses.set("jev", "unavailable");
+    jevStatusNote = profiles.length
+      ? "No candidate had readable profile metadata for an identity comparison."
+      : "No candidate profiles were found to verify.";
+  }
   if (input.openrouterApiKey && jevCandidates.length > 0) {
     const startedAt = performance.now();
     try {
@@ -1139,6 +1154,7 @@ export async function findProfiles(input: {
       selected.push("jev");
     } catch {
       statuses.set("jev", "failed");
+      jevStatusNote = "JEV did not return a decision. Candidate discovery results are still shown.";
       selected.push("jev");
     } finally {
       durations.set("jev", Math.round(performance.now() - startedAt));
@@ -1159,7 +1175,7 @@ export async function findProfiles(input: {
       ...(method === "jev"
         ? {
             estimatedCostUsd: jevCostUsd,
-            costNote: `Exact OpenRouter usage cost: $${jevCostUsd.toFixed(8)}`,
+            costNote: jevStatusNote ?? `Exact OpenRouter usage cost: $${jevCostUsd.toFixed(8)}`,
           }
         : {}),
       status: statuses.get(method) ?? "failed",

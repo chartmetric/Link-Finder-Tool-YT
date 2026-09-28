@@ -328,6 +328,10 @@
 .inv-source:last-child { border-bottom: 0; padding-bottom: 0; }
 .inv-source strong { display: flex; align-items: flex-start; gap: 6px; font-size: 11px; line-height: 1.45; }
 .inv-source strong svg { flex: none; margin-top: 2px; color: var(--blue); }
+.investigation .inv-platform-instagram { color: #e1306c; }
+.investigation .inv-platform-tiktok { color: #161823; filter: drop-shadow(1px 0 #25f4ee) drop-shadow(-1px -1px #fe2c55); }
+.investigation .inv-platform-youtube { color: #ff0033; }
+.inv-summary-lead .inv-platform-tiktok { color: #fff; }
 .inv-source span { display: block; font: 500 9px var(--app-font-mono); color: var(--blue); overflow-wrap: anywhere; margin-top: 5px; }
 .inv-source:hover strong { color: var(--blue); }
 .inv-footer { border-top: 1px solid var(--line); padding: 21px 0 30px; color: #8290a0; font: 500 10px var(--app-font-mono); display: flex; justify-content: space-between; gap: 15px; }
