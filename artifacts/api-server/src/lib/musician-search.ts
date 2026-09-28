@@ -559,12 +559,32 @@ function compareIdentity(reference: IdentityMetadata, candidate: IdentityMetadat
     score += 10;
     reasons.push("Candidate is verified");
   }
+  if (
+    reference.followers !== undefined && candidate.followers !== undefined
+    && Number.isFinite(reference.followers) && Number.isFinite(candidate.followers)
+    && reference.followers >= 0 && candidate.followers >= 0
+  ) {
+    const larger = Math.max(reference.followers, candidate.followers);
+    const smaller = Math.min(reference.followers, candidate.followers);
+    const ratio = larger / Math.max(1, smaller);
+    if (larger >= 10_000 && ratio >= 100) {
+      score -= 25;
+      reasons.push(
+        `Follower counts differ greatly (${reference.followers.toLocaleString()} vs ${candidate.followers.toLocaleString()}); platform audiences can vary`,
+      );
+    } else if (larger >= 10_000 && ratio >= 10) {
+      score -= 10;
+      reasons.push(
+        `Follower counts differ (${reference.followers.toLocaleString()} vs ${candidate.followers.toLocaleString()}); platform audiences can vary`,
+      );
+    }
+  }
   if (reference.imageUrl && candidate.imageUrl) reasons.push("Both profile images available for visual review");
   if (reasons.length === 0) reasons.push("No strong identity signals matched");
 
   return {
     status: score >= 55 ? "likely" as const : score >= 25 ? "uncertain" as const : "mismatch" as const,
-    score: Math.min(100, score),
+    score: Math.max(0, Math.min(100, score)),
     reasons,
     reference,
     candidate,

@@ -1,0 +1,30 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "xuLVHSMXxip1txaUYjBJ_"
+uri = "file://giant-brain-requirements-doc.md"
+type = "text"
+title = "Single-artist investigation handoff"
+description = "Full product and technical requirements: purpose, flow, scoring, providers, JEV, constraints, limitations, and acceptance criteria."
+logical_id = "5cc2fbdf-88db-49b6-8997-04e16fa44028"
+content_hash = "sha256:c4f8683a2b3adf905e4ab3151a1cf750e25730a35680964bc5a6473238889d06"
+size = 31059
+mtime_ms = 1790629120110
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/5cc2fbdf-88db-49b6-8997-04e16fa44028/511085c3-5bc3-4f74-97ae-87516af3491e"
+storage_version_token = "1790629134354898"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "7QWANdQFOZQvwM_Lcvr_L"
+uri = "file://exec-summary.md"
+type = "text"
+title = "Single-artist investigation: executive summary"
+description = "Six-bullet summary of the purpose, discovery and verification flow, safeguards, and limitations."
+logical_id = "f1495ccd-21bc-433a-b3e3-5e8d4d2fa740"
+content_hash = "sha256:4a653814749a6a8bf32f46a029545af7d61386b8bd6cab2bbc2b97da6c1c74d4"
+size = 1904
+mtime_ms = 1790629161080
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/f1495ccd-21bc-433a-b3e3-5e8d4d2fa740/f9da27d4-31ab-4c0f-9469-24e67b38bbdb"
+storage_version_token = "1790629170025783"
+content_type = "text/markdown"
