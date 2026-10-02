@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'wouter';
+import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, CircleAlert, Clipboard, Compass, ExternalLink, Fingerprint, Link2, Radar, RefreshCw, SearchCheck, ShieldCheck, Sparkles } from 'lucide-react';
+import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, CircleAlert, Clipboard, Compass, ExternalLink, Fingerprint, Link2, RefreshCw, SearchCheck, ShieldCheck, Sparkles } from 'lucide-react';
 import { SiInstagram, SiTiktok, SiYoutube } from 'react-icons/si';
-import { searchProfiles, type ProfileMatch, type ProfileSearchResponse } from '@workspace/api-client-react';
+import { getListProfileInvestigationsQueryKey, searchProfiles, type ProfileInvestigation, type ProfileMatch, type ProfileSearchResponse } from '@workspace/api-client-react';
+import { InvestigationHistory } from '@/components/investigation-history';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 
 const platforms = [
@@ -177,6 +179,19 @@ export default function SingleArtist() {
   const [elapsed, setElapsed] = useState(0);
   const requestId = useRef(0);
   const resultRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+  const [historyPage, setHistoryPage] = useState(1);
+
+  function openSaved(item: ProfileInvestigation) {
+    if (status === 'pending') return;
+    requestId.current++;
+    form.setValue('url', item.knownProfileUrl);
+    setSearchedUrl(item.knownProfileUrl);
+    setResult(item.result);
+    setFailure('');
+    setStatus('success');
+    window.setTimeout(() => resultRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' }), 80);
+  }
 
   useEffect(() => {
     if (status !== 'pending') return;
@@ -200,6 +215,8 @@ export default function SingleArtist() {
       if (currentRequest !== requestId.current) return;
       setResult(response);
       setStatus('success');
+      setHistoryPage(1);
+      queryClient.invalidateQueries({ queryKey: getListProfileInvestigationsQueryKey() });
     } catch (error) {
       if (currentRequest !== requestId.current) return;
       setFailure(errorMessage(error));
@@ -220,38 +237,18 @@ export default function SingleArtist() {
     <div className="investigation">
       <header className="inv-nav">
         <div className="inv-wrap inv-nav-inner">
-          <Link href="/" className="inv-brand" data-testid="link-brand-home" aria-label="Find Social Links, return to catalog">
+          <Link href="/" className="inv-brand" data-testid="link-brand-home" aria-label="Find Social Links, investigation desk">
             <span className="inv-brand-mark"><Activity size={19} strokeWidth={2.5} /></span>
             <span className="inv-brand-name">Find Social Links<span className="inv-brand-caption inv-mono">Human review workspace</span></span>
           </Link>
           <div className="inv-nav-right">
             <span className="inv-nav-tag inv-mono"><i />Single-profile investigation</span>
-            <Link href="/" className="inv-back" data-testid="link-return-catalog"><ArrowLeft size={15} /> Back to catalog</Link>
+            <Link href="/catalog" className="inv-back" data-testid="link-return-catalog"><ArrowLeft size={15} /> Back to catalog</Link>
           </div>
         </div>
       </header>
 
       <main>
-        <section className="inv-wrap inv-hero" aria-labelledby="investigation-title">
-          <div className="inv-hero-copy">
-            <div className="inv-eyebrow inv-mono">The investigation desk / 01</div>
-            <h1 id="investigation-title">Start with<br /><em>one link.</em></h1>
-            <p className="inv-hero-desc">Give us one known profile. We’ll look for their accounts on the other platforms, then show the evidence behind each suggestion.</p>
-            <div className="inv-hero-foot inv-mono">
-              <span><Fingerprint size={15} /> Identity-first search</span>
-              <span><ShieldCheck size={15} /> Evidence over assumptions</span>
-            </div>
-          </div>
-          <div className="inv-visual" aria-hidden="true">
-            <div className="inv-orbit three" /><div className="inv-orbit two" /><div className="inv-orbit one" />
-            <div className="inv-orbit-core"><Radar size={38} strokeWidth={1.6} /></div>
-            <div className="inv-float ig"><PlatformIcon platform="Instagram" size={14} /> Instagram</div>
-            <div className="inv-float tt"><PlatformIcon platform="TikTok" size={14} /> TikTok</div>
-            <div className="inv-float yt"><PlatformIcon platform="YouTube" size={15} /> YouTube</div>
-            <div className="inv-visual-caption inv-mono">Reference / discovery / verification</div>
-          </div>
-        </section>
-
         <div className="inv-wrap inv-workspace">
           <div className="inv-section-head">
             <div><div className="inv-kicker">01 / Starting point</div><h2>Enter a known profile</h2></div>
@@ -286,6 +283,8 @@ export default function SingleArtist() {
             </Form>
           </div>
 
+          <InvestigationHistory page={historyPage} onPageChange={setHistoryPage} onOpen={openSaved} activeId={result?.historyId ? result.historyId : undefined} disabled={status === 'pending'} />
+
           <div ref={resultRef} aria-live="polite">
             {status === 'pending' && (
               <section className="inv-panel" aria-label="Search progress" data-testid="status-investigation-pending">
@@ -316,6 +315,7 @@ export default function SingleArtist() {
                   <div><div className="inv-kicker">02 / Review the findings</div><h2 id="result-title">Investigation complete</h2><p>Read the evidence before treating any candidate as official.</p></div>
                   <div className="inv-results-meta"><span className="inv-meta-pill" data-testid="text-searched-at">{new Date(result.searchedAt).toLocaleString()}</span></div>
                 </div>
+                {result.historySaveError ? <div className="inv-save-warn" role="alert" data-testid="status-history-save-error"><CircleAlert size={16} /><span><b>This search was not saved to history.</b> {result.historySaveError} The results below are still available in this session only.</span></div> : null}
                 <div className="inv-summary">
                   <div className="inv-summary-lead"><span>Known {referencePlatform} profile</span><h3 data-testid="text-result-subject">{result.subject || cleanDisplayUrl(searchedUrl)}</h3><p title={searchedUrl}><PlatformIcon platform={referencePlatform} size={12} />{cleanDisplayUrl(searchedUrl)}</p></div>
                   <div className="inv-summary-stat"><span>Other-platform candidates</span><strong data-testid="text-total-found">{sortedProfiles.length}</strong></div>

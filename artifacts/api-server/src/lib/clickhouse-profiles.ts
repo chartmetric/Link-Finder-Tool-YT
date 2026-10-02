@@ -68,7 +68,7 @@ function getConfig() {
   return { url, username, password };
 }
 
-async function clickHouseRequest(sql: string): Promise<Response> {
+export async function clickHouseRequest(sql: string, timeoutMs = 30_000): Promise<Response> {
   const { url, username, password } = getConfig();
   return fetch(url, {
     method: "POST",
@@ -78,13 +78,14 @@ async function clickHouseRequest(sql: string): Promise<Response> {
       "Content-Type": "text/plain; charset=utf-8",
     },
     body: sql,
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
 }
 
-async function clickHouseJson<T>(
+export async function clickHouseJson<T>(
   sql: string,
   params: Record<string, string> = {},
+  timeoutMs = 30_000,
 ): Promise<ClickHouseResponse<T>> {
   const { url, username, password } = getConfig();
   for (const [key, value] of Object.entries(params)) {
@@ -98,7 +99,7 @@ async function clickHouseJson<T>(
       "Content-Type": "text/plain; charset=utf-8",
     },
     body: sql,
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!response.ok) {
     throw new Error(`CLICKHOUSE_QUERY_FAILED:${response.status}:${await response.text()}`);

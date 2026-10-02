@@ -9,6 +9,119 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary List saved single-profile investigations, newest first
+ */
+export const listProfileInvestigationsQueryPageDefault = 1;
+
+export const listProfileInvestigationsQueryLimitDefault = 20;
+export const listProfileInvestigationsQueryLimitMax = 50;
+
+
+
+export const ListProfileInvestigationsQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).default(listProfileInvestigationsQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(listProfileInvestigationsQueryLimitMax).default(listProfileInvestigationsQueryLimitDefault)
+})
+
+export const listProfileInvestigationsResponseInvestigationsItemResultProfilesItemConfidenceMin = 0;
+export const listProfileInvestigationsResponseInvestigationsItemResultProfilesItemConfidenceMax = 100;
+
+export const listProfileInvestigationsResponseInvestigationsItemResultProfilesItemIdentityComparisonScoreMin = 0;
+export const listProfileInvestigationsResponseInvestigationsItemResultProfilesItemIdentityComparisonScoreMax = 100;
+
+export const listProfileInvestigationsResponseInvestigationsItemResultProfilesItemJevVerificationSameIdentityProbabilityMin = 0;
+export const listProfileInvestigationsResponseInvestigationsItemResultProfilesItemJevVerificationSameIdentityProbabilityMax = 1;
+
+export const listProfileInvestigationsResponseInvestigationsItemResultProfilesItemJevVerificationVerdictConfidenceMin = 0;
+export const listProfileInvestigationsResponseInvestigationsItemResultProfilesItemJevVerificationVerdictConfidenceMax = 1;
+
+export const listProfileInvestigationsResponseInvestigationsItemResultMethodsUsedItemDurationMsMin = 0;
+
+
+
+export const ListProfileInvestigationsResponse = zod.object({
+  "investigations": zod.array(zod.object({
+  "id": zod.string(),
+  "knownProfileUrl": zod.string(),
+  "result": zod.object({
+  "historyId": zod.string().optional().describe('Saved investigation identifier, present when single-profile history was persisted.'),
+  "historySaveError": zod.string().optional().describe('Explicit warning if discovery succeeded but investigation history could not be saved.'),
+  "subject": zod.string(),
+  "query": zod.string(),
+  "searchedAt": zod.coerce.date(),
+  "profiles": zod.array(zod.object({
+  "platform": zod.string(),
+  "category": zod.enum(['social']),
+  "title": zod.string(),
+  "url": zod.string(),
+  "displayUrl": zod.string(),
+  "snippet": zod.string(),
+  "confidence": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultProfilesItemConfidenceMin).max(listProfileInvestigationsResponseInvestigationsItemResultProfilesItemConfidenceMax),
+  "signals": zod.array(zod.string()),
+  "methods": zod.array(zod.string()),
+  "identityComparison": zod.object({
+  "status": zod.enum(['likely', 'uncertain', 'mismatch']),
+  "score": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultProfilesItemIdentityComparisonScoreMin).max(listProfileInvestigationsResponseInvestigationsItemResultProfilesItemIdentityComparisonScoreMax),
+  "reasons": zod.array(zod.string()),
+  "reference": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional()
+}),
+  "candidate": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional()
+})
+}).optional(),
+  "identityVerificationNote": zod.string().optional(),
+  "jevVerification": zod.object({
+  "verdict": zod.enum(['verified', 'likely', 'uncertain', 'mismatch']),
+  "sameIdentityProbability": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultProfilesItemJevVerificationSameIdentityProbabilityMin).max(listProfileInvestigationsResponseInvestigationsItemResultProfilesItemJevVerificationSameIdentityProbabilityMax),
+  "verdictConfidence": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultProfilesItemJevVerificationVerdictConfidenceMin).max(listProfileInvestigationsResponseInvestigationsItemResultProfilesItemJevVerificationVerdictConfidenceMax),
+  "probabilities": zod.record(zod.string(), zod.number())
+}).optional()
+})),
+  "sources": zod.array(zod.object({
+  "title": zod.string(),
+  "url": zod.string(),
+  "snippet": zod.string()
+})),
+  "totalFound": zod.number(),
+  "highConfidenceCount": zod.number(),
+  "methodsUsed": zod.array(zod.object({
+  "method": zod.string(),
+  "label": zod.string(),
+  "status": zod.enum(['used', 'unavailable', 'failed']),
+  "estimatedCostUsd": zod.number(),
+  "costNote": zod.string(),
+  "durationMs": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultMethodsUsedItemDurationMsMin),
+  "results": zod.array(zod.object({
+  "title": zod.string(),
+  "url": zod.string(),
+  "snippet": zod.string()
+}))
+})),
+  "estimatedCostUsd": zod.number()
+})
+})),
+  "page": zod.number(),
+  "limit": zod.number(),
+  "hasMore": zod.boolean()
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */
@@ -64,6 +177,8 @@ export const searchProfilesResponseMethodsUsedItemDurationMsMin = 0;
 
 
 export const SearchProfilesResponse = zod.object({
+  "historyId": zod.string().optional().describe('Saved investigation identifier, present when single-profile history was persisted.'),
+  "historySaveError": zod.string().optional().describe('Explicit warning if discovery succeeded but investigation history could not be saved.'),
   "subject": zod.string(),
   "query": zod.string(),
   "searchedAt": zod.coerce.date(),

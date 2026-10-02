@@ -23,6 +23,8 @@ import type {
   ExistingProfilePage,
   HealthStatus,
   ListExistingProfilesParams,
+  ListProfileInvestigationsParams,
+  ProfileInvestigationPage,
   ProfileSearchInput,
   ProfileSearchResponse,
   ProfileSuggestionApproval,
@@ -55,6 +57,90 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getListProfileInvestigationsUrl = (params?: ListProfileInvestigationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/profiles/investigations?${stringifiedParams}` : `/api/profiles/investigations`
+}
+
+/**
+ * @summary List saved single-profile investigations, newest first
+ */
+export const listProfileInvestigations = async (params?: ListProfileInvestigationsParams, options?: Parameters<typeof customFetch>[1]): Promise<ProfileInvestigationPage> => {
+
+  return customFetch<ProfileInvestigationPage>(getListProfileInvestigationsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProfileInvestigationsQueryKey = (params?: ListProfileInvestigationsParams,) => {
+    return [
+    `/api/profiles/investigations`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListProfileInvestigationsQueryOptions = <TData = Awaited<ReturnType<typeof listProfileInvestigations>>, TError = ErrorType<void>>(params?: ListProfileInvestigationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProfileInvestigations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProfileInvestigationsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProfileInvestigations>>> = ({ signal }) => listProfileInvestigations(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProfileInvestigations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProfileInvestigationsQueryResult = NonNullable<Awaited<ReturnType<typeof listProfileInvestigations>>>
+export type ListProfileInvestigationsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List saved single-profile investigations, newest first
+ */
+
+export function useListProfileInvestigations<TData = Awaited<ReturnType<typeof listProfileInvestigations>>, TError = ErrorType<void>>(
+ params?: ListProfileInvestigationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProfileInvestigations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProfileInvestigationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getHealthCheckUrl = () => {
 

@@ -7,14 +7,32 @@ import {
   ListExistingProfilesResponse,
   SearchProfilesBody,
   SearchProfilesResponse,
+  ListProfileInvestigationsQueryParams,
+  ListProfileInvestigationsResponse,
 } from "@workspace/api-zod";
 import { findProfiles, parseKnownProfileUrl, resolveKnownProfileIdentity } from "../lib/musician-search";
 import {
   approveProfileSuggestions,
   listExistingProfiles,
 } from "../lib/clickhouse-profiles";
+import { listProfileInvestigations, saveProfileInvestigation } from "../lib/profile-investigations";
 
 const router: IRouter = Router();
+
+router.get("/profiles/investigations", async (req, res): Promise<void> => {
+  const input = ListProfileInvestigationsQueryParams.safeParse(req.query);
+  if (!input.success || !Number.isSafeInteger(input.data.page ?? 1) || !Number.isSafeInteger(input.data.limit ?? 20)) {
+    res.status(400).json({ error: "Invalid history pagination." });
+    return;
+  }
+  try {
+    const result = await listProfileInvestigations(input.data.page ?? 1, input.data.limit ?? 20);
+    res.json(ListProfileInvestigationsResponse.parse(result));
+  } catch (error) {
+    req.log.error({ err: error }, "Investigation history list failed");
+    res.status(503).json({ error: "Investigation history is unavailable. Check ClickHouse table permissions or retry." });
+  }
+});
 
 router.get("/profiles", async (req, res): Promise<void> => {
   const input = ListExistingProfilesQueryParams.safeParse(req.query);
@@ -79,6 +97,7 @@ router.post("/profiles/:profileId/suggestions", async (req, res): Promise<void> 
 });
 
 router.post("/profiles/search", async (req, res): Promise<void> => {
+  const requestStartedAt = performance.now();
   const input = SearchProfilesBody.safeParse(req.body);
   if (!input.success) {
     req.log.warn({ errors: input.error.message }, "Invalid profile search");
@@ -95,7 +114,6 @@ router.post("/profiles/search", async (req, res): Promise<void> => {
     return;
   }
 
-  const timeoutMs = urlOnly ? 50_000 : 60_000;
   let timeout: NodeJS.Timeout | undefined;
 
   try {
@@ -121,12 +139,25 @@ router.post("/profiles/search", async (req, res): Promise<void> => {
       socialCrawlApiKey: process.env.SOCIALCRAWL_API_KEY,
     });
     const deadline = new Promise<never>((_, reject) => {
+      // Reserve time for history persistence within the client's 65-second limit.
+      const timeoutMs = urlOnly
+        ? Math.max(1, Math.min(50_000, 55_000 - (performance.now() - requestStartedAt)))
+        : 60_000;
       timeout = setTimeout(
         () => reject(new Error("PROFILE_SEARCH_TIMEOUT")),
         timeoutMs,
       );
     });
-    const result = await Promise.race([search, deadline]);
+    const result = SearchProfilesResponse.parse(await Promise.race([search, deadline]));
+    if (timeout) clearTimeout(timeout);
+    if (urlOnly) {
+      try {
+        result.historyId = await saveProfileInvestigation(resolved!.knownProfileUrl, result);
+      } catch (error) {
+        req.log.error({ err: error }, "Investigation history save failed");
+        result.historySaveError = "Results were found, but this investigation could not be saved to shared history. Check storage permissions or retry the search.";
+      }
+    }
     res.json(SearchProfilesResponse.parse(result));
   } catch (error) {
     req.log.error({ err: error }, "Profile search failed");
@@ -134,7 +165,7 @@ router.post("/profiles/search", async (req, res): Promise<void> => {
       error instanceof Error && error.message === "PROFILE_SEARCH_TIMEOUT";
     res.status(timedOut ? 504 : 502).json({
       error: timedOut
-        ? "Profile search exceeded 60 seconds. Try fewer discovery methods or retry."
+        ? "Profile search timed out. Try fewer discovery methods or retry."
         : "Profile discovery is temporarily unavailable. Please try again.",
     });
   } finally {

@@ -13,6 +13,29 @@ tags:
   - name: profile-search
     description: Public profile discovery
 paths:
+  /profiles/investigations:
+    get:
+      operationId: listProfileInvestigations
+      tags: [profile-search]
+      summary: List saved single-profile investigations, newest first
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        "200":
+          description: Saved investigations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileInvestigationPage"
+        "400":
+          description: Invalid pagination
+        "503":
+          description: Investigation history storage unavailable
   /healthz:
     get:
       operationId: healthCheck
@@ -137,6 +160,25 @@ paths:
           description: Suggestion storage is unavailable
 components:
   schemas:
+    ProfileInvestigation:
+      type: object
+      required: [id, knownProfileUrl, result]
+      properties:
+        id: { type: string }
+        knownProfileUrl: { type: string }
+        result:
+          $ref: "#/components/schemas/ProfileSearchResponse"
+    ProfileInvestigationPage:
+      type: object
+      required: [investigations, page, limit, hasMore]
+      properties:
+        investigations:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProfileInvestigation"
+        page: { type: number }
+        limit: { type: number }
+        hasMore: { type: boolean }
     HealthStatus:
       type: object
       properties:
@@ -407,6 +449,12 @@ components:
     ProfileSearchResponse:
       type: object
       properties:
+        historyId:
+          type: string
+          description: Saved investigation identifier, present when single-profile history was persisted.
+        historySaveError:
+          type: string
+          description: Explicit warning if discovery succeeded but investigation history could not be saved.
         subject:
           type: string
         query:

@@ -2,7 +2,7 @@
 
 **Status:** Documentation of the currently implemented URL-only investigation, with limitations and possible follow-up work explicitly labeled.  
 **Product:** Find Social Links / Musician Social Finder  
-**Primary interface:** `/single-artist`  
+**Primary interface:** `/` (also at `/single-artist`; catalog at `/catalog`)
 **Purpose of this document:** Give a product owner or new engineer enough context to understand why this flow exists, how it works today, which judgments are deterministic, where external search and AI introduce uncertainty, and what must remain true when it changes.
 
 ## 1. Executive summary
@@ -33,6 +33,7 @@ The desired outcome is an inspectable shortlist, not an automatic identity asser
 - Preserve source information and show multiple alternatives per platform.
 - Compare readable profiles using deterministic identity rules and, where possible, JEV.
 - Show provider statuses, evidence, error and empty states, time, and estimated cost.
+- Automatically save completed single-URL investigations in shared history and reopen stored evidence without another paid search.
 - Leave final acceptance to a human who can open the actual profiles.
 
 ### Out of scope today
@@ -40,7 +41,7 @@ The desired outcome is an inspectable shortlist, not an automatic identity asser
 - Searching the supplied platform for more profiles in this URL-only flow.
 - Accepting a post, reel, short, video, playlist, or arbitrary webpage as the starting identity.
 - Treating a candidate as officially authenticated merely because it was found by an LLM or ranks highly.
-- Automatic acceptance, database persistence, or update of artist records **from this page**.
+- Automatic acceptance or update of official artist catalog records **from this page**. Saving an investigation snapshot is not approval of its discovered links.
 - Visual face or avatar matching. Image URLs can be captured, but image pixels are not compared.
 - Guaranteed resolution of every returned candidate, especially some YouTube `/channel/<id>` candidates.
 
@@ -83,6 +84,9 @@ ScrapeCreators reads candidate metadata in parallel
   ↓
 For candidates with a comparison, send comparison + discovery evidence
   to JEV for per-candidate identity decisions
+  ↓
+Save the investigation snapshot to shared ClickHouse history
+  → if storage fails, retain search results with an explicit warning
   ↓
 Return candidates, provider report, sources, timestamps, and cost estimate
   ↓
@@ -289,7 +293,7 @@ estimatedCostUsd          sum of used method estimates
 - Backend search deadline → 504.
 - The UI has its own 65-second request abort and shows a retry action.
 
-The backend's **50-second URL-only search deadline starts after reference resolution**, not from the moment the user clicks. The existing timeout response text says “exceeded 60 seconds” even though URL-only mode uses 50 seconds; this is a known wording discrepancy. `Promise.race` supplies a response deadline but does not necessarily cancel work already in progress.
+The backend permits up to **50 seconds of URL-only search work after reference resolution**, further bounded by a **55-second budget from request start**, leaving up to five seconds for initial history setup and insertion within the client's 65-second limit. Storage failure returns discovery results with an explicit warning instead of turning successful discovery into an error. `Promise.race` supplies a response deadline but does not necessarily cancel work already in progress.
 
 ## 12. UI requirements and review workflow
 
@@ -305,7 +309,7 @@ The `/single-artist` page:
 8. On error, retains the entered URL and offers retry. On zero candidates, explains that no other-platform profile was found and offers retry.
 9. Labels confidence and verification separately and asks the human to inspect the actual profile before accepting it.
 
-The page currently holds its investigation result in local React state; it does not persist a reviewed choice or automatically update a catalog record.
+The page automatically saves completed URL-only investigations in `poc_new_verticals.profile_search_history` in the existing ClickHouse database. The table below the input uses `GET /api/profiles/investigations?page=1&limit=20`, refreshes on mount, polls every 30 seconds, and supports pagination and manual refresh. Review restores the stored reference and full response without another search. Each run is a separate shared snapshot. Earlier searches were not saved and cannot be reconstructed. The search response includes `historyId` on successful persistence or `historySaveError` on failure. History does not approve candidates or update official artist catalog records.
 
 ## 13. Reliability, safety, and privacy constraints
 
@@ -340,7 +344,6 @@ These are explicitly **not** promises about current behavior:
 - **No image-content verification:** If desired, adding real image matching requires a separately specified method, permission/privacy review, false-match analysis, and clear reporting; comparing URL strings or noting image presence is insufficient.
 - **Rule-based score is hand-tuned:** Weights, thresholds, and JEV output are not calibrated against a labeled validation dataset. A production identity-quality program would collect reviewed examples and measure false positives, false negatives, and provider coverage by platform.
 - **Cost is indicative:** The page's estimated total is not a complete charge reconciliation for every reference/candidate metadata lookup.
-- **Timeout wording:** The URL-only backend times out after 50 seconds of search work, while its current 504 message says 60 seconds.
 - **No reviewer feedback loop on this page:** It does not record accept/reject decisions or feed confirmed matches back into quality evaluation.
 
 ## 16. Acceptance criteria for a future change
@@ -357,12 +360,15 @@ When modifying or recreating this feature, verify these concrete behaviors:
 8. JEV unavailable or failed is reported explicitly, with discovered candidates preserved.
 9. Candidates with credible verification appear before unverified high-search-score candidates within their platform.
 10. Error, empty, progress, alternate-candidate, and human-review states are understandable without claiming model certainty.
+11. Successful URL-only investigations appear in shared history below the input and survive reloads/new sessions. Review opens the stored result without a new search. Storage failure remains visibly distinct from successful persistence.
 
 ## 17. Implementation map
 
 | Concern | Current location |
 | --- | --- |
 | User input, loading/results UI, evidence and provider report | `artifacts/musician-social-finder/src/pages/SingleArtist.tsx` |
+| Shared history table and stored-result review | `artifacts/musician-social-finder/src/components/investigation-history.tsx` |
+| Shared investigation snapshot storage | `artifacts/api-server/src/lib/profile-investigations.ts` |
 | API routing, reference resolution, credentials, deadline and errors | `artifacts/api-server/src/routes/musicians.ts` |
 | Platform definitions, URL rules, search/provider orchestration, identity comparison and JEV | `artifacts/api-server/src/lib/musician-search.ts` |
 | Shared request/response schema (edit this before changing the API contract) | `lib/api-spec/openapi.yaml` |

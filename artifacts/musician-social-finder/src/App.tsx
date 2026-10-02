@@ -25,7 +25,8 @@ function Router() {
   return (
     <RoutedErrorBoundary>
       <Switch>
-        <Route path="/" component={Home} />
+        <Route path="/" component={SingleArtist} />
+        <Route path="/catalog" component={Home} />
         <Route path="/single-artist" component={SingleArtist} />
         <Route component={NotFound} />
       </Switch>

@@ -10,6 +10,10 @@ import type { SearchMethodUsage } from './searchMethodUsage';
 import type { SearchSource } from './searchSource';
 
 export interface ProfileSearchResponse {
+  /** Saved investigation identifier, present when single-profile history was persisted. */
+  historyId?: string;
+  /** Explicit warning if discovery succeeded but investigation history could not be saved. */
+  historySaveError?: string;
   subject: string;
   query: string;
   searchedAt: Date;

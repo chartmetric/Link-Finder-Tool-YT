@@ -5,6 +5,146 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type ProfileMatchCategory = typeof ProfileMatchCategory[keyof typeof ProfileMatchCategory];
+
+
+export const ProfileMatchCategory = {
+  social: 'social',
+} as const;
+
+export type IdentityComparisonStatus = typeof IdentityComparisonStatus[keyof typeof IdentityComparisonStatus];
+
+
+export const IdentityComparisonStatus = {
+  likely: 'likely',
+  uncertain: 'uncertain',
+  mismatch: 'mismatch',
+} as const;
+
+export interface IdentityMetadata {
+  platform: string;
+  handle: string;
+  displayName?: string;
+  bio?: string;
+  imageUrl?: string;
+  url: string;
+  followers?: number;
+  verified?: boolean;
+}
+
+export interface IdentityComparison {
+  status: IdentityComparisonStatus;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  score: number;
+  reasons: string[];
+  reference: IdentityMetadata;
+  candidate: IdentityMetadata;
+}
+
+export type JevVerificationVerdict = typeof JevVerificationVerdict[keyof typeof JevVerificationVerdict];
+
+
+export const JevVerificationVerdict = {
+  verified: 'verified',
+  likely: 'likely',
+  uncertain: 'uncertain',
+  mismatch: 'mismatch',
+} as const;
+
+export type JevVerificationProbabilities = {[key: string]: number};
+
+export interface JevVerification {
+  verdict: JevVerificationVerdict;
+  /**
+     * @minimum 0
+     * @maximum 1
+     */
+  sameIdentityProbability: number;
+  /**
+     * @minimum 0
+     * @maximum 1
+     */
+  verdictConfidence: number;
+  probabilities: JevVerificationProbabilities;
+}
+
+export interface ProfileMatch {
+  platform: string;
+  category: ProfileMatchCategory;
+  title: string;
+  url: string;
+  displayUrl: string;
+  snippet: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  confidence: number;
+  signals: string[];
+  methods: string[];
+  identityComparison?: IdentityComparison;
+  identityVerificationNote?: string;
+  jevVerification?: JevVerification;
+}
+
+export interface SearchSource {
+  title: string;
+  url: string;
+  snippet: string;
+}
+
+export type SearchMethodUsageStatus = typeof SearchMethodUsageStatus[keyof typeof SearchMethodUsageStatus];
+
+
+export const SearchMethodUsageStatus = {
+  used: 'used',
+  unavailable: 'unavailable',
+  failed: 'failed',
+} as const;
+
+export interface SearchMethodUsage {
+  method: string;
+  label: string;
+  status: SearchMethodUsageStatus;
+  estimatedCostUsd: number;
+  costNote: string;
+  /** @minimum 0 */
+  durationMs: number;
+  results: SearchSource[];
+}
+
+export interface ProfileSearchResponse {
+  /** Saved investigation identifier, present when single-profile history was persisted. */
+  historyId?: string;
+  /** Explicit warning if discovery succeeded but investigation history could not be saved. */
+  historySaveError?: string;
+  subject: string;
+  query: string;
+  searchedAt: string;
+  profiles: ProfileMatch[];
+  sources: SearchSource[];
+  totalFound: number;
+  highConfidenceCount: number;
+  methodsUsed: SearchMethodUsage[];
+  estimatedCostUsd: number;
+}
+
+export interface ProfileInvestigation {
+  id: string;
+  knownProfileUrl: string;
+  result: ProfileSearchResponse;
+}
+
+export interface ProfileInvestigationPage {
+  investigations: ProfileInvestigation[];
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -124,128 +264,17 @@ export interface ProfileSuggestionApprovalResult {
   approvedAt: string;
 }
 
-export type ProfileMatchCategory = typeof ProfileMatchCategory[keyof typeof ProfileMatchCategory];
-
-
-export const ProfileMatchCategory = {
-  social: 'social',
-} as const;
-
-export type IdentityComparisonStatus = typeof IdentityComparisonStatus[keyof typeof IdentityComparisonStatus];
-
-
-export const IdentityComparisonStatus = {
-  likely: 'likely',
-  uncertain: 'uncertain',
-  mismatch: 'mismatch',
-} as const;
-
-export interface IdentityMetadata {
-  platform: string;
-  handle: string;
-  displayName?: string;
-  bio?: string;
-  imageUrl?: string;
-  url: string;
-  followers?: number;
-  verified?: boolean;
-}
-
-export interface IdentityComparison {
-  status: IdentityComparisonStatus;
-  /**
-     * @minimum 0
-     * @maximum 100
-     */
-  score: number;
-  reasons: string[];
-  reference: IdentityMetadata;
-  candidate: IdentityMetadata;
-}
-
-export type JevVerificationVerdict = typeof JevVerificationVerdict[keyof typeof JevVerificationVerdict];
-
-
-export const JevVerificationVerdict = {
-  verified: 'verified',
-  likely: 'likely',
-  uncertain: 'uncertain',
-  mismatch: 'mismatch',
-} as const;
-
-export type JevVerificationProbabilities = {[key: string]: number};
-
-export interface JevVerification {
-  verdict: JevVerificationVerdict;
-  /**
-     * @minimum 0
-     * @maximum 1
-     */
-  sameIdentityProbability: number;
-  /**
-     * @minimum 0
-     * @maximum 1
-     */
-  verdictConfidence: number;
-  probabilities: JevVerificationProbabilities;
-}
-
-export interface ProfileMatch {
-  platform: string;
-  category: ProfileMatchCategory;
-  title: string;
-  url: string;
-  displayUrl: string;
-  snippet: string;
-  /**
-     * @minimum 0
-     * @maximum 100
-     */
-  confidence: number;
-  signals: string[];
-  methods: string[];
-  identityComparison?: IdentityComparison;
-  identityVerificationNote?: string;
-  jevVerification?: JevVerification;
-}
-
-export type SearchMethodUsageStatus = typeof SearchMethodUsageStatus[keyof typeof SearchMethodUsageStatus];
-
-
-export const SearchMethodUsageStatus = {
-  used: 'used',
-  unavailable: 'unavailable',
-  failed: 'failed',
-} as const;
-
-export interface SearchSource {
-  title: string;
-  url: string;
-  snippet: string;
-}
-
-export interface SearchMethodUsage {
-  method: string;
-  label: string;
-  status: SearchMethodUsageStatus;
-  estimatedCostUsd: number;
-  costNote: string;
-  /** @minimum 0 */
-  durationMs: number;
-  results: SearchSource[];
-}
-
-export interface ProfileSearchResponse {
-  subject: string;
-  query: string;
-  searchedAt: string;
-  profiles: ProfileMatch[];
-  sources: SearchSource[];
-  totalFound: number;
-  highConfidenceCount: number;
-  methodsUsed: SearchMethodUsage[];
-  estimatedCostUsd: number;
-}
+export type ListProfileInvestigationsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+};
 
 export type ListExistingProfilesParams = {
 profileType?: ListExistingProfilesProfileType;
