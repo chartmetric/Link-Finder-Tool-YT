@@ -24,6 +24,7 @@ import type {
   HealthStatus,
   ListExistingProfilesParams,
   ListProfileInvestigationsParams,
+  MusicianCoverage,
   ProfileInvestigationPage,
   ProfileSearchInput,
   ProfileSearchResponse,
@@ -57,6 +58,83 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetMusicianCoverageUrl = () => {
+
+
+
+
+  return `/api/profiles/musician-coverage`
+}
+
+/**
+ * @summary Count tier 1-3 musicians and their link coverage
+ */
+export const getMusicianCoverage = async ( options?: Parameters<typeof customFetch>[1]): Promise<MusicianCoverage> => {
+
+  return customFetch<MusicianCoverage>(getGetMusicianCoverageUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMusicianCoverageQueryKey = () => {
+    return [
+    `/api/profiles/musician-coverage`
+    ] as const;
+    }
+
+
+export const getGetMusicianCoverageQueryOptions = <TData = Awaited<ReturnType<typeof getMusicianCoverage>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMusicianCoverage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMusicianCoverageQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMusicianCoverage>>> = ({ signal }) => getMusicianCoverage({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMusicianCoverage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMusicianCoverageQueryResult = NonNullable<Awaited<ReturnType<typeof getMusicianCoverage>>>
+export type GetMusicianCoverageQueryError = ErrorType<void>
+
+
+/**
+ * @summary Count tier 1-3 musicians and their link coverage
+ */
+
+export function useGetMusicianCoverage<TData = Awaited<ReturnType<typeof getMusicianCoverage>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMusicianCoverage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMusicianCoverageQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListProfileInvestigationsUrl = (params?: ListProfileInvestigationsParams,) => {
   const normalizedParams = new URLSearchParams();

@@ -21,6 +21,8 @@ export * from './listExistingProfilesProfileType';
 export * from './listExistingProfilesSortBy';
 export * from './listExistingProfilesSortDirection';
 export * from './listProfileInvestigationsParams';
+export * from './musicianCoverage';
+export * from './musicianCoverageTier';
 export * from './profileInvestigation';
 export * from './profileInvestigationPage';
 export * from './profileMatch';

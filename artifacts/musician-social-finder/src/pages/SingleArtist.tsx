@@ -4,9 +4,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, CircleAlert, Clipboard, Compass, ExternalLink, Fingerprint, Link2, RefreshCw, SearchCheck, ShieldCheck, Sparkles } from 'lucide-react';
+import { Activity, ArrowRight, ArrowUpRight, Check, ChevronDown, CircleAlert, Clipboard, Compass, ExternalLink, Fingerprint, Link2, RefreshCw, SearchCheck, ShieldCheck, Sparkles } from 'lucide-react';
 import { SiInstagram, SiTiktok, SiYoutube } from 'react-icons/si';
-import { getListProfileInvestigationsQueryKey, searchProfiles, type ProfileInvestigation, type ProfileMatch, type ProfileSearchResponse } from '@workspace/api-client-react';
+import { getGetMusicianCoverageQueryKey, getListProfileInvestigationsQueryKey, searchProfiles, type ProfileInvestigation, type ProfileMatch, type ProfileSearchResponse } from '@workspace/api-client-react';
+import { MusicianCoverage } from '@/components/musician-coverage';
 import { InvestigationHistory } from '@/components/investigation-history';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 
@@ -217,6 +218,7 @@ export default function SingleArtist() {
       setStatus('success');
       setHistoryPage(1);
       queryClient.invalidateQueries({ queryKey: getListProfileInvestigationsQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetMusicianCoverageQueryKey() });
     } catch (error) {
       if (currentRequest !== requestId.current) return;
       setFailure(errorMessage(error));
@@ -243,7 +245,6 @@ export default function SingleArtist() {
           </Link>
           <div className="inv-nav-right">
             <span className="inv-nav-tag inv-mono"><i />Single-profile investigation</span>
-            <Link href="/catalog" className="inv-back" data-testid="link-return-catalog"><ArrowLeft size={15} /> Back to catalog</Link>
           </div>
         </div>
       </header>
@@ -360,9 +361,10 @@ export default function SingleArtist() {
               </section>
             )}
           </div>
+          <MusicianCoverage />
         </div>
       </main>
-      <footer className="inv-footer inv-wrap"><span>FIND SOCIAL LINKS / HUMAN REVIEW WORKSPACE</span><span>One reference. Evidence-led discovery.</span></footer>
+      <footer className="inv-footer inv-wrap"><span>FIND SOCIAL LINKS / HUMAN REVIEW WORKSPACE</span><span>Discovery suggestions only. Nothing here is verified or approved automatically.</span></footer>
     </div>
   );
 }

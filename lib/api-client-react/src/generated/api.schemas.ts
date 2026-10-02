@@ -5,6 +5,21 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface MusicianCoverageTier {
+  tier: number;
+  profiles: number;
+  withLlmLinks: number;
+  withInvestigationLinks: number;
+}
+
+export interface MusicianCoverage {
+  profiles: number;
+  withLlmLinks: number;
+  withInvestigationLinks: number;
+  tiers: MusicianCoverageTier[];
+  generatedAt: string;
+}
+
 export type ProfileMatchCategory = typeof ProfileMatchCategory[keyof typeof ProfileMatchCategory];
 
 

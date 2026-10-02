@@ -2,7 +2,7 @@
 
 **Status:** Documentation of the currently implemented URL-only investigation, with limitations and possible follow-up work explicitly labeled.  
 **Product:** Find Social Links / Musician Social Finder  
-**Primary interface:** `/` (also at `/single-artist`; catalog at `/catalog`)
+**Primary interface:** `/` (also at `/single-artist`; the standalone catalog page has been removed)
 **Purpose of this document:** Give a product owner or new engineer enough context to understand why this flow exists, how it works today, which judgments are deterministic, where external search and AI introduce uncertainty, and what must remain true when it changes.
 
 ## 1. Executive summary
@@ -34,6 +34,7 @@ The desired outcome is an inspectable shortlist, not an automatic identity asser
 - Compare readable profiles using deterministic identity rules and, where possible, JEV.
 - Show provider statuses, evidence, error and empty states, time, and estimated cost.
 - Automatically save completed single-URL investigations in shared history and reopen stored evidence without another paid search.
+- Show live tier 1–3 musician coverage at the bottom, with existing LLM enrichment and this app's saved investigations counted separately.
 - Leave final acceptance to a human who can open the actual profiles.
 
 ### Out of scope today
@@ -45,7 +46,7 @@ The desired outcome is an inspectable shortlist, not an automatic identity asser
 - Visual face or avatar matching. Image URLs can be captured, but image pixels are not compared.
 - Guaranteed resolution of every returned candidate, especially some YouTube `/channel/<id>` candidates.
 
-The shared `/api/profiles/search` endpoint also serves other catalog-oriented workflows with different input combinations. Do not mistake their optional providers, methods, or persistence flows for behavior that this single-URL page invokes.
+The shared `/api/profiles/search` endpoint also supports legacy catalog-oriented inputs. The catalog UI is no longer routed, but the underlying data and API remain intact. Do not mistake optional providers or approval flows for behavior that this single-URL page invokes.
 
 ## 3. Core terminology: keep these concepts separate
 
@@ -310,6 +311,8 @@ The `/single-artist` page:
 9. Labels confidence and verification separately and asks the human to inspect the actual profile before accepting it.
 
 The page automatically saves completed URL-only investigations in `poc_new_verticals.profile_search_history` in the existing ClickHouse database. The table below the input uses `GET /api/profiles/investigations?page=1&limit=20`, refreshes on mount, polls every 30 seconds, and supports pagination and manual refresh. Review restores the stored reference and full response without another search. Each run is a separate shared snapshot. Earlier searches were not saved and cannot be reconstructed. The search response includes `historyId` on successful persistence or `historySaveError` on failure. History does not approve candidates or update official artist catalog records.
+
+`GET /api/profiles/musician-coverage` supplies footer statistics for non-deleted musicians using their latest global tier assignment. Existing LLM coverage means a profile has nonempty platform links in the LLM enrichment source. App coverage means a saved investigation with discovered candidates matches an existing musician through its trusted reference URL. Each musician counts once per source, even after repeated runs. Figures refresh every 60 seconds and are cached briefly server-side; a successful new save invalidates both the server cache and the client coverage query. The two sources are never added together or presented as approval counts.
 
 ## 13. Reliability, safety, and privacy constraints
 

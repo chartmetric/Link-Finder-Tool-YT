@@ -9,6 +9,7 @@ import {
   SearchProfilesResponse,
   ListProfileInvestigationsQueryParams,
   ListProfileInvestigationsResponse,
+  GetMusicianCoverageResponse,
 } from "@workspace/api-zod";
 import { findProfiles, parseKnownProfileUrl, resolveKnownProfileIdentity } from "../lib/musician-search";
 import {
@@ -16,8 +17,18 @@ import {
   listExistingProfiles,
 } from "../lib/clickhouse-profiles";
 import { listProfileInvestigations, saveProfileInvestigation } from "../lib/profile-investigations";
+import { getMusicianCoverage, invalidateMusicianCoverage } from "../lib/musician-coverage";
 
 const router: IRouter = Router();
+
+router.get("/profiles/musician-coverage", async (req, res): Promise<void> => {
+  try {
+    res.json(GetMusicianCoverageResponse.parse(await getMusicianCoverage()));
+  } catch (error) {
+    req.log.error({ err: error }, "Musician coverage statistics failed");
+    res.status(503).json({ error: "Musician coverage statistics are unavailable. Please retry." });
+  }
+});
 
 router.get("/profiles/investigations", async (req, res): Promise<void> => {
   const input = ListProfileInvestigationsQueryParams.safeParse(req.query);
@@ -153,6 +164,7 @@ router.post("/profiles/search", async (req, res): Promise<void> => {
     if (urlOnly) {
       try {
         result.historyId = await saveProfileInvestigation(resolved!.knownProfileUrl, result);
+        invalidateMusicianCoverage();
       } catch (error) {
         req.log.error({ err: error }, "Investigation history save failed");
         result.historySaveError = "Results were found, but this investigation could not be saved to shared history. Check storage permissions or retry the search.";

@@ -9,6 +9,23 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Count tier 1-3 musicians and their link coverage
+ */
+export const GetMusicianCoverageResponse = zod.object({
+  "profiles": zod.number(),
+  "withLlmLinks": zod.number(),
+  "withInvestigationLinks": zod.number(),
+  "tiers": zod.array(zod.object({
+  "tier": zod.number(),
+  "profiles": zod.number(),
+  "withLlmLinks": zod.number(),
+  "withInvestigationLinks": zod.number()
+})),
+  "generatedAt": zod.coerce.date()
+})
+
+
+/**
  * @summary List saved single-profile investigations, newest first
  */
 export const listProfileInvestigationsQueryPageDefault = 1;
