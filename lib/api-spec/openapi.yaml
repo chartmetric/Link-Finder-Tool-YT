@@ -239,7 +239,7 @@ components:
         knownProfileUrl:
           type: string
           maxLength: 500
-          description: Existing Instagram, TikTok, or YouTube profile URL. May be submitted alone; the server resolves the account name and handle.
+          description: Known Instagram or TikTok profile, YouTube handle or channel-ID URL, or Spotify artist URL. May be submitted alone; the server resolves the account identity.
         location:
           type: string
           maxLength: 100

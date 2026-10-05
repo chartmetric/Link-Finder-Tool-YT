@@ -91,7 +91,7 @@ export default function Home() {
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight text-foreground leading-none">
-              Find Social Links
+              Profile Handles Online
             </h1>
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mt-1.5 opacity-80">
                Profile Catalog · Human Review

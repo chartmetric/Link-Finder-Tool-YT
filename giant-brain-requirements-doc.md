@@ -7,7 +7,7 @@
 
 ## 1. Executive summary
 
-The user starts with **one known Instagram, TikTok, or YouTube profile URL**. The app reads that account to derive a display name and handle, searches for possible accounts on the **other two** supported platforms, compares candidate profile metadata to the known account, and presents the findings for **human review**.
+The user starts with **one known Instagram or TikTok profile, YouTube handle/channel, or Spotify artist URL**. The app reads that account to derive its identity, searches for possible accounts on the other supported social platforms, compares candidate profile metadata to the known account, and presents the findings for **human review**. Spotify references search all three social targets; other references search the two remaining platforms. Discovery does not search the existing musician database.
 
 This is an **identity investigation**, not a proof of ownership. Search hits are suggestions; a high *search score* does not mean an account is authentic. The page separates discovery from verification, shows evidence and missing evidence, and does not return the supplied platform as a candidate.
 
@@ -27,7 +27,8 @@ The desired outcome is an inspectable shortlist, not an automatic identity asser
 
 ### In scope today
 
-- Single input: a profile URL for Instagram, TikTok, or YouTube.
+- Single input: an Instagram or TikTok profile, YouTube handle/channel, or Spotify artist URL.
+- Eleven clickable preset links fill that input without automatically starting paid discovery.
 - Resolve that account's name and handle from its profile metadata.
 - Search the **other** supported platforms for profile pages.
 - Preserve source information and show multiple alternatives per platform.
@@ -101,11 +102,12 @@ UI groups by target platform, ranks identity evidence above search score,
 
 ### User-facing input
 
-- A single URL of a **profile page** on `instagram.com`, `tiktok.com`, or `youtube.com`.
+- A single URL of a **profile page** on `instagram.com`, `tiktok.com`, `youtube.com`, or an artist page on `open.spotify.com`.
 - Instagram: one username path segment, such as `https://www.instagram.com/artistname/`.
 - TikTok and YouTube: one `@handle` path segment, such as `https://www.tiktok.com/@artistname` or `https://www.youtube.com/@artistname`.
 - `http`/`https` are accepted by the current parser; input is capped at 500 characters.
-- Known non-profile paths are rejected. The starting URL cannot be a YouTube `/channel/<id>` link under the current URL-only validation, although *discovered candidate* URLs may include channel-ID links.
+- YouTube `/channel/UC…` IDs and Spotify `/artist/<id>` links are accepted. Missing URL schemes are normalized to HTTPS; known non-profile paths remain rejected.
+- Channel lookup preserves the case-sensitive ID and verifies the returned channel ID before using its canonical handle. Spotify resolves the artist's name through its public oEmbed endpoint; artist IDs are never treated as social handles.
 - The client validates for immediate feedback; the server validates again and is authoritative.
 
 ### API request from this page

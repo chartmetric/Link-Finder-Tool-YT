@@ -121,7 +121,7 @@ router.post("/profiles/search", async (req, res): Promise<void> => {
     return;
   }
   if (urlOnly && !parseKnownProfileUrl(input.data.knownProfileUrl!)) {
-    res.status(400).json({ error: "Enter an Instagram, TikTok, or YouTube profile URL (not a post, video, or channel ID)." });
+    res.status(400).json({ error: "Enter an Instagram or TikTok profile, YouTube handle or channel, or Spotify artist URL (not a post or video)." });
     return;
   }
 

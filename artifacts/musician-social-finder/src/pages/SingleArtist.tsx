@@ -5,10 +5,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Activity, ArrowRight, ArrowUpRight, Check, ChevronDown, CircleAlert, Clipboard, Compass, ExternalLink, Fingerprint, Link2, RefreshCw, SearchCheck, ShieldCheck, Sparkles } from 'lucide-react';
-import { SiInstagram, SiTiktok, SiYoutube } from 'react-icons/si';
+import { SiInstagram, SiSpotify, SiTiktok, SiYoutube } from 'react-icons/si';
 import { getGetMusicianCoverageQueryKey, getListProfileInvestigationsQueryKey, searchProfiles, type ProfileInvestigation, type ProfileMatch, type ProfileSearchResponse } from '@workspace/api-client-react';
 import { MusicianCoverage } from '@/components/musician-coverage';
 import { InvestigationHistory } from '@/components/investigation-history';
+import { PresetProfileLinks } from '@/components/preset-profile-links';
+import { isProfileUrl, normalizeProfileUrl } from '@/lib/profile-input';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 
 const platforms = [
@@ -18,6 +20,7 @@ const platforms = [
 ] as const;
 
 function PlatformIcon({ platform, size = 16 }: { platform?: string; size?: number }) {
+  if (platform?.toLowerCase() === 'spotify') return <SiSpotify size={size} className="inv-platform-icon inv-platform-spotify" aria-hidden="true" />;
   const match = platforms.find(item => item.name.toLowerCase() === platform?.toLowerCase());
   if (!match) return <Link2 size={size} aria-hidden="true" />;
   const Icon = match.icon;
@@ -27,30 +30,15 @@ function PlatformIcon({ platform, size = 16 }: { platform?: string; size?: numbe
 function platformFromUrl(value: string) {
   try {
     const host = new URL(value).hostname.toLowerCase().replace(/^(www|m)\./, '');
+    if (host === 'open.spotify.com') return 'Spotify';
     return platforms.find(platform => host === `${platform.name.toLowerCase()}.com`)?.name;
   } catch {
     return undefined;
   }
 }
 
-function isProfileUrl(value: string) {
-  try {
-    const url = new URL(value.trim());
-    if (url.protocol !== 'https:' && url.protocol !== 'http:') return false;
-    const host = url.hostname.toLowerCase().replace(/^www\./, '').replace(/^m\./, '');
-    const path = url.pathname.split('/').filter(Boolean);
-    const handle = host === 'instagram.com' ? path[0] : path[0]?.startsWith('@') ? path[0].slice(1) : '';
-    if (path.length !== 1 || !handle || !/^[\w.-]{2,120}$/.test(handle)) return false;
-    if (host === 'instagram.com') return !['p', 'reel', 'reels', 'stories', 'explore', 'direct', 'accounts'].includes(handle.toLowerCase());
-    if (host === 'tiktok.com' || host === 'youtube.com') return true;
-    return false;
-  } catch {
-    return false;
-  }
-}
-
 const searchSchema = z.object({
-  url: z.string().trim().min(1, 'Paste a profile URL to begin.').max(500, 'The URL must be 500 characters or fewer.').refine(isProfileUrl, 'Enter an Instagram, TikTok or YouTube profile URL, not a post or video link.'),
+  url: z.string().trim().min(1, 'Paste a profile URL to begin.').max(500, 'The URL must be 500 characters or fewer.').refine(isProfileUrl, 'Enter an Instagram or TikTok profile, YouTube channel, or Spotify artist URL, not a post or video link.').transform(normalizeProfileUrl),
 });
 type SearchValues = z.infer<typeof searchSchema>;
 
@@ -229,7 +217,8 @@ export default function SingleArtist() {
   const stage = getStage(elapsed);
   const referencePlatform = platformFromUrl(searchedUrl);
   const availablePlatforms = platforms.filter(platform => platform.name !== referencePlatform);
-  const draftPlatform = platformFromUrl(form.watch('url'));
+  const draftUrl = form.watch('url');
+  const draftPlatform = platformFromUrl(normalizeProfileUrl(draftUrl));
   const sortedProfiles = result ? result.profiles
     .filter(profile => profile.platform.toLowerCase() !== referencePlatform?.toLowerCase())
     .sort((a, b) => verificationRank(b) - verificationRank(a) || b.confidence - a.confidence) : [];
@@ -239,9 +228,9 @@ export default function SingleArtist() {
     <div className="investigation">
       <header className="inv-nav">
         <div className="inv-wrap inv-nav-inner">
-          <Link href="/" className="inv-brand" data-testid="link-brand-home" aria-label="Find Social Links, investigation desk">
+          <Link href="/" className="inv-brand" data-testid="link-brand-home" aria-label="Profile Handles Online, investigation desk">
             <span className="inv-brand-mark"><Activity size={19} strokeWidth={2.5} /></span>
-            <span className="inv-brand-name">Find Social Links<span className="inv-brand-caption inv-mono">Human review workspace</span></span>
+            <span className="inv-brand-name">Profile Handles Online<span className="inv-brand-caption inv-mono">Human review workspace</span></span>
           </Link>
           <div className="inv-nav-right">
             <span className="inv-nav-tag inv-mono"><i />Single-profile investigation</span>
@@ -260,7 +249,7 @@ export default function SingleArtist() {
               <form onSubmit={form.handleSubmit(runSearch)} noValidate data-testid="form-single-profile-search">
                 <div className="inv-search-top">
                   <div className="inv-search-entry">
-                    <label htmlFor="single-profile-url" className="inv-label">Instagram, TikTok or YouTube profile URL</label>
+                     <label htmlFor="single-profile-url" className="inv-label">Instagram, TikTok, YouTube or Spotify artist URL</label>
                     <div className="inv-input-row">
                       <FormField control={form.control} name="url" render={({ field }) => (
                         <FormItem style={{ flex: 1, minWidth: 0 }}>
@@ -273,6 +262,10 @@ export default function SingleArtist() {
                       </button>
                     </div>
                     <p className="inv-input-hint">Your link stays the reference. Only accounts on other platforms are returned as suggestions for human review.</p>
+                     <PresetProfileLinks value={draftUrl} disabled={status === 'pending'} onSelect={url => {
+                       form.setValue('url', url, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+                       form.setFocus('url');
+                     }} />
                   </div>
                   <div className="inv-search-aside">
                     <span className="inv-mono">{draftPlatform ? `Finding links beyond ${draftPlatform}` : 'Search scope'}</span>
@@ -364,7 +357,7 @@ export default function SingleArtist() {
           <MusicianCoverage />
         </div>
       </main>
-      <footer className="inv-footer inv-wrap"><span>FIND SOCIAL LINKS / HUMAN REVIEW WORKSPACE</span><span>Discovery suggestions only. Nothing here is verified or approved automatically.</span></footer>
+      <footer className="inv-footer inv-wrap"><span>PROFILE HANDLES ONLINE / HUMAN REVIEW WORKSPACE</span><span>Discovery suggestions only. Nothing here is verified or approved automatically.</span></footer>
     </div>
   );
 }

@@ -1,0 +1,94 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { findProfiles, parseKnownProfileUrl, resolveKnownProfileIdentity } from "../src/lib/musician-search.ts";
+import { isProfileUrl } from "../../musician-social-finder/src/lib/profile-input.ts";
+
+const presets = [
+  "youtube.com/channel/UCmv1CLT6ZcFdTJMHxaR9XeA",
+  "https://www.instagram.com/tribbs",
+  "https://www.tiktok.com/@iamchasematthew",
+  "https://www.youtube.com/channel/UChumNJVpgIOi3sd3j3Y8kpQ",
+  "https://www.tiktok.com/@aimyon_official",
+  "https://www.youtube.com/channel/UCxU6nh0LHqH9H4-fxWMGsgw",
+  "https://open.spotify.com/artist/6nxWCVXbOlEVRexSbLsTer",
+  "https://www.instagram.com/tribedaloca",
+  "https://www.tiktok.com/@raja_kumari",
+  "https://www.instagram.com/latinmafia",
+  "https://www.youtube.com/channel/UCZGBua-dvwfSdcF9AskDIgw",
+];
+
+test("all eleven user presets are accepted by frontend and backend", () => {
+  for (const url of presets) {
+    assert.equal(isProfileUrl(url), true, url);
+    assert.ok(parseKnownProfileUrl(url), url);
+  }
+  const channel = parseKnownProfileUrl(presets[0]);
+  assert.equal(channel?.url, `https://${presets[0]}`);
+  assert.equal(channel?.channelId, "UCmv1CLT6ZcFdTJMHxaR9XeA");
+});
+
+test("posts, videos, Spotify tracks, malformed IDs and other hosts remain invalid", () => {
+  for (const url of [
+    "https://www.instagram.com/p/abc",
+    "https://www.tiktok.com/@tribbs/video/123",
+    "https://www.youtube.com/watch?v=123",
+    "https://www.youtube.com/channel/not-a-channel",
+    "https://open.spotify.com/track/6nxWCVXbOlEVRexSbLsTer",
+    "https://open.spotify.com/artist/short",
+    "https://instagram.com.evil.example/tribbs",
+    "ftp://instagram.com/tribbs",
+    "https://user:password@instagram.com/tribbs",
+  ]) {
+    assert.equal(isProfileUrl(url), false, url);
+    assert.equal(parseKnownProfileUrl(url), undefined, url);
+  }
+});
+
+test("channel lookup preserves channel ID case and resolves its canonical handle", async t => {
+  t.mock.method(globalThis, "fetch", async (value: string) => {
+    const url = new URL(value);
+    assert.equal(url.searchParams.get("channelId"), "UCmv1CLT6ZcFdTJMHxaR9XeA");
+    assert.equal(url.searchParams.has("handle"), false);
+    return Response.json({ channelId: "UCmv1CLT6ZcFdTJMHxaR9XeA", channel: "https://www.youtube.com/@testartist", name: "Test Artist" });
+  });
+  const identity = await resolveKnownProfileIdentity(presets[0], "test-key");
+  assert.equal(identity?.subject, "Test Artist");
+  assert.equal(identity?.handle, "testartist");
+  assert.equal(identity?.knownProfileUrl, `https://${presets[0]}`);
+});
+
+test("channel lookup rejects metadata for a different channel", async t => {
+  t.mock.method(globalThis, "fetch", async () => Response.json({ channelId: "UCwrong", channel: "https://www.youtube.com/@wrong", name: "Wrong Artist" }));
+  assert.equal(await resolveKnownProfileIdentity(presets[0], "test-key"), undefined);
+});
+
+test("Spotify resolves the artist name without treating its ID as a social handle", async t => {
+  t.mock.method(globalThis, "fetch", async (value: string) => {
+    const url = new URL(value);
+    assert.equal(url.origin, "https://open.spotify.com");
+    assert.equal(url.searchParams.get("url"), presets[6]);
+    return Response.json({ provider_name: "Spotify", title: "Flume", thumbnail_url: "https://example.com/image.png" });
+  });
+  const identity = await resolveKnownProfileIdentity(presets[6], "test-key");
+  assert.equal(identity?.subject, "Flume");
+  assert.equal(identity?.handlePlatform, "spotify");
+  assert.equal(identity?.handle, undefined);
+  assert.equal(identity?.knownProfileUrl, presets[6]);
+});
+
+test("Spotify failures surface instead of creating an identity from the ID", async t => {
+  t.mock.method(globalThis, "fetch", async () => new Response("Unavailable", { status: 503 }));
+  await assert.rejects(() => resolveKnownProfileIdentity(presets[6], "test-key"), /Spotify artist lookup failed/);
+});
+
+test("Spotify references search all three social platforms through external discovery", async t => {
+  const queries: string[] = [];
+  t.mock.method(globalThis, "fetch", async (value: string, init: RequestInit) => {
+    assert.equal(new URL(value).hostname, "google.serper.dev");
+    queries.push(JSON.parse(init.body as string).q);
+    return Response.json({ organic: [] });
+  });
+  await findProfiles({ subject: "Flume", handlePlatform: "spotify", knownProfileUrl: presets[6], excludeReferencePlatform: true, methods: ["serper"], serperApiKey: "test-key" });
+  assert.equal(queries.length, 3);
+  assert.ok(queries.every(query => query.includes("Flume") && !query.includes("6nxWCVXbOlEVRexSbLsTer")));
+});

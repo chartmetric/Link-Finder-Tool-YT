@@ -64,6 +64,7 @@ type IdentityMetadata = {
   url: string;
   followers?: number;
   verified?: boolean;
+  channelId?: string;
 };
 
 const socialPlatformDefinitions = [
@@ -399,13 +400,16 @@ function profileHandleFromUrl(value: string): string {
 }
 
 export function parseKnownProfileUrl(value: string): {
-  platform: "instagram" | "tiktok" | "youtube";
+  platform: "instagram" | "tiktok" | "youtube" | "spotify";
   handle: string;
   url: string;
+  channelId?: string;
 } | undefined {
   try {
-    const url = new URL(value.trim());
+    const trimmed = value.trim();
+    const url = new URL(/^[a-z][a-z\d+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`);
     if (url.protocol !== "https:" && url.protocol !== "http:") return undefined;
+    if (url.username || url.password) return undefined;
     const host = url.hostname.toLowerCase().replace(/^www\./, "").replace(/^m\./, "");
     const parts = url.pathname.split("/").filter(Boolean);
     const platform = host === "instagram.com"
@@ -414,16 +418,23 @@ export function parseKnownProfileUrl(value: string): {
         ? "tiktok"
         : host === "youtube.com"
           ? "youtube"
-          : undefined;
+          : host === "open.spotify.com"
+            ? "spotify"
+            : undefined;
     if (!platform) return undefined;
+    const channelId = platform === "youtube" && parts.length === 2 && parts[0] === "channel" && /^UC[\w-]{22}$/.test(parts[1]) ? parts[1] : undefined;
     const handle = platform === "youtube"
-      ? parts.length === 1 && parts[0]?.startsWith("@") ? parts[0].slice(1) : ""
+      ? channelId ?? (parts.length === 1 && parts[0]?.startsWith("@") ? parts[0].slice(1) : "")
       : platform === "tiktok"
         ? parts.length === 1 && parts[0]?.startsWith("@") ? parts[0].slice(1) : ""
-        : parts.length === 1 ? parts[0] : "";
+        : platform === "spotify"
+          ? parts.length === 2 && parts[0] === "artist" && /^[a-zA-Z0-9]{22}$/.test(parts[1]) ? parts[1] : ""
+          : parts.length === 1 ? parts[0] : "";
     if (!handle || !/^[\w.-]{2,120}$/.test(handle)) return undefined;
     if (platform === "instagram" && ["explore", "reels", "reel", "p", "stories", "direct", "accounts"].includes(handle.toLowerCase())) return undefined;
-    return { platform, handle, url: url.toString() };
+    url.search = "";
+    url.hash = "";
+    return { platform, handle, url: url.toString(), ...(channelId ? { channelId } : {}) };
   } catch {
     return undefined;
   }
@@ -438,10 +449,14 @@ export async function resolveKnownProfileIdentity(value: string, apiKey: string)
     apiKey,
   });
   if (!metadata) return undefined;
-  if (metadata.handle.toLowerCase() !== parsed.handle.toLowerCase()) return undefined;
+  if (parsed.channelId) {
+    if (metadata.channelId !== parsed.channelId || !metadata.displayName?.trim()) return undefined;
+  } else if (parsed.platform === "spotify") {
+    if (metadata.handle !== parsed.handle) return undefined;
+  } else if (metadata.handle.toLowerCase() !== parsed.handle.toLowerCase()) return undefined;
   return {
     subject: metadata.displayName?.trim() || `@${parsed.handle}`,
-    handle: parsed.handle,
+    handle: parsed.platform === "spotify" || (parsed.channelId && metadata.handle === parsed.channelId) ? undefined : metadata.handle,
     handlePlatform: parsed.platform,
     knownProfileUrl: parsed.url,
     referenceMetadata: metadata,
@@ -459,12 +474,31 @@ async function fetchIdentityMetadata(input: {
   url: string;
   apiKey: string;
 }): Promise<IdentityMetadata | undefined> {
+  if (input.platform.toLowerCase() === "spotify") {
+    const parsed = parseKnownProfileUrl(input.url);
+    if (parsed?.platform !== "spotify") return undefined;
+    const response = await fetch(`https://open.spotify.com/oembed?${new URLSearchParams({ url: parsed.url })}`, {
+      signal: AbortSignal.timeout(12_000),
+    });
+    if (!response.ok) throw new Error(`Spotify artist lookup failed (${response.status})`);
+    const payload = await response.json() as { title?: string; thumbnail_url?: string; provider_name?: string };
+    if (payload.provider_name !== "Spotify" || !payload.title?.trim()) return undefined;
+    return {
+      platform: "spotify",
+      handle: parsed.handle,
+      displayName: payload.title.trim(),
+      url: parsed.url,
+      ...(payload.thumbnail_url ? { imageUrl: payload.thumbnail_url } : {}),
+    };
+  }
   const definition = platformDefinition(input.platform);
   if (!definition) return undefined;
   const platform = definition.key;
-  const expectedHandle = profileHandleFromUrl(input.url).toLowerCase();
+  const expectedHandle = profileHandleFromUrl(input.url);
+  const channelId = platform === "youtube" ? parseKnownProfileUrl(input.url)?.channelId : undefined;
+  const query = new URLSearchParams(channelId ? { channelId } : { handle: expectedHandle });
   const response = await fetch(
-    `https://api.scrapecreators.com/v1${definition.scrapeCreatorsProfilePath}?${new URLSearchParams({ handle: expectedHandle })}`,
+    `https://api.scrapecreators.com/v1${definition.scrapeCreatorsProfilePath}?${query}`,
     {
       headers: { "x-api-key": input.apiKey },
       signal: AbortSignal.timeout(12_000),
@@ -512,7 +546,8 @@ async function fetchIdentityMetadata(input: {
   if (!payload.channel && !payload.name) return undefined;
   return {
     platform: input.platform,
-    handle: payload.handle?.replace(/^@/, "") ?? expectedHandle,
+    handle: payload.handle?.replace(/^@/, "") || profileHandleFromUrl(payload.channel ?? input.url) || expectedHandle,
+    ...(payload.channelId ? { channelId: payload.channelId } : {}),
     ...(payload.name ? { displayName: payload.name } : {}),
     ...(payload.description ? { bio: payload.description } : {}),
     ...(payload.avatar?.image?.sources?.at(-1)?.url ? { imageUrl: payload.avatar.image.sources.at(-1).url } : {}),
@@ -594,7 +629,7 @@ function compareIdentity(reference: IdentityMetadata, candidate: IdentityMetadat
 export async function findProfiles(input: {
   subject?: string;
   handle?: string;
-  handlePlatform?: "instagram" | "tiktok" | "youtube" | "x" | "twitter" | "facebook";
+  handlePlatform?: "instagram" | "tiktok" | "youtube" | "spotify" | "x" | "twitter" | "facebook";
   knownProfileUrl?: string;
   referenceMetadata?: IdentityMetadata;
   excludeReferencePlatform?: boolean;

@@ -14,3 +14,9 @@ Keep existing LLM enrichment coverage separate from this app’s investigation c
 **Why:** The user was unsure which data source “LLM links” referred to, so both sources are displayed explicitly rather than silently choosing one or combining them.
 
 **How to apply:** Preserve distinct source labels and do not imply discovered links are officially approved. Match investigations to musician profiles using the trusted reference URL, not a fuzzy artist-name match.
+
+Do not search the existing musician database for discovery results for now.
+
+**Why:** The user explicitly said, “let's not search db for now.”
+
+**How to apply:** Keep new investigations based on external discovery and profile metadata. Existing database-backed saved history and coverage statistics remain separate from discovery.
