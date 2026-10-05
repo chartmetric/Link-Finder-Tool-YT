@@ -15,4 +15,6 @@ export interface IdentityMetadata {
   url: string;
   followers?: number;
   verified?: boolean;
+  channelId?: string;
+  urlAliases?: string[];
 }

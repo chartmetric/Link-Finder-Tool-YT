@@ -1,6 +1,7 @@
 import { keepPreviousData } from '@tanstack/react-query';
 import { ArrowUpRight, ChevronLeft, ChevronRight, CircleAlert, FolderOpen, History, RefreshCw } from 'lucide-react';
 import { getListProfileInvestigationsQueryKey, useListProfileInvestigations, type ProfileInvestigation, type ProfileMatch } from '@workspace/api-client-react';
+import { ProfileUrlAliases } from './profile-url-aliases';
 
 export const HISTORY_LIMIT = 20;
 
@@ -92,6 +93,7 @@ export function InvestigationHistory({ page, onPageChange, onOpen, activeId, dis
                       <td>
                         <strong data-testid={`text-history-subject-${item.id}`}>{item.result.subject || host(item.knownProfileUrl)}</strong>
                         <a className="inv-history-ref" href={item.knownProfileUrl} target="_blank" rel="noopener noreferrer">{host(item.knownProfileUrl)}</a>
+                        <ProfileUrlAliases profile={item.result.referenceProfile ? { ...item.result.referenceProfile, url: item.knownProfileUrl } : undefined} compact />
                       </td>
                       <td>
                         {found.length === 0 ? <span className="inv-history-none">No other-platform links found</span> : (
@@ -101,6 +103,7 @@ export function InvestigationHistory({ page, onPageChange, onOpen, activeId, dis
                                 <span className="inv-history-plat">{p.platform}</span>
                                 <a href={p.url} target="_blank" rel="noopener noreferrer">{host(p.url)} <ArrowUpRight size={11} aria-hidden="true" /></a>
                                 <span className={`inv-history-verdict v-${p.jevVerification?.verdict ?? 'none'}`}>{verdictOf(p)}</span>
+                                <ProfileUrlAliases profile={p} compact />
                               </li>
                             ))}
                           </ul>

@@ -39,6 +39,8 @@ Searches Google through Serper.dev and returns the strongest official Instagram,
 
 ## Product
 
+YouTube investigations retain metadata-confirmed handle and channel-ID URLs under one account. Channel-ID equivalence is separate from artist ownership; the grouped account receives one artist assessment. Both candidate aliases and starting-profile aliases are persisted in the existing history JSON; older snapshots are not automatically re-resolved. Run API regression checks with `pnpm --filter @workspace/api-server test`.
+
 Search by any public name with optional location and country hints, inspect the best Instagram, TikTok, and YouTube matches, copy URLs, and export results.
 
 ## User preferences

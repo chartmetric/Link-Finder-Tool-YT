@@ -5,11 +5,13 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { IdentityMetadata } from './identityMetadata';
 import type { ProfileMatch } from './profileMatch';
 import type { SearchMethodUsage } from './searchMethodUsage';
 import type { SearchSource } from './searchSource';
 
 export interface ProfileSearchResponse {
+  referenceProfile?: IdentityMetadata;
   /** Saved investigation identifier, present when single-profile history was persisted. */
   historyId?: string;
   /** Explicit warning if discovery succeeded but investigation history could not be saved. */

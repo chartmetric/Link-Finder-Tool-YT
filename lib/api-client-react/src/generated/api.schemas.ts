@@ -20,6 +20,19 @@ export interface MusicianCoverage {
   generatedAt: string;
 }
 
+export interface IdentityMetadata {
+  platform: string;
+  handle: string;
+  displayName?: string;
+  bio?: string;
+  imageUrl?: string;
+  url: string;
+  followers?: number;
+  verified?: boolean;
+  channelId?: string;
+  urlAliases?: string[];
+}
+
 export type ProfileMatchCategory = typeof ProfileMatchCategory[keyof typeof ProfileMatchCategory];
 
 
@@ -35,17 +48,6 @@ export const IdentityComparisonStatus = {
   uncertain: 'uncertain',
   mismatch: 'mismatch',
 } as const;
-
-export interface IdentityMetadata {
-  platform: string;
-  handle: string;
-  displayName?: string;
-  bio?: string;
-  imageUrl?: string;
-  url: string;
-  followers?: number;
-  verified?: boolean;
-}
 
 export interface IdentityComparison {
   status: IdentityComparisonStatus;
@@ -92,6 +94,10 @@ export interface ProfileMatch {
   title: string;
   url: string;
   displayUrl: string;
+  /** YouTube channel ID confirmed by profile metadata, not artist ownership. */
+  channelId?: string;
+  /** URLs confirmed by metadata to refer to this same account. */
+  urlAliases?: string[];
   snippet: string;
   /**
      * @minimum 0
@@ -132,6 +138,7 @@ export interface SearchMethodUsage {
 }
 
 export interface ProfileSearchResponse {
+  referenceProfile?: IdentityMetadata;
   /** Saved investigation identifier, present when single-profile history was persisted. */
   historyId?: string;
   /** Explicit warning if discovery succeeded but investigation history could not be saved. */

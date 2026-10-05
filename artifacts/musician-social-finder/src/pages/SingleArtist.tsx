@@ -10,6 +10,7 @@ import { getGetMusicianCoverageQueryKey, getListProfileInvestigationsQueryKey, s
 import { MusicianCoverage } from '@/components/musician-coverage';
 import { InvestigationHistory } from '@/components/investigation-history';
 import { PresetProfileLinks } from '@/components/preset-profile-links';
+import { ProfileUrlAliases } from '@/components/profile-url-aliases';
 import { isProfileUrl, normalizeProfileUrl } from '@/lib/profile-input';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 
@@ -109,6 +110,7 @@ function Candidate({ candidate, index }: { candidate: ProfileMatch; index: numbe
           <a data-testid={`link-candidate-${index}`} className="inv-candidate-link" href={candidate.url} target="_blank" rel="noopener noreferrer">
             {candidate.displayUrl || cleanDisplayUrl(candidate.url)} <ArrowUpRight size={13} aria-hidden="true" />
           </a>
+          <ProfileUrlAliases profile={candidate} />
         </div>
         <div className="inv-score" title="Discovery score, not the probability that this is the correct identity">
           <strong data-testid={`text-candidate-confidence-${index}`}>{candidate.confidence}%</strong>
@@ -311,7 +313,7 @@ export default function SingleArtist() {
                 </div>
                 {result.historySaveError ? <div className="inv-save-warn" role="alert" data-testid="status-history-save-error"><CircleAlert size={16} /><span><b>This search was not saved to history.</b> {result.historySaveError} The results below are still available in this session only.</span></div> : null}
                 <div className="inv-summary">
-                  <div className="inv-summary-lead"><span>Known {referencePlatform} profile</span><h3 data-testid="text-result-subject">{result.subject || cleanDisplayUrl(searchedUrl)}</h3><p title={searchedUrl}><PlatformIcon platform={referencePlatform} size={12} />{cleanDisplayUrl(searchedUrl)}</p></div>
+                  <div className="inv-summary-lead"><span>Known {referencePlatform} profile</span><h3 data-testid="text-result-subject">{result.subject || cleanDisplayUrl(searchedUrl)}</h3><p title={searchedUrl}><PlatformIcon platform={referencePlatform} size={12} /><a href={searchedUrl} target="_blank" rel="noopener noreferrer">{cleanDisplayUrl(searchedUrl)}</a></p><ProfileUrlAliases profile={result.referenceProfile ? { ...result.referenceProfile, url: searchedUrl } : undefined} /></div>
                   <div className="inv-summary-stat"><span>Other-platform candidates</span><strong data-testid="text-total-found">{sortedProfiles.length}</strong></div>
                   <div className="inv-summary-stat"><span>High search score</span><strong data-testid="text-high-confidence">{sortedProfiles.filter(profile => profile.confidence >= 80).length}</strong></div>
                   <div className="inv-summary-stat"><span>Est. cost</span><strong data-testid="text-estimated-cost" style={{ fontSize: 16 }}>${result.estimatedCostUsd.toFixed(4)}</strong></div>

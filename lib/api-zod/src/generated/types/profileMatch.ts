@@ -15,6 +15,10 @@ export interface ProfileMatch {
   title: string;
   url: string;
   displayUrl: string;
+  /** YouTube channel ID confirmed by profile metadata, not artist ownership. */
+  channelId?: string;
+  /** URLs confirmed by metadata to refer to this same account. */
+  urlAliases?: string[];
   snippet: string;
   /**
      * @minimum 0

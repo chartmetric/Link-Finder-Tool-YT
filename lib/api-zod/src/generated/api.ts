@@ -61,6 +61,18 @@ export const ListProfileInvestigationsResponse = zod.object({
   "id": zod.string(),
   "knownProfileUrl": zod.string(),
   "result": zod.object({
+  "referenceProfile": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
+}).optional(),
   "historyId": zod.string().optional().describe('Saved investigation identifier, present when single-profile history was persisted.'),
   "historySaveError": zod.string().optional().describe('Explicit warning if discovery succeeded but investigation history could not be saved.'),
   "subject": zod.string(),
@@ -72,6 +84,8 @@ export const ListProfileInvestigationsResponse = zod.object({
   "title": zod.string(),
   "url": zod.string(),
   "displayUrl": zod.string(),
+  "channelId": zod.string().optional().describe('YouTube channel ID confirmed by profile metadata, not artist ownership.'),
+  "urlAliases": zod.array(zod.string()).optional().describe('URLs confirmed by metadata to refer to this same account.'),
   "snippet": zod.string(),
   "confidence": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultProfilesItemConfidenceMin).max(listProfileInvestigationsResponseInvestigationsItemResultProfilesItemConfidenceMax),
   "signals": zod.array(zod.string()),
@@ -88,7 +102,9 @@ export const ListProfileInvestigationsResponse = zod.object({
   "imageUrl": zod.string().optional(),
   "url": zod.string(),
   "followers": zod.number().optional(),
-  "verified": zod.boolean().optional()
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
 }),
   "candidate": zod.object({
   "platform": zod.string(),
@@ -98,7 +114,9 @@ export const ListProfileInvestigationsResponse = zod.object({
   "imageUrl": zod.string().optional(),
   "url": zod.string(),
   "followers": zod.number().optional(),
-  "verified": zod.boolean().optional()
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
 })
 }).optional(),
   "identityVerificationNote": zod.string().optional(),
@@ -194,6 +212,18 @@ export const searchProfilesResponseMethodsUsedItemDurationMsMin = 0;
 
 
 export const SearchProfilesResponse = zod.object({
+  "referenceProfile": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
+}).optional(),
   "historyId": zod.string().optional().describe('Saved investigation identifier, present when single-profile history was persisted.'),
   "historySaveError": zod.string().optional().describe('Explicit warning if discovery succeeded but investigation history could not be saved.'),
   "subject": zod.string(),
@@ -205,6 +235,8 @@ export const SearchProfilesResponse = zod.object({
   "title": zod.string(),
   "url": zod.string(),
   "displayUrl": zod.string(),
+  "channelId": zod.string().optional().describe('YouTube channel ID confirmed by profile metadata, not artist ownership.'),
+  "urlAliases": zod.array(zod.string()).optional().describe('URLs confirmed by metadata to refer to this same account.'),
   "snippet": zod.string(),
   "confidence": zod.number().min(searchProfilesResponseProfilesItemConfidenceMin).max(searchProfilesResponseProfilesItemConfidenceMax),
   "signals": zod.array(zod.string()),
@@ -221,7 +253,9 @@ export const SearchProfilesResponse = zod.object({
   "imageUrl": zod.string().optional(),
   "url": zod.string(),
   "followers": zod.number().optional(),
-  "verified": zod.boolean().optional()
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
 }),
   "candidate": zod.object({
   "platform": zod.string(),
@@ -231,7 +265,9 @@ export const SearchProfilesResponse = zod.object({
   "imageUrl": zod.string().optional(),
   "url": zod.string(),
   "followers": zod.number().optional(),
-  "verified": zod.boolean().optional()
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
 })
 }).optional(),
   "identityVerificationNote": zod.string().optional(),

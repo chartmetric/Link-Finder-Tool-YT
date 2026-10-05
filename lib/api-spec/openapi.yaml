@@ -362,6 +362,13 @@ components:
           type: string
         displayUrl:
           type: string
+        channelId:
+          type: string
+          description: YouTube channel ID confirmed by profile metadata, not artist ownership.
+        urlAliases:
+          type: array
+          description: URLs confirmed by metadata to refer to this same account.
+          items: { type: string }
         snippet:
           type: string
         confidence:
@@ -403,6 +410,10 @@ components:
         url: { type: string }
         followers: { type: number }
         verified: { type: boolean }
+        channelId: { type: string }
+        urlAliases:
+          type: array
+          items: { type: string }
       required: [platform, handle, url]
     IdentityComparison:
       type: object
@@ -483,6 +494,8 @@ components:
     ProfileSearchResponse:
       type: object
       properties:
+        referenceProfile:
+          $ref: "#/components/schemas/IdentityMetadata"
         historyId:
           type: string
           description: Saved investigation identifier, present when single-profile history was persisted.

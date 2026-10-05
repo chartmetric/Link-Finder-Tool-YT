@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { findProfiles, parseKnownProfileUrl, resolveKnownProfileIdentity } from "../src/lib/musician-search.ts";
 import { isProfileUrl } from "../../musician-social-finder/src/lib/profile-input.ts";
+import { SearchProfilesResponse } from "@workspace/api-zod";
 
 const presets = [
   "youtube.com/channel/UCmv1CLT6ZcFdTJMHxaR9XeA",
@@ -91,4 +92,80 @@ test("Spotify references search all three social platforms through external disc
   await findProfiles({ subject: "Flume", handlePlatform: "spotify", knownProfileUrl: presets[6], excludeReferencePlatform: true, methods: ["serper"], serperApiKey: "test-key" });
   assert.equal(queries.length, 3);
   assert.ok(queries.every(query => query.includes("Flume") && !query.includes("6nxWCVXbOlEVRexSbLsTer")));
+});
+
+test("discovered YouTube handle and ID URLs group before verification and survive history JSON validation", async t => {
+  const channelId = "UCmv1CLT6ZcFdTJMHxaR9XeA";
+  const handleUrl = "https://www.youtube.com/@testartist";
+  const idUrl = `https://www.youtube.com/channel/${channelId}`;
+  const metadataLookups: string[] = [];
+  t.mock.method(globalThis, "fetch", async (value: string, init?: RequestInit) => {
+    const url = new URL(value);
+    if (url.hostname === "google.serper.dev") {
+      const query = JSON.parse(init?.body as string).q as string;
+      return Response.json({ organic: query.includes("youtube") ? [
+        { title: "Test Artist", link: handleUrl, snippet: "Official Test Artist channel" },
+        { title: "Test Artist", link: idUrl, snippet: "Official Test Artist channel" },
+      ] : [] });
+    }
+    assert.equal(url.hostname, "api.scrapecreators.com");
+    metadataLookups.push(url.search);
+    return Response.json({ channelId, handle: "@testartist", channel: handleUrl, name: "Test Artist" });
+  });
+  const result = await findProfiles({
+    subject: "Test Artist", handlePlatform: "instagram", knownProfileUrl: "https://www.instagram.com/testartist/",
+    referenceMetadata: { platform: "instagram", handle: "testartist", displayName: "Test Artist", url: "https://www.instagram.com/testartist/" },
+    excludeReferencePlatform: true, methods: ["serper"], serperApiKey: "test-key", scrapeCreatorsApiKey: "test-key",
+  });
+  assert.equal(metadataLookups.length, 2);
+  assert.ok(metadataLookups.some(query => query.includes(`channelId=${channelId}`)));
+  assert.ok(metadataLookups.some(query => query.includes("handle=testartist")));
+  const saved = SearchProfilesResponse.parse(JSON.parse(JSON.stringify(result)));
+  assert.equal(saved.profiles.length, 1);
+  assert.equal(saved.totalFound, 1);
+  assert.equal(saved.profiles[0].channelId, channelId);
+  assert.deepEqual(new Set(saved.profiles[0].urlAliases), new Set([handleUrl, idUrl]));
+  assert.equal(saved.profiles[0].identityComparison?.candidate.channelId, channelId);
+  assert.equal(saved.profiles[0].jevVerification, undefined); // Alias resolution alone never verifies the artist.
+});
+
+test("YouTube starting-profile aliases also survive saved-history validation", async t => {
+  const channelId = "UCmv1CLT6ZcFdTJMHxaR9XeA";
+  const handleUrl = "https://www.youtube.com/@testartist";
+  t.mock.method(globalThis, "fetch", async (value: string) => {
+    const url = new URL(value);
+    return url.hostname === "api.scrapecreators.com"
+      ? Response.json({ channelId, handle: "@testartist", channel: handleUrl, name: "Test Artist" })
+      : Response.json({ organic: [] });
+  });
+  const identity = await resolveKnownProfileIdentity(`https://www.youtube.com/channel/${channelId}`, "test-key");
+  assert.ok(identity);
+  const result = await findProfiles({ ...identity, excludeReferencePlatform: true, methods: ["serper"], serperApiKey: "test-key" });
+  const saved = SearchProfilesResponse.parse(JSON.parse(JSON.stringify(result)));
+  assert.equal(saved.referenceProfile?.channelId, channelId);
+  assert.deepEqual(new Set(saved.referenceProfile?.urlAliases), new Set([handleUrl, `https://www.youtube.com/channel/${channelId}`]));
+});
+
+test("a failed channel lookup keeps both candidates and preserves the completed handle result", async t => {
+  const channelId = "UCmv1CLT6ZcFdTJMHxaR9XeA";
+  const handleUrl = "https://www.youtube.com/@testartist";
+  const idUrl = `https://www.youtube.com/channel/${channelId}`;
+  t.mock.method(globalThis, "fetch", async (value: string, init?: RequestInit) => {
+    const url = new URL(value);
+    if (url.hostname === "google.serper.dev") {
+      return Response.json({ organic: JSON.parse(init?.body as string).q.includes("youtube") ? [
+        { title: "Test Artist", link: handleUrl }, { title: "Test Artist", link: idUrl },
+      ] : [] });
+    }
+    if (url.searchParams.has("channelId")) return new Response("Unavailable", { status: 503 });
+    return Response.json({ channelId, handle: "@testartist", channel: handleUrl, name: "Test Artist" });
+  });
+  const result = await findProfiles({
+    subject: "Test Artist", handlePlatform: "instagram", knownProfileUrl: "https://www.instagram.com/testartist/",
+    referenceMetadata: { platform: "instagram", handle: "testartist", displayName: "Test Artist", url: "https://www.instagram.com/testartist/" },
+    excludeReferencePlatform: true, methods: ["serper"], serperApiKey: "test-key", scrapeCreatorsApiKey: "test-key",
+  });
+  assert.equal(result.profiles.length, 2);
+  assert.equal(result.profiles.find(p => p.url === handleUrl)?.channelId, channelId);
+  assert.ok(result.profiles.find(p => p.url === idUrl)?.identityVerificationNote);
 });

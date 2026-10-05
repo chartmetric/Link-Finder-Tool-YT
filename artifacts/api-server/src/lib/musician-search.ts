@@ -1,3 +1,5 @@
+import { groupYouTubeAliases, youtubeAliases } from "./youtube-aliases";
+
 type SerperOrganicResult = {
   title?: string;
   link?: string;
@@ -35,6 +37,8 @@ export type ProfileMatch = {
   title: string;
   url: string;
   displayUrl: string;
+  channelId?: string;
+  urlAliases?: string[];
   snippet: string;
   confidence: number;
   signals: string[];
@@ -65,6 +69,7 @@ type IdentityMetadata = {
   followers?: number;
   verified?: boolean;
   channelId?: string;
+  urlAliases?: string[];
 };
 
 const socialPlatformDefinitions = [
@@ -459,7 +464,10 @@ export async function resolveKnownProfileIdentity(value: string, apiKey: string)
     handle: parsed.platform === "spotify" || (parsed.channelId && metadata.handle === parsed.channelId) ? undefined : metadata.handle,
     handlePlatform: parsed.platform,
     knownProfileUrl: parsed.url,
-    referenceMetadata: metadata,
+    referenceMetadata: {
+      ...metadata,
+      ...(parsed.platform === "youtube" ? youtubeAliases(parsed.url, metadata) : {}),
+    },
   };
 }
 
@@ -1016,7 +1024,8 @@ export async function findProfiles(input: {
   }
   const merged = new Map<string, ProfileMatch>();
   for (const profile of profiles) {
-    const key = `${profile.platform}:${new URL(profile.url).pathname.replace(/\/$/, "").toLowerCase()}`;
+    const path = new URL(profile.url).pathname.replace(/\/$/, "");
+    const key = `${profile.platform}:${path.startsWith("/channel/") ? path : path.toLowerCase()}`;
     const prior = merged.get(key);
     if (!prior) merged.set(key, profile);
     else merged.set(key, {
@@ -1061,7 +1070,7 @@ export async function findProfiles(input: {
         referenceFailure = error instanceof Error ? error.message : "Identity metadata lookup failed";
       }
     }
-    if (reference) {
+    {
       const comparisons = await Promise.all(candidatesToCompare.map(async (profile) => {
         try {
           const candidate = await fetchIdentityMetadata({
@@ -1070,7 +1079,12 @@ export async function findProfiles(input: {
             apiKey: input.scrapeCreatorsApiKey!,
           });
           return candidate
-            ? { url: profile.url, comparison: compareIdentity(reference, candidate, profile.signals) }
+            ? {
+                url: profile.url,
+                aliases: profile.platform.toLowerCase() === "youtube" ? youtubeAliases(profile.url, candidate) : undefined,
+                comparison: reference ? compareIdentity(reference, candidate, profile.signals) : undefined,
+                note: reference ? undefined : referenceFailure ?? "Reference metadata unavailable for artist comparison",
+              }
             : { url: profile.url, note: "No profile metadata returned for this candidate" };
         } catch (error) {
           return {
@@ -1086,6 +1100,8 @@ export async function findProfiles(input: {
         (item) => [item.url, item.note!] as const,
       ));
       profiles = profiles.map((profile) => {
+        const aliases = comparisons.find(item => item.url === profile.url)?.aliases;
+        if (aliases) profile = { ...profile, ...aliases };
         const identityComparison = comparisonByUrl.get(profile.url);
         const identityVerificationNote = noteByUrl.get(profile.url);
         if (!identityComparison) return identityVerificationNote
@@ -1103,13 +1119,12 @@ export async function findProfiles(input: {
           identityComparison,
         };
       });
-    } else if (referenceFailure) {
-      const candidateUrls = new Set(candidatesToCompare.map((profile) => profile.url));
-      profiles = profiles.map((profile) => candidateUrls.has(profile.url)
-        ? { ...profile, identityVerificationNote: referenceFailure }
-        : profile);
     }
   }
+
+  // Collapse only metadata-confirmed aliases before artist verification, so both
+  // URLs share one assessment without mistaking equivalence for artist ownership.
+  profiles = groupYouTubeAliases(profiles);
 
   const jevCandidates = profiles.filter((profile) => profile.identityComparison);
   if (input.excludeReferencePlatform && !selected.includes("jev")) selected.push("jev");
@@ -1264,6 +1279,7 @@ export async function findProfiles(input: {
   return {
     subject,
     query,
+    ...(input.referenceMetadata ? { referenceProfile: input.referenceMetadata } : {}),
     searchedAt: new Date().toISOString(),
     profiles,
     sources,
