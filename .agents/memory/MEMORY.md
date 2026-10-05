@@ -3,3 +3,4 @@
 - [OpenAPI URL formats](openapi-url-formats.md) — avoid URI format annotations until generated Zod output matches the workspace's installed Zod API.
 - [Primary investigation experience](primary-investigation-experience.md) — investigations and saved history are primary; no catalog page; show tier 1–3 coverage with distinct link sources.
 - [Cross-platform follower counts](cross-platform-follower-counts.md) — treat large audience gaps as caution, not definitive proof of different identities.
+- [Visual style reference](visual-style-reference.md) — use the user's Chartmetric green/teal screenshot as the app's color reference.
