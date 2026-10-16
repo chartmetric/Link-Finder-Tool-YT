@@ -32,14 +32,14 @@ function platformFromUrl(value: string) {
   try {
     const host = new URL(value).hostname.toLowerCase().replace(/^(www|m)\./, '');
     if (host === 'open.spotify.com') return 'Spotify';
-    return platforms.find(platform => host === `${platform.name.toLowerCase()}.com`)?.name;
+    return platforms.find(platform => host === `${platform.name.toLowerCase()}.com`)?.name ?? host;
   } catch {
     return undefined;
   }
 }
 
 const searchSchema = z.object({
-  url: z.string().trim().min(1, 'Paste a profile URL to begin.').max(500, 'The URL must be 500 characters or fewer.').refine(isProfileUrl, 'Enter an Instagram or TikTok profile, YouTube channel, or Spotify artist URL, not a post or video link.').transform(normalizeProfileUrl),
+  url: z.string().trim().min(1, 'Paste a reference URL to begin.').max(500, 'The URL must be 500 characters or fewer.').refine(isProfileUrl, 'Enter a public profile or reference-page URL, such as ESPN. Social links must point to profiles, not posts or videos.').transform(normalizeProfileUrl),
 });
 type SearchValues = z.infer<typeof searchSchema>;
 
@@ -244,18 +244,18 @@ export default function SingleArtist() {
         <div className="inv-wrap inv-workspace">
           <div className="inv-section-head">
             <div><div className="inv-kicker">01 / Starting point</div><h2>Enter a known profile</h2></div>
-            <p className="inv-section-note">Use a profile page, not a post, reel, short or video.</p>
+            <p className="inv-section-note">Use a public profile or reference page, such as ESPN.</p>
           </div>
           <div className="inv-search-card">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(runSearch)} noValidate data-testid="form-single-profile-search">
                 <div className="inv-search-top">
                   <div className="inv-search-entry">
-                     <label htmlFor="single-profile-url" className="inv-label">Instagram, TikTok, YouTube or Spotify artist URL</label>
+                     <label htmlFor="single-profile-url" className="inv-label">Public profile or reference-page URL</label>
                     <div className="inv-input-row">
                       <FormField control={form.control} name="url" render={({ field }) => (
                         <FormItem style={{ flex: 1, minWidth: 0 }}>
-                          <div className="inv-input-wrap"><Link2 size={19} aria-hidden="true" /><FormControl><input {...field} id="single-profile-url" className="inv-input" type="url" inputMode="url" autoComplete="url" spellCheck={false} placeholder="https://www.instagram.com/artistname" aria-label="Known social profile URL" disabled={status === 'pending'} data-testid="input-profile-url" /></FormControl></div>
+                          <div className="inv-input-wrap"><Link2 size={19} aria-hidden="true" /><FormControl><input {...field} id="single-profile-url" className="inv-input" type="url" inputMode="url" autoComplete="url" spellCheck={false} placeholder="https://www.espn.com/... or a social profile URL" aria-label="Known public profile or reference-page URL" disabled={status === 'pending'} data-testid="input-profile-url" /></FormControl></div>
                           <FormMessage className="inv-form-error" data-testid="text-url-error" />
                         </FormItem>
                       )} />
@@ -274,7 +274,7 @@ export default function SingleArtist() {
                     {platforms.filter(platform => platform.name !== draftPlatform).map(({ name }) => <strong key={name}><PlatformIcon platform={name} size={13} /> {name}</strong>)}
                   </div>
                 </div>
-                <div className="inv-search-bottom inv-mono"><span>SEARCH INPUT / ONE PROFILE URL</span><span>REQUESTED DISCOVERY / <b>SERPER + GEMINI</b></span></div>
+                <div className="inv-search-bottom inv-mono"><span>SEARCH INPUT / ONE REFERENCE URL</span><span>REQUESTED DISCOVERY / <b>SERPER + GEMINI</b></span></div>
               </form>
             </Form>
           </div>

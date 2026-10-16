@@ -1,4 +1,5 @@
 import { groupYouTubeAliases, youtubeAliases } from "./youtube-aliases";
+import { parsePublicReference, resolvePublicReference } from "./public-reference";
 
 type SerperOrganicResult = {
   title?: string;
@@ -405,7 +406,7 @@ function profileHandleFromUrl(value: string): string {
 }
 
 export function parseKnownProfileUrl(value: string): {
-  platform: "instagram" | "tiktok" | "youtube" | "spotify";
+  platform: "instagram" | "tiktok" | "youtube" | "spotify" | "web";
   handle: string;
   url: string;
   channelId?: string;
@@ -426,7 +427,10 @@ export function parseKnownProfileUrl(value: string): {
           : host === "open.spotify.com"
             ? "spotify"
             : undefined;
-    if (!platform) return undefined;
+    if (!platform) {
+      const reference = parsePublicReference(value);
+      return reference ? { platform: "web", handle: "", url: reference.toString() } : undefined;
+    }
     const channelId = platform === "youtube" && parts.length === 2 && parts[0] === "channel" && /^UC[\w-]{22}$/.test(parts[1]) ? parts[1] : undefined;
     const handle = platform === "youtube"
       ? channelId ?? (parts.length === 1 && parts[0]?.startsWith("@") ? parts[0].slice(1) : "")
@@ -445,9 +449,10 @@ export function parseKnownProfileUrl(value: string): {
   }
 }
 
-export async function resolveKnownProfileIdentity(value: string, apiKey: string) {
+export async function resolveKnownProfileIdentity(value: string, apiKey: string, serperApiKey?: string) {
   const parsed = parseKnownProfileUrl(value);
   if (!parsed) return undefined;
+  if (parsed.platform === "web") return resolvePublicReference(new URL(parsed.url), serperApiKey);
   const metadata = await fetchIdentityMetadata({
     platform: parsed.platform,
     url: parsed.url,
@@ -637,7 +642,7 @@ function compareIdentity(reference: IdentityMetadata, candidate: IdentityMetadat
 export async function findProfiles(input: {
   subject?: string;
   handle?: string;
-  handlePlatform?: "instagram" | "tiktok" | "youtube" | "spotify" | "x" | "twitter" | "facebook";
+  handlePlatform?: "instagram" | "tiktok" | "youtube" | "spotify" | "web" | "x" | "twitter" | "facebook";
   knownProfileUrl?: string;
   referenceMetadata?: IdentityMetadata;
   excludeReferencePlatform?: boolean;

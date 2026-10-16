@@ -16,6 +16,8 @@ export const ProfileSearchInputHandlePlatform = {
   instagram: 'instagram',
   tiktok: 'tiktok',
   youtube: 'youtube',
+  spotify: 'spotify',
+  web: 'web',
   x: 'x',
   twitter: 'twitter',
   facebook: 'facebook',

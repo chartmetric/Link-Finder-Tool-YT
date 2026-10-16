@@ -23,7 +23,7 @@ export interface ProfileSearchInput {
   /** Platform where the known handle belongs */
   handlePlatform?: ProfileSearchInputHandlePlatform;
   /**
-     * Known Instagram or TikTok profile, YouTube handle or channel-ID URL, or Spotify artist URL. May be submitted alone; the server resolves the account identity.
+     * Public reference-page URL, including ESPN and ESPNcricinfo, or a supported social profile or Spotify artist URL. May be submitted alone; the server resolves the identity from profile metadata or the reference page's indexed title and description.
      * @maxLength 500
      */
   knownProfileUrl?: string;

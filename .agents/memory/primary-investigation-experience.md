@@ -20,3 +20,9 @@ Do not search the existing musician database for discovery results for now.
 **Why:** The user explicitly said, “let's not search db for now.”
 
 **How to apply:** Keep new investigations based on external discovery and profile metadata. Existing database-backed saved history and coverage statistics remain separate from discovery.
+
+Reference inputs should support “more things like ESPN links,” not just social-platform URLs.
+
+**Why:** The user provided a Cricinfo player-profile example and asked to relax the input restrictions.
+
+**How to apply:** Preserve the broader reference-page intake when changing validation or identity resolution; the allowed discovery platforms and the allowed reference sources are separate concerns.

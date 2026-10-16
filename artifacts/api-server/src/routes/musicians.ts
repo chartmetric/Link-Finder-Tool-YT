@@ -121,22 +121,29 @@ router.post("/profiles/search", async (req, res): Promise<void> => {
     return;
   }
   if (urlOnly && !parseKnownProfileUrl(input.data.knownProfileUrl!)) {
-    res.status(400).json({ error: "Enter an Instagram or TikTok profile, YouTube handle or channel, or Spotify artist URL (not a post or video)." });
+    res.status(400).json({ error: "Enter a public profile or reference-page URL, such as ESPN. For social platforms, use a profile rather than a post or video." });
     return;
   }
 
   let timeout: NodeJS.Timeout | undefined;
 
   try {
-    if (urlOnly && !process.env.SCRAPECREATORS_API_KEY) {
+    const referencePlatform = urlOnly ? parseKnownProfileUrl(input.data.knownProfileUrl!)?.platform : undefined;
+    if (referencePlatform === "web" && !process.env.SERPERDEV_API_KEY && !process.env.SERPER_API_KEY) {
+      res.status(503).json({ error: "Public reference-page lookup is unavailable; Serper is not configured." });
+      return;
+    }
+    if (urlOnly && referencePlatform !== "web" && referencePlatform !== "spotify" && !process.env.SCRAPECREATORS_API_KEY) {
       res.status(503).json({ error: "Profile URL lookup is unavailable; ScrapeCreators is not configured." });
       return;
     }
     const resolved = urlOnly
-      ? await resolveKnownProfileIdentity(input.data.knownProfileUrl!, process.env.SCRAPECREATORS_API_KEY!)
+      ? await resolveKnownProfileIdentity(input.data.knownProfileUrl!, process.env.SCRAPECREATORS_API_KEY ?? "", process.env.SERPERDEV_API_KEY ?? process.env.SERPER_API_KEY)
       : undefined;
     if (urlOnly && !resolved) {
-      res.status(422).json({ error: "Could not read an account at that profile URL. Check the link and try again." });
+      res.status(422).json({ error: referencePlatform === "web"
+        ? "Could not identify this reference page from its indexed title and description. Try a specific public person or player profile URL."
+        : "Could not read an account at that profile URL. Check the link and try again." });
       return;
     }
     const search = findProfiles({
