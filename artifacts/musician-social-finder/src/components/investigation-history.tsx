@@ -2,6 +2,7 @@ import { keepPreviousData } from '@tanstack/react-query';
 import { ArrowUpRight, ChevronLeft, ChevronRight, CircleAlert, FolderOpen, History, RefreshCw } from 'lucide-react';
 import { getListProfileInvestigationsQueryKey, useListProfileInvestigations, type ProfileInvestigation, type ProfileMatch } from '@workspace/api-client-react';
 import { ProfileUrlAliases } from './profile-url-aliases';
+import { getNetConfidence } from '@/lib/net-confidence';
 
 export const HISTORY_LIMIT = 20;
 
@@ -98,14 +99,18 @@ export function InvestigationHistory({ page, onPageChange, onOpen, activeId, dis
                       <td>
                         {found.length === 0 ? <span className="inv-history-none">No other-platform links found</span> : (
                           <ul className="inv-history-links">
-                            {found.map((p, i) => (
+                            {found.map((p, i) => {
+                              const net = getNetConfidence(p);
+                              return (
                               <li key={`${p.url}-${i}`}>
                                 <span className="inv-history-plat">{p.platform}</span>
                                 <a href={p.url} target="_blank" rel="noopener noreferrer">{host(p.url)} <ArrowUpRight size={11} aria-hidden="true" /></a>
                                 <span className={`inv-history-verdict v-${p.jevVerification?.verdict ?? 'none'}`}>{verdictOf(p)}</span>
+                                <span className="inv-history-net" title={net.explanation}>Net {net.score === null ? 'not assessed' : `${net.score}%`}{net.status === 'partial' ? ' · partial' : ''}</span>
                                 <ProfileUrlAliases profile={p} compact />
                               </li>
-                            ))}
+                              );
+                            })}
                           </ul>
                         )}
                       </td>

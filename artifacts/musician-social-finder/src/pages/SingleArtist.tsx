@@ -12,6 +12,7 @@ import { InvestigationHistory } from '@/components/investigation-history';
 import { PresetProfileLinks } from '@/components/preset-profile-links';
 import { ProfileUrlAliases } from '@/components/profile-url-aliases';
 import { isProfileUrl, normalizeProfileUrl } from '@/lib/profile-input';
+import { getNetConfidence } from '@/lib/net-confidence';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 
 const platforms = [
@@ -90,6 +91,7 @@ function Candidate({ candidate, index }: { candidate: ProfileMatch; index: numbe
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
   const comparison = candidate.identityComparison;
   const jev = candidate.jevVerification;
+  const net = getNetConfidence(candidate);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(candidate.url);
@@ -112,17 +114,19 @@ function Candidate({ candidate, index }: { candidate: ProfileMatch; index: numbe
           </a>
           <ProfileUrlAliases profile={candidate} />
         </div>
-        <div className="inv-score" title="Discovery score, not the probability that this is the correct identity">
-          <strong data-testid={`text-candidate-confidence-${index}`}>{candidate.confidence}%</strong>
-          <span>Search score</span>
+        <div className="inv-score" title={net.explanation}>
+          <strong data-testid={`text-candidate-confidence-${index}`}>{net.score === null ? '—' : `${net.score}%`}</strong>
+          <span>Net confidence</span>
+          {net.status !== 'complete' && <small data-testid={`status-net-confidence-${index}`}>{net.status === 'partial' ? 'Partial assessment' : 'Not assessed'}</small>}
         </div>
       </div>
       {candidate.snippet && <p className="inv-candidate-snippet" data-testid={`text-candidate-snippet-${index}`}>{candidate.snippet}</p>}
-      {(comparison || jev || candidate.identityVerificationNote) && <div className="inv-candidate-findings">
+      <div className="inv-candidate-findings">
+        <div className="inv-finding-line" data-testid={`text-discovery-score-${index}`}><SearchCheck size={15} /><span><b>Search / discovery score</b> · {candidate.confidence}/100 · provider signals plus identity adjustments, not net confidence</span></div>
         {jev && <div className="inv-finding-line" data-testid={`status-jev-summary-${index}`}><ShieldCheck size={15} /><span><b>JEV {jev.verdict}</b> · {(jev.verdictConfidence * 100).toFixed(1)}% verdict confidence · {(jev.sameIdentityProbability * 100).toFixed(1)}% same identity</span></div>}
         {comparison && <div className="inv-finding-line" data-testid={`text-identity-summary-${index}`}><Fingerprint size={15} /><span><b>Identity {comparison.status}</b> · {comparison.score}/100{comparison.reasons[0] ? ` — ${comparison.reasons[0]}` : ''}</span></div>}
         {candidate.identityVerificationNote && <div className="inv-finding-line"><CircleAlert size={15} /><span>{candidate.identityVerificationNote}</span></div>}
-      </div>}
+      </div>
       {(candidate.signals.length > 0 || candidate.methods.length > 0) && (
         <div className="inv-chips">
           {candidate.signals.map((signal, i) => <span className="inv-chip signal" key={`${signal}-${i}`}>{signal}</span>)}
@@ -132,6 +136,7 @@ function Candidate({ candidate, index }: { candidate: ProfileMatch; index: numbe
       <details className="inv-evidence" data-testid={`details-evidence-${index}`}>
         <summary data-testid={`button-evidence-${index}`}>Examine evidence <ChevronDown size={13} aria-hidden="true" /></summary>
         <div className="inv-evidence-body">
+          <div className="inv-evidence-block" data-testid={`text-net-calculation-${index}`}><b>Net confidence calculation</b><p>{net.explanation}</p><p>JEV verdict confidence measures certainty about its label; it is not the probability of a positive identity match and is not added as another independent score.</p></div>
           {comparison ? (
             <div className="inv-evidence-block">
               <b>Identity comparison</b>
@@ -223,7 +228,7 @@ export default function SingleArtist() {
   const draftPlatform = platformFromUrl(normalizeProfileUrl(draftUrl));
   const sortedProfiles = result ? result.profiles
     .filter(profile => profile.platform.toLowerCase() !== referencePlatform?.toLowerCase())
-    .sort((a, b) => verificationRank(b) - verificationRank(a) || b.confidence - a.confidence) : [];
+    .sort((a, b) => (getNetConfidence(b).score ?? -1) - (getNetConfidence(a).score ?? -1) || verificationRank(b) - verificationRank(a) || b.confidence - a.confidence) : [];
   const sources = (result?.sources ?? []).filter(source => platformFromUrl(source.url) !== referencePlatform);
 
   return (
@@ -315,7 +320,7 @@ export default function SingleArtist() {
                 <div className="inv-summary">
                   <div className="inv-summary-lead"><span>Known {referencePlatform} profile</span><h3 data-testid="text-result-subject">{result.subject || cleanDisplayUrl(searchedUrl)}</h3><p title={searchedUrl}><PlatformIcon platform={referencePlatform} size={12} /><a href={searchedUrl} target="_blank" rel="noopener noreferrer">{cleanDisplayUrl(searchedUrl)}</a></p><ProfileUrlAliases profile={result.referenceProfile ? { ...result.referenceProfile, url: searchedUrl } : undefined} /></div>
                   <div className="inv-summary-stat"><span>Other-platform candidates</span><strong data-testid="text-total-found">{sortedProfiles.length}</strong></div>
-                  <div className="inv-summary-stat"><span>High search score</span><strong data-testid="text-high-confidence">{sortedProfiles.filter(profile => profile.confidence >= 80).length}</strong></div>
+                  <div className="inv-summary-stat"><span>Net confidence ≥80%</span><strong data-testid="text-high-confidence">{sortedProfiles.filter(profile => (getNetConfidence(profile).score ?? -1) >= 80).length}</strong></div>
                   <div className="inv-summary-stat"><span>Est. cost</span><strong data-testid="text-estimated-cost" style={{ fontSize: 16 }}>${result.estimatedCostUsd.toFixed(4)}</strong></div>
                 </div>
                 <div className="inv-results-layout">
@@ -350,7 +355,7 @@ export default function SingleArtist() {
                         return <a key={`${source.url}-${i}`} className="inv-source" href={source.url} target="_blank" rel="noopener noreferrer" data-testid={`link-search-source-${i}`}><strong><PlatformIcon platform={platformFromUrl(source.url)} size={12} /> {source.title || cleanDisplayUrl(source.url)}</strong><span>{cleanDisplayUrl(source.url)}</span></a>;
                       }) : <p className="inv-method-note" style={{ marginTop: 15 }}>No source links were returned.</p>}
                     </div>
-                    <div className="inv-aside-card"><div className="inv-aside-title"><Sparkles size={15} /> Review note</div><p className="inv-method-note" style={{ marginTop: 14, fontSize: 11 }}>Confidence and verification are different signals. Open each candidate’s evidence and visit the profile before making a decision.</p></div>
+                    <div className="inv-aside-card"><div className="inv-aside-title"><Sparkles size={15} /> Review note</div><p className="inv-method-note" style={{ marginTop: 14, fontSize: 11 }}>Net confidence combines discovery (20%), identity comparison (30%), and JEV same-identity probability (50%). A JEV mismatch caps it at 49%. Missing verification is labeled partial or unassessed; see each candidate’s calculation. This is an evidence score, not a calibrated probability or approval.</p></div>
                   </aside>
                 </div>
               </section>

@@ -302,6 +302,8 @@
 .inv-score { flex: none; text-align: right; }
 .inv-score strong { font: 700 25px var(--app-font-mono); letter-spacing: -.08em; color: var(--blue); }
 .inv-score span { display: block; color: #8392a2; font-size: 9px; text-transform: uppercase; letter-spacing: .09em; }
+.inv-score small { display: block; margin-top: 4px; color: #64758a; font-size: 9px; }
+.inv-history-net { color: #4a6177; font: 500 10px var(--app-font-mono); }
 .inv-candidate-snippet { font-size: 12px; color: #53657b; line-height: 1.7; margin: 15px 0 0; }
 .inv-candidate-findings { display: grid; gap: 8px; margin-top: 16px; padding: 12px 13px; border-radius: 7px; background: #edf4f8; border: 1px solid #d9e7ef; }
 .inv-finding-line { display: flex; align-items: flex-start; gap: 9px; font-size: 11px; color: #4a6177; line-height: 1.55; }
