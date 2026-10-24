@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 import SingleArtist from '@/pages/SingleArtist';
+import BulkBrands from '@/pages/BulkBrands';
 
 // We'll create a minimal NotFound page if one doesn't exist.
 function NotFound() {
@@ -26,6 +27,7 @@ function Router() {
       <Switch>
         <Route path="/" component={SingleArtist} />
         <Route path="/single-artist" component={SingleArtist} />
+        <Route path="/bulk" component={BulkBrands} />
         <Route component={NotFound} />
       </Switch>
     </RoutedErrorBoundary>

@@ -6,6 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './bulkBrandCandidate';
+export * from './bulkBrandCandidates';
+export * from './bulkBrandItem';
+export * from './bulkBrandItemStatus';
+export * from './bulkBrandRun';
+export * from './bulkBrandRunInput';
+export * from './bulkBrandRunStatus';
+export * from './bulkPlatformOutcome';
+export * from './bulkPlatformOutcomePlatform';
+export * from './bulkPlatformOutcomeStatus';
 export * from './existingProfile';
 export * from './existingProfileAccount';
 export * from './existingProfilePage';
@@ -16,6 +26,8 @@ export * from './identityMetadata';
 export * from './jevVerification';
 export * from './jevVerificationProbabilities';
 export * from './jevVerificationVerdict';
+export * from './listBulkBrandCandidatesParams';
+export * from './listBulkBrandRuns200';
 export * from './listExistingProfilesParams';
 export * from './listExistingProfilesProfileType';
 export * from './listExistingProfilesSortBy';

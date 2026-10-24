@@ -20,8 +20,13 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  BulkBrandCandidates,
+  BulkBrandRun,
+  BulkBrandRunInput,
   ExistingProfilePage,
   HealthStatus,
+  ListBulkBrandCandidatesParams,
+  ListBulkBrandRuns200,
   ListExistingProfilesParams,
   ListProfileInvestigationsParams,
   MusicianCoverage,
@@ -368,6 +373,421 @@ export const useSearchProfiles = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getSearchProfilesMutationOptions(options));
+    }
+
+export const getListBulkBrandCandidatesUrl = (params?: ListBulkBrandCandidatesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/bulk/brands/candidates?${stringifiedParams}` : `/api/bulk/brands/candidates`
+}
+
+export const listBulkBrandCandidates = async (params?: ListBulkBrandCandidatesParams, options?: Parameters<typeof customFetch>[1]): Promise<BulkBrandCandidates> => {
+
+  return customFetch<BulkBrandCandidates>(getListBulkBrandCandidatesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListBulkBrandCandidatesQueryKey = (params?: ListBulkBrandCandidatesParams,) => {
+    return [
+    `/api/bulk/brands/candidates`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListBulkBrandCandidatesQueryOptions = <TData = Awaited<ReturnType<typeof listBulkBrandCandidates>>, TError = ErrorType<unknown>>(params?: ListBulkBrandCandidatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBulkBrandCandidates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBulkBrandCandidatesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBulkBrandCandidates>>> = ({ signal }) => listBulkBrandCandidates(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBulkBrandCandidates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListBulkBrandCandidatesQueryResult = NonNullable<Awaited<ReturnType<typeof listBulkBrandCandidates>>>
+export type ListBulkBrandCandidatesQueryError = ErrorType<unknown>
+
+
+
+export function useListBulkBrandCandidates<TData = Awaited<ReturnType<typeof listBulkBrandCandidates>>, TError = ErrorType<unknown>>(
+ params?: ListBulkBrandCandidatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBulkBrandCandidates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListBulkBrandCandidatesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListBulkBrandRunsUrl = () => {
+
+
+
+
+  return `/api/bulk/brands/runs`
+}
+
+export const listBulkBrandRuns = async ( options?: Parameters<typeof customFetch>[1]): Promise<ListBulkBrandRuns200> => {
+
+  return customFetch<ListBulkBrandRuns200>(getListBulkBrandRunsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListBulkBrandRunsQueryKey = () => {
+    return [
+    `/api/bulk/brands/runs`
+    ] as const;
+    }
+
+
+export const getListBulkBrandRunsQueryOptions = <TData = Awaited<ReturnType<typeof listBulkBrandRuns>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBulkBrandRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBulkBrandRunsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBulkBrandRuns>>> = ({ signal }) => listBulkBrandRuns({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBulkBrandRuns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListBulkBrandRunsQueryResult = NonNullable<Awaited<ReturnType<typeof listBulkBrandRuns>>>
+export type ListBulkBrandRunsQueryError = ErrorType<unknown>
+
+
+
+export function useListBulkBrandRuns<TData = Awaited<ReturnType<typeof listBulkBrandRuns>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBulkBrandRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListBulkBrandRunsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getStartBulkBrandRunUrl = () => {
+
+
+
+
+  return `/api/bulk/brands/runs`
+}
+
+export const startBulkBrandRun = async (bulkBrandRunInput: BulkBrandRunInput, options?: Parameters<typeof customFetch>[1]): Promise<BulkBrandRun> => {
+
+  return customFetch<BulkBrandRun>(getStartBulkBrandRunUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(bulkBrandRunInput)
+  }
+);}
+
+
+
+
+
+export const getStartBulkBrandRunMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startBulkBrandRun>>, TError,{data: BodyType<BulkBrandRunInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startBulkBrandRun>>, TError,{data: BodyType<BulkBrandRunInput>}, TContext> => {
+
+const mutationKey = ['startBulkBrandRun'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startBulkBrandRun>>, {data: BodyType<BulkBrandRunInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  startBulkBrandRun(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartBulkBrandRunMutationResult = NonNullable<Awaited<ReturnType<typeof startBulkBrandRun>>>
+    export type StartBulkBrandRunMutationBody = BodyType<BulkBrandRunInput>
+    export type StartBulkBrandRunMutationError = ErrorType<unknown>
+
+    export const useStartBulkBrandRun = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startBulkBrandRun>>, TError,{data: BodyType<BulkBrandRunInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startBulkBrandRun>>,
+        TError,
+        {data: BodyType<BulkBrandRunInput>},
+        TContext
+      > => {
+      return useMutation(getStartBulkBrandRunMutationOptions(options));
+    }
+
+export const getGetBulkBrandRunUrl = (runId: string,) => {
+
+
+
+
+  return `/api/bulk/brands/runs/${runId}`
+}
+
+export const getBulkBrandRun = async (runId: string, options?: Parameters<typeof customFetch>[1]): Promise<BulkBrandRun> => {
+
+  return customFetch<BulkBrandRun>(getGetBulkBrandRunUrl(runId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBulkBrandRunQueryKey = (runId: string,) => {
+    return [
+    `/api/bulk/brands/runs/${runId}`
+    ] as const;
+    }
+
+
+export const getGetBulkBrandRunQueryOptions = <TData = Awaited<ReturnType<typeof getBulkBrandRun>>, TError = ErrorType<unknown>>(runId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBulkBrandRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBulkBrandRunQueryKey(runId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBulkBrandRun>>> = ({ signal }) => getBulkBrandRun(runId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: runId !== null && runId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBulkBrandRun>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBulkBrandRunQueryResult = NonNullable<Awaited<ReturnType<typeof getBulkBrandRun>>>
+export type GetBulkBrandRunQueryError = ErrorType<unknown>
+
+
+
+export function useGetBulkBrandRun<TData = Awaited<ReturnType<typeof getBulkBrandRun>>, TError = ErrorType<unknown>>(
+ runId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBulkBrandRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBulkBrandRunQueryOptions(runId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getStopBulkBrandRunUrl = (runId: string,) => {
+
+
+
+
+  return `/api/bulk/brands/runs/${runId}/stop`
+}
+
+export const stopBulkBrandRun = async (runId: string, options?: Parameters<typeof customFetch>[1]): Promise<BulkBrandRun> => {
+
+  return customFetch<BulkBrandRun>(getStopBulkBrandRunUrl(runId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getStopBulkBrandRunMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopBulkBrandRun>>, TError,{runId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof stopBulkBrandRun>>, TError,{runId: string}, TContext> => {
+
+const mutationKey = ['stopBulkBrandRun'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof stopBulkBrandRun>>, {runId: string}> = (props) => {
+          const {runId} = props ?? {};
+
+          return  stopBulkBrandRun(runId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StopBulkBrandRunMutationResult = NonNullable<Awaited<ReturnType<typeof stopBulkBrandRun>>>
+
+    export type StopBulkBrandRunMutationError = ErrorType<unknown>
+
+    export const useStopBulkBrandRun = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopBulkBrandRun>>, TError,{runId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof stopBulkBrandRun>>,
+        TError,
+        {runId: string},
+        TContext
+      > => {
+      return useMutation(getStopBulkBrandRunMutationOptions(options));
+    }
+
+export const getResumeBulkBrandRunUrl = (runId: string,) => {
+
+
+
+
+  return `/api/bulk/brands/runs/${runId}/resume`
+}
+
+export const resumeBulkBrandRun = async (runId: string, options?: Parameters<typeof customFetch>[1]): Promise<BulkBrandRun> => {
+
+  return customFetch<BulkBrandRun>(getResumeBulkBrandRunUrl(runId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getResumeBulkBrandRunMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resumeBulkBrandRun>>, TError,{runId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resumeBulkBrandRun>>, TError,{runId: string}, TContext> => {
+
+const mutationKey = ['resumeBulkBrandRun'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resumeBulkBrandRun>>, {runId: string}> = (props) => {
+          const {runId} = props ?? {};
+
+          return  resumeBulkBrandRun(runId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResumeBulkBrandRunMutationResult = NonNullable<Awaited<ReturnType<typeof resumeBulkBrandRun>>>
+
+    export type ResumeBulkBrandRunMutationError = ErrorType<unknown>
+
+    export const useResumeBulkBrandRun = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resumeBulkBrandRun>>, TError,{runId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resumeBulkBrandRun>>,
+        TError,
+        {runId: string},
+        TContext
+      > => {
+      return useMutation(getResumeBulkBrandRunMutationOptions(options));
     }
 
 export const getListExistingProfilesUrl = (params?: ListExistingProfilesParams,) => {

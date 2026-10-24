@@ -86,6 +86,84 @@ paths:
           description: Invalid person, creator, team, or brand name
         "503":
           description: Serper API key is not configured
+  /bulk/brands/candidates:
+    get:
+      operationId: listBulkBrandCandidates
+      tags: [bulk]
+      parameters:
+        - { name: limit, in: query, schema: { type: number, minimum: 1, maximum: 25, default: 10 } }
+        - { name: afterId, in: query, schema: { type: number, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: Brands across all tiers with exactly one distinct active catalog account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkBrandCandidates"
+  /bulk/brands/runs:
+    get:
+      operationId: listBulkBrandRuns
+      tags: [bulk]
+      responses:
+        "200":
+          description: Latest saved bulk runs
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [runs]
+                properties:
+                  runs: { type: array, items: { $ref: "#/components/schemas/BulkBrandRun" } }
+    post:
+      operationId: startBulkBrandRun
+      tags: [bulk]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BulkBrandRunInput" }
+      responses:
+        "200":
+          description: Started or idempotently retrieved a run
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BulkBrandRun" }
+  /bulk/brands/runs/{runId}:
+    get:
+      operationId: getBulkBrandRun
+      tags: [bulk]
+      parameters:
+        - { name: runId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Persisted queue progress and per-platform outcomes
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BulkBrandRun" }
+  /bulk/brands/runs/{runId}/stop:
+    post:
+      operationId: stopBulkBrandRun
+      tags: [bulk]
+      parameters:
+        - { name: runId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Stop requested; the current profile finishes before the queue stops
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BulkBrandRun" }
+  /bulk/brands/runs/{runId}/resume:
+    post:
+      operationId: resumeBulkBrandRun
+      tags: [bulk]
+      parameters:
+        - { name: runId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Resume queued items and explicitly retry failed items without repeating completed ones
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BulkBrandRun" }
   /profiles:
     get:
       operationId: listExistingProfiles
@@ -253,6 +331,71 @@ components:
           items:
             type: string
             enum: [serper, tavily, gemini, jev, scrapecreators, socialcrawl]
+    BulkBrandCandidate:
+      type: object
+      required: [profileId, profileName, tier, tierRank, accountId, platform, handle, url]
+      properties:
+        profileId: { type: number }
+        profileName: { type: string }
+        tier: { type: number }
+        tierRank: { type: number }
+        accountId: { type: string }
+        platform: { type: string }
+        handle: { type: string }
+        url: { type: string }
+    BulkBrandCandidates:
+      type: object
+      required: [profiles, hasMore, nextAfterId, maxBatchSize]
+      properties:
+        profiles: { type: array, items: { $ref: "#/components/schemas/BulkBrandCandidate" } }
+        hasMore: { type: boolean }
+        nextAfterId: { type: number }
+        maxBatchSize: { type: number }
+    BulkBrandRunInput:
+      type: object
+      required: [requestId, profileIds]
+      properties:
+        requestId: { type: string, pattern: "^[0-9a-fA-F-]{36}$" }
+        profileIds:
+          type: array
+          minItems: 1
+          maxItems: 25
+          items: { type: number, minimum: 1 }
+    BulkPlatformOutcome:
+      type: object
+      required: [platform, status, reason, evidenceUrls, checkedAt]
+      properties:
+        platform: { type: string, enum: [Instagram, TikTok, YouTube] }
+        status: { type: string, enum: [reference, found, needs_review, not_found, incomplete, explicit_unavailable] }
+        reason: { type: string }
+        evidenceUrls: { type: array, items: { type: string } }
+        checkedAt: { type: string }
+    BulkBrandItem:
+      type: object
+      required: [candidate, status, platforms]
+      properties:
+        candidate: { $ref: "#/components/schemas/BulkBrandCandidate" }
+        status: { type: string, enum: [queued, running, completed, failed] }
+        platforms: { type: array, items: { $ref: "#/components/schemas/BulkPlatformOutcome" } }
+        result: { $ref: "#/components/schemas/ProfileSearchResponse" }
+        error: { type: string }
+        startedAt: { type: string }
+        completedAt: { type: string }
+    BulkBrandRun:
+      type: object
+      required: [id, status, createdAt, updatedAt, heartbeatAt, workerId, resumeVersion, stopRequested, estimatedCostUsd, items]
+      properties:
+        id: { type: string }
+        status: { type: string, enum: [running, stopping, stopped, completed, interrupted] }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+        heartbeatAt: { type: string }
+        workerId: { type: string }
+        resumeVersion: { type: number }
+        stopRequested: { type: boolean }
+        estimatedCostUsd: { type: number }
+        items: { type: array, items: { $ref: "#/components/schemas/BulkBrandItem" } }
+        error: { type: string }
     ExistingProfile:
       type: object
       properties:

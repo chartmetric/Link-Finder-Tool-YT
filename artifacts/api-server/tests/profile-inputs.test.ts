@@ -169,3 +169,28 @@ test("a failed channel lookup keeps both candidates and preserves the completed 
   assert.equal(result.profiles.find(p => p.url === handleUrl)?.channelId, channelId);
   assert.ok(result.profiles.find(p => p.url === idUrl)?.identityVerificationNote);
 });
+
+test("null follower counts and verification flags are omitted rather than invalidating saved results", async t => {
+  const channelId = "UCmv1CLT6ZcFdTJMHxaR9XeA";
+  t.mock.method(globalThis, "fetch", async (value: string) => {
+    const path = new URL(value).pathname;
+    if (path.includes("/instagram/")) return Response.json({ data: { user: {
+      username: "testbrand", full_name: "Test Brand", edge_followed_by: { count: null }, is_verified: null,
+    } } });
+    if (path.includes("/tiktok/")) return Response.json({
+      user: { uniqueId: "testbrand", nickname: "Test Brand", verified: null }, stats: { followerCount: null },
+    });
+    return Response.json({
+      handle: "@testbrand", channel: "https://www.youtube.com/@testbrand", channelId,
+      name: "Test Brand", subscriberCount: null, isVerified: null,
+    });
+  });
+  for (const url of [
+    "https://www.instagram.com/testbrand/", "https://www.tiktok.com/@testbrand", "https://www.youtube.com/@testbrand",
+  ]) {
+    const resolved = await resolveKnownProfileIdentity(url, "test-key");
+    assert.ok(resolved, url);
+    assert.equal(resolved.referenceMetadata.followers, undefined, url);
+    assert.equal("verified" in resolved.referenceMetadata, false, url);
+  }
+});

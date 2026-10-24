@@ -482,6 +482,10 @@ function commonPrefixLength(a: string, b: string): number {
   return index;
 }
 
+function validFollowerCount(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
+}
+
 async function fetchIdentityMetadata(input: {
   platform: string;
   url: string;
@@ -536,8 +540,8 @@ async function fetchIdentityMetadata(input: {
         ? { imageUrl: user.profile_pic_url_hd ?? user.profile_pic_url }
         : {}),
       url: `https://www.instagram.com/${user.username ?? expectedHandle}/`,
-      ...(user.edge_followed_by?.count !== undefined ? { followers: user.edge_followed_by.count } : {}),
-      ...(user.is_verified !== undefined ? { verified: user.is_verified } : {}),
+      ...(validFollowerCount(user.edge_followed_by?.count) ? { followers: user.edge_followed_by.count } : {}),
+      ...(typeof user.is_verified === "boolean" ? { verified: user.is_verified } : {}),
     };
   }
   if (platform === "tiktok") {
@@ -552,8 +556,8 @@ async function fetchIdentityMetadata(input: {
         ? { imageUrl: user.avatarLarger ?? user.avatarMedium ?? user.avatarThumb }
         : {}),
       url: `https://www.tiktok.com/@${user.uniqueId ?? expectedHandle}`,
-      ...(payload.stats?.followerCount !== undefined ? { followers: payload.stats.followerCount } : {}),
-      ...(user.verified !== undefined ? { verified: user.verified } : {}),
+      ...(validFollowerCount(payload.stats?.followerCount) ? { followers: payload.stats.followerCount } : {}),
+      ...(typeof user.verified === "boolean" ? { verified: user.verified } : {}),
     };
   }
   if (!payload.channel && !payload.name) return undefined;
@@ -565,8 +569,8 @@ async function fetchIdentityMetadata(input: {
     ...(payload.description ? { bio: payload.description } : {}),
     ...(payload.avatar?.image?.sources?.at(-1)?.url ? { imageUrl: payload.avatar.image.sources.at(-1).url } : {}),
     url: payload.channel ?? input.url,
-    ...(payload.subscriberCount !== undefined ? { followers: payload.subscriberCount } : {}),
-    ...(payload.isVerified !== undefined ? { verified: payload.isVerified } : {}),
+    ...(validFollowerCount(payload.subscriberCount) ? { followers: payload.subscriberCount } : {}),
+    ...(typeof payload.isVerified === "boolean" ? { verified: payload.isVerified } : {}),
   };
 }
 

@@ -229,6 +229,109 @@ export interface ProfileSearchInput {
   methods?: ProfileSearchInputMethodsItem[];
 }
 
+export interface BulkBrandCandidate {
+  profileId: number;
+  profileName: string;
+  tier: number;
+  tierRank: number;
+  accountId: string;
+  platform: string;
+  handle: string;
+  url: string;
+}
+
+export interface BulkBrandCandidates {
+  profiles: BulkBrandCandidate[];
+  hasMore: boolean;
+  nextAfterId: number;
+  maxBatchSize: number;
+}
+
+export interface BulkBrandRunInput {
+  /** @pattern ^[0-9a-fA-F-]{36}$ */
+  requestId: string;
+  /**
+     * @minItems 1
+     * @maxItems 25
+     * @items.minimum 1
+     */
+  profileIds: number[];
+}
+
+export type BulkPlatformOutcomePlatform = typeof BulkPlatformOutcomePlatform[keyof typeof BulkPlatformOutcomePlatform];
+
+
+export const BulkPlatformOutcomePlatform = {
+  Instagram: 'Instagram',
+  TikTok: 'TikTok',
+  YouTube: 'YouTube',
+} as const;
+
+export type BulkPlatformOutcomeStatus = typeof BulkPlatformOutcomeStatus[keyof typeof BulkPlatformOutcomeStatus];
+
+
+export const BulkPlatformOutcomeStatus = {
+  reference: 'reference',
+  found: 'found',
+  needs_review: 'needs_review',
+  not_found: 'not_found',
+  incomplete: 'incomplete',
+  explicit_unavailable: 'explicit_unavailable',
+} as const;
+
+export interface BulkPlatformOutcome {
+  platform: BulkPlatformOutcomePlatform;
+  status: BulkPlatformOutcomeStatus;
+  reason: string;
+  evidenceUrls: string[];
+  checkedAt: string;
+}
+
+export type BulkBrandItemStatus = typeof BulkBrandItemStatus[keyof typeof BulkBrandItemStatus];
+
+
+export const BulkBrandItemStatus = {
+  queued: 'queued',
+  running: 'running',
+  completed: 'completed',
+  failed: 'failed',
+} as const;
+
+export interface BulkBrandItem {
+  candidate: BulkBrandCandidate;
+  status: BulkBrandItemStatus;
+  platforms: BulkPlatformOutcome[];
+  result?: ProfileSearchResponse;
+  error?: string;
+  startedAt?: string;
+  completedAt?: string;
+}
+
+export type BulkBrandRunStatus = typeof BulkBrandRunStatus[keyof typeof BulkBrandRunStatus];
+
+
+export const BulkBrandRunStatus = {
+  running: 'running',
+  stopping: 'stopping',
+  stopped: 'stopped',
+  completed: 'completed',
+  interrupted: 'interrupted',
+} as const;
+
+export interface BulkBrandRun {
+  id: string;
+  status: BulkBrandRunStatus;
+  createdAt: string;
+  updatedAt: string;
+  heartbeatAt: string;
+  workerId: string;
+  resumeVersion: number;
+  stopRequested: boolean;
+  estimatedCostUsd: number;
+  items: BulkBrandItem[];
+  error?: string;
+}
+
 export interface ExistingProfileAccount {
   platform: string;
   handle: string;
@@ -298,6 +401,22 @@ page?: number;
  * @maximum 50
  */
 limit?: number;
+};
+
+export type ListBulkBrandCandidatesParams = {
+/**
+ * @minimum 1
+ * @maximum 25
+ */
+limit?: number;
+/**
+ * @minimum 0
+ */
+afterId?: number;
+};
+
+export type ListBulkBrandRuns200 = {
+  runs: BulkBrandRun[];
 };
 
 export type ListExistingProfilesParams = {

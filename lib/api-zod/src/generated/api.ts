@@ -302,6 +302,771 @@ export const SearchProfilesResponse = zod.object({
 })
 
 
+export const listBulkBrandCandidatesQueryLimitDefault = 10;
+export const listBulkBrandCandidatesQueryLimitMax = 25;
+
+export const listBulkBrandCandidatesQueryAfterIdDefault = 0;
+export const listBulkBrandCandidatesQueryAfterIdMin = 0;
+
+
+
+export const ListBulkBrandCandidatesQueryParams = zod.object({
+  "limit": zod.coerce.number().min(1).max(listBulkBrandCandidatesQueryLimitMax).default(listBulkBrandCandidatesQueryLimitDefault),
+  "afterId": zod.coerce.number().min(listBulkBrandCandidatesQueryAfterIdMin).default(listBulkBrandCandidatesQueryAfterIdDefault)
+})
+
+export const ListBulkBrandCandidatesResponse = zod.object({
+  "profiles": zod.array(zod.object({
+  "profileId": zod.number(),
+  "profileName": zod.string(),
+  "tier": zod.number(),
+  "tierRank": zod.number(),
+  "accountId": zod.string(),
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "url": zod.string()
+})),
+  "hasMore": zod.boolean(),
+  "nextAfterId": zod.number(),
+  "maxBatchSize": zod.number()
+})
+
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemConfidenceMin = 0;
+export const listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemConfidenceMax = 100;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemIdentityComparisonScoreMin = 0;
+export const listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemIdentityComparisonScoreMax = 100;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMin = 0;
+export const listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMax = 1;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemJevVerificationVerdictConfidenceMin = 0;
+export const listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemJevVerificationVerdictConfidenceMax = 1;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultMethodsUsedItemDurationMsMin = 0;
+
+
+
+export const ListBulkBrandRunsResponse = zod.object({
+  "runs": zod.array(zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['running', 'stopping', 'stopped', 'completed', 'interrupted']),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string(),
+  "heartbeatAt": zod.string(),
+  "workerId": zod.string(),
+  "resumeVersion": zod.number(),
+  "stopRequested": zod.boolean(),
+  "estimatedCostUsd": zod.number(),
+  "items": zod.array(zod.object({
+  "candidate": zod.object({
+  "profileId": zod.number(),
+  "profileName": zod.string(),
+  "tier": zod.number(),
+  "tierRank": zod.number(),
+  "accountId": zod.string(),
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "url": zod.string()
+}),
+  "status": zod.enum(['queued', 'running', 'completed', 'failed']),
+  "platforms": zod.array(zod.object({
+  "platform": zod.enum(['Instagram', 'TikTok', 'YouTube']),
+  "status": zod.enum(['reference', 'found', 'needs_review', 'not_found', 'incomplete', 'explicit_unavailable']),
+  "reason": zod.string(),
+  "evidenceUrls": zod.array(zod.string()),
+  "checkedAt": zod.string()
+})),
+  "result": zod.object({
+  "referenceProfile": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
+}).optional(),
+  "historyId": zod.string().optional().describe('Saved investigation identifier, present when single-profile history was persisted.'),
+  "historySaveError": zod.string().optional().describe('Explicit warning if discovery succeeded but investigation history could not be saved.'),
+  "subject": zod.string(),
+  "query": zod.string(),
+  "searchedAt": zod.coerce.date(),
+  "profiles": zod.array(zod.object({
+  "platform": zod.string(),
+  "category": zod.enum(['social']),
+  "title": zod.string(),
+  "url": zod.string(),
+  "displayUrl": zod.string(),
+  "channelId": zod.string().optional().describe('YouTube channel ID confirmed by profile metadata, not artist ownership.'),
+  "urlAliases": zod.array(zod.string()).optional().describe('URLs confirmed by metadata to refer to this same account.'),
+  "snippet": zod.string(),
+  "confidence": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemConfidenceMin).max(listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemConfidenceMax),
+  "signals": zod.array(zod.string()),
+  "methods": zod.array(zod.string()),
+  "identityComparison": zod.object({
+  "status": zod.enum(['likely', 'uncertain', 'mismatch']),
+  "score": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemIdentityComparisonScoreMin).max(listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemIdentityComparisonScoreMax),
+  "reasons": zod.array(zod.string()),
+  "reference": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
+}),
+  "candidate": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
+})
+}).optional(),
+  "identityVerificationNote": zod.string().optional(),
+  "jevVerification": zod.object({
+  "verdict": zod.enum(['verified', 'likely', 'uncertain', 'mismatch']),
+  "sameIdentityProbability": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMin).max(listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMax),
+  "verdictConfidence": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemJevVerificationVerdictConfidenceMin).max(listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemJevVerificationVerdictConfidenceMax),
+  "probabilities": zod.record(zod.string(), zod.number())
+}).optional()
+})),
+  "sources": zod.array(zod.object({
+  "title": zod.string(),
+  "url": zod.string(),
+  "snippet": zod.string()
+})),
+  "totalFound": zod.number(),
+  "highConfidenceCount": zod.number(),
+  "methodsUsed": zod.array(zod.object({
+  "method": zod.string(),
+  "label": zod.string(),
+  "status": zod.enum(['used', 'unavailable', 'failed']),
+  "estimatedCostUsd": zod.number(),
+  "costNote": zod.string(),
+  "durationMs": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultMethodsUsedItemDurationMsMin),
+  "results": zod.array(zod.object({
+  "title": zod.string(),
+  "url": zod.string(),
+  "snippet": zod.string()
+}))
+})),
+  "estimatedCostUsd": zod.number()
+}).optional(),
+  "error": zod.string().optional(),
+  "startedAt": zod.string().optional(),
+  "completedAt": zod.string().optional()
+})),
+  "error": zod.string().optional()
+}))
+})
+
+
+export const startBulkBrandRunBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F-]{36}$');
+
+export const startBulkBrandRunBodyProfileIdsMax = 25;
+
+
+
+export const StartBulkBrandRunBody = zod.object({
+  "requestId": zod.string().regex(startBulkBrandRunBodyRequestIdRegExp),
+  "profileIds": zod.array(zod.number().min(1)).min(1).max(startBulkBrandRunBodyProfileIdsMax)
+})
+
+export const startBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMin = 0;
+export const startBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMax = 100;
+
+export const startBulkBrandRunResponseItemsItemResultProfilesItemIdentityComparisonScoreMin = 0;
+export const startBulkBrandRunResponseItemsItemResultProfilesItemIdentityComparisonScoreMax = 100;
+
+export const startBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMin = 0;
+export const startBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMax = 1;
+
+export const startBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVerdictConfidenceMin = 0;
+export const startBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVerdictConfidenceMax = 1;
+
+export const startBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin = 0;
+
+
+
+export const StartBulkBrandRunResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['running', 'stopping', 'stopped', 'completed', 'interrupted']),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string(),
+  "heartbeatAt": zod.string(),
+  "workerId": zod.string(),
+  "resumeVersion": zod.number(),
+  "stopRequested": zod.boolean(),
+  "estimatedCostUsd": zod.number(),
+  "items": zod.array(zod.object({
+  "candidate": zod.object({
+  "profileId": zod.number(),
+  "profileName": zod.string(),
+  "tier": zod.number(),
+  "tierRank": zod.number(),
+  "accountId": zod.string(),
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "url": zod.string()
+}),
+  "status": zod.enum(['queued', 'running', 'completed', 'failed']),
+  "platforms": zod.array(zod.object({
+  "platform": zod.enum(['Instagram', 'TikTok', 'YouTube']),
+  "status": zod.enum(['reference', 'found', 'needs_review', 'not_found', 'incomplete', 'explicit_unavailable']),
+  "reason": zod.string(),
+  "evidenceUrls": zod.array(zod.string()),
+  "checkedAt": zod.string()
+})),
+  "result": zod.object({
+  "referenceProfile": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
+}).optional(),
+  "historyId": zod.string().optional().describe('Saved investigation identifier, present when single-profile history was persisted.'),
+  "historySaveError": zod.string().optional().describe('Explicit warning if discovery succeeded but investigation history could not be saved.'),
+  "subject": zod.string(),
+  "query": zod.string(),
+  "searchedAt": zod.coerce.date(),
+  "profiles": zod.array(zod.object({
+  "platform": zod.string(),
+  "category": zod.enum(['social']),
+  "title": zod.string(),
+  "url": zod.string(),
+  "displayUrl": zod.string(),
+  "channelId": zod.string().optional().describe('YouTube channel ID confirmed by profile metadata, not artist ownership.'),
+  "urlAliases": zod.array(zod.string()).optional().describe('URLs confirmed by metadata to refer to this same account.'),
+  "snippet": zod.string(),
+  "confidence": zod.number().min(startBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMin).max(startBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMax),
+  "signals": zod.array(zod.string()),
+  "methods": zod.array(zod.string()),
+  "identityComparison": zod.object({
+  "status": zod.enum(['likely', 'uncertain', 'mismatch']),
+  "score": zod.number().min(startBulkBrandRunResponseItemsItemResultProfilesItemIdentityComparisonScoreMin).max(startBulkBrandRunResponseItemsItemResultProfilesItemIdentityComparisonScoreMax),
+  "reasons": zod.array(zod.string()),
+  "reference": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
+}),
+  "candidate": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
+})
+}).optional(),
+  "identityVerificationNote": zod.string().optional(),
+  "jevVerification": zod.object({
+  "verdict": zod.enum(['verified', 'likely', 'uncertain', 'mismatch']),
+  "sameIdentityProbability": zod.number().min(startBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMin).max(startBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMax),
+  "verdictConfidence": zod.number().min(startBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVerdictConfidenceMin).max(startBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVerdictConfidenceMax),
+  "probabilities": zod.record(zod.string(), zod.number())
+}).optional()
+})),
+  "sources": zod.array(zod.object({
+  "title": zod.string(),
+  "url": zod.string(),
+  "snippet": zod.string()
+})),
+  "totalFound": zod.number(),
+  "highConfidenceCount": zod.number(),
+  "methodsUsed": zod.array(zod.object({
+  "method": zod.string(),
+  "label": zod.string(),
+  "status": zod.enum(['used', 'unavailable', 'failed']),
+  "estimatedCostUsd": zod.number(),
+  "costNote": zod.string(),
+  "durationMs": zod.number().min(startBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin),
+  "results": zod.array(zod.object({
+  "title": zod.string(),
+  "url": zod.string(),
+  "snippet": zod.string()
+}))
+})),
+  "estimatedCostUsd": zod.number()
+}).optional(),
+  "error": zod.string().optional(),
+  "startedAt": zod.string().optional(),
+  "completedAt": zod.string().optional()
+})),
+  "error": zod.string().optional()
+})
+
+
+export const GetBulkBrandRunParams = zod.object({
+  "runId": zod.coerce.string()
+})
+
+export const getBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMin = 0;
+export const getBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMax = 100;
+
+export const getBulkBrandRunResponseItemsItemResultProfilesItemIdentityComparisonScoreMin = 0;
+export const getBulkBrandRunResponseItemsItemResultProfilesItemIdentityComparisonScoreMax = 100;
+
+export const getBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMin = 0;
+export const getBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMax = 1;
+
+export const getBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVerdictConfidenceMin = 0;
+export const getBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVerdictConfidenceMax = 1;
+
+export const getBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin = 0;
+
+
+
+export const GetBulkBrandRunResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['running', 'stopping', 'stopped', 'completed', 'interrupted']),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string(),
+  "heartbeatAt": zod.string(),
+  "workerId": zod.string(),
+  "resumeVersion": zod.number(),
+  "stopRequested": zod.boolean(),
+  "estimatedCostUsd": zod.number(),
+  "items": zod.array(zod.object({
+  "candidate": zod.object({
+  "profileId": zod.number(),
+  "profileName": zod.string(),
+  "tier": zod.number(),
+  "tierRank": zod.number(),
+  "accountId": zod.string(),
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "url": zod.string()
+}),
+  "status": zod.enum(['queued', 'running', 'completed', 'failed']),
+  "platforms": zod.array(zod.object({
+  "platform": zod.enum(['Instagram', 'TikTok', 'YouTube']),
+  "status": zod.enum(['reference', 'found', 'needs_review', 'not_found', 'incomplete', 'explicit_unavailable']),
+  "reason": zod.string(),
+  "evidenceUrls": zod.array(zod.string()),
+  "checkedAt": zod.string()
+})),
+  "result": zod.object({
+  "referenceProfile": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
+}).optional(),
+  "historyId": zod.string().optional().describe('Saved investigation identifier, present when single-profile history was persisted.'),
+  "historySaveError": zod.string().optional().describe('Explicit warning if discovery succeeded but investigation history could not be saved.'),
+  "subject": zod.string(),
+  "query": zod.string(),
+  "searchedAt": zod.coerce.date(),
+  "profiles": zod.array(zod.object({
+  "platform": zod.string(),
+  "category": zod.enum(['social']),
+  "title": zod.string(),
+  "url": zod.string(),
+  "displayUrl": zod.string(),
+  "channelId": zod.string().optional().describe('YouTube channel ID confirmed by profile metadata, not artist ownership.'),
+  "urlAliases": zod.array(zod.string()).optional().describe('URLs confirmed by metadata to refer to this same account.'),
+  "snippet": zod.string(),
+  "confidence": zod.number().min(getBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMin).max(getBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMax),
+  "signals": zod.array(zod.string()),
+  "methods": zod.array(zod.string()),
+  "identityComparison": zod.object({
+  "status": zod.enum(['likely', 'uncertain', 'mismatch']),
+  "score": zod.number().min(getBulkBrandRunResponseItemsItemResultProfilesItemIdentityComparisonScoreMin).max(getBulkBrandRunResponseItemsItemResultProfilesItemIdentityComparisonScoreMax),
+  "reasons": zod.array(zod.string()),
+  "reference": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
+}),
+  "candidate": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
+})
+}).optional(),
+  "identityVerificationNote": zod.string().optional(),
+  "jevVerification": zod.object({
+  "verdict": zod.enum(['verified', 'likely', 'uncertain', 'mismatch']),
+  "sameIdentityProbability": zod.number().min(getBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMin).max(getBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMax),
+  "verdictConfidence": zod.number().min(getBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVerdictConfidenceMin).max(getBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVerdictConfidenceMax),
+  "probabilities": zod.record(zod.string(), zod.number())
+}).optional()
+})),
+  "sources": zod.array(zod.object({
+  "title": zod.string(),
+  "url": zod.string(),
+  "snippet": zod.string()
+})),
+  "totalFound": zod.number(),
+  "highConfidenceCount": zod.number(),
+  "methodsUsed": zod.array(zod.object({
+  "method": zod.string(),
+  "label": zod.string(),
+  "status": zod.enum(['used', 'unavailable', 'failed']),
+  "estimatedCostUsd": zod.number(),
+  "costNote": zod.string(),
+  "durationMs": zod.number().min(getBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin),
+  "results": zod.array(zod.object({
+  "title": zod.string(),
+  "url": zod.string(),
+  "snippet": zod.string()
+}))
+})),
+  "estimatedCostUsd": zod.number()
+}).optional(),
+  "error": zod.string().optional(),
+  "startedAt": zod.string().optional(),
+  "completedAt": zod.string().optional()
+})),
+  "error": zod.string().optional()
+})
+
+
+export const StopBulkBrandRunParams = zod.object({
+  "runId": zod.coerce.string()
+})
+
+export const stopBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMin = 0;
+export const stopBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMax = 100;
+
+export const stopBulkBrandRunResponseItemsItemResultProfilesItemIdentityComparisonScoreMin = 0;
+export const stopBulkBrandRunResponseItemsItemResultProfilesItemIdentityComparisonScoreMax = 100;
+
+export const stopBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMin = 0;
+export const stopBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMax = 1;
+
+export const stopBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVerdictConfidenceMin = 0;
+export const stopBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVerdictConfidenceMax = 1;
+
+export const stopBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin = 0;
+
+
+
+export const StopBulkBrandRunResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['running', 'stopping', 'stopped', 'completed', 'interrupted']),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string(),
+  "heartbeatAt": zod.string(),
+  "workerId": zod.string(),
+  "resumeVersion": zod.number(),
+  "stopRequested": zod.boolean(),
+  "estimatedCostUsd": zod.number(),
+  "items": zod.array(zod.object({
+  "candidate": zod.object({
+  "profileId": zod.number(),
+  "profileName": zod.string(),
+  "tier": zod.number(),
+  "tierRank": zod.number(),
+  "accountId": zod.string(),
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "url": zod.string()
+}),
+  "status": zod.enum(['queued', 'running', 'completed', 'failed']),
+  "platforms": zod.array(zod.object({
+  "platform": zod.enum(['Instagram', 'TikTok', 'YouTube']),
+  "status": zod.enum(['reference', 'found', 'needs_review', 'not_found', 'incomplete', 'explicit_unavailable']),
+  "reason": zod.string(),
+  "evidenceUrls": zod.array(zod.string()),
+  "checkedAt": zod.string()
+})),
+  "result": zod.object({
+  "referenceProfile": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
+}).optional(),
+  "historyId": zod.string().optional().describe('Saved investigation identifier, present when single-profile history was persisted.'),
+  "historySaveError": zod.string().optional().describe('Explicit warning if discovery succeeded but investigation history could not be saved.'),
+  "subject": zod.string(),
+  "query": zod.string(),
+  "searchedAt": zod.coerce.date(),
+  "profiles": zod.array(zod.object({
+  "platform": zod.string(),
+  "category": zod.enum(['social']),
+  "title": zod.string(),
+  "url": zod.string(),
+  "displayUrl": zod.string(),
+  "channelId": zod.string().optional().describe('YouTube channel ID confirmed by profile metadata, not artist ownership.'),
+  "urlAliases": zod.array(zod.string()).optional().describe('URLs confirmed by metadata to refer to this same account.'),
+  "snippet": zod.string(),
+  "confidence": zod.number().min(stopBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMin).max(stopBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMax),
+  "signals": zod.array(zod.string()),
+  "methods": zod.array(zod.string()),
+  "identityComparison": zod.object({
+  "status": zod.enum(['likely', 'uncertain', 'mismatch']),
+  "score": zod.number().min(stopBulkBrandRunResponseItemsItemResultProfilesItemIdentityComparisonScoreMin).max(stopBulkBrandRunResponseItemsItemResultProfilesItemIdentityComparisonScoreMax),
+  "reasons": zod.array(zod.string()),
+  "reference": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
+}),
+  "candidate": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
+})
+}).optional(),
+  "identityVerificationNote": zod.string().optional(),
+  "jevVerification": zod.object({
+  "verdict": zod.enum(['verified', 'likely', 'uncertain', 'mismatch']),
+  "sameIdentityProbability": zod.number().min(stopBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMin).max(stopBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMax),
+  "verdictConfidence": zod.number().min(stopBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVerdictConfidenceMin).max(stopBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVerdictConfidenceMax),
+  "probabilities": zod.record(zod.string(), zod.number())
+}).optional()
+})),
+  "sources": zod.array(zod.object({
+  "title": zod.string(),
+  "url": zod.string(),
+  "snippet": zod.string()
+})),
+  "totalFound": zod.number(),
+  "highConfidenceCount": zod.number(),
+  "methodsUsed": zod.array(zod.object({
+  "method": zod.string(),
+  "label": zod.string(),
+  "status": zod.enum(['used', 'unavailable', 'failed']),
+  "estimatedCostUsd": zod.number(),
+  "costNote": zod.string(),
+  "durationMs": zod.number().min(stopBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin),
+  "results": zod.array(zod.object({
+  "title": zod.string(),
+  "url": zod.string(),
+  "snippet": zod.string()
+}))
+})),
+  "estimatedCostUsd": zod.number()
+}).optional(),
+  "error": zod.string().optional(),
+  "startedAt": zod.string().optional(),
+  "completedAt": zod.string().optional()
+})),
+  "error": zod.string().optional()
+})
+
+
+export const ResumeBulkBrandRunParams = zod.object({
+  "runId": zod.coerce.string()
+})
+
+export const resumeBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMin = 0;
+export const resumeBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMax = 100;
+
+export const resumeBulkBrandRunResponseItemsItemResultProfilesItemIdentityComparisonScoreMin = 0;
+export const resumeBulkBrandRunResponseItemsItemResultProfilesItemIdentityComparisonScoreMax = 100;
+
+export const resumeBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMin = 0;
+export const resumeBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMax = 1;
+
+export const resumeBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVerdictConfidenceMin = 0;
+export const resumeBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVerdictConfidenceMax = 1;
+
+export const resumeBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin = 0;
+
+
+
+export const ResumeBulkBrandRunResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['running', 'stopping', 'stopped', 'completed', 'interrupted']),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string(),
+  "heartbeatAt": zod.string(),
+  "workerId": zod.string(),
+  "resumeVersion": zod.number(),
+  "stopRequested": zod.boolean(),
+  "estimatedCostUsd": zod.number(),
+  "items": zod.array(zod.object({
+  "candidate": zod.object({
+  "profileId": zod.number(),
+  "profileName": zod.string(),
+  "tier": zod.number(),
+  "tierRank": zod.number(),
+  "accountId": zod.string(),
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "url": zod.string()
+}),
+  "status": zod.enum(['queued', 'running', 'completed', 'failed']),
+  "platforms": zod.array(zod.object({
+  "platform": zod.enum(['Instagram', 'TikTok', 'YouTube']),
+  "status": zod.enum(['reference', 'found', 'needs_review', 'not_found', 'incomplete', 'explicit_unavailable']),
+  "reason": zod.string(),
+  "evidenceUrls": zod.array(zod.string()),
+  "checkedAt": zod.string()
+})),
+  "result": zod.object({
+  "referenceProfile": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
+}).optional(),
+  "historyId": zod.string().optional().describe('Saved investigation identifier, present when single-profile history was persisted.'),
+  "historySaveError": zod.string().optional().describe('Explicit warning if discovery succeeded but investigation history could not be saved.'),
+  "subject": zod.string(),
+  "query": zod.string(),
+  "searchedAt": zod.coerce.date(),
+  "profiles": zod.array(zod.object({
+  "platform": zod.string(),
+  "category": zod.enum(['social']),
+  "title": zod.string(),
+  "url": zod.string(),
+  "displayUrl": zod.string(),
+  "channelId": zod.string().optional().describe('YouTube channel ID confirmed by profile metadata, not artist ownership.'),
+  "urlAliases": zod.array(zod.string()).optional().describe('URLs confirmed by metadata to refer to this same account.'),
+  "snippet": zod.string(),
+  "confidence": zod.number().min(resumeBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMin).max(resumeBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMax),
+  "signals": zod.array(zod.string()),
+  "methods": zod.array(zod.string()),
+  "identityComparison": zod.object({
+  "status": zod.enum(['likely', 'uncertain', 'mismatch']),
+  "score": zod.number().min(resumeBulkBrandRunResponseItemsItemResultProfilesItemIdentityComparisonScoreMin).max(resumeBulkBrandRunResponseItemsItemResultProfilesItemIdentityComparisonScoreMax),
+  "reasons": zod.array(zod.string()),
+  "reference": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
+}),
+  "candidate": zod.object({
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "displayName": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "url": zod.string(),
+  "followers": zod.number().optional(),
+  "verified": zod.boolean().optional(),
+  "channelId": zod.string().optional(),
+  "urlAliases": zod.array(zod.string()).optional()
+})
+}).optional(),
+  "identityVerificationNote": zod.string().optional(),
+  "jevVerification": zod.object({
+  "verdict": zod.enum(['verified', 'likely', 'uncertain', 'mismatch']),
+  "sameIdentityProbability": zod.number().min(resumeBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMin).max(resumeBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationSameIdentityProbabilityMax),
+  "verdictConfidence": zod.number().min(resumeBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVerdictConfidenceMin).max(resumeBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVerdictConfidenceMax),
+  "probabilities": zod.record(zod.string(), zod.number())
+}).optional()
+})),
+  "sources": zod.array(zod.object({
+  "title": zod.string(),
+  "url": zod.string(),
+  "snippet": zod.string()
+})),
+  "totalFound": zod.number(),
+  "highConfidenceCount": zod.number(),
+  "methodsUsed": zod.array(zod.object({
+  "method": zod.string(),
+  "label": zod.string(),
+  "status": zod.enum(['used', 'unavailable', 'failed']),
+  "estimatedCostUsd": zod.number(),
+  "costNote": zod.string(),
+  "durationMs": zod.number().min(resumeBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin),
+  "results": zod.array(zod.object({
+  "title": zod.string(),
+  "url": zod.string(),
+  "snippet": zod.string()
+}))
+})),
+  "estimatedCostUsd": zod.number()
+}).optional(),
+  "error": zod.string().optional(),
+  "startedAt": zod.string().optional(),
+  "completedAt": zod.string().optional()
+})),
+  "error": zod.string().optional()
+})
+
+
 /**
  * @summary List musicians with their existing linked accounts
  */

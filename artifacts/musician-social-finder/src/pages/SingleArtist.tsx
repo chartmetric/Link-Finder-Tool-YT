@@ -21,7 +21,7 @@ const platforms = [
   { name: 'YouTube', icon: SiYoutube },
 ] as const;
 
-function PlatformIcon({ platform, size = 16 }: { platform?: string; size?: number }) {
+export function PlatformIcon({ platform, size = 16 }: { platform?: string; size?: number }) {
   if (platform?.toLowerCase() === 'spotify') return <SiSpotify size={size} className="inv-platform-icon inv-platform-spotify" aria-hidden="true" />;
   const match = platforms.find(item => item.name.toLowerCase() === platform?.toLowerCase());
   if (!match) return <Link2 size={size} aria-hidden="true" />;
@@ -85,7 +85,7 @@ function verificationRank(candidate: ProfileMatch) {
   return 1;
 }
 
-function Candidate({ candidate, index }: { candidate: ProfileMatch; index: number }) {
+export function Candidate({ candidate, index }: { candidate: ProfileMatch; index: number }) {
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
@@ -241,6 +241,7 @@ export default function SingleArtist() {
           </Link>
           <div className="inv-nav-right">
             <span className="inv-nav-tag inv-mono"><i />Single-profile investigation</span>
+            <Link href="/bulk" className="inv-nav-switch" data-testid="link-bulk-brands">Bulk brand finder <ArrowRight size={14} aria-hidden="true" /></Link>
           </div>
         </div>
       </header>

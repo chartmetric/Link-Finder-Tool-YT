@@ -45,6 +45,15 @@ Search by any public name with optional location and country hints, inspect the 
 
 ## User preferences
 
+## Bulk brands
+
+- `/bulk` selects brands across all tiers with exactly one distinct active catalog account. Selection uses latest profile, account and relationship versions; nullable disconnect/delete values are retained inside `argMax` tuples.
+- Catalog access is read-only. Run snapshots and separate stop events are appended to `poc_new_verticals.profile_bulk_events`; successful results also go to ordinary investigation history.
+- Paid requests require explicit Start, at most 25 brands, processed sequentially. Stop finishes the current brand; Resume explicitly retries unfinished/failed brands, never completed brands. Opening a page or restarting the API never launches paid jobs.
+- A stale worker heartbeat becomes interrupted after 150 seconds and requires manual resume. A new resume generation must never inherit a stop flag from an older snapshot.
+- Platform outcomes distinguish likely/verified matches, reviewable candidates, completed searches with no supported account, provider failures, and explicit first-party no-account statements. Missing results or search snippets alone cannot confirm account absence.
+- Operate the bulk runner with a single active API worker. Cross-process active-run checks are advisory, not an atomic distributed lease; add durable distributed claims before scaling workers.
+
 _Populate as you build — explicit user instructions worth remembering across sessions._
 
 ## Gotchas
