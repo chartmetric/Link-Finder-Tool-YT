@@ -76,6 +76,10 @@
 .blk-outcome small { font-size: 9px; color: #8291a1; }
 .blk-warn-text { color: #85601a !important; font-weight: 700; }
 .blk-evidence { display: grid; gap: 4px; }
+.blk-evidence-group { display: grid; gap: 4px; min-width: 0; }
+.blk-evidence-group.is-alias { border-left: 2px solid var(--blue); padding-left: 8px; }
+.blk-alias-heading { font-size: 11px; line-height: 1.5; color: var(--blue); }
+.blk-evidence-group small { font-size: 10px; line-height: 1.5; color: var(--subtle); }
 .blk-evidence span { font-size: 9px; text-transform: uppercase; letter-spacing: .1em; color: var(--subtle); }
 .blk-evidence a { font: 600 10px var(--app-font-mono); color: var(--blue); text-decoration: none; overflow-wrap: anywhere; }
 .blk-evidence a:hover { text-decoration: underline; }

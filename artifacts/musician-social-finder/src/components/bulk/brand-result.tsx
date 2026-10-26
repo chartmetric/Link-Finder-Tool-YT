@@ -1,12 +1,17 @@
-import { ArrowUpRight, ChevronDown, CircleAlert } from 'lucide-react';
+import { ChevronDown, CircleAlert } from 'lucide-react';
 import type { BulkBrandItem } from '@workspace/api-client-react';
 import { Candidate, PlatformIcon } from '@/pages/SingleArtist';
 import { ProfileUrlAliases } from '@/components/profile-url-aliases';
 import { getNetConfidence } from '@/lib/net-confidence';
 import { outcomeLabel, shortUrl } from '@/lib/bulk';
+import { EvidenceLinks } from './evidence-links';
 
 export function BrandResult({ item, index }: { item: BulkBrandItem; index: number }) {
   const c = item.candidate;
+  const evidenceAccounts = [
+    ...(item.result?.profiles ?? []),
+    ...(item.result?.referenceProfile ? [item.result.referenceProfile] : []),
+  ];
   const profiles = (item.result?.profiles ?? []).slice().sort((a, b) => (getNetConfidence(b).score ?? -1) - (getNetConfidence(a).score ?? -1) || b.confidence - a.confidence);
   return (
     <article className={`blk-item s-${item.status}`} data-testid={`row-run-item-${c.profileId}`}>
@@ -30,10 +35,7 @@ export function BrandResult({ item, index }: { item: BulkBrandItem; index: numbe
               <div className="blk-outcome-top"><PlatformIcon platform={o.platform} size={14} /><b>{o.platform}</b><span className={`blk-pill o-${o.status}`}>{outcomeLabel[o.status]}</span></div>
               <p>{o.reason}</p>
               {o.status === 'explicit_unavailable' && o.evidenceUrls.length === 0 && <p className="blk-warn-text">No source was attached to this statement; treat as unverified.</p>}
-              {o.evidenceUrls.length > 0 && <div className="blk-evidence">
-                <span className="inv-mono">{o.status === 'explicit_unavailable' ? 'First-party source' : 'Evidence'}</span>
-                {o.evidenceUrls.map(u => <a key={u} href={u} target="_blank" rel="noopener noreferrer">{shortUrl(u)} <ArrowUpRight size={10} aria-hidden="true" /></a>)}
-              </div>}
+              <EvidenceLinks outcome={o} accounts={evidenceAccounts} />
               <small className="inv-mono">Checked {new Date(o.checkedAt).toLocaleString()}</small>
             </li>
           ))}
