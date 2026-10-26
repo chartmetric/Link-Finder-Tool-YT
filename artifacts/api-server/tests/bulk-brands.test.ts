@@ -26,7 +26,7 @@ function candidate(extra: Partial<ProfileMatch> = {}): ProfileMatch {
 
 test("eligible selection is brands across all tiers, latest versions, one distinct active account", () => {
   const sql = eligibleBrandSql();
-  assert.match(sql, /profile_type = 'brand'/);
+  assert.match(sql, /profile_type = \{profileType:String\}/);
   assert.doesNotMatch(sql, /tier BETWEEN|pt\.tier\s*=/);
   assert.match(sql, /argMax\(tuple\(tier, tier_rank\)/);
   assert.match(sql, /argMax\(tuple\(profile_id, account_id, disconnected_at\), modified_at\)/);

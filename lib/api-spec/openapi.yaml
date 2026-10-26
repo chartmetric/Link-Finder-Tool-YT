@@ -93,9 +93,10 @@ paths:
       parameters:
         - { name: limit, in: query, schema: { type: number, minimum: 1, maximum: 25, default: 10 } }
         - { name: afterId, in: query, schema: { type: number, minimum: 0, default: 0 } }
+        - { name: profileType, in: query, schema: { $ref: "#/components/schemas/BulkProfileType" } }
       responses:
         "200":
-          description: Brands across all tiers with exactly one distinct active catalog account
+          description: Selected profile type across all tiers with exactly one distinct active catalog account; defaults to brands
           content:
             application/json:
               schema:
@@ -331,6 +332,15 @@ components:
           items:
             type: string
             enum: [serper, tavily, gemini, jev, scrapecreators, socialcrawl]
+    BulkProfileType:
+      type: string
+      enum: [brand, creator, artist]
+    BulkProfileScopeInput:
+      type: object
+      required: [profileType, limit]
+      properties:
+        profileType: { $ref: "#/components/schemas/BulkProfileType" }
+        limit: { type: number, minimum: 1, maximum: 25 }
     BulkBrandCandidate:
       type: object
       required: [profileId, profileName, tier, tierRank, accountId, platform, handle, url]
@@ -343,6 +353,9 @@ components:
         platform: { type: string }
         handle: { type: string }
         url: { type: string }
+        profileType:
+          $ref: "#/components/schemas/BulkProfileType"
+          description: Legacy saved candidates without this field are brands
     BulkBrandCandidates:
       type: object
       required: [profiles, hasMore, nextAfterId, maxBatchSize]
@@ -353,7 +366,7 @@ components:
         maxBatchSize: { type: number }
     BulkBrandRunInput:
       type: object
-      required: [requestId, profileIds]
+      required: [requestId]
       properties:
         requestId: { type: string, pattern: "^[0-9a-fA-F-]{36}$" }
         profileIds:
@@ -361,6 +374,18 @@ components:
           minItems: 1
           maxItems: 25
           items: { type: number, minimum: 1 }
+        profileTypes:
+          type: array
+          minItems: 1
+          maxItems: 1
+          items: { $ref: "#/components/schemas/BulkProfileType" }
+          description: Manual profileIds selection type; defaults to brand. Use scopes for automatic multi-type selection.
+        scopes:
+          type: array
+          minItems: 1
+          maxItems: 3
+          items: { $ref: "#/components/schemas/BulkProfileScopeInput" }
+          description: Alternative to profileIds; one distinct entry per selected type. Combined limits must not exceed 25. Each type has at most one concurrent lookup.
     BulkPlatformOutcome:
       type: object
       required: [platform, status, reason, evidenceUrls, checkedAt]
@@ -395,6 +420,9 @@ components:
         stopRequested: { type: boolean }
         estimatedCostUsd: { type: number }
         items: { type: array, items: { $ref: "#/components/schemas/BulkBrandItem" } }
+        scopes:
+          type: array
+          items: { $ref: "#/components/schemas/BulkProfileScopeInput" }
         error: { type: string }
     ExistingProfile:
       type: object

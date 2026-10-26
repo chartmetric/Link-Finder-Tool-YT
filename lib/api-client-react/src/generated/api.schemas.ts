@@ -229,6 +229,24 @@ export interface ProfileSearchInput {
   methods?: ProfileSearchInputMethodsItem[];
 }
 
+export type BulkProfileType = typeof BulkProfileType[keyof typeof BulkProfileType];
+
+
+export const BulkProfileType = {
+  brand: 'brand',
+  creator: 'creator',
+  artist: 'artist',
+} as const;
+
+export interface BulkProfileScopeInput {
+  profileType: BulkProfileType;
+  /**
+     * @minimum 1
+     * @maximum 25
+     */
+  limit: number;
+}
+
 export interface BulkBrandCandidate {
   profileId: number;
   profileName: string;
@@ -238,6 +256,8 @@ export interface BulkBrandCandidate {
   platform: string;
   handle: string;
   url: string;
+  /** Legacy saved candidates without this field are brands */
+  profileType?: BulkProfileType;
 }
 
 export interface BulkBrandCandidates {
@@ -255,7 +275,19 @@ export interface BulkBrandRunInput {
      * @maxItems 25
      * @items.minimum 1
      */
-  profileIds: number[];
+  profileIds?: number[];
+  /**
+     * Manual profileIds selection type; defaults to brand. Use scopes for automatic multi-type selection.
+     * @minItems 1
+     * @maxItems 1
+     */
+  profileTypes?: BulkProfileType[];
+  /**
+     * Alternative to profileIds; one distinct entry per selected type. Combined limits must not exceed 25. Each type has at most one concurrent lookup.
+     * @minItems 1
+     * @maxItems 3
+     */
+  scopes?: BulkProfileScopeInput[];
 }
 
 export type BulkPlatformOutcomePlatform = typeof BulkPlatformOutcomePlatform[keyof typeof BulkPlatformOutcomePlatform];
@@ -329,6 +361,7 @@ export interface BulkBrandRun {
   stopRequested: boolean;
   estimatedCostUsd: number;
   items: BulkBrandItem[];
+  scopes?: BulkProfileScopeInput[];
   error?: string;
 }
 
@@ -413,6 +446,7 @@ limit?: number;
  * @minimum 0
  */
 afterId?: number;
+profileType?: BulkProfileType;
 };
 
 export type ListBulkBrandRuns200 = {

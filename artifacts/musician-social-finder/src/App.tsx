@@ -28,6 +28,9 @@ function Router() {
         <Route path="/" component={SingleArtist} />
         <Route path="/single-artist" component={SingleArtist} />
         <Route path="/bulk" component={BulkBrands} />
+        <Route path="/bulk/brands" component={BulkBrands} />
+        <Route path="/bulk/creators" component={BulkBrands} />
+        <Route path="/bulk/artists" component={BulkBrands} />
         <Route component={NotFound} />
       </Switch>
     </RoutedErrorBoundary>

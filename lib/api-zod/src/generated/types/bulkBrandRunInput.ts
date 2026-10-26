@@ -5,6 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { BulkProfileScopeInput } from './bulkProfileScopeInput';
+import type { BulkProfileType } from './bulkProfileType';
 
 export interface BulkBrandRunInput {
   /** @pattern ^[0-9a-fA-F-]{36}$ */
@@ -14,5 +16,17 @@ export interface BulkBrandRunInput {
      * @maxItems 25
      * @items.minimum 1
      */
-  profileIds: number[];
+  profileIds?: number[];
+  /**
+     * Manual profileIds selection type; defaults to brand. Use scopes for automatic multi-type selection.
+     * @minItems 1
+     * @maxItems 1
+     */
+  profileTypes?: BulkProfileType[];
+  /**
+     * Alternative to profileIds; one distinct entry per selected type. Combined limits must not exceed 25. Each type has at most one concurrent lookup.
+     * @minItems 1
+     * @maxItems 3
+     */
+  scopes?: BulkProfileScopeInput[];
 }

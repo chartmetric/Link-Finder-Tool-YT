@@ -241,7 +241,7 @@ export default function SingleArtist() {
           </Link>
           <div className="inv-nav-right">
             <span className="inv-nav-tag inv-mono"><i />Single-profile investigation</span>
-            <Link href="/bulk" className="inv-nav-switch" data-testid="link-bulk-brands">Bulk brand finder <ArrowRight size={14} aria-hidden="true" /></Link>
+            <Link href="/bulk" className="inv-nav-switch" data-testid="link-bulk-brands">Bulk profile finder <ArrowRight size={14} aria-hidden="true" /></Link>
           </div>
         </div>
       </header>

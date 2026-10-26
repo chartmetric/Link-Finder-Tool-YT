@@ -312,7 +312,8 @@ export const listBulkBrandCandidatesQueryAfterIdMin = 0;
 
 export const ListBulkBrandCandidatesQueryParams = zod.object({
   "limit": zod.coerce.number().min(1).max(listBulkBrandCandidatesQueryLimitMax).default(listBulkBrandCandidatesQueryLimitDefault),
-  "afterId": zod.coerce.number().min(listBulkBrandCandidatesQueryAfterIdMin).default(listBulkBrandCandidatesQueryAfterIdDefault)
+  "afterId": zod.coerce.number().min(listBulkBrandCandidatesQueryAfterIdMin).default(listBulkBrandCandidatesQueryAfterIdDefault),
+  "profileType": zod.enum(['brand', 'creator', 'artist']).optional()
 })
 
 export const ListBulkBrandCandidatesResponse = zod.object({
@@ -324,7 +325,8 @@ export const ListBulkBrandCandidatesResponse = zod.object({
   "accountId": zod.string(),
   "platform": zod.string(),
   "handle": zod.string(),
-  "url": zod.string()
+  "url": zod.string(),
+  "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 })),
   "hasMore": zod.boolean(),
   "nextAfterId": zod.number(),
@@ -345,6 +347,8 @@ export const listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemJevVeri
 export const listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemJevVerificationVerdictConfidenceMax = 1;
 
 export const listBulkBrandRunsResponseRunsItemItemsItemResultMethodsUsedItemDurationMsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemScopesItemLimitMax = 25;
 
 
 
@@ -368,7 +372,8 @@ export const ListBulkBrandRunsResponse = zod.object({
   "accountId": zod.string(),
   "platform": zod.string(),
   "handle": zod.string(),
-  "url": zod.string()
+  "url": zod.string(),
+  "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
   "status": zod.enum(['queued', 'running', 'completed', 'failed']),
   "platforms": zod.array(zod.object({
@@ -471,6 +476,10 @@ export const ListBulkBrandRunsResponse = zod.object({
   "startedAt": zod.string().optional(),
   "completedAt": zod.string().optional()
 })),
+  "scopes": zod.array(zod.object({
+  "profileType": zod.enum(['brand', 'creator', 'artist']),
+  "limit": zod.number().min(1).max(listBulkBrandRunsResponseRunsItemScopesItemLimitMax)
+})).optional(),
   "error": zod.string().optional()
 }))
 })
@@ -480,11 +489,22 @@ export const startBulkBrandRunBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F-]{36
 
 export const startBulkBrandRunBodyProfileIdsMax = 25;
 
+export const startBulkBrandRunBodyProfileTypesMax = 1;
+
+export const startBulkBrandRunBodyScopesItemLimitMax = 25;
+
+export const startBulkBrandRunBodyScopesMax = 3;
+
 
 
 export const StartBulkBrandRunBody = zod.object({
   "requestId": zod.string().regex(startBulkBrandRunBodyRequestIdRegExp),
-  "profileIds": zod.array(zod.number().min(1)).min(1).max(startBulkBrandRunBodyProfileIdsMax)
+  "profileIds": zod.array(zod.number().min(1)).min(1).max(startBulkBrandRunBodyProfileIdsMax).optional(),
+  "profileTypes": zod.array(zod.enum(['brand', 'creator', 'artist'])).min(1).max(startBulkBrandRunBodyProfileTypesMax).optional().describe('Manual profileIds selection type; defaults to brand. Use scopes for automatic multi-type selection.'),
+  "scopes": zod.array(zod.object({
+  "profileType": zod.enum(['brand', 'creator', 'artist']),
+  "limit": zod.number().min(1).max(startBulkBrandRunBodyScopesItemLimitMax)
+})).min(1).max(startBulkBrandRunBodyScopesMax).optional().describe('Alternative to profileIds; one distinct entry per selected type. Combined limits must not exceed 25. Each type has at most one concurrent lookup.')
 })
 
 export const startBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMin = 0;
@@ -500,6 +520,8 @@ export const startBulkBrandRunResponseItemsItemResultProfilesItemJevVerification
 export const startBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVerdictConfidenceMax = 1;
 
 export const startBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin = 0;
+
+export const startBulkBrandRunResponseScopesItemLimitMax = 25;
 
 
 
@@ -522,7 +544,8 @@ export const StartBulkBrandRunResponse = zod.object({
   "accountId": zod.string(),
   "platform": zod.string(),
   "handle": zod.string(),
-  "url": zod.string()
+  "url": zod.string(),
+  "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
   "status": zod.enum(['queued', 'running', 'completed', 'failed']),
   "platforms": zod.array(zod.object({
@@ -625,6 +648,10 @@ export const StartBulkBrandRunResponse = zod.object({
   "startedAt": zod.string().optional(),
   "completedAt": zod.string().optional()
 })),
+  "scopes": zod.array(zod.object({
+  "profileType": zod.enum(['brand', 'creator', 'artist']),
+  "limit": zod.number().min(1).max(startBulkBrandRunResponseScopesItemLimitMax)
+})).optional(),
   "error": zod.string().optional()
 })
 
@@ -647,6 +674,8 @@ export const getBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVe
 
 export const getBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin = 0;
 
+export const getBulkBrandRunResponseScopesItemLimitMax = 25;
+
 
 
 export const GetBulkBrandRunResponse = zod.object({
@@ -668,7 +697,8 @@ export const GetBulkBrandRunResponse = zod.object({
   "accountId": zod.string(),
   "platform": zod.string(),
   "handle": zod.string(),
-  "url": zod.string()
+  "url": zod.string(),
+  "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
   "status": zod.enum(['queued', 'running', 'completed', 'failed']),
   "platforms": zod.array(zod.object({
@@ -771,6 +801,10 @@ export const GetBulkBrandRunResponse = zod.object({
   "startedAt": zod.string().optional(),
   "completedAt": zod.string().optional()
 })),
+  "scopes": zod.array(zod.object({
+  "profileType": zod.enum(['brand', 'creator', 'artist']),
+  "limit": zod.number().min(1).max(getBulkBrandRunResponseScopesItemLimitMax)
+})).optional(),
   "error": zod.string().optional()
 })
 
@@ -793,6 +827,8 @@ export const stopBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationV
 
 export const stopBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin = 0;
 
+export const stopBulkBrandRunResponseScopesItemLimitMax = 25;
+
 
 
 export const StopBulkBrandRunResponse = zod.object({
@@ -814,7 +850,8 @@ export const StopBulkBrandRunResponse = zod.object({
   "accountId": zod.string(),
   "platform": zod.string(),
   "handle": zod.string(),
-  "url": zod.string()
+  "url": zod.string(),
+  "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
   "status": zod.enum(['queued', 'running', 'completed', 'failed']),
   "platforms": zod.array(zod.object({
@@ -917,6 +954,10 @@ export const StopBulkBrandRunResponse = zod.object({
   "startedAt": zod.string().optional(),
   "completedAt": zod.string().optional()
 })),
+  "scopes": zod.array(zod.object({
+  "profileType": zod.enum(['brand', 'creator', 'artist']),
+  "limit": zod.number().min(1).max(stopBulkBrandRunResponseScopesItemLimitMax)
+})).optional(),
   "error": zod.string().optional()
 })
 
@@ -939,6 +980,8 @@ export const resumeBulkBrandRunResponseItemsItemResultProfilesItemJevVerificatio
 
 export const resumeBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin = 0;
 
+export const resumeBulkBrandRunResponseScopesItemLimitMax = 25;
+
 
 
 export const ResumeBulkBrandRunResponse = zod.object({
@@ -960,7 +1003,8 @@ export const ResumeBulkBrandRunResponse = zod.object({
   "accountId": zod.string(),
   "platform": zod.string(),
   "handle": zod.string(),
-  "url": zod.string()
+  "url": zod.string(),
+  "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
   "status": zod.enum(['queued', 'running', 'completed', 'failed']),
   "platforms": zod.array(zod.object({
@@ -1063,6 +1107,10 @@ export const ResumeBulkBrandRunResponse = zod.object({
   "startedAt": zod.string().optional(),
   "completedAt": zod.string().optional()
 })),
+  "scopes": zod.array(zod.object({
+  "profileType": zod.enum(['brand', 'creator', 'artist']),
+  "limit": zod.number().min(1).max(resumeBulkBrandRunResponseScopesItemLimitMax)
+})).optional(),
   "error": zod.string().optional()
 })
 

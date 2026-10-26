@@ -6,6 +6,7 @@ import {
 import { listEligibleBrands } from "../lib/bulk-brand-candidates";
 import { readBulkRuns } from "../lib/bulk-run-store";
 import { BulkError, getBulkRun, resumeBulkRun, startBulkRun, stopBulkRun } from "../lib/bulk-brand-runner";
+import { validateBulkSelection } from "../lib/bulk-profile-scopes";
 
 const router: IRouter = Router();
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -23,7 +24,7 @@ router.get("/bulk/brands/candidates", async (req, res) => {
   }
   try {
     res.json(ListBulkBrandCandidatesResponse.parse(await listEligibleBrands({
-      limit: params.data.limit ?? 10, afterId: params.data.afterId ?? 0,
+      limit: params.data.limit ?? 10, afterId: params.data.afterId ?? 0, profileType: params.data.profileType,
     })));
   } catch (error) { respondError(req, res, error); }
 });
@@ -33,12 +34,12 @@ router.get("/bulk/brands/runs", async (req, res) => {
 });
 router.post("/bulk/brands/runs", async (req, res) => {
   const body = StartBulkBrandRunBody.safeParse(req.body);
-  if (!body.success || !uuid.test(body.data.requestId)
-    || !body.data.profileIds.every(id => Number.isSafeInteger(id))
-    || new Set(body.data.profileIds).size !== body.data.profileIds.length) {
-    res.status(400).json({ error: "Select 1–25 distinct valid brand IDs and a valid request ID." }); return;
+  if (!body.success || !uuid.test(body.data.requestId)) {
+    res.status(400).json({ error: "Select valid profiles or scopes and a valid request ID." }); return;
   }
-  try { res.json(GetBulkBrandRunResponse.parse(await startBulkRun(body.data.requestId, body.data.profileIds))); }
+  const selectionError = validateBulkSelection(body.data);
+  if (selectionError) { res.status(400).json({ error: selectionError }); return; }
+  try { res.json(GetBulkBrandRunResponse.parse(await startBulkRun(body.data.requestId, body.data))); }
   catch (error) { respondError(req, res, error); }
 });
 router.get("/bulk/brands/runs/:runId", async (req, res) => {

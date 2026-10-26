@@ -45,11 +45,13 @@ Search by any public name with optional location and country hints, inspect the 
 
 ## User preferences
 
-## Bulk brands
+## Bulk profiles
 
-- `/bulk` selects brands across all tiers with exactly one distinct active catalog account. Selection uses latest profile, account and relationship versions; nullable disconnect/delete values are retained inside `argMax` tuples.
+- `/bulk` defaults to Brands; `/bulk/brands`, `/bulk/creators`, and `/bulk/artists` select that catalog type across all tiers, with exactly one distinct active catalog account. Artists map to the catalog's `musician` type. Selection uses latest profile, account and relationship versions; nullable disconnect/delete values are retained inside `argMax` tuples.
 - Catalog access is read-only. Run snapshots and separate stop events are appended to `poc_new_verticals.profile_bulk_events`; successful results also go to ordinary investigation history.
-- Paid requests require explicit Start, at most 25 brands, processed sequentially. Stop finishes the current brand; Resume explicitly retries unfinished/failed brands, never completed brands. Opening a page or restarting the API never launches paid jobs.
+- Paid requests require explicit Start, at most 25 profiles combined. Manual selections use one type; the floating launcher auto-picks bounded per-type batches. One profile per type runs concurrently (at most three), with sequential processing within each type. Stop finishes all current in-flight profiles; Resume explicitly retries unfinished/failed profiles, never completed profiles. Opening a page or restarting the API never launches paid jobs.
+- Snapshot writes across lanes and heartbeat updates are serialized. Duplicate catalog profile IDs across requested types are selected only once. Source catalog records are never reclassified or edited.
+- Existing `/api/bulk/brands/*` paths and generated hook names are retained for compatibility. Candidate queries take `profileType`; launch accepts either `profileIds` plus one `profileTypes` entry, or `scopes` with per-type limits. Legacy saved candidates without a type are brands.
 - A stale worker heartbeat becomes interrupted after 150 seconds and requires manual resume. A new resume generation must never inherit a stop flag from an older snapshot.
 - Platform outcomes distinguish likely/verified matches, reviewable candidates, completed searches with no supported account, provider failures, and explicit first-party no-account statements. Missing results or search snippets alone cannot confirm account absence.
 - Operate the bulk runner with a single active API worker. Cross-process active-run checks are advisory, not an atomic distributed lease; add durable distributed claims before scaling workers.

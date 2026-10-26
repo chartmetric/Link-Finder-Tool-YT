@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { BulkProfileType } from './bulkProfileType';
 
 export interface BulkBrandCandidate {
   profileId: number;
@@ -15,4 +16,6 @@ export interface BulkBrandCandidate {
   platform: string;
   handle: string;
   url: string;
+  /** Legacy saved candidates without this field are brands */
+  profileType?: BulkProfileType;
 }

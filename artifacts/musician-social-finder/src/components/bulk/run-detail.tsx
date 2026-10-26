@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { CircleAlert, Pause, Play, RefreshCw, X } from 'lucide-react';
 import { getGetBulkBrandRunQueryKey, getListBulkBrandRunsQueryKey, useGetBulkBrandRun, useResumeBulkBrandRun, useStopBulkBrandRun, type BulkBrandRun } from '@workspace/api-client-react';
 import { BrandResult } from './brand-result';
-import { apiError, canResume, isActiveRun, runCounts } from '@/lib/bulk';
+import { KIND_META, apiError, canResume, isActiveRun, kindCounts, runCounts, runKinds } from '@/lib/bulk';
 
 export function RunDetail({ runId, onClose }: { runId: string; onClose: () => void }) {
   const qc = useQueryClient();
@@ -38,7 +38,7 @@ export function RunDetail({ runId, onClose }: { runId: string; onClose: () => vo
 
       {run && <RunBody run={run} stopping={stop.isPending} resuming={resume.isPending}
         onStop={() => stop.mutate({ runId: run.id })}
-        onResume={() => { if (window.confirm('Resume retries queued, failed and interrupted brands (not completed ones) and may incur more paid provider requests. Continue?')) resume.mutate({ runId: run.id }); }}
+        onResume={() => { if (window.confirm('Resume retries queued, failed and interrupted profiles (not completed ones) and may incur more paid provider requests. Continue?')) resume.mutate({ runId: run.id }); }}
         error={stop.error ? apiError(stop.error, 'Stop failed.') : resume.error ? apiError(resume.error, 'Resume failed.') : ''} />}
     </section>
   );
@@ -51,7 +51,7 @@ function RunBody({ run, onStop, onResume, stopping, resuming, error }: { run: Bu
   return (
     <>
       <div className="blk-run-bar">
-        <div className="blk-run-stat lead"><span>Status</span><strong className={`blk-pill r-${run.status}`} data-testid="status-run">{run.status}</strong>{run.stopRequested && run.status !== 'stopped' && <em>Stop requested: finishing current brand</em>}</div>
+        <div className="blk-run-stat lead"><span>Status</span><strong className={`blk-pill r-${run.status}`} data-testid="status-run">{run.status}</strong>{run.stopRequested && active && <em>Stop requested: finishing current profiles</em>}</div>
         <div className="blk-run-stat"><span>Completed</span><strong data-testid="text-run-completed">{c.completed}/{run.items.length}</strong></div>
         <div className="blk-run-stat"><span>Failed</span><strong>{c.failed}</strong></div>
         <div className="blk-run-stat"><span>Queued</span><strong>{c.queued + c.running}</strong></div>
@@ -61,12 +61,15 @@ function RunBody({ run, onStop, onResume, stopping, resuming, error }: { run: Bu
         <i className="done" style={{ transform: `scaleX(${c.completed / total})` }} />
         <i className="fail" style={{ transform: `scaleX(${(c.completed + c.failed) / total})` }} />
       </div>
+      <ul className="blk-kind-rows" data-testid="list-run-kinds">{runKinds(run).map(k => { const kc = kindCounts(run, k); return (
+        <li key={k} data-testid={`row-run-kind-${k}`}><span className={`blk-kind k-${k}`}>{KIND_META[k].plural}</span><span className="inv-mono">{kc.total === 0 ? 'No eligible profiles' : `${kc.completed}/${kc.total} done`}{kc.failed ? ` · ${kc.failed} failed` : ''}{kc.running ? ` · ${kc.running} running` : ''}</span>
+          <i className="blk-mini"><b style={{ transform: `scaleX(${kc.total ? (kc.completed + kc.failed) / kc.total : 0})` }} /></i></li>); })}</ul>
       <div className="blk-run-actions">
         <span className="inv-mono" title={`Heartbeat ${new Date(run.heartbeatAt).toLocaleTimeString()} · resume version ${run.resumeVersion}`}>
           Updated {new Date(run.updatedAt).toLocaleTimeString()} · Est. cost excludes provider credits and failed calls
         </span>
         <div>
-          {active && <button type="button" className="inv-retry" style={{ marginTop: 0 }} disabled={stopping || run.stopRequested} onClick={onStop} data-testid="button-stop-run"><Pause size={14} /> {run.stopRequested ? 'Stopping after current' : 'Stop after current brand'}</button>}
+          {active && <button type="button" className="inv-retry" style={{ marginTop: 0 }} disabled={stopping || run.stopRequested} onClick={onStop} data-testid="button-stop-run"><Pause size={14} /> {run.stopRequested ? 'Stopping after current' : 'Stop after current profiles'}</button>}
           {canResume(run) && <button type="button" className="inv-submit blk-small" disabled={resuming} onClick={onResume} data-testid="button-resume-run">{resuming ? <RefreshCw size={14} className="inv-spin" /> : <Play size={14} />} Resume unfinished</button>}
         </div>
       </div>

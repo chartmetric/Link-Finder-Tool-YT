@@ -3,7 +3,7 @@ import type { BulkBrandItem } from '@workspace/api-client-react';
 import { Candidate, PlatformIcon } from '@/pages/SingleArtist';
 import { ProfileUrlAliases } from '@/components/profile-url-aliases';
 import { getNetConfidence } from '@/lib/net-confidence';
-import { outcomeLabel, shortUrl } from '@/lib/bulk';
+import { KIND_META, kindOf, outcomeLabel, shortUrl } from '@/lib/bulk';
 import { EvidenceLinks } from './evidence-links';
 
 export function BrandResult({ item, index }: { item: BulkBrandItem; index: number }) {
@@ -22,6 +22,7 @@ export function BrandResult({ item, index }: { item: BulkBrandItem; index: numbe
           <a href={c.url} target="_blank" rel="noopener noreferrer" className="inv-history-ref"><PlatformIcon platform={c.platform} size={11} /> {shortUrl(c.url)}</a>
           <ProfileUrlAliases profile={item.result?.referenceProfile ? { ...item.result.referenceProfile, url: c.url } : undefined} compact />
         </div>
+        <span className={`blk-kind k-${kindOf(c)}`} data-testid={`badge-type-${c.profileId}`}>{KIND_META[kindOf(c)].label}</span>
         <span className="inv-mono blk-tier">T{c.tier}</span>
         <span className={`blk-pill s-${item.status}`} data-testid={`status-item-${c.profileId}`}>{item.status}</span>
       </header>
@@ -50,13 +51,13 @@ export function BrandResult({ item, index }: { item: BulkBrandItem; index: numbe
         </ul>
       )}
       {item.status === 'queued' && item.platforms.length === 0 && <p className="blk-quiet">Waiting in the server queue.</p>}
-      {item.status === 'running' && <p className="blk-quiet">Searching now. Results appear when this brand finishes.</p>}
+      {item.status === 'running' && <p className="blk-quiet">Searching now. Results appear when this profile finishes.</p>}
 
       {item.result && (
         <details className="inv-alternatives blk-saved">
           <summary data-testid={`button-expand-${c.profileId}`}>{profiles.length} saved {profiles.length === 1 ? 'candidate' : 'candidates'} · est. ${item.result.estimatedCostUsd.toFixed(4)} <ChevronDown size={14} /></summary>
           {item.result.historySaveError && <div className="inv-save-warn" role="alert"><CircleAlert size={15} /><span>{item.result.historySaveError}</span></div>}
-          {profiles.length === 0 ? <div className="inv-no-platform">No candidates were saved for this brand.</div> : profiles.map((p, i) => <Candidate key={`${p.url}-${i}`} candidate={p} index={i} />)}
+          {profiles.length === 0 ? <div className="inv-no-platform">No candidates were saved for this profile.</div> : profiles.map((p, i) => <Candidate key={`${p.url}-${i}`} candidate={p} index={i} />)}
         </details>
       )}
     </article>

@@ -1,6 +1,6 @@
 import { CircleAlert, FolderOpen, History, RefreshCw } from 'lucide-react';
 import { getListBulkBrandRunsQueryKey, useListBulkBrandRuns } from '@workspace/api-client-react';
-import { runCounts } from '@/lib/bulk';
+import { KIND_META, runCounts, runKinds } from '@/lib/bulk';
 
 export function RunList({ activeId, onOpen }: { activeId?: string; onOpen: (id: string) => void }) {
   const q = useListBulkBrandRuns({ query: { queryKey: getListBulkBrandRunsQueryKey(), refetchInterval: 5000, refetchOnMount: 'always' } });
@@ -21,7 +21,7 @@ export function RunList({ activeId, onOpen }: { activeId?: string; onOpen: (id: 
             return (
               <li key={run.id} className={run.id === activeId ? 'active' : ''} data-testid={`row-run-${run.id}`}>
                 <span className={`blk-pill r-${run.status}`}>{run.status}</span>
-                <div><strong className="inv-mono">{run.id.slice(0, 8)}</strong><span>{new Date(run.createdAt).toLocaleString()}</span></div>
+                <div><strong className="inv-mono">{run.id.slice(0, 8)}</strong><span>{new Date(run.createdAt).toLocaleString()}</span><em className="blk-kinds" data-testid={`text-run-scopes-${run.id}`}>{runKinds(run).map(k => <i key={k} className={`blk-kind k-${k}`}>{KIND_META[k].label}</i>)}</em></div>
                 <span className="inv-mono blk-runs-n">{c.completed}/{run.items.length} done{c.failed ? ` · ${c.failed} failed` : ''}</span>
                 <span className="inv-mono blk-runs-n">${run.estimatedCostUsd.toFixed(4)}</span>
                 <button type="button" className="inv-retry" style={{ marginTop: 0 }} onClick={() => onOpen(run.id)} data-testid={`button-open-run-${run.id}`}><FolderOpen size={13} /> {run.id === activeId ? 'Viewing' : 'Open'}</button>

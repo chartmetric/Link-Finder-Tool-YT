@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { BulkProfileType } from './bulkProfileType';
 
 export type ListBulkBrandCandidatesParams = {
 /**
@@ -16,4 +17,5 @@ limit?: number;
  * @minimum 0
  */
 afterId?: number;
+profileType?: BulkProfileType;
 };

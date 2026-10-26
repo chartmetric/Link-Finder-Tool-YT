@@ -1,17 +1,18 @@
-import type { BulkBrandCandidate } from "@workspace/api-zod";
+import type { BulkBrandCandidate, BulkProfileType, BulkProfileScopeInput } from "@workspace/api-zod";
 import { clickHouseJson } from "./clickhouse-profiles";
 import { parseKnownProfileUrl } from "./musician-search";
 
-export const MAX_BULK_BATCH = 25;
+import { catalogProfileType, MAX_BULK_BATCH } from "./bulk-profile-scopes";
+export { MAX_BULK_BATCH } from "./bulk-profile-scopes";
 
-/** Catalog reads only. Latest global brand tier; no tier-range restriction. */
+/** Catalog reads only. Latest global tier for the bound type; all tiers. */
 export function eligibleBrandSql(selectedIds = false) {
   return `
     WITH brands AS (
       SELECT profile,
         argMax(tuple(tier, tier_rank), tuple(computed_at, updated_at)) AS assignment
       FROM new_vertical.l_profile_tier
-      WHERE profile_type = 'brand' AND grain = 'global'
+      WHERE profile_type = {profileType:String} AND grain = 'global'
       ${selectedIds ? "AND profile IN {ids:Array(UInt64)}" : "AND profile > {afterId:UInt64}"}
       GROUP BY profile
     ), current_profiles AS (
@@ -48,20 +49,41 @@ export function eligibleBrandSql(selectedIds = false) {
   `;
 }
 
-export async function listEligibleBrands(input: { limit: number; afterId?: number; profileIds?: number[] }) {
+export async function listEligibleBrands(input: { limit: number; afterId?: number; profileIds?: number[]; profileType?: BulkProfileType }) {
+  const profileType = input.profileType ?? "brand";
   const rows = await clickHouseJson<BulkBrandCandidate>(eligibleBrandSql(Boolean(input.profileIds)), {
     ids: `[${(input.profileIds ?? []).join(",")}]`,
+    profileType: catalogProfileType(profileType),
     afterId: String(input.afterId ?? 0),
     rowLimit: String(input.profileIds ? MAX_BULK_BATCH : input.limit + 1),
   }, 20_000);
   const page = rows.data.slice(0, input.limit);
   return {
     profiles: page.map(row => ({
-      ...row, profileId: Number(row.profileId), tier: Number(row.tier), tierRank: Number(row.tierRank),
+      ...row, profileType, profileId: Number(row.profileId), tier: Number(row.tier), tierRank: Number(row.tierRank),
       url: parseKnownProfileUrl(row.url)?.url ?? row.url,
     })),
     hasMore: rows.data.length > input.limit,
     nextAfterId: Number(page.at(-1)?.profileId ?? input.afterId ?? 0),
     maxBatchSize: MAX_BULK_BATCH,
   };
+}
+
+/** Bounded, deterministic auto-selection; never pay twice for the same catalog
+ * profile when it appears under more than one requested type. */
+export async function selectBulkScopes(scopes: BulkProfileScopeInput[], fetchPage = listEligibleBrands) {
+  const selected: BulkBrandCandidate[] = [];
+  const seen = new Set<number>();
+  // Read in a fixed order so a retried selection has a stable duplicate owner.
+  for (const scope of scopes) {
+    const page = await fetchPage({ limit: MAX_BULK_BATCH, profileType: scope.profileType });
+    let added = 0;
+    for (const candidate of page.profiles) {
+      if (seen.has(candidate.profileId)) continue;
+      seen.add(candidate.profileId);
+      selected.push(candidate);
+      if (++added >= scope.limit) break;
+    }
+  }
+  return selected;
 }

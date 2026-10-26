@@ -6,4 +6,4 @@
 - [Visual style reference](visual-style-reference.md) — use the user's Chartmetric green/teal screenshot as the app's color reference.
 - [Profile URL aliases](profile-url-aliases.md) — retain both handle and ID URLs for the same account; URL equivalence is separate from artist identity.
 - [Confidence presentation](confidence-presentation.md) — headline net confidence must not confuse discovery strength or verdict-label confidence with positive identity evidence.
-- [Bulk brand workflow](bulk-brand-workflow.md) — brands across all tiers, one active account; catalog supplies seeds only, and empty searches do not prove account absence.
+- [Bulk profile workflow](bulk-brand-workflow.md) — brands, creators and artists; one active account; bounded simultaneous types; catalog supplies seeds only.

@@ -61,3 +61,32 @@ export function writeStorage(key: string, value: unknown) {
     /* storage unavailable */
   }
 }
+
+export type ProfileKind = 'brand' | 'creator' | 'artist';
+export const PROFILE_KINDS: ProfileKind[] = ['brand', 'creator', 'artist'];
+export const KIND_META: Record<ProfileKind, { label: string; plural: string; path: string; code: string }> = {
+  brand: { label: 'Brand', plural: 'Brands', path: '/bulk/brands', code: 'BR' },
+  creator: { label: 'Creator', plural: 'Creators', path: '/bulk/creators', code: 'CR' },
+  artist: { label: 'Artist', plural: 'Artists', path: '/bulk/artists', code: 'AR' },
+};
+/** Legacy candidates/runs without a type are brands. */
+export function kindOf(c?: { profileType?: string } | null): ProfileKind {
+  const t = c?.profileType;
+  return t === 'creator' || t === 'artist' ? t : 'brand';
+}
+export function selectionKey(kind: ProfileKind) {
+  return kind === 'brand' ? SELECTION_KEY : `bulk-profiles:selection:${kind}`;
+}
+export const WIDGET_KEY = 'bulk-profiles:widget';
+export function runKinds(run: BulkBrandRun): ProfileKind[] {
+  const s = new Set<ProfileKind>();
+  for (const sc of run.scopes ?? []) s.add(kindOf(sc));
+  for (const i of run.items) s.add(kindOf(i.candidate));
+  if (s.size === 0) s.add('brand');
+  return PROFILE_KINDS.filter(k => s.has(k));
+}
+export function kindCounts(run: BulkBrandRun, kind: ProfileKind) {
+  const c = { queued: 0, running: 0, completed: 0, failed: 0, total: 0 };
+  for (const item of run.items) if (kindOf(item.candidate) === kind) { c[item.status]++; c.total++; }
+  return c;
+}

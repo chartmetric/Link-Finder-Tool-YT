@@ -1,13 +1,19 @@
 ---
-name: Bulk brand workflow
-description: User-approved cohort, catalog access boundaries, and paid-run operating constraints.
+name: Bulk profile workflow
+description: User-approved profile types, catalog access boundaries, and paid-run operating constraints.
 ---
 
-The first bulk finder is for “brands across all tiers” with “one distinct active linked account.”
+The bulk finder supports Brands, Creators, and Artists across all tiers, with “one distinct active linked account.”
 
-**Why:** The user explicitly selected this cohort and account-based interpretation of one link, rather than musicians or a single stored URL.
+**Why:** The user initially selected brands and the account-based interpretation of one link, then explicitly expanded the tool to creators and artists with a navigation bar and a floating widget for simultaneous cross-type runs.
 
-**How to apply:** Keep the account-based eligibility rule and unrestricted tier scope unless the user changes them. The bulk selection is a specific exception to the earlier prohibition on database discovery: catalog records supply starting identities; newly discovered links still come from external providers.
+**How to apply:** Keep the account-based eligibility rule and unrestricted tier scope unless the user changes them. Artists correspond to the catalog's musician cohort. Keep each type's manual selection separate and the shared floating launcher available across navigation. The bulk selection is a specific exception to the earlier prohibition on database discovery: catalog records supply starting identities; newly discovered links still come from external providers.
+
+Keep simultaneous cross-type processing bounded within one shared paid run: one active profile per type and a combined batch cap, not an unrestricted number of workers or independent batches.
+
+**Why:** The user needs simultaneous profile types, but unbounded parallel batches multiply provider charges and complicate Stop and saved-progress guarantees.
+
+**How to apply:** Serialize saved snapshots across lanes, wait for in-flight profiles when stopping or encountering persistence failure, and deduplicate shared catalog identities across scopes. Preserve completed results and require explicit paid Start/Resume; selecting types or navigating must never launch work.
 
 Preserve the distinction between finding no account and establishing that an official account is unavailable.
 

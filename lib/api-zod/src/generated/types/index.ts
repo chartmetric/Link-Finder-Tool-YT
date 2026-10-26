@@ -16,6 +16,8 @@ export * from './bulkBrandRunStatus';
 export * from './bulkPlatformOutcome';
 export * from './bulkPlatformOutcomePlatform';
 export * from './bulkPlatformOutcomeStatus';
+export * from './bulkProfileScopeInput';
+export * from './bulkProfileType';
 export * from './existingProfile';
 export * from './existingProfileAccount';
 export * from './existingProfilePage';

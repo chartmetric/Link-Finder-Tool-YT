@@ -1,7 +1,8 @@
 import {
-  SearchProfilesResponse, type BulkBrandRun, type BulkBrandItem,
+  SearchProfilesResponse, type BulkBrandRun, type BulkBrandItem, type BulkBrandRunInput,
 } from "@workspace/api-zod";
-import { listEligibleBrands, MAX_BULK_BATCH } from "./bulk-brand-candidates";
+import { listEligibleBrands, MAX_BULK_BATCH, selectBulkScopes } from "./bulk-brand-candidates";
+import { runScopedQueue, validateBulkSelection } from "./bulk-profile-scopes";
 import { derivePlatformOutcomes } from "./bulk-platform-outcomes";
 import { bulkVersion, bulkWorkerId, mergeBulkRunView, readBulkRuns, requestBulkStop, saveBulkRun } from "./bulk-run-store";
 import { findProfiles, parseKnownProfileUrl, resolveKnownProfileIdentity } from "./musician-search";
@@ -51,23 +52,33 @@ function assertProviders() {
     throw new BulkError("Bulk lookup requires Serper, OpenRouter and ScrapeCreators. No paid queue was started.", 503);
   }
 }
-export async function startBulkRun(requestId: string, profileIds: number[]) {
+export async function startBulkRun(requestId: string, input: Omit<BulkBrandRunInput, "requestId"> | number[]) {
   return exclusive(async () => {
     const existing = await getBulkRun(requestId);
     if (existing) return existing; // Retrying the same request never starts paid work twice.
+    const selection = Array.isArray(input) ? { profileIds: input } : input;
+    const selectionError = validateBulkSelection(selection);
+    if (selectionError) throw new BulkError(selectionError, 400);
     if (storageFailure) throw new BulkError(storageFailure, 503);
     assertProviders();
     await assertIdle();
-    const candidates = await listEligibleBrands({ limit: MAX_BULK_BATCH, profileIds });
-    if (candidates.profiles.length !== profileIds.length) {
-      throw new BulkError("Some selected brands are no longer eligible. Refresh the selection; no queue was started.");
+    const candidates = selection.scopes
+      ? await selectBulkScopes(selection.scopes)
+      : (await listEligibleBrands({
+        limit: MAX_BULK_BATCH, profileIds: selection.profileIds,
+        profileType: selection.profileTypes?.[0] ?? "brand",
+      })).profiles;
+    if (!selection.scopes && candidates.length !== selection.profileIds!.length) {
+      throw new BulkError("Some selected profiles are no longer eligible for this type. Refresh the selection; no queue was started.");
     }
+    if (!candidates.length) throw new BulkError("No eligible single-account profiles were found in the selected types. No paid queue was started.");
     const now = new Date().toISOString();
     const run: BulkBrandRun = {
       id: requestId, status: "running", createdAt: now, updatedAt: now,
       heartbeatAt: now, workerId: bulkWorkerId, resumeVersion: bulkVersion(),
       stopRequested: false, estimatedCostUsd: 0,
-      items: candidates.profiles.map(candidate => ({ candidate, status: "queued", platforms: [] })),
+      scopes: selection.scopes ?? [{ profileType: selection.profileTypes?.[0] ?? "brand", limit: candidates.length }],
+      items: candidates.map(candidate => ({ candidate, status: "queued", platforms: [] })),
     };
     await saveBulkRun(run); // Persist the queue before launching paid requests.
     launch(run);
@@ -90,7 +101,7 @@ export async function resumeBulkRun(id: string) {
     await assertIdle();
     assertProviders();
     const retry = run.items.filter(item => item.status !== "completed");
-    if (!retry.length) throw new BulkError("All brands in this run are already completed.");
+    if (!retry.length) throw new BulkError("All profiles in this run are already completed.");
     for (const item of retry) {
       item.status = "queued";
       delete item.error;
@@ -138,6 +149,12 @@ async function processItem(item: BulkBrandItem) {
 async function execute(run: BulkBrandRun) {
   let heartbeat: Promise<void> | undefined;
   let persistenceError: Error | undefined;
+  let writes = Promise.resolve();
+  const persist = () => {
+    // Serialize lane and heartbeat snapshots; a failed write stops new work.
+    writes = writes.then(() => saveBulkRun(run));
+    return writes;
+  };
   const refreshControl = async () => {
     const persisted = (await readBulkRuns(run.id))[0];
     if (persisted && persisted.resumeVersion >= run.resumeVersion && persisted.workerId !== run.workerId) throw new Error("Worker ownership changed. Queue stopped to avoid duplicate processing.");
@@ -149,7 +166,7 @@ async function execute(run: BulkBrandRun) {
     heartbeat = (async () => {
       await refreshControl();
       run.heartbeatAt = new Date().toISOString();
-      await saveBulkRun(run);
+      await persist();
     })().catch(error => {
       persistenceError = error instanceof Error ? error : new Error("Bulk heartbeat could not be saved.");
       run.stopRequested = true;
@@ -157,14 +174,14 @@ async function execute(run: BulkBrandRun) {
   }, 15_000);
   timer.unref();
   try {
-    for (const item of run.items) {
-      if (item.status === "completed") continue;
+    await runScopedQueue(run.items, async () => {
       await refreshControl();
-      if (run.stopRequested || persistenceError) break;
+      return run.stopRequested || !!persistenceError;
+    }, async item => {
       item.status = "running";
       item.startedAt = new Date().toISOString();
       run.heartbeatAt = item.startedAt;
-      await saveBulkRun(run);
+      await persist();
       try { await processItem(item); }
       catch (error) {
         item.status = "failed";
@@ -177,7 +194,7 @@ async function execute(run: BulkBrandRun) {
       }
       run.estimatedCostUsd = run.items.reduce((total, row) => total + (row.result?.estimatedCostUsd ?? 0), 0);
       run.heartbeatAt = new Date().toISOString();
-      await saveBulkRun(run); // A completed result is durable before any next paid profile.
+      await persist(); // Persist before this type's next paid profile.
       if (item.result && !item.result.historyId) {
         try {
           item.result.historyId = await saveProfileInvestigation(item.candidate.url, item.result);
@@ -186,14 +203,14 @@ async function execute(run: BulkBrandRun) {
           item.result.historySaveError = "Could not add this result to shared investigation history. The bulk-run snapshot contains the result.";
           logger.warn({ err: error, runId: run.id }, "Bulk result could not be added to investigation history");
         }
-        await saveBulkRun(run);
+        await persist();
       }
       if (persistenceError) throw persistenceError;
-    }
+    });
     if (heartbeat) await heartbeat;
     if (persistenceError) throw persistenceError;
     run.status = run.items.some(item => item.status === "queued") ? "stopped" : "completed";
-    await saveBulkRun(run);
+    await persist();
   } catch (error) {
     run.status = "stopped";
     run.error = error instanceof Error ? error.message : "Bulk queue stopped unexpectedly.";

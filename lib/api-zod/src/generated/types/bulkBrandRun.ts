@@ -7,6 +7,7 @@
  */
 import type { BulkBrandItem } from './bulkBrandItem';
 import type { BulkBrandRunStatus } from './bulkBrandRunStatus';
+import type { BulkProfileScopeInput } from './bulkProfileScopeInput';
 
 export interface BulkBrandRun {
   id: string;
@@ -19,5 +20,6 @@ export interface BulkBrandRun {
   stopRequested: boolean;
   estimatedCostUsd: number;
   items: BulkBrandItem[];
+  scopes?: BulkProfileScopeInput[];
   error?: string;
 }
