@@ -1,4 +1,8 @@
-import type { BulkBrandRun, BulkPlatformOutcomeStatus } from '@workspace/api-client-react';
+import type { BulkBrandCandidate, BulkBrandRun, BulkPlatformOutcomeStatus } from '@workspace/api-client-react';
+
+export function canInvestigate(profile: BulkBrandCandidate) {
+  return profile.canInvestigate ?? Boolean(profile.url);
+}
 
 export const ACTIVE_RUN_STATUSES = ['running', 'stopping'] as const;
 export const LAST_RUN_KEY = 'bulk-brands:last-run';

@@ -247,15 +247,26 @@ export interface BulkProfileScopeInput {
   limit: number;
 }
 
-export interface BulkBrandCandidate {
-  profileId: number;
-  profileName: string;
-  tier: number;
-  tierRank: number;
+export type BulkBrandCandidateAccountsItem = {
   accountId: string;
   platform: string;
   handle: string;
   url: string;
+};
+
+export interface BulkBrandCandidate {
+  profileId: number;
+  profileName: string;
+  tier: number | null;
+  tierRank: number | null;
+  accountId: string;
+  platform: string;
+  handle: string;
+  url: string;
+  accountCount?: number;
+  canInvestigate?: boolean;
+  investigationBlockedReason?: string;
+  accounts?: BulkBrandCandidateAccountsItem[];
   /** Legacy saved candidates without this field are brands */
   profileType?: BulkProfileType;
 }

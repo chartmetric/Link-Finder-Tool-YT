@@ -96,7 +96,7 @@ paths:
         - { name: profileType, in: query, schema: { $ref: "#/components/schemas/BulkProfileType" } }
       responses:
         "200":
-          description: Selected profile type across all tiers with exactly one distinct active catalog account; defaults to brands
+          description: All non-deleted profiles of the selected type, including unranked profiles and profiles without active accounts; defaults to brands
           content:
             application/json:
               schema:
@@ -347,12 +347,25 @@ components:
       properties:
         profileId: { type: number }
         profileName: { type: string }
-        tier: { type: number }
-        tierRank: { type: number }
+        tier: { type: number, nullable: true }
+        tierRank: { type: number, nullable: true }
         accountId: { type: string }
         platform: { type: string }
         handle: { type: string }
         url: { type: string }
+        accountCount: { type: number }
+        canInvestigate: { type: boolean }
+        investigationBlockedReason: { type: string }
+        accounts:
+          type: array
+          items:
+            type: object
+            required: [accountId, platform, handle, url]
+            properties:
+              accountId: { type: string }
+              platform: { type: string }
+              handle: { type: string }
+              url: { type: string }
         profileType:
           $ref: "#/components/schemas/BulkProfileType"
           description: Legacy saved candidates without this field are brands

@@ -320,12 +320,21 @@ export const ListBulkBrandCandidatesResponse = zod.object({
   "profiles": zod.array(zod.object({
   "profileId": zod.number(),
   "profileName": zod.string(),
-  "tier": zod.number(),
-  "tierRank": zod.number(),
+  "tier": zod.number().nullable(),
+  "tierRank": zod.number().nullable(),
   "accountId": zod.string(),
   "platform": zod.string(),
   "handle": zod.string(),
   "url": zod.string(),
+  "accountCount": zod.number().optional(),
+  "canInvestigate": zod.boolean().optional(),
+  "investigationBlockedReason": zod.string().optional(),
+  "accounts": zod.array(zod.object({
+  "accountId": zod.string(),
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "url": zod.string()
+})).optional(),
   "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 })),
   "hasMore": zod.boolean(),
@@ -367,12 +376,21 @@ export const ListBulkBrandRunsResponse = zod.object({
   "candidate": zod.object({
   "profileId": zod.number(),
   "profileName": zod.string(),
-  "tier": zod.number(),
-  "tierRank": zod.number(),
+  "tier": zod.number().nullable(),
+  "tierRank": zod.number().nullable(),
   "accountId": zod.string(),
   "platform": zod.string(),
   "handle": zod.string(),
   "url": zod.string(),
+  "accountCount": zod.number().optional(),
+  "canInvestigate": zod.boolean().optional(),
+  "investigationBlockedReason": zod.string().optional(),
+  "accounts": zod.array(zod.object({
+  "accountId": zod.string(),
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "url": zod.string()
+})).optional(),
   "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
   "status": zod.enum(['queued', 'running', 'completed', 'failed']),
@@ -539,12 +557,21 @@ export const StartBulkBrandRunResponse = zod.object({
   "candidate": zod.object({
   "profileId": zod.number(),
   "profileName": zod.string(),
-  "tier": zod.number(),
-  "tierRank": zod.number(),
+  "tier": zod.number().nullable(),
+  "tierRank": zod.number().nullable(),
   "accountId": zod.string(),
   "platform": zod.string(),
   "handle": zod.string(),
   "url": zod.string(),
+  "accountCount": zod.number().optional(),
+  "canInvestigate": zod.boolean().optional(),
+  "investigationBlockedReason": zod.string().optional(),
+  "accounts": zod.array(zod.object({
+  "accountId": zod.string(),
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "url": zod.string()
+})).optional(),
   "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
   "status": zod.enum(['queued', 'running', 'completed', 'failed']),
@@ -692,12 +719,21 @@ export const GetBulkBrandRunResponse = zod.object({
   "candidate": zod.object({
   "profileId": zod.number(),
   "profileName": zod.string(),
-  "tier": zod.number(),
-  "tierRank": zod.number(),
+  "tier": zod.number().nullable(),
+  "tierRank": zod.number().nullable(),
   "accountId": zod.string(),
   "platform": zod.string(),
   "handle": zod.string(),
   "url": zod.string(),
+  "accountCount": zod.number().optional(),
+  "canInvestigate": zod.boolean().optional(),
+  "investigationBlockedReason": zod.string().optional(),
+  "accounts": zod.array(zod.object({
+  "accountId": zod.string(),
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "url": zod.string()
+})).optional(),
   "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
   "status": zod.enum(['queued', 'running', 'completed', 'failed']),
@@ -845,12 +881,21 @@ export const StopBulkBrandRunResponse = zod.object({
   "candidate": zod.object({
   "profileId": zod.number(),
   "profileName": zod.string(),
-  "tier": zod.number(),
-  "tierRank": zod.number(),
+  "tier": zod.number().nullable(),
+  "tierRank": zod.number().nullable(),
   "accountId": zod.string(),
   "platform": zod.string(),
   "handle": zod.string(),
   "url": zod.string(),
+  "accountCount": zod.number().optional(),
+  "canInvestigate": zod.boolean().optional(),
+  "investigationBlockedReason": zod.string().optional(),
+  "accounts": zod.array(zod.object({
+  "accountId": zod.string(),
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "url": zod.string()
+})).optional(),
   "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
   "status": zod.enum(['queued', 'running', 'completed', 'failed']),
@@ -998,12 +1043,21 @@ export const ResumeBulkBrandRunResponse = zod.object({
   "candidate": zod.object({
   "profileId": zod.number(),
   "profileName": zod.string(),
-  "tier": zod.number(),
-  "tierRank": zod.number(),
+  "tier": zod.number().nullable(),
+  "tierRank": zod.number().nullable(),
   "accountId": zod.string(),
   "platform": zod.string(),
   "handle": zod.string(),
   "url": zod.string(),
+  "accountCount": zod.number().optional(),
+  "canInvestigate": zod.boolean().optional(),
+  "investigationBlockedReason": zod.string().optional(),
+  "accounts": zod.array(zod.object({
+  "accountId": zod.string(),
+  "platform": zod.string(),
+  "handle": zod.string(),
+  "url": zod.string()
+})).optional(),
   "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
   "status": zod.enum(['queued', 'running', 'completed', 'failed']),

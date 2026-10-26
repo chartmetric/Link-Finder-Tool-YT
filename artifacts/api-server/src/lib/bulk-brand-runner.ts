@@ -65,13 +65,13 @@ export async function startBulkRun(requestId: string, input: Omit<BulkBrandRunIn
     const candidates = selection.scopes
       ? await selectBulkScopes(selection.scopes)
       : (await listEligibleBrands({
-        limit: MAX_BULK_BATCH, profileIds: selection.profileIds,
+        limit: MAX_BULK_BATCH, profileIds: selection.profileIds, eligibleOnly: true,
         profileType: selection.profileTypes?.[0] ?? "brand",
       })).profiles;
     if (!selection.scopes && candidates.length !== selection.profileIds!.length) {
       throw new BulkError("Some selected profiles are no longer eligible for this type. Refresh the selection; no queue was started.");
     }
-    if (!candidates.length) throw new BulkError("No eligible single-account profiles were found in the selected types. No paid queue was started.");
+    if (!candidates.length) throw new BulkError("No profiles with a usable existing link were found in the selected types. No paid queue was started.");
     const now = new Date().toISOString();
     const run: BulkBrandRun = {
       id: requestId, status: "running", createdAt: now, updatedAt: now,

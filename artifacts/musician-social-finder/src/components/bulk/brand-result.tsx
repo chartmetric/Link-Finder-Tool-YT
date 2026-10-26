@@ -23,7 +23,7 @@ export function BrandResult({ item, index }: { item: BulkBrandItem; index: numbe
           <ProfileUrlAliases profile={item.result?.referenceProfile ? { ...item.result.referenceProfile, url: c.url } : undefined} compact />
         </div>
         <span className={`blk-kind k-${kindOf(c)}`} data-testid={`badge-type-${c.profileId}`}>{KIND_META[kindOf(c)].label}</span>
-        <span className="inv-mono blk-tier">T{c.tier}</span>
+        <span className="inv-mono blk-tier">{c.tier == null ? 'Unranked' : `T${c.tier}`}</span>
         <span className={`blk-pill s-${item.status}`} data-testid={`status-item-${c.profileId}`}>{item.status}</span>
       </header>
 

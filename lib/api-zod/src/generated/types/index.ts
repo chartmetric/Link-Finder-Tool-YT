@@ -7,6 +7,7 @@
  */
 
 export * from './bulkBrandCandidate';
+export * from './bulkBrandCandidateAccountsItem';
 export * from './bulkBrandCandidates';
 export * from './bulkBrandItem';
 export * from './bulkBrandItemStatus';

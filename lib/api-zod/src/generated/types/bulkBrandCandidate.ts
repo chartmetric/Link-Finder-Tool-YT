@@ -5,17 +5,22 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { BulkBrandCandidateAccountsItem } from './bulkBrandCandidateAccountsItem';
 import type { BulkProfileType } from './bulkProfileType';
 
 export interface BulkBrandCandidate {
   profileId: number;
   profileName: string;
-  tier: number;
-  tierRank: number;
+  tier: number | null;
+  tierRank: number | null;
   accountId: string;
   platform: string;
   handle: string;
   url: string;
+  accountCount?: number;
+  canInvestigate?: boolean;
+  investigationBlockedReason?: string;
+  accounts?: BulkBrandCandidateAccountsItem[];
   /** Legacy saved candidates without this field are brands */
   profileType?: BulkProfileType;
 }

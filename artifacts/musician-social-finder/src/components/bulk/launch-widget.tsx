@@ -70,7 +70,7 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
           )}
 
           <fieldset className="blk-widget-types">
-            <legend className="inv-mono">Auto-pick eligible profiles per type</legend>
+            <legend className="inv-mono">Auto-pick linked profiles per type</legend>
             {PROFILE_KINDS.map(k => (
               <div key={k} className={`blk-widget-type${st.on[k] ? ' on' : ''}`}>
                 <label><input type="checkbox" checked={st.on[k]} onChange={e => setSt(s => ({ ...s, on: { ...s.on, [k]: e.target.checked } }))} data-testid={`checkbox-widget-${k}`} /> {KIND_META[k].plural}</label>

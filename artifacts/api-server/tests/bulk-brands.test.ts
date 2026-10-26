@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { GetBulkBrandRunResponse, SearchProfilesResponse, type ProfileMatch } from "@workspace/api-zod";
-import { eligibleBrandSql } from "../src/lib/bulk-brand-candidates.ts";
+import { eligibleBrandSql, profileAccountDetailsSql } from "../src/lib/bulk-brand-candidates.ts";
 import { derivePlatformOutcomes, explicitAbsenceStatement } from "../src/lib/bulk-platform-outcomes.ts";
 import { decodeBulkSnapshot, mergeBulkRunView } from "../src/lib/bulk-run-store.ts";
 
@@ -24,15 +24,20 @@ function candidate(extra: Partial<ProfileMatch> = {}): ProfileMatch {
     displayUrl: "tiktok.com/@testbrand", snippet: "", confidence: 90, signals: [], methods: ["serper"], ...extra };
 }
 
-test("eligible selection is brands across all tiers, latest versions, one distinct active account", () => {
-  const sql = eligibleBrandSql();
+test("catalog browsing includes zero/multiple accounts and optional tiers with latest profile classification", () => {
+  const sql = `${eligibleBrandSql()}\n${profileAccountDetailsSql()}`;
   assert.match(sql, /profile_type = \{profileType:String\}/);
   assert.doesNotMatch(sql, /tier BETWEEN|pt\.tier\s*=/);
   assert.match(sql, /argMax\(tuple\(tier, tier_rank\)/);
   assert.match(sql, /argMax\(tuple\(profile_id, account_id, disconnected_at\), modified_at\)/);
-  assert.match(sql, /HAVING uniqExact\(a.id\) = 1/);
+  assert.doesNotMatch(sql, /HAVING uniqExact\(a.id\) = 1/);
+  assert.match(sql, /argMax\(tuple\(name, deleted_at, profile_type, profile_types\), updated_at\)/);
+  assert.match(sql, /has\(tupleElement\(data, 4\), \{profileType:String\}\)/);
+  assert.match(sql, /LEFT JOIN tiers/);
+  assert.match(sql, /LEFT JOIN linked_accounts/);
+  assert.match(sql, /if\(t.profile = 0, NULL/);
   assert.match(sql, /tupleElement\(account, 4\) = 1/);
-  assert.match(eligibleBrandSql(true), /profile IN \{ids:Array\(UInt64\)\}/);
+  assert.match(eligibleBrandSql(true), /id IN \{ids:Array\(UInt64\)\}/);
   assert.doesNotMatch(sql, /INSERT|ALTER|DELETE|UPDATE|DROP|TRUNCATE/);
 });
 

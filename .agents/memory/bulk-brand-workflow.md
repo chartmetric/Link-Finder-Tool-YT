@@ -3,11 +3,17 @@ name: Bulk profile workflow
 description: User-approved profile types, catalog access boundaries, and paid-run operating constraints.
 ---
 
-The bulk finder supports Brands, Creators, and Artists across all tiers, with “one distinct active linked account.”
+The bulk finder must expose all Brands, Creators, and Artists, including profiles without tiers and profiles with zero, one, or multiple active accounts. Discovery requires at least one usable existing profile link.
 
-**Why:** The user initially selected brands and the account-based interpretation of one link, then explicitly expanded the tool to creators and artists with a navigation bar and a floating widget for simultaneous cross-type runs.
+**Why:** The user superseded the original one-account cohort with access to all profiles in the new verticals database. They explicitly chose “show them, but require an existing link to run discovery” for profiles with no existing links.
 
-**How to apply:** Keep the account-based eligibility rule and unrestricted tier scope unless the user changes them. Artists correspond to the catalog's musician cohort. Keep each type's manual selection separate and the shared floating launcher available across navigation. The bulk selection is a specific exception to the earlier prohibition on database discovery: catalog records supply starting identities; newly discovered links still come from external providers.
+**How to apply:** Never use tier assignment or an exact account-count condition as the catalog inclusion rule. Use current profile classifications (including multi-type membership); Artists correspond to musician. Keep unlinked profiles visible but non-runnable; do not introduce name-only paid discovery. Preserve separate manual selections and the shared floating launcher. Catalog records supply starting identities; newly discovered links still come from external providers.
+
+Bound account/tier enrichment to the profile IDs returned by the catalog page rather than repeatedly embedding the entire profile query in ClickHouse CTEs.
+
+**Why:** ClickHouse expands reused CTEs, so a large current-profile aggregation repeated across account joins makes a small page unnecessarily slow.
+
+**How to apply:** Read the profile page once, then enrich those bounded IDs using parameterized reads. This keeps full-catalog access without full-catalog account enrichment.
 
 Keep simultaneous cross-type processing bounded within one shared paid run: one active profile per type and a combined batch cap, not an unrestricted number of workers or independent batches.
 

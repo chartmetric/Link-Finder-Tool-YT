@@ -37,12 +37,12 @@ export default function BulkBrands() {
   const update = (fn: (prev: Map<number, BulkBrandCandidate>) => Map<number, BulkBrandCandidate>) => setSel(s => ({ ...s, [kind]: fn(s[kind]) }));
   const toggle = (c: BulkBrandCandidate) => update(prev => {
     const next = new Map(prev);
-    if (next.has(c.profileId)) next.delete(c.profileId); else if (next.size < maxBatch) next.set(c.profileId, { ...c, profileType: kind });
+    if (next.has(c.profileId)) next.delete(c.profileId); else if (c.canInvestigate !== false && c.url && next.size < maxBatch) next.set(c.profileId, { ...c, profileType: kind });
     return next;
   });
   const setMany = (cs: BulkBrandCandidate[], on: boolean) => update(prev => {
     const next = new Map(prev);
-    for (const c of cs) { if (!on) next.delete(c.profileId); else if (next.size < maxBatch) next.set(c.profileId, { ...c, profileType: kind }); }
+    for (const c of cs) { if (!on) next.delete(c.profileId); else if (c.canInvestigate !== false && c.url && next.size < maxBatch) next.set(c.profileId, { ...c, profileType: kind }); }
     return next;
   });
 
@@ -90,7 +90,7 @@ export default function BulkBrands() {
 
         <main className="inv-workspace blk-main">
           <div className="inv-section-head">
-            <div><div className="inv-kicker">Bulk link finder / {m.plural.toLowerCase()}</div><h2>Fill gaps for single-account {m.plural.toLowerCase()}</h2></div>
+            <div><div className="inv-kicker">Bulk link finder / {m.plural.toLowerCase()}</div><h2>Find links across all {m.plural.toLowerCase()}</h2></div>
             <p className="inv-section-note">Results are suggestions for human review. No approvals or catalog writes happen here.</p>
           </div>
 

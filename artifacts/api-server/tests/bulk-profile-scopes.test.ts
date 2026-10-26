@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { setImmediate } from "node:timers/promises";
 import { catalogProfileType, runScopedQueue, validateBulkSelection } from "../src/lib/bulk-profile-scopes.ts";
-import { selectBulkScopes } from "../src/lib/bulk-brand-candidates.ts";
+import { catalogCandidate, selectBulkScopes } from "../src/lib/bulk-brand-candidates.ts";
+import { canInvestigate } from "../../musician-social-finder/src/lib/bulk.ts";
 import { GetBulkBrandRunResponse, StartBulkBrandRunBody, type BulkProfileType } from "@workspace/api-zod";
 
 test("Artists map to musician catalog records, with other cohorts unchanged", () => {
@@ -155,4 +156,51 @@ test("legacy snapshots remain valid; requested multi-type scopes round-trip in s
   };
   assert.equal(GetBulkBrandRunResponse.parse(snapshot).scopes, undefined);
   assert.deepEqual(GetBulkBrandRunResponse.parse({ ...snapshot, scopes: [{ profileType: "artist", limit: 1 }] }).scopes, [{ profileType: "artist", limit: 1 }]);
+});
+
+test("unlinked, unranked profiles remain visible but cannot be selected for paid discovery", () => {
+  const profile = catalogCandidate({ profileId: 1, profileName: "No links", tier: null, tierRank: null, accounts: [] }, "brand");
+  assert.equal(profile.tier, null);
+  assert.equal(profile.accountCount, 0);
+  assert.equal(profile.canInvestigate, false);
+  assert.equal(canInvestigate(profile), false);
+  assert.equal(profile.url, "");
+  assert.match(profile.investigationBlockedReason!, /existing profile link/);
+});
+
+test("multiple active accounts are preserved and a usable existing link is selected deterministically", () => {
+  const profile = catalogCandidate({
+    profileId: 2, profileName: "Many links", tier: 3, tierRank: 10,
+    accounts: [
+      ["1", "web", "", "https://example.com/profile"],
+      ["2", "instagram", "manylinks", "https://www.instagram.com/manylinks/"],
+      ["3", "youtube", "manylinks", "https://www.youtube.com/@manylinks"],
+    ],
+  }, "creator");
+  assert.equal(profile.accountCount, 3);
+  assert.equal(profile.accounts?.length, 3);
+  assert.equal(profile.accountId, "2");
+  assert.equal(profile.canInvestigate, true);
+  assert.equal(canInvestigate(profile), true);
+});
+
+test("an active account without a safe usable profile URL does not authorize paid discovery", () => {
+  for (const url of ["", "javascript:alert(1)", "http://127.0.0.1/private", "https://www.instagram.com/p/post/"]) {
+    const profile = catalogCandidate({
+      profileId: 3, profileName: "Unusable link", tier: null, tierRank: null,
+      accounts: [["1", "instagram", "test", url]],
+    }, "artist");
+    assert.equal(profile.accountCount, 1);
+    assert.equal(profile.canInvestigate, false, url);
+    assert.equal(canInvestigate(profile), false, url);
+  }
+});
+
+test("legacy linked selections remain selectable without the new eligibility field", () => {
+  const profile = catalogCandidate({
+    profileId: 4, profileName: "Legacy", tier: 1, tierRank: 1,
+    accounts: [["1", "instagram", "legacy", "https://www.instagram.com/legacy/"]],
+  }, "brand");
+  delete profile.canInvestigate;
+  assert.equal(canInvestigate(profile), true);
 });
