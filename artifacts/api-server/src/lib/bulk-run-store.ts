@@ -67,7 +67,42 @@ export async function readBulkRuns(id?: string) {
     SELECT argMaxIf(data_json, version, event_type = 'snapshot') AS state,
       maxIf(version, event_type = 'stop') AS stopVersion, max(version) AS latest
     FROM ${table} ${id ? "WHERE run_id = {id:UUID}" : ""}
-    GROUP BY run_id HAVING notEmpty(state) ORDER BY latest DESC LIMIT 30 FORMAT JSON
+    GROUP BY run_id HAVING notEmpty(state)
+      ${id ? "" : "AND JSONExtractString(state, 'archiveOf') = ''"}
+    ORDER BY latest DESC LIMIT 30 FORMAT JSON
   `, id ? { id } : {}, 10_000);
   return rows.data.map(decodeBulkSnapshot);
+}
+
+/** Conservatively skip prior paid attempts, including failures/interruptions.
+ * Never automatically charge again merely because an earlier outcome was incomplete. */
+export async function readAttemptedBulkProfileIds(ids: number[]) {
+  if (!ids.length) return new Set<number>();
+  await ensureBulkStore();
+  const rows = await clickHouseJson<{ profileId: number }>(`
+    SELECT DISTINCT JSONExtractUInt(item, 'candidate', 'profileId') AS profileId
+    FROM (
+      SELECT argMax(data_json, version) AS state FROM ${table}
+      WHERE event_type = 'snapshot' GROUP BY run_id
+    ) ARRAY JOIN JSONExtractArrayRaw(state, 'items') AS item
+    WHERE profileId IN {ids:Array(UInt64)}
+      AND (JSONExtractString(item, 'status') IN ('completed', 'failed', 'running')
+        OR notEmpty(JSONExtractString(item, 'startedAt')))
+    FORMAT JSON
+  `, { ids: JSON.stringify(ids) }, 10_000);
+  return new Set(rows.data.map(row => Number(row.profileId)));
+}
+
+export async function readBulkBatchArchives(rootId: string, afterBatch: number) {
+  await ensureBulkStore();
+  const rows = await clickHouseJson<{ state: string; stopVersion: string }>(`
+    SELECT argMaxIf(data_json, version, event_type = 'snapshot') AS state,
+      maxIf(version, event_type = 'stop') AS stopVersion
+    FROM ${table} GROUP BY run_id
+    HAVING notEmpty(state) AND JSONExtractString(state, 'archiveOf') = {rootId:String}
+      AND JSONExtractUInt(state, 'batchNumber') > {afterBatch:UInt64}
+    ORDER BY JSONExtractUInt(state, 'batchNumber') ASC LIMIT 21 FORMAT JSON
+  `, { rootId, afterBatch: String(afterBatch) }, 10_000);
+  const runs = rows.data.slice(0, 20).map(decodeBulkSnapshot);
+  return { runs, hasMore: rows.data.length > 20, nextBatch: runs.at(-1)?.batchNumber ?? afterBatch };
 }

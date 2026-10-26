@@ -7,7 +7,8 @@ import { CandidatePicker } from '@/components/bulk/candidate-picker';
 import { RunList } from '@/components/bulk/run-list';
 import { RunDetail } from '@/components/bulk/run-detail';
 import { LaunchWidget } from '@/components/bulk/launch-widget';
-import { KIND_META, LAST_RUN_KEY, PROFILE_KINDS, apiError, kindOf, readStorage, selectionKey, writeStorage, type ProfileKind } from '@/lib/bulk';
+import { AutoLauncher } from '@/components/bulk/auto-launcher';
+import { isActiveRun, KIND_META, LAST_RUN_KEY, PROFILE_KINDS, apiError, kindOf, readStorage, selectionKey, writeStorage, type ProfileKind } from '@/lib/bulk';
 import '@/styles/bulk.css';
 
 type Selections = Record<ProfileKind, Map<number, BulkBrandCandidate>>;
@@ -28,7 +29,9 @@ export default function BulkBrands() {
   const start = useStartBulkBrandRun();
   const busy = useIsMutating() > 0;
   const currentRun = useGetBulkBrandRun(runId ?? '', { query: { queryKey: getGetBulkBrandRunQueryKey(runId ?? ''), enabled: !!runId } });
-  const startBlocked = busy || (currentRun.data && ['running', 'stopping'].includes(currentRun.data.status)) || (!!runId && currentRun.isLoading);
+  const rootId = runId ? currentRun.data?.archiveOf : undefined;
+  const rootRun = useGetBulkBrandRun(rootId ?? '', { query: { queryKey: getGetBulkBrandRunQueryKey(rootId ?? ''), enabled: !!rootId } });
+  const startBlocked = busy || isActiveRun(currentRun.data) || (!!runId && currentRun.isLoading) || isActiveRun(rootRun.data) || (!!rootId && rootRun.isLoading);
 
   useEffect(() => { for (const k of PROFILE_KINDS) writeStorage(selectionKey(k), [...sel[k].values()]); }, [sel]);
   useEffect(() => { writeStorage(LAST_RUN_KEY, runId); }, [runId]);
@@ -94,6 +97,8 @@ export default function BulkBrands() {
             <p className="inv-section-note">Results are suggestions for human review. No approvals or catalog writes happen here.</p>
           </div>
 
+          <AutoLauncher kind={kind} blocked={!!startBlocked} onRun={setRunId} />
+
           <CandidatePicker key={kind} kind={kind} selected={selected} onToggle={toggle} onSetMany={setMany} maxBatch={maxBatch} onMaxBatch={setMaxBatch} />
 
           <section className="inv-panel blk-launch" aria-labelledby="blk-launch-title" data-testid="section-bulk-launch">
@@ -117,7 +122,7 @@ export default function BulkBrands() {
             </div>
           </section>
 
-          {runId && <RunDetail key={runId} runId={runId} onClose={() => setRunId(null)} />}
+          {runId && <RunDetail key={runId} runId={runId} onClose={() => setRunId(null)} onOpenRun={setRunId} />}
           <RunList activeId={runId ?? undefined} onOpen={setRunId} />
         </main>
       </div>

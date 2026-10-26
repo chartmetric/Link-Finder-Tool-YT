@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './bulkBatchArchives';
 export * from './bulkBrandCandidate';
 export * from './bulkBrandCandidateAccountsItem';
 export * from './bulkBrandCandidates';
@@ -14,6 +15,8 @@ export * from './bulkBrandItemStatus';
 export * from './bulkBrandRun';
 export * from './bulkBrandRunInput';
 export * from './bulkBrandRunStatus';
+export * from './bulkContinuousProgress';
+export * from './bulkContinuousProgressCursorsItem';
 export * from './bulkPlatformOutcome';
 export * from './bulkPlatformOutcomePlatform';
 export * from './bulkPlatformOutcomeStatus';

@@ -1,10 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { CircleAlert, Pause, Play, RefreshCw, X } from 'lucide-react';
+import { ArrowLeft, CircleAlert, Pause, Play, RefreshCw, X } from 'lucide-react';
 import { getGetBulkBrandRunQueryKey, getListBulkBrandRunsQueryKey, useGetBulkBrandRun, useResumeBulkBrandRun, useStopBulkBrandRun, type BulkBrandRun } from '@workspace/api-client-react';
 import { BrandResult } from './brand-result';
-import { KIND_META, apiError, canResume, isActiveRun, kindCounts, runCounts, runKinds } from '@/lib/bulk';
+import { BatchArchive } from './batch-archive';
+import { KIND_META, apiError, canResume, isActiveRun, kindCounts, overallCounts, overallKindCounts, resumeConfirm, runCounts, runKinds } from '@/lib/bulk';
 
-export function RunDetail({ runId, onClose }: { runId: string; onClose: () => void }) {
+export function RunDetail({ runId, onClose, onOpenRun }: { runId: string; onClose: () => void; onOpenRun?: (id: string) => void }) {
   const qc = useQueryClient();
   const q = useGetBulkBrandRun(runId, {
     query: {
@@ -24,7 +25,7 @@ export function RunDetail({ runId, onClose }: { runId: string; onClose: () => vo
   return (
     <section className="inv-panel blk-run" aria-labelledby="blk-run-title" aria-live="polite" data-testid="section-bulk-run">
       <div className="inv-panel-head">
-        <div><div className="inv-kicker">03 / Run monitor</div><h2 id="blk-run-title">Run {runId.slice(0, 8)}</h2><p>The queue runs on the server and keeps going if you close this page.</p></div>
+        <div><div className="inv-kicker">03 / Run monitor</div><h2 id="blk-run-title">{run?.archiveOf ? `Chunk ${run.batchNumber ?? '?'} of ${run.archiveOf.slice(0, 8)}` : `Run ${runId.slice(0, 8)}`}{run?.continuous && <> <span className="blk-tag">continuous</span></>}</h2>{run?.archiveOf && onOpenRun && <button type="button" className="blk-backlink" onClick={() => onOpenRun(run.archiveOf!)} data-testid="button-open-root-run"><ArrowLeft size={12} /> Back to continuous run</button>}<p>The queue runs on the server and keeps going if you close this page.</p></div>
         <button type="button" className="inv-retry" style={{ marginTop: 0 }} onClick={onClose} data-testid="button-close-run"><X size={14} /> Close</button>
       </div>
 
@@ -36,18 +37,19 @@ export function RunDetail({ runId, onClose }: { runId: string; onClose: () => vo
         </div>
       )}
 
-      {run && <RunBody run={run} stopping={stop.isPending} resuming={resume.isPending}
+      {run && <RunBody run={run} onOpenRun={onOpenRun} stopping={stop.isPending} resuming={resume.isPending}
         onStop={() => stop.mutate({ runId: run.id })}
-        onResume={() => { if (window.confirm('Resume retries queued, failed and interrupted profiles (not completed ones) and may incur more paid provider requests. Continue?')) resume.mutate({ runId: run.id }); }}
+        onResume={() => { if (window.confirm(resumeConfirm(run))) resume.mutate({ runId: run.id }); }}
         error={stop.error ? apiError(stop.error, 'Stop failed.') : resume.error ? apiError(resume.error, 'Resume failed.') : ''} />}
     </section>
   );
 }
 
-function RunBody({ run, onStop, onResume, stopping, resuming, error }: { run: BulkBrandRun; onStop: () => void; onResume: () => void; stopping: boolean; resuming: boolean; error: string }) {
+function RunBody({ run, onStop, onResume, stopping, resuming, error, onOpenRun }: { run: BulkBrandRun; onOpenRun?: (id: string) => void; onStop: () => void; onResume: () => void; stopping: boolean; resuming: boolean; error: string }) {
+  const active = isActiveRun(run);
+  if (run.continuous) return <ContinuousBody run={run} onStop={onStop} onResume={onResume} stopping={stopping} resuming={resuming} error={error} onOpenRun={onOpenRun} />;
   const c = runCounts(run);
   const total = run.items.length || 1;
-  const active = isActiveRun(run);
   return (
     <>
       <div className="blk-run-bar">
@@ -76,6 +78,48 @@ function RunBody({ run, onStop, onResume, stopping, resuming, error }: { run: Bu
       {run.error && <div className="inv-save-warn" role="alert"><CircleAlert size={15} /><span><b>Run error:</b> {run.error}</span></div>}
       {error && <div className="inv-save-warn" role="alert"><CircleAlert size={15} /><span>{error}</span></div>}
       <div className="blk-items">{run.items.map((item, i) => <BrandResult key={item.candidate.profileId} item={item} index={i} />)}</div>
+    </>
+  );
+}
+
+function ContinuousBody({ run, onStop, onResume, stopping, resuming, error, onOpenRun }: { run: BulkBrandRun; onOpenRun?: (id: string) => void; onStop: () => void; onResume: () => void; stopping: boolean; resuming: boolean; error: string }) {
+  const cont = run.continuous!;
+  const o = overallCounts(run);
+  const cur = runCounts(run);
+  const active = isActiveRun(run);
+  const cap = cont.profileLimit;
+  const processed = o.completed + o.failed;
+  const capReached = !!cap && processed >= cap;
+  const allDone = capReached || (cont.cursors.length > 0 && cont.cursors.every(x => x.exhausted));
+  return (
+    <>
+      <div className="blk-run-bar">
+        <div className="blk-run-stat lead"><span>Status</span><strong className={`blk-pill r-${run.status}`} data-testid="status-run">{run.status}</strong>{run.stopRequested && active && <em>Stop requested: finishing in-flight profiles, no new work</em>}</div>
+        <div className="blk-run-stat"><span>Processed</span><strong data-testid="text-run-completed">{cap ? `${processed}/${cap}` : processed}</strong></div>
+        <div className="blk-run-stat"><span>Failed</span><strong>{o.failed}</strong></div>
+        <div className="blk-run-stat"><span>Saved chunks</span><strong data-testid="text-run-batches">{cont.batches}</strong></div>
+        <div className="blk-run-stat"><span>Est. cost</span><strong data-testid="text-run-cost">${run.estimatedCostUsd.toFixed(4)}</strong></div>
+      </div>
+      <div className="blk-progress" aria-hidden="true">{active && !allDone ? null : <i className="done" style={{ transform: `scaleX(${allDone ? 1 : 0})` }} />}</div>
+      <div className="blk-cont-strip" data-testid="text-continuous-summary">
+        {capReached ? <span data-testid="text-cap-reached"><b>Profile cap reached</b> ({processed} of {cap} profiles)</span> : cap ? <span><b>{processed} of {cap}</b> capped profiles processed</span> : <span><b>Total unknown</b> while the catalog still has remaining profiles</span>}
+        <span>Current chunk: <b>{cur.completed + cur.failed}/{run.items.length}</b>{run.items.length === 0 ? (active ? ' (scanning)' : '') : ''}</span>
+        <span>All earlier results are saved</span>
+      </div>
+      <ul className="blk-kind-rows" data-testid="list-run-kinds">{runKinds(run).map(k => { const kc = overallKindCounts(run, k); return (
+        <li key={k} data-testid={`row-run-kind-${k}`}><span className={`blk-kind k-${k}`}>{KIND_META[k].plural}</span><span className="inv-mono">{kc.completed} done{kc.failed ? ` · ${kc.failed} failed` : ''}{kc.running ? ` · ${kc.running} running` : ''} · {kc.exhausted ? 'none remaining' : capReached ? 'stopped at cap' : 'more remaining'}</span></li>); })}</ul>
+      <div className="blk-run-actions">
+        <span className="inv-mono">Updated {new Date(run.updatedAt).toLocaleTimeString()} · {cap ? `Total cap ${cap} profiles` : 'No total cap'} · Est. cost is cumulative and excludes provider credits and failed calls</span>
+        <div>
+          {active && <button type="button" className="inv-retry" style={{ marginTop: 0 }} disabled={stopping || run.stopRequested} onClick={onStop} data-testid="button-stop-run"><Pause size={14} /> {run.stopRequested ? 'Stopping' : 'Stop continuous run'}</button>}
+          {canResume(run) && <button type="button" className="inv-submit blk-small" disabled={resuming} onClick={onResume} data-testid="button-resume-run">{resuming ? <RefreshCw size={14} className="inv-spin" /> : <Play size={14} />} Resume continuous run</button>}
+        </div>
+      </div>
+      {run.status === 'interrupted' && <div className="inv-save-warn" role="status"><CircleAlert size={15} /><span>Paused by a server restart. Nothing runs until someone resumes it.</span></div>}
+      {run.error && <div className="inv-save-warn" role="alert"><CircleAlert size={15} /><span><b>Run error:</b> {run.error}</span></div>}
+      {error && <div className="inv-save-warn" role="alert"><CircleAlert size={15} /><span>{error}</span></div>}
+      {onOpenRun && <BatchArchive rootId={run.id} total={cont.batches} onOpenRun={onOpenRun} />}
+      <div className="blk-items" style={{ marginTop: 10 }}>{run.items.map((item, i) => <BrandResult key={item.candidate.profileId} item={item} index={i} />)}</div>
     </>
   );
 }

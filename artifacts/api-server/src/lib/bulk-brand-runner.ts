@@ -1,7 +1,8 @@
 import {
   SearchProfilesResponse, type BulkBrandRun, type BulkBrandItem, type BulkBrandRunInput,
 } from "@workspace/api-zod";
-import { listEligibleBrands, MAX_BULK_BATCH, selectBulkScopes } from "./bulk-brand-candidates";
+import { listEligibleBrands, MAX_BULK_BATCH } from "./bulk-brand-candidates";
+import { commitContinuousArchive, continuousArchive, continuousLimitReached, initialContinuousProgress, nextContinuousChunk } from "./bulk-continuous";
 import { runScopedQueue, validateBulkSelection } from "./bulk-profile-scopes";
 import { derivePlatformOutcomes } from "./bulk-platform-outcomes";
 import { bulkVersion, bulkWorkerId, mergeBulkRunView, readBulkRuns, requestBulkStop, saveBulkRun } from "./bulk-run-store";
@@ -52,18 +53,19 @@ function assertProviders() {
     throw new BulkError("Bulk lookup requires Serper, OpenRouter and ScrapeCreators. No paid queue was started.", 503);
   }
 }
-export async function startBulkRun(requestId: string, input: Omit<BulkBrandRunInput, "requestId"> | number[]) {
+export async function startBulkRun(requestId: string, input: (Omit<BulkBrandRunInput, "requestId" | "continuous"> & { continuous?: boolean }) | number[]) {
   return exclusive(async () => {
     const existing = await getBulkRun(requestId);
     if (existing) return existing; // Retrying the same request never starts paid work twice.
-    const selection = Array.isArray(input) ? { profileIds: input } : input;
+    const selection = Array.isArray(input) ? { profileIds: input, continuous: false } : input;
     const selectionError = validateBulkSelection(selection);
     if (selectionError) throw new BulkError(selectionError, 400);
     if (storageFailure) throw new BulkError(storageFailure, 503);
     assertProviders();
     await assertIdle();
-    const candidates = selection.scopes
-      ? await selectBulkScopes(selection.scopes)
+    const automatic = selection.scopes ? await initialContinuousProgress(selection.scopes, selection.profileLimit) : undefined;
+    const candidates = selection.continuous ? [] : selection.scopes
+      ? (await nextContinuousChunk(automatic!, selection.scopes)).candidates
       : (await listEligibleBrands({
         limit: MAX_BULK_BATCH, profileIds: selection.profileIds, eligibleOnly: true,
         profileType: selection.profileTypes?.[0] ?? "brand",
@@ -71,13 +73,14 @@ export async function startBulkRun(requestId: string, input: Omit<BulkBrandRunIn
     if (!selection.scopes && candidates.length !== selection.profileIds!.length) {
       throw new BulkError("Some selected profiles are no longer eligible for this type. Refresh the selection; no queue was started.");
     }
-    if (!candidates.length) throw new BulkError("No profiles with a usable existing link were found in the selected types. No paid queue was started.");
+    if (!selection.continuous && !candidates.length) throw new BulkError("No unattempted profiles with a usable existing link were found in this scan. Continuous mode can scan further; no paid queue was started.");
     const now = new Date().toISOString();
     const run: BulkBrandRun = {
       id: requestId, status: "running", createdAt: now, updatedAt: now,
       heartbeatAt: now, workerId: bulkWorkerId, resumeVersion: bulkVersion(),
       stopRequested: false, estimatedCostUsd: 0,
       scopes: selection.scopes ?? [{ profileType: selection.profileTypes?.[0] ?? "brand", limit: candidates.length }],
+      ...(selection.continuous ? { continuous: automatic } : {}),
       items: candidates.map(candidate => ({ candidate, status: "queued", platforms: [] })),
     };
     await saveBulkRun(run); // Persist the queue before launching paid requests.
@@ -101,7 +104,7 @@ export async function resumeBulkRun(id: string) {
     await assertIdle();
     assertProviders();
     const retry = run.items.filter(item => item.status !== "completed");
-    if (!retry.length) throw new BulkError("All profiles in this run are already completed.");
+    if (!retry.length && (!run.continuous || run.status === "completed")) throw new BulkError("All profiles in this run are already completed.");
     for (const item of retry) {
       item.status = "queued";
       delete item.error;
@@ -174,7 +177,8 @@ async function execute(run: BulkBrandRun) {
   }, 15_000);
   timer.unref();
   try {
-    await runScopedQueue(run.items, async () => {
+    for (;;) {
+      await runScopedQueue(run.items, async () => {
       await refreshControl();
       return run.stopRequested || !!persistenceError;
     }, async item => {
@@ -192,7 +196,8 @@ async function execute(run: BulkBrandRun) {
           reason: `The investigation failed: ${item.error} Availability was not established.`,
         }));
       }
-      run.estimatedCostUsd = run.items.reduce((total, row) => total + (row.result?.estimatedCostUsd ?? 0), 0);
+      run.estimatedCostUsd = (run.continuous?.completedCostUsd ?? 0)
+        + run.items.reduce((total, row) => total + (row.result?.estimatedCostUsd ?? 0), 0);
       run.heartbeatAt = new Date().toISOString();
       await persist(); // Persist before this type's next paid profile.
       if (item.result && !item.result.historyId) {
@@ -206,15 +211,35 @@ async function execute(run: BulkBrandRun) {
         await persist();
       }
       if (persistenceError) throw persistenceError;
-    });
+      });
+      if (persistenceError) throw persistenceError;
+      await refreshControl();
+      if (!run.continuous || run.stopRequested || run.items.some(item => item.status === "queued")) break;
+      if (run.items.length) {
+        const archive = continuousArchive(run);
+        // Do not overwrite an existing archive, including an explicit retry that
+        // finished after a crash but before this coordinator was resumed.
+        if (!(await readBulkRuns(archive.id))[0]) await saveBulkRun(archive);
+        commitContinuousArchive(run);
+        await persist();
+      }
+      if (run.continuous.cursors.every(cursor => cursor.exhausted) || continuousLimitReached(run.continuous)) break;
+      const next = await nextContinuousChunk(run.continuous, run.scopes!);
+      run.continuous.cursors = next.cursors;
+      run.items = next.candidates.map(candidate => ({ candidate, status: "queued", platforms: [] }));
+      run.heartbeatAt = new Date().toISOString();
+      await persist(); // Freeze cursor + chunk before any new paid work.
+    }
     if (heartbeat) await heartbeat;
     if (persistenceError) throw persistenceError;
-    run.status = run.items.some(item => item.status === "queued") ? "stopped" : "completed";
+    run.status = run.items.some(item => item.status === "queued")
+      || (run.continuous && (run.stopRequested || (!continuousLimitReached(run.continuous) && !run.continuous.cursors.every(cursor => cursor.exhausted))))
+      ? "stopped" : "completed";
     await persist();
   } catch (error) {
     run.status = "stopped";
     run.error = error instanceof Error ? error.message : "Bulk queue stopped unexpectedly.";
-    storageFailure = `The previous queue stopped because progress could not be safely persisted: ${run.error}. Resume it once storage is restored.`;
+    storageFailure = `The previous queue stopped before it could safely continue: ${run.error}. Resolve the error and explicitly resume it.`;
     logger.error({ err: error, runId: run.id }, "Bulk queue stopped safely");
     try { await saveBulkRun(run); } catch { /* Visible in-memory state retains the unsaved result and warning. */ }
   } finally {

@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  BulkBatchArchives,
   BulkBrandCandidates,
   BulkBrandRun,
   BulkBrandRunInput,
@@ -648,6 +649,82 @@ export function useGetBulkBrandRun<TData = Awaited<ReturnType<typeof getBulkBran
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetBulkBrandRunQueryOptions(runId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListBulkRunBatchesUrl = (runId: string,
+    afterBatch: number,) => {
+
+
+
+
+  return `/api/bulk/brands/runs/${runId}/batches/${afterBatch}`
+}
+
+export const listBulkRunBatches = async (runId: string,
+    afterBatch: number, options?: Parameters<typeof customFetch>[1]): Promise<BulkBatchArchives> => {
+
+  return customFetch<BulkBatchArchives>(getListBulkRunBatchesUrl(runId,afterBatch),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListBulkRunBatchesQueryKey = (runId: string,
+    afterBatch: number,) => {
+    return [
+    `/api/bulk/brands/runs/${runId}/batches/${afterBatch}`
+    ] as const;
+    }
+
+
+export const getListBulkRunBatchesQueryOptions = <TData = Awaited<ReturnType<typeof listBulkRunBatches>>, TError = ErrorType<unknown>>(runId: string,
+    afterBatch: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBulkRunBatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBulkRunBatchesQueryKey(runId,afterBatch);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBulkRunBatches>>> = ({ signal }) => listBulkRunBatches(runId,afterBatch, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: runId !== null && runId !== undefined && afterBatch !== null && afterBatch !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBulkRunBatches>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListBulkRunBatchesQueryResult = NonNullable<Awaited<ReturnType<typeof listBulkRunBatches>>>
+export type ListBulkRunBatchesQueryError = ErrorType<unknown>
+
+
+
+export function useListBulkRunBatches<TData = Awaited<ReturnType<typeof listBulkRunBatches>>, TError = ErrorType<unknown>>(
+ runId: string,
+    afterBatch: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBulkRunBatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListBulkRunBatchesQueryOptions(runId,afterBatch,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -11,6 +11,14 @@ import type { BulkProfileType } from './bulkProfileType';
 export interface BulkBrandRunInput {
   /** @pattern ^[0-9a-fA-F-]{36}$ */
   requestId: string;
+  /** Process remaining unattempted eligible profiles in saved chunks until exhausted or stopped; scopes required */
+  continuous?: boolean;
+  /**
+     * Optional total profile-attempt cap for continuous mode; omitted means all remaining eligible profiles
+     * @minimum 1
+     * @maximum 4294967295
+     */
+  profileLimit?: number;
   /**
      * @minItems 1
      * @maxItems 25

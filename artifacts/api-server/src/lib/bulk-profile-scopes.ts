@@ -7,7 +7,11 @@ export function catalogProfileType(type: BulkProfileType) {
   return type === "artist" ? "musician" : type;
 }
 
-export function validateBulkSelection(input: Pick<BulkBrandRunInput, "profileIds" | "profileTypes" | "scopes">): string | undefined {
+export function validateBulkSelection(input: Pick<BulkBrandRunInput, "profileIds" | "profileTypes" | "scopes"> & { continuous?: boolean; profileLimit?: number }): string | undefined {
+  if (input.continuous && !input.scopes) return "Continuous runs require automatic profile-type scopes, not manual selections.";
+  if (input.profileLimit !== undefined && (!input.continuous || !Number.isSafeInteger(input.profileLimit) || input.profileLimit < 1 || input.profileLimit > 4294967295)) {
+    return "A total profile cap requires continuous mode and a positive integer up to 4294967295.";
+  }
   if (input.scopes !== undefined) {
     if (input.profileIds !== undefined || input.profileTypes !== undefined) return "Choose either manual profiles or automatic scopes, not both.";
     if (!input.scopes.length || input.scopes.length > 3) return "Choose one to three profile types.";

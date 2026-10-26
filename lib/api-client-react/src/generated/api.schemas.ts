@@ -281,6 +281,14 @@ export interface BulkBrandCandidates {
 export interface BulkBrandRunInput {
   /** @pattern ^[0-9a-fA-F-]{36}$ */
   requestId: string;
+  /** Process remaining unattempted eligible profiles in saved chunks until exhausted or stopped; scopes required */
+  continuous?: boolean;
+  /**
+     * Optional total profile-attempt cap for continuous mode; omitted means all remaining eligible profiles
+     * @minimum 1
+     * @maximum 4294967295
+     */
+  profileLimit?: number;
   /**
      * @minItems 1
      * @maxItems 25
@@ -361,6 +369,24 @@ export const BulkBrandRunStatus = {
   interrupted: 'interrupted',
 } as const;
 
+export type BulkContinuousProgressCursorsItem = {
+  profileType: BulkProfileType;
+  afterId: number;
+  exhausted: boolean;
+  completed: number;
+  failed: number;
+};
+
+export interface BulkContinuousProgress {
+  upperProfileId: number;
+  profileLimit?: number;
+  batches: number;
+  completed: number;
+  failed: number;
+  completedCostUsd: number;
+  cursors: BulkContinuousProgressCursorsItem[];
+}
+
 export interface BulkBrandRun {
   id: string;
   status: BulkBrandRunStatus;
@@ -373,7 +399,16 @@ export interface BulkBrandRun {
   estimatedCostUsd: number;
   items: BulkBrandItem[];
   scopes?: BulkProfileScopeInput[];
+  continuous?: BulkContinuousProgress;
+  archiveOf?: string;
+  batchNumber?: number;
   error?: string;
+}
+
+export interface BulkBatchArchives {
+  runs: BulkBrandRun[];
+  hasMore: boolean;
+  nextBatch: number;
 }
 
 export interface ExistingProfileAccount {

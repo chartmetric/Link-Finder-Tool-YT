@@ -6,12 +6,13 @@ import { catalogProfileType, MAX_BULK_BATCH } from "./bulk-profile-scopes";
 export { MAX_BULK_BATCH } from "./bulk-profile-scopes";
 
 /** Catalog reads only. Current profile classification, including unranked profiles. */
-export function eligibleBrandSql(selectedIds = false) {
+export function eligibleBrandSql(selectedIds = false, bounded = false) {
   return `
     WITH current_profiles AS (
       SELECT id, argMax(tuple(name, deleted_at, profile_type, profile_types), updated_at) AS data
       FROM new_vertical.profile
       WHERE ${selectedIds ? "id IN {ids:Array(UInt64)}" : "id > {afterId:UInt64}"}
+      ${bounded ? "AND id <= {upperId:UInt64}" : ""}
       GROUP BY id HAVING tupleElement(data, 2) IS NULL
         AND (tupleElement(data, 3) = {profileType:String}
           OR has(tupleElement(data, 4), {profileType:String}))
@@ -83,15 +84,16 @@ export function catalogCandidate(row: CatalogRow, profileType: BulkProfileType):
   };
 }
 
-export async function listEligibleBrands(input: { limit: number; afterId?: number; profileIds?: number[]; profileType?: BulkProfileType; eligibleOnly?: boolean }) {
+export async function listEligibleBrands(input: { limit: number; afterId?: number; profileIds?: number[]; profileType?: BulkProfileType; eligibleOnly?: boolean; maxProfileId?: number }) {
   const profileType = input.profileType ?? "brand";
   const collected: BulkBrandCandidate[] = [];
   let afterId = input.afterId ?? 0;
   for (let scan = 0; scan < 4; scan++) {
     const rowLimit = input.eligibleOnly && !input.profileIds ? 250 : input.limit + 1;
-    const rows = await clickHouseJson<Pick<CatalogRow, "profileId" | "profileName">>(eligibleBrandSql(Boolean(input.profileIds)), {
+    const rows = await clickHouseJson<Pick<CatalogRow, "profileId" | "profileName">>(eligibleBrandSql(Boolean(input.profileIds), input.maxProfileId !== undefined), {
       ids: JSON.stringify(input.profileIds ?? []), profileType: catalogProfileType(profileType),
       afterId: String(afterId), rowLimit: String(rowLimit),
+      ...(input.maxProfileId !== undefined ? { upperId: String(input.maxProfileId) } : {}),
     }, 20_000);
     const details = rows.data.length ? await clickHouseJson<Omit<CatalogRow, "profileName">>(profileAccountDetailsSql(), {
       ids: JSON.stringify(rows.data.map(row => Number(row.profileId))), profileType: catalogProfileType(profileType),

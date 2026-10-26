@@ -7,6 +7,7 @@
  */
 import type { BulkBrandItem } from './bulkBrandItem';
 import type { BulkBrandRunStatus } from './bulkBrandRunStatus';
+import type { BulkContinuousProgress } from './bulkContinuousProgress';
 import type { BulkProfileScopeInput } from './bulkProfileScopeInput';
 
 export interface BulkBrandRun {
@@ -21,5 +22,8 @@ export interface BulkBrandRun {
   estimatedCostUsd: number;
   items: BulkBrandItem[];
   scopes?: BulkProfileScopeInput[];
+  continuous?: BulkContinuousProgress;
+  archiveOf?: string;
+  batchNumber?: number;
   error?: string;
 }

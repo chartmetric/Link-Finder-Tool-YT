@@ -1,10 +1,10 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   ListBulkBrandCandidatesQueryParams, ListBulkBrandCandidatesResponse,
-  ListBulkBrandRunsResponse, StartBulkBrandRunBody, GetBulkBrandRunResponse,
+  ListBulkBrandRunsResponse, StartBulkBrandRunBody, GetBulkBrandRunResponse, ListBulkRunBatchesResponse,
 } from "@workspace/api-zod";
 import { listEligibleBrands } from "../lib/bulk-brand-candidates";
-import { readBulkRuns } from "../lib/bulk-run-store";
+import { readBulkBatchArchives, readBulkRuns } from "../lib/bulk-run-store";
 import { BulkError, getBulkRun, resumeBulkRun, startBulkRun, stopBulkRun } from "../lib/bulk-brand-runner";
 import { validateBulkSelection } from "../lib/bulk-profile-scopes";
 
@@ -48,6 +48,17 @@ router.get("/bulk/brands/runs/:runId", async (req, res) => {
     const run = await getBulkRun(req.params.runId);
     if (!run) { res.status(404).json({ error: "Bulk run not found." }); return; }
     res.json(GetBulkBrandRunResponse.parse(run));
+  } catch (error) { respondError(req, res, error); }
+});
+router.get("/bulk/brands/runs/:runId/batches/:afterBatch", async (req, res) => {
+  const cursor = Number(req.params.afterBatch);
+  if (!uuid.test(req.params.runId) || !Number.isSafeInteger(cursor) || cursor < 0) {
+    res.status(400).json({ error: "Use a valid run ID and non-negative integer batch cursor." }); return;
+  }
+  try {
+    const run = await getBulkRun(req.params.runId);
+    if (!run) { res.status(404).json({ error: "Bulk run not found." }); return; }
+    res.json(ListBulkRunBatchesResponse.parse(await readBulkBatchArchives(req.params.runId, cursor)));
   } catch (error) { respondError(req, res, error); }
 });
 for (const action of ["stop", "resume"] as const) router.post(`/bulk/brands/runs/:runId/${action}`, async (req, res) => {

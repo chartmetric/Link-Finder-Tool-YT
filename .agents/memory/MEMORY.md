@@ -1,9 +1,10 @@
 - [Musician catalog ranking](musician-catalog-ranking.md) — use precomputed tier rank for interactive ordering; fetch Instagram followers only for the visible page.
 - [Partial enrichment results](partial-enrichment-results.md) — never let one slow discovery or verification provider discard completed provider results.
 - [OpenAPI URL formats](openapi-url-formats.md) — avoid URI format annotations until generated Zod output matches the workspace's installed Zod API.
+- [OpenAPI parameter exports](openapi-parameter-exports.md) — combined path/query parameters can collide across generated exports; saved-batch cursors use path parameters.
 - [Primary investigation experience](primary-investigation-experience.md) — investigations and saved history are primary; no catalog page; show tier 1–3 coverage with distinct link sources.
 - [Cross-platform follower counts](cross-platform-follower-counts.md) — treat large audience gaps as caution, not definitive proof of different identities.
 - [Visual style reference](visual-style-reference.md) — use the user's Chartmetric green/teal screenshot as the app's color reference.
 - [Profile URL aliases](profile-url-aliases.md) — retain both handle and ID URLs for the same account; URL equivalence is separate from artist identity.
 - [Confidence presentation](confidence-presentation.md) — headline net confidence must not confuse discovery strength or verdict-label confidence with positive identity evidence.
-- [Bulk profile workflow](bulk-brand-workflow.md) — all brands, creators and artists, including unranked/unlinked; discovery needs an existing link; bounded concurrent types.
+- [Bulk profile workflow](bulk-brand-workflow.md) — all profile types, linked-only discovery; continuous remaining-profile runs use bounded chunks, explicit paid start/resume and saved archives.

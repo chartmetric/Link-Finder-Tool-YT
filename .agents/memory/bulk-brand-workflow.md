@@ -15,11 +15,11 @@ Bound account/tier enrichment to the profile IDs returned by the catalog page ra
 
 **How to apply:** Read the profile page once, then enrich those bounded IDs using parameterized reads. This keeps full-catalog access without full-catalog account enrichment.
 
-Keep simultaneous cross-type processing bounded within one shared paid run: one active profile per type and a combined batch cap, not an unrestricted number of workers or independent batches.
+Allow explicitly authorized continuous searching through all remaining eligible profiles, while bounding each chunk and the simultaneous work: one active profile per type, not an unrestricted number of workers.
 
-**Why:** The user needs simultaneous profile types, but unbounded parallel batches multiply provider charges and complicate Stop and saved-progress guarantees.
+**Why:** The user requested automatic searching among all eligible profiles, like a Remaining profiles / Run continuously launcher. A total limit of 25 would no longer satisfy that request, but uncontrolled concurrency multiplies provider charges.
 
-**How to apply:** Serialize saved snapshots across lanes, wait for in-flight profiles when stopping or encountering persistence failure, and deduplicate shared catalog identities across scopes. Preserve completed results and require explicit paid Start/Resume; selecting types or navigating must never launch work.
+**How to apply:** Treat the existing batch cap as a chunk bound, not a total continuous-run cap. Freeze settings and the source-ID ceiling, checkpoint cursors, archive completed chunks before clearing them, and expose paginated archive access. Skip previously attempted profiles automatically, including failed/interrupted attempts; retries require explicit authorization. Preserve completed results and require explicit paid Start/Resume; selecting types, navigating, or restarting the server must never launch work. Optional profile caps count distinct profiles, not physical provider requests; explicit retries may cost more.
 
 Preserve the distinction between finding no account and establishing that an official account is unavailable.
 
