@@ -12,6 +12,7 @@ import {
   GetMusicianCoverageResponse,
 } from "@workspace/api-zod";
 import { findProfiles, parseKnownProfileUrl, resolveKnownProfileIdentity } from "../lib/musician-search";
+import { StartingProfileLookupError } from "../lib/starting-profile-lookup";
 import {
   approveProfileSuggestions,
   listExistingProfiles,
@@ -180,6 +181,10 @@ router.post("/profiles/search", async (req, res): Promise<void> => {
     res.json(SearchProfilesResponse.parse(result));
   } catch (error) {
     req.log.error({ err: error }, "Profile search failed");
+    if (error instanceof StartingProfileLookupError) {
+      res.status(error.timedOut ? 504 : 502).json({ error: error.message });
+      return;
+    }
     const timedOut =
       error instanceof Error && error.message === "PROFILE_SEARCH_TIMEOUT";
     res.status(timedOut ? 504 : 502).json({

@@ -23,7 +23,7 @@ function referenceKey(url: URL) {
   return `${host}${url.pathname.replace(/\/$/, "")}${query.size ? `?${query}` : ""}`;
 }
 
-export async function resolvePublicReference(url: URL, serperApiKey?: string) {
+export async function resolvePublicReference(url: URL, serperApiKey?: string, timeoutMs = 8_000) {
   if (!serperApiKey) throw new Error("Public reference-page lookup is unavailable; Serper is not configured.");
   // Use indexed page metadata so ESPN's bot protection cannot block a direct
   // page fetch, and arbitrary input URLs cannot reach private network services.
@@ -33,7 +33,7 @@ export async function resolvePublicReference(url: URL, serperApiKey?: string) {
     method: "POST",
     headers: { "X-API-KEY": serperApiKey, "Content-Type": "application/json" },
     body: JSON.stringify({ q: lookupUrl.toString(), num: 10 }),
-    signal: AbortSignal.timeout(8_000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!response.ok) throw new Error(`Reference-page lookup failed (${response.status}). Please try again.`);
   const payload = await response.json() as { organic?: Array<{ title?: string; link?: string; snippet?: string }> };

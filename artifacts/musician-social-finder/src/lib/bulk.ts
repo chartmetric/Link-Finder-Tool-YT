@@ -24,7 +24,7 @@ export const outcomeLabel: Record<BulkPlatformOutcomeStatus, string> = {
   found: 'Found',
   needs_review: 'Needs review',
   not_found: 'No supported account found',
-  incomplete: 'Incomplete / provider failure',
+  incomplete: 'Incomplete',
   explicit_unavailable: 'Explicitly unavailable',
 };
 

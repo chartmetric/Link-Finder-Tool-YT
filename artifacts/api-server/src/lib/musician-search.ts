@@ -1,5 +1,6 @@
 import { groupYouTubeAliases, youtubeAliases } from "./youtube-aliases";
 import { parsePublicReference, resolvePublicReference } from "./public-reference";
+import { lookupStartingProfile } from "./starting-profile-lookup";
 
 type SerperOrganicResult = {
   title?: string;
@@ -452,12 +453,14 @@ export function parseKnownProfileUrl(value: string): {
 export async function resolveKnownProfileIdentity(value: string, apiKey: string, serperApiKey?: string) {
   const parsed = parseKnownProfileUrl(value);
   if (!parsed) return undefined;
-  if (parsed.platform === "web") return resolvePublicReference(new URL(parsed.url), serperApiKey);
-  const metadata = await fetchIdentityMetadata({
+  if (parsed.platform === "web") return lookupStartingProfile(parsed.platform,
+    timeoutMs => resolvePublicReference(new URL(parsed.url), serperApiKey, timeoutMs));
+  const metadata = await lookupStartingProfile(parsed.platform, timeoutMs => fetchIdentityMetadata({
     platform: parsed.platform,
     url: parsed.url,
     apiKey,
-  });
+    timeoutMs,
+  }));
   if (!metadata) return undefined;
   if (parsed.channelId) {
     if (metadata.channelId !== parsed.channelId || !metadata.displayName?.trim()) return undefined;
@@ -490,12 +493,13 @@ async function fetchIdentityMetadata(input: {
   platform: string;
   url: string;
   apiKey: string;
+  timeoutMs?: number;
 }): Promise<IdentityMetadata | undefined> {
   if (input.platform.toLowerCase() === "spotify") {
     const parsed = parseKnownProfileUrl(input.url);
     if (parsed?.platform !== "spotify") return undefined;
     const response = await fetch(`https://open.spotify.com/oembed?${new URLSearchParams({ url: parsed.url })}`, {
-      signal: AbortSignal.timeout(12_000),
+      signal: AbortSignal.timeout(input.timeoutMs ?? 12_000),
     });
     if (!response.ok) throw new Error(`Spotify artist lookup failed (${response.status})`);
     const payload = await response.json() as { title?: string; thumbnail_url?: string; provider_name?: string };
@@ -518,7 +522,7 @@ async function fetchIdentityMetadata(input: {
     `https://api.scrapecreators.com/v1${definition.scrapeCreatorsProfilePath}?${query}`,
     {
       headers: { "x-api-key": input.apiKey },
-      signal: AbortSignal.timeout(12_000),
+      signal: AbortSignal.timeout(input.timeoutMs ?? 12_000),
     },
   );
   if (!response.ok) {
