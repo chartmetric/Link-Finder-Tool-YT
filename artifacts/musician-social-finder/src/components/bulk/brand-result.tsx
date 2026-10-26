@@ -33,10 +33,18 @@ export function BrandResult({ item, index }: { item: BulkBrandItem; index: numbe
           {item.platforms.map(o => (
             <li key={o.platform} className={`blk-outcome o-${o.status}`} data-testid={`outcome-${c.profileId}-${o.platform.toLowerCase()}`}>
               <div className="blk-outcome-top"><PlatformIcon platform={o.platform} size={14} /><b>{o.platform}</b><span className={`blk-pill o-${o.status}`}>{outcomeLabel[o.status]}</span></div>
-              <p>{o.reason}</p>
               {o.status === 'explicit_unavailable' && o.evidenceUrls.length === 0 && <p className="blk-warn-text">No source was attached to this statement; treat as unverified.</p>}
-              <EvidenceLinks outcome={o} accounts={evidenceAccounts} />
-              <small className="inv-mono">Checked {new Date(o.checkedAt).toLocaleString()}</small>
+              <details className="blk-outcome-details">
+                <summary aria-label={`${o.platform} evidence and details`} data-testid={`details-${c.profileId}-${o.platform.toLowerCase()}`}>
+                  <span>Evidence &amp; details{o.evidenceUrls.length > 0 ? ` · ${new Set(o.evidenceUrls).size} ${new Set(o.evidenceUrls).size === 1 ? 'link' : 'links'}` : ''}</span>
+                  <ChevronDown size={12} aria-hidden="true" />
+                </summary>
+                <div className="blk-outcome-body">
+                  <p>{o.reason}</p>
+                  <EvidenceLinks outcome={o} accounts={evidenceAccounts} />
+                  <small className="inv-mono">Checked {new Date(o.checkedAt).toLocaleString()}</small>
+                </div>
+              </details>
             </li>
           ))}
         </ul>

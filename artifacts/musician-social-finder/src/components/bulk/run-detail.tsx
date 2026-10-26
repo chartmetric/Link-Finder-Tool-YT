@@ -55,14 +55,16 @@ function RunBody({ run, onStop, onResume, stopping, resuming, error }: { run: Bu
         <div className="blk-run-stat"><span>Completed</span><strong data-testid="text-run-completed">{c.completed}/{run.items.length}</strong></div>
         <div className="blk-run-stat"><span>Failed</span><strong>{c.failed}</strong></div>
         <div className="blk-run-stat"><span>Queued</span><strong>{c.queued + c.running}</strong></div>
-        <div className="blk-run-stat"><span>Est. cost</span><strong data-testid="text-run-cost">${run.estimatedCostUsd.toFixed(4)}</strong><em>Excludes provider credits and failed calls</em></div>
+        <div className="blk-run-stat"><span>Est. cost</span><strong data-testid="text-run-cost">${run.estimatedCostUsd.toFixed(4)}</strong></div>
       </div>
       <div className="blk-progress" role="progressbar" aria-valuemin={0} aria-valuemax={run.items.length} aria-valuenow={c.completed + c.failed} aria-label="Run progress">
         <i className="done" style={{ transform: `scaleX(${c.completed / total})` }} />
         <i className="fail" style={{ transform: `scaleX(${(c.completed + c.failed) / total})` }} />
       </div>
       <div className="blk-run-actions">
-        <span className="inv-mono">Updated {new Date(run.updatedAt).toLocaleTimeString()} · heartbeat {new Date(run.heartbeatAt).toLocaleTimeString()} · v{run.resumeVersion}</span>
+        <span className="inv-mono" title={`Heartbeat ${new Date(run.heartbeatAt).toLocaleTimeString()} · resume version ${run.resumeVersion}`}>
+          Updated {new Date(run.updatedAt).toLocaleTimeString()} · Est. cost excludes provider credits and failed calls
+        </span>
         <div>
           {active && <button type="button" className="inv-retry" style={{ marginTop: 0 }} disabled={stopping || run.stopRequested} onClick={onStop} data-testid="button-stop-run"><Pause size={14} /> {run.stopRequested ? 'Stopping after current' : 'Stop after current brand'}</button>}
           {canResume(run) && <button type="button" className="inv-submit blk-small" disabled={resuming} onClick={onResume} data-testid="button-resume-run">{resuming ? <RefreshCw size={14} className="inv-spin" /> : <Play size={14} />} Resume unfinished</button>}

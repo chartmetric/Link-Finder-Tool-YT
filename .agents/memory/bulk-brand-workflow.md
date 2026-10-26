@@ -14,3 +14,9 @@ Preserve the distinction between finding no account and establishing that an off
 **Why:** The user wants platform-level unavailability, but a public search cannot prove universal nonexistence. Treating failed or empty searches as confirmed absence would misrepresent the evidence.
 
 **How to apply:** Keep incomplete searches separate from completed no-match searches and require a sourced first-party statement for an explicit no-account claim.
+
+Keep the bulk run monitor compact, with platform statuses visible and long explanations and evidence available through expandable details.
+
+**Why:** The user requested a more compact monitor after the large summary bar and expanded evidence made a single brand occupy most of the screen.
+
+**How to apply:** Preserve access to source links, confirmed URL aliases, timestamps, candidate results, and cost caveats without expanding all of them by default.
