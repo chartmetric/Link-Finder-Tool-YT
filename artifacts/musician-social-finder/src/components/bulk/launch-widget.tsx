@@ -14,7 +14,8 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
   const [st, setSt] = useState<WidgetState>(() => ({ ...initial, ...readStorage<Partial<WidgetState>>(WIDGET_KEY, {}) }));
   const [ack, setAck] = useState(false);
   const [continuous, setContinuous] = useState(false);
-  const [workers, setWorkers] = useState(1);
+  const [workersRaw, setWorkersRaw] = useState('1');
+  const workers = Number(workersRaw);
   const [capRaw, setCapRaw] = useState('');
   const cap = parseCap(capRaw);
   const pending = useRef<{ id: string; key: string } | null>(null);
@@ -95,7 +96,7 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
           {continuous && <div className={`blk-widget-type on`}><label htmlFor="widget-cap">Optional total profile cap</label><input id="widget-cap" type="text" inputMode="numeric" placeholder="All" value={capRaw} onChange={e => { setCapRaw(e.target.value); setAck(false); }} aria-invalid={cap === undefined} style={{ width: 90, border: '1px solid #cbd6e1', borderRadius: 6, padding: '5px 7px', font: '700 12px var(--app-font-mono)' }} data-testid="input-widget-cap" /></div>}
           {continuous && <p className={`inv-mono blk-widget-total${cap === undefined ? ' bad' : ''}`} data-testid="text-widget-cap">{cap === undefined ? 'Cap must be 1 to 4294967295 or blank' : typeof cap === 'number' ? `At most ${cap} distinct profiles; failures count. Explicit retries may add charges.` : 'Blank: all remaining, no total cap'}</p>}
           <label className="blk-worker-field">Workers per type (1–20)
-            <input type="number" min={1} max={20} value={workers} onChange={e => { setWorkers(Number(e.target.value)); setAck(false); }} data-testid="input-widget-workers" />
+            <input type="number" min={1} max={20} step={1} value={workersRaw} onChange={e => { setWorkersRaw(e.target.value); setAck(false); }} aria-invalid={!validWorkers} data-testid="input-widget-workers" />
           </label>
           {!validWorkers && <p className="inv-form-error" role="alert">Workers must be a whole number from 1 to 20.</p>}
           <div className="blk-paid"><CircleAlert size={14} /><p><b>Paid service.</b> Up to {validWorkers ? workers * scopes.length : '—'} concurrent profile lookups across selected types. Higher counts spend credits faster and may hit provider rate limits. Settings apply to new runs only.</p></div>

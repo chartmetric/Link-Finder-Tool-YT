@@ -8,7 +8,8 @@ export function AutoLauncher({ kind, blocked, onRun }: { kind: ProfileKind; bloc
   const qc = useQueryClient();
   const m = KIND_META[kind];
   const [limit, setLimit] = useState(25);
-  const [workers, setWorkers] = useState(1);
+  const [workersRaw, setWorkersRaw] = useState('1');
+  const workers = Number(workersRaw);
   const [continuous, setContinuous] = useState(false);
   const [capRaw, setCapRaw] = useState('');
   const cap = parseCap(capRaw);
@@ -55,7 +56,7 @@ export function AutoLauncher({ kind, blocked, onRun }: { kind: ProfileKind; bloc
           </label>}
         </div>
         <label className="blk-worker-field">Parallel workers (1–20)
-          <input type="number" min={1} max={20} value={workers} onChange={e => setWorkers(Number(e.target.value))} data-testid="input-auto-workers" />
+          <input type="number" min={1} max={20} step={1} value={workersRaw} onChange={e => setWorkersRaw(e.target.value)} aria-invalid={!validWorkers} data-testid="input-auto-workers" />
         </label>
         {!validWorkers && <p className="inv-form-error" role="alert">Workers must be a whole number from 1 to 20.</p>}
         <p className="blk-auto-note">Picks the next eligible {m.plural.toLowerCase()} automatically. Skips prior bulk attempts and profiles with no linked account. Source catalog is read-only. Up to {validWorkers ? workers : '—'} concurrent lookups. Higher counts spend credits faster and may hit provider rate limits. Worker settings are frozen when the run starts.</p>
