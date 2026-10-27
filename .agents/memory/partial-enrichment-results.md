@@ -14,3 +14,9 @@ Starting-profile metadata is a prerequisite, not three separate platform searche
 **Why:** A short seed-profile deadline caused failures before discovery began, while repeating the same error across all target platforms made it look as though every platform independently failed. Retrying the whole pipeline would also risk duplicate provider charges.
 
 **How to apply:** Keep the starting lookup's longer deadline and single timeout-only retry separate from downstream candidate-verification budgets. Identify the starting platform in errors and explicitly say other platforms were not searched. Invalid profiles and authentication failures must not trigger automatic retries.
+
+Tavily must remain disabled until the user explicitly asks to re-enable it; keep its saved secret untouched.
+
+**Why:** The user asked to disable Tavily for now after confirming the main workflows use Serper and Gemini.
+
+**How to apply:** Exclude Tavily from default providers and reject explicitly selected Tavily requests before any external calls. Do not reconnect or re-enable it simply because a key is configured.

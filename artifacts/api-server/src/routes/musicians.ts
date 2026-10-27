@@ -116,6 +116,10 @@ router.post("/profiles/search", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Enter a name, a known social handle, or both." });
     return;
   }
+  if (input.data.methods?.includes("tavily")) {
+    res.status(400).json({ error: "Tavily is disabled for this project. Use Serper or Gemini instead." });
+    return;
+  }
   const urlOnly = !input.data.subject?.trim() && !input.data.handle?.trim();
   if (urlOnly && !input.data.knownProfileUrl) {
     res.status(400).json({ error: "Enter a name, a known social handle, or a profile URL." });
@@ -152,7 +156,6 @@ router.post("/profiles/search", async (req, res): Promise<void> => {
       ...resolved,
       excludeReferencePlatform: urlOnly,
       serperApiKey: process.env.SERPERDEV_API_KEY ?? process.env.SERPER_API_KEY,
-      tavilyApiKey: process.env.TAVILY_WEB_SEARCH_API_KEY,
       openrouterApiKey: process.env.OPENROUTER_API_KEY,
       scrapeCreatorsApiKey: process.env.SCRAPECREATORS_API_KEY,
       socialCrawlApiKey: process.env.SOCIALCRAWL_API_KEY,

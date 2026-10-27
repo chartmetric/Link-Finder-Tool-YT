@@ -658,11 +658,13 @@ export async function findProfiles(input: {
   country?: string;
   methods?: string[];
   serperApiKey?: string;
-  tavilyApiKey?: string;
   openrouterApiKey?: string;
   scrapeCreatorsApiKey?: string;
   socialCrawlApiKey?: string;
 }) {
+  if (input.methods?.includes("tavily")) {
+    throw new Error("Tavily is disabled for this project. Use Serper or Gemini instead.");
+  }
   const cleanHandle = input.handle?.trim().replace(/^@/, "");
   const subject = input.subject?.trim() || (cleanHandle ? `@${cleanHandle}` : "");
   const locationHint = input.location?.trim() ? ` ${input.location.trim()}` : "";
@@ -677,7 +679,7 @@ export async function findProfiles(input: {
     .filter((platform) => platform !== referencePlatform);
   const selected = input.methods?.length
     ? input.methods
-    : ["serper", "tavily", "gemini", "scrapecreators", "socialcrawl"];
+    : ["serper", "gemini", "scrapecreators", "socialcrawl"];
   const queries = targets.map(
     (platform) => input.excludeReferencePlatform
       ? `${subject}${locationHint}${cleanHandle ? ` @${cleanHandle}` : ""} official site:${platform === "Instagram" ? "instagram.com" : platform === "YouTube" ? "youtube.com/@" : "tiktok.com/@"}`
@@ -685,14 +687,13 @@ export async function findProfiles(input: {
   );
   const methodMeta = {
     serper: { label: "Serper", estimatedCostUsd: targets.length * 0.001, costNote: `${targets.length} queries at roughly $1 per 1,000 queries` },
-    tavily: { label: "Tavily", estimatedCostUsd: targets.length * 0.008, costNote: `${targets.length} basic searches at roughly $0.008 per credit` },
     gemini: { label: "Gemini Online Discovery", estimatedCostUsd: 0.01, costNote: "Web search for profile links; JEV checks identity separately when profile metadata is readable" },
     jev: { label: "JEV Decision", estimatedCostUsd: 0, costNote: "Typed identity decision over gathered evidence; exact OpenRouter usage cost shown" },
     deepseek: { label: "DeepSeek Verification", estimatedCostUsd: 0.008, costNote: "Automatic independent candidate review using V4.1 Flash and token usage" },
     scrapecreators: { label: "ScrapeCreators", estimatedCostUsd: 0, costNote: "0 cached or 10 live credits; dollar cost depends on your credit pack" },
     socialcrawl: { label: "SocialCrawl", estimatedCostUsd: 0, costNote: "3 credits for Instagram, TikTok, and YouTube searches; dollar cost depends on your credit pack" },
   } as const;
-  const methodKeys = ["serper", "tavily", "gemini", "jev", "deepseek", "scrapecreators", "socialcrawl"] as const;
+  const methodKeys = ["serper", "gemini", "jev", "deepseek", "scrapecreators", "socialcrawl"] as const;
   const statuses = new Map<string, "used" | "unavailable" | "failed">();
   const durations = new Map<string, number>();
   const verifierResults = new Map<string, ProfileMatch[]>();
@@ -891,23 +892,6 @@ export async function findProfiles(input: {
             return ((await response.json()) as SerperResponse).organic ?? [];
           })
         : Promise.resolve(statuses.set("serper", "unavailable"))
-      : Promise.resolve(),
-    selected.includes("tavily")
-      ? input.tavilyApiKey
-        ? runSearches("tavily", async (q) => {
-            const response = await fetch("https://api.tavily.com/search", {
-              method: "POST",
-              headers: { Authorization: `Bearer ${input.tavilyApiKey}`, "Content-Type": "application/json" },
-              body: JSON.stringify({ query: q, search_depth: "basic", max_results: 10, include_answer: false }),
-              signal: AbortSignal.timeout(20_000),
-            });
-            if (!response.ok) throw new Error(`Tavily failed (${response.status})`);
-            const data = (await response.json()) as { results?: Array<{ title?: string; url?: string; content?: string }> };
-            return (data.results ?? []).map((item, position) => ({
-              title: item.title, link: item.url, snippet: item.content, position: position + 1,
-            }));
-          })
-        : Promise.resolve(statuses.set("tavily", "unavailable"))
       : Promise.resolve(),
     selected.includes("scrapecreators")
       ? runScrapeCreators()
