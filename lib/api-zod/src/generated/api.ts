@@ -9,6 +9,23 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Evidence-backed platform resolution coverage for all bulk profile types
+ */
+export const GetBulkCoverageResponse = zod.object({
+  "types": zod.array(zod.object({
+  "profileType": zod.enum(['brand', 'creator', 'artist']),
+  "buckets": zod.array(zod.object({
+  "group": zod.enum(['tiers_1_3', 'tiers_1_5', 'all']),
+  "total": zod.number(),
+  "covered": zod.number()
+}))
+})),
+  "generatedAt": zod.string(),
+  "platforms": zod.array(zod.string())
+})
+
+
+/**
  * @summary Count tier 1-3 musicians and their link coverage
  */
 export const GetMusicianCoverageResponse = zod.object({
@@ -343,6 +360,8 @@ export const ListBulkBrandCandidatesResponse = zod.object({
 })
 
 
+export const listBulkBrandRunsResponseRunsItemWorkersPerTypeMax = 20;
+
 export const listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemConfidenceMin = 0;
 export const listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemConfidenceMax = 100;
 
@@ -357,7 +376,7 @@ export const listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemJevVeri
 
 export const listBulkBrandRunsResponseRunsItemItemsItemResultMethodsUsedItemDurationMsMin = 0;
 
-export const listBulkBrandRunsResponseRunsItemScopesItemLimitMax = 25;
+export const listBulkBrandRunsResponseRunsItemScopesItemLimitMax = 1000;
 
 
 
@@ -369,6 +388,7 @@ export const ListBulkBrandRunsResponse = zod.object({
   "updatedAt": zod.string(),
   "heartbeatAt": zod.string(),
   "workerId": zod.string(),
+  "workersPerType": zod.number().min(1).max(listBulkBrandRunsResponseRunsItemWorkersPerTypeMax).optional().describe('Frozen integer concurrent profile lookups per type; legacy runs default to 1'),
   "resumeVersion": zod.number(),
   "stopRequested": zod.boolean(),
   "estimatedCostUsd": zod.number(),
@@ -524,12 +544,14 @@ export const startBulkBrandRunBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F-]{36
 export const startBulkBrandRunBodyContinuousDefault = false;
 export const startBulkBrandRunBodyProfileLimitMax = 4294967295;
 
+export const startBulkBrandRunBodyWorkersPerTypeMax = 20;
+
 
 export const startBulkBrandRunBodyProfileIdsMax = 25;
 
 export const startBulkBrandRunBodyProfileTypesMax = 1;
 
-export const startBulkBrandRunBodyScopesItemLimitMax = 25;
+export const startBulkBrandRunBodyScopesItemLimitMax = 1000;
 
 export const startBulkBrandRunBodyScopesMax = 3;
 
@@ -539,13 +561,16 @@ export const StartBulkBrandRunBody = zod.object({
   "requestId": zod.string().regex(startBulkBrandRunBodyRequestIdRegExp),
   "continuous": zod.boolean().default(startBulkBrandRunBodyContinuousDefault).describe('Process remaining unattempted eligible profiles in saved chunks until exhausted or stopped; scopes required'),
   "profileLimit": zod.number().min(1).max(startBulkBrandRunBodyProfileLimitMax).optional().describe('Optional total profile-attempt cap for continuous mode; omitted means all remaining eligible profiles'),
+  "workersPerType": zod.number().min(1).max(startBulkBrandRunBodyWorkersPerTypeMax).optional().describe('Integer concurrent profile lookups per selected type'),
   "profileIds": zod.array(zod.number().min(1)).min(1).max(startBulkBrandRunBodyProfileIdsMax).optional(),
   "profileTypes": zod.array(zod.enum(['brand', 'creator', 'artist'])).min(1).max(startBulkBrandRunBodyProfileTypesMax).optional().describe('Manual profileIds selection type; defaults to brand. Use scopes for automatic multi-type selection.'),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
   "limit": zod.number().min(1).max(startBulkBrandRunBodyScopesItemLimitMax)
-})).min(1).max(startBulkBrandRunBodyScopesMax).optional().describe('Alternative to profileIds; one distinct entry per selected type. Combined limits must not exceed 25. Each type has at most one concurrent lookup.')
+})).min(1).max(startBulkBrandRunBodyScopesMax).optional().describe('Alternative to profileIds; one distinct entry per selected type. Combined chunk limits must not exceed 1000. Each type uses the selected workersPerType concurrency.')
 })
+
+export const startBulkBrandRunResponseWorkersPerTypeMax = 20;
 
 export const startBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMin = 0;
 export const startBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMax = 100;
@@ -561,7 +586,7 @@ export const startBulkBrandRunResponseItemsItemResultProfilesItemJevVerification
 
 export const startBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin = 0;
 
-export const startBulkBrandRunResponseScopesItemLimitMax = 25;
+export const startBulkBrandRunResponseScopesItemLimitMax = 1000;
 
 
 
@@ -572,6 +597,7 @@ export const StartBulkBrandRunResponse = zod.object({
   "updatedAt": zod.string(),
   "heartbeatAt": zod.string(),
   "workerId": zod.string(),
+  "workersPerType": zod.number().min(1).max(startBulkBrandRunResponseWorkersPerTypeMax).optional().describe('Frozen integer concurrent profile lookups per type; legacy runs default to 1'),
   "resumeVersion": zod.number(),
   "stopRequested": zod.boolean(),
   "estimatedCostUsd": zod.number(),
@@ -726,6 +752,8 @@ export const GetBulkBrandRunParams = zod.object({
   "runId": zod.coerce.string()
 })
 
+export const getBulkBrandRunResponseWorkersPerTypeMax = 20;
+
 export const getBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMin = 0;
 export const getBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMax = 100;
 
@@ -740,7 +768,7 @@ export const getBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVe
 
 export const getBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin = 0;
 
-export const getBulkBrandRunResponseScopesItemLimitMax = 25;
+export const getBulkBrandRunResponseScopesItemLimitMax = 1000;
 
 
 
@@ -751,6 +779,7 @@ export const GetBulkBrandRunResponse = zod.object({
   "updatedAt": zod.string(),
   "heartbeatAt": zod.string(),
   "workerId": zod.string(),
+  "workersPerType": zod.number().min(1).max(getBulkBrandRunResponseWorkersPerTypeMax).optional().describe('Frozen integer concurrent profile lookups per type; legacy runs default to 1'),
   "resumeVersion": zod.number(),
   "stopRequested": zod.boolean(),
   "estimatedCostUsd": zod.number(),
@@ -910,6 +939,8 @@ export const ListBulkRunBatchesParams = zod.object({
   "afterBatch": zod.coerce.number().min(listBulkRunBatchesPathAfterBatchMin)
 })
 
+export const listBulkRunBatchesResponseRunsItemWorkersPerTypeMax = 20;
+
 export const listBulkRunBatchesResponseRunsItemItemsItemResultProfilesItemConfidenceMin = 0;
 export const listBulkRunBatchesResponseRunsItemItemsItemResultProfilesItemConfidenceMax = 100;
 
@@ -924,7 +955,7 @@ export const listBulkRunBatchesResponseRunsItemItemsItemResultProfilesItemJevVer
 
 export const listBulkRunBatchesResponseRunsItemItemsItemResultMethodsUsedItemDurationMsMin = 0;
 
-export const listBulkRunBatchesResponseRunsItemScopesItemLimitMax = 25;
+export const listBulkRunBatchesResponseRunsItemScopesItemLimitMax = 1000;
 
 
 
@@ -936,6 +967,7 @@ export const ListBulkRunBatchesResponse = zod.object({
   "updatedAt": zod.string(),
   "heartbeatAt": zod.string(),
   "workerId": zod.string(),
+  "workersPerType": zod.number().min(1).max(listBulkRunBatchesResponseRunsItemWorkersPerTypeMax).optional().describe('Frozen integer concurrent profile lookups per type; legacy runs default to 1'),
   "resumeVersion": zod.number(),
   "stopRequested": zod.boolean(),
   "estimatedCostUsd": zod.number(),
@@ -1093,6 +1125,8 @@ export const StopBulkBrandRunParams = zod.object({
   "runId": zod.coerce.string()
 })
 
+export const stopBulkBrandRunResponseWorkersPerTypeMax = 20;
+
 export const stopBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMin = 0;
 export const stopBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMax = 100;
 
@@ -1107,7 +1141,7 @@ export const stopBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationV
 
 export const stopBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin = 0;
 
-export const stopBulkBrandRunResponseScopesItemLimitMax = 25;
+export const stopBulkBrandRunResponseScopesItemLimitMax = 1000;
 
 
 
@@ -1118,6 +1152,7 @@ export const StopBulkBrandRunResponse = zod.object({
   "updatedAt": zod.string(),
   "heartbeatAt": zod.string(),
   "workerId": zod.string(),
+  "workersPerType": zod.number().min(1).max(stopBulkBrandRunResponseWorkersPerTypeMax).optional().describe('Frozen integer concurrent profile lookups per type; legacy runs default to 1'),
   "resumeVersion": zod.number(),
   "stopRequested": zod.boolean(),
   "estimatedCostUsd": zod.number(),
@@ -1272,6 +1307,8 @@ export const ResumeBulkBrandRunParams = zod.object({
   "runId": zod.coerce.string()
 })
 
+export const resumeBulkBrandRunResponseWorkersPerTypeMax = 20;
+
 export const resumeBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMin = 0;
 export const resumeBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMax = 100;
 
@@ -1286,7 +1323,7 @@ export const resumeBulkBrandRunResponseItemsItemResultProfilesItemJevVerificatio
 
 export const resumeBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin = 0;
 
-export const resumeBulkBrandRunResponseScopesItemLimitMax = 25;
+export const resumeBulkBrandRunResponseScopesItemLimitMax = 1000;
 
 
 
@@ -1297,6 +1334,7 @@ export const ResumeBulkBrandRunResponse = zod.object({
   "updatedAt": zod.string(),
   "heartbeatAt": zod.string(),
   "workerId": zod.string(),
+  "workersPerType": zod.number().min(1).max(resumeBulkBrandRunResponseWorkersPerTypeMax).optional().describe('Frozen integer concurrent profile lookups per type; legacy runs default to 1'),
   "resumeVersion": zod.number(),
   "stopRequested": zod.boolean(),
   "estimatedCostUsd": zod.number(),

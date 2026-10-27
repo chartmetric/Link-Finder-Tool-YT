@@ -33,7 +33,7 @@ export async function nextContinuousChunk(
     let added = 0;
     for (let scans = 0; !cursor.exhausted && added < scope.limit && scans < 4; scans++) {
       const result = await page({
-        profileType: scope.profileType, afterId: cursor.afterId, limit: 25, maxProfileId: progress.upperProfileId,
+        profileType: scope.profileType, afterId: cursor.afterId, limit: Math.min(250, Math.max(25, scope.limit - added)), maxProfileId: progress.upperProfileId,
       });
       if (!result.profiles.length) {
         if (result.hasMore) throw new Error("Catalog pagination did not advance. The queue stopped without starting another paid lookup.");

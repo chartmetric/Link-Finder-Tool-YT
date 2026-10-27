@@ -9,8 +9,8 @@ Avoid adding an OpenAPI URI format to string fields unless code generation is ve
 
 **How to apply:** Use bounded string validation for URL-like identity hints, or verify generated output before adopting URI format annotations.
 
-Unconstrained response integer fields can also generate unsupported top-level Zod validators.
+Integer schemas, including bounded input and response fields, can also generate unsupported top-level Zod validators.
 
 **Why:** The generator emitted `zod.int()` while this workspace uses Zod 3. This is a generator/runtime compatibility issue, not an application integer-validation failure.
 
-**How to apply:** Inspect and typecheck generated output whenever adding numeric types or formats. Use the existing number response convention when needed, and enforce integer pagination explicitly on validated server inputs rather than assuming generation preserves integer checks.
+**How to apply:** Inspect and typecheck generated output whenever adding numeric types or formats. Use the existing number schema convention when needed, and enforce integers explicitly with server validation for pagination and worker counts rather than assuming generation preserves integer checks. Min/max bounds do not prevent this incompatibility.

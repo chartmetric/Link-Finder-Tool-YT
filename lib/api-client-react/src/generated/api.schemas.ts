@@ -5,6 +5,41 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type BulkCoverageBucketGroup = typeof BulkCoverageBucketGroup[keyof typeof BulkCoverageBucketGroup];
+
+
+export const BulkCoverageBucketGroup = {
+  tiers_1_3: 'tiers_1_3',
+  tiers_1_5: 'tiers_1_5',
+  all: 'all',
+} as const;
+
+export interface BulkCoverageBucket {
+  group: BulkCoverageBucketGroup;
+  total: number;
+  covered: number;
+}
+
+export type BulkProfileType = typeof BulkProfileType[keyof typeof BulkProfileType];
+
+
+export const BulkProfileType = {
+  brand: 'brand',
+  creator: 'creator',
+  artist: 'artist',
+} as const;
+
+export interface BulkTypeCoverage {
+  profileType: BulkProfileType;
+  buckets: BulkCoverageBucket[];
+}
+
+export interface BulkCoverage {
+  types: BulkTypeCoverage[];
+  generatedAt: string;
+  platforms: string[];
+}
+
 export interface MusicianCoverageTier {
   tier: number;
   profiles: number;
@@ -229,20 +264,11 @@ export interface ProfileSearchInput {
   methods?: ProfileSearchInputMethodsItem[];
 }
 
-export type BulkProfileType = typeof BulkProfileType[keyof typeof BulkProfileType];
-
-
-export const BulkProfileType = {
-  brand: 'brand',
-  creator: 'creator',
-  artist: 'artist',
-} as const;
-
 export interface BulkProfileScopeInput {
   profileType: BulkProfileType;
   /**
      * @minimum 1
-     * @maximum 25
+     * @maximum 1000
      */
   limit: number;
 }
@@ -290,6 +316,12 @@ export interface BulkBrandRunInput {
      */
   profileLimit?: number;
   /**
+     * Integer concurrent profile lookups per selected type
+     * @minimum 1
+     * @maximum 20
+     */
+  workersPerType?: number;
+  /**
      * @minItems 1
      * @maxItems 25
      * @items.minimum 1
@@ -302,7 +334,7 @@ export interface BulkBrandRunInput {
      */
   profileTypes?: BulkProfileType[];
   /**
-     * Alternative to profileIds; one distinct entry per selected type. Combined limits must not exceed 25. Each type has at most one concurrent lookup.
+     * Alternative to profileIds; one distinct entry per selected type. Combined chunk limits must not exceed 1000. Each type uses the selected workersPerType concurrency.
      * @minItems 1
      * @maxItems 3
      */
@@ -394,6 +426,12 @@ export interface BulkBrandRun {
   updatedAt: string;
   heartbeatAt: string;
   workerId: string;
+  /**
+     * Frozen integer concurrent profile lookups per type; legacy runs default to 1
+     * @minimum 1
+     * @maximum 20
+     */
+  workersPerType?: number;
   resumeVersion: number;
   stopRequested: boolean;
   estimatedCostUsd: number;

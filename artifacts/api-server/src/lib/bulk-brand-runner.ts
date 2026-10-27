@@ -78,6 +78,7 @@ export async function startBulkRun(requestId: string, input: (Omit<BulkBrandRunI
     const run: BulkBrandRun = {
       id: requestId, status: "running", createdAt: now, updatedAt: now,
       heartbeatAt: now, workerId: bulkWorkerId, resumeVersion: bulkVersion(),
+      workersPerType: selection.workersPerType ?? 1,
       stopRequested: false, estimatedCostUsd: 0,
       scopes: selection.scopes ?? [{ profileType: selection.profileTypes?.[0] ?? "brand", limit: candidates.length }],
       ...(selection.continuous ? { continuous: automatic } : {}),
@@ -211,7 +212,7 @@ async function execute(run: BulkBrandRun) {
         await persist();
       }
       if (persistenceError) throw persistenceError;
-      });
+      }, run.workersPerType ?? 1);
       if (persistenceError) throw persistenceError;
       await refreshControl();
       if (!run.continuous || run.stopRequested || run.items.some(item => item.status === "queued")) break;

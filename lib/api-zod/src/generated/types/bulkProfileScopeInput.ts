@@ -11,7 +11,7 @@ export interface BulkProfileScopeInput {
   profileType: BulkProfileType;
   /**
      * @minimum 1
-     * @maximum 25
+     * @maximum 1000
      */
   limit: number;
 }

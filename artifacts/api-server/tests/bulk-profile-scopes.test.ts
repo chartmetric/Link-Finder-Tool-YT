@@ -25,7 +25,7 @@ test("ambiguous input, duplicate scopes, fractional limits, invalid types and ov
     {}, { profileIds: [] }, { profileIds: [1, 1] }, { profileIds: [1.1] },
     { profileIds: [1], scopes: [{ profileType: "brand", limit: 1 }] },
     { scopes: [{ profileType: "brand", limit: 1 }, { profileType: "brand", limit: 1 }] },
-    { scopes: [{ profileType: "brand", limit: 15 }, { profileType: "artist", limit: 15 }] },
+    { scopes: [{ profileType: "brand", limit: 501 }, { profileType: "artist", limit: 500 }] },
     { scopes: [{ profileType: "creator", limit: 2.5 }] },
     { scopes: [{ profileType: "brand", limit: 0 }] },
     { profileIds: [1], profileTypes: ["creator", "artist"] },
@@ -37,6 +37,15 @@ test("generated request contracts accept scopes and reject unsupported types", (
   const requestId = "00000000-0000-4000-8000-000000000001";
   assert.ok(StartBulkBrandRunBody.safeParse({ requestId, scopes: [{ profileType: "artist", limit: 1 }] }).success);
   assert.equal(StartBulkBrandRunBody.safeParse({ requestId, scopes: [{ profileType: "actor", limit: 1 }] }).success, false);
+  assert.ok(StartBulkBrandRunBody.safeParse({ requestId, scopes: [{ profileType: "brand", limit: 1000 }] }).success);
+  assert.equal(StartBulkBrandRunBody.safeParse({ requestId, scopes: [{ profileType: "brand", limit: 1001 }] }).success, false);
+});
+
+test("automatic chunks accept 1000 total profiles without raising the manual selection limit", () => {
+  assert.equal(validateBulkSelection({ scopes: [{ profileType: "brand", limit: 1000 }] }), undefined);
+  assert.equal(validateBulkSelection({ scopes: [{ profileType: "brand", limit: 500 }, { profileType: "artist", limit: 500 }] }), undefined);
+  assert.ok(validateBulkSelection({ scopes: [{ profileType: "brand", limit: 1001 }] }));
+  assert.ok(validateBulkSelection({ profileIds: Array.from({ length: 26 }, (_, i) => i + 1) }));
 });
 
 const types: BulkProfileType[] = ["brand", "creator", "artist"];
@@ -75,6 +84,76 @@ test("three types run simultaneously, with at most one active item per type", as
   await work;
   assert.equal(started.length, 6);
   assert.ok(items.every(item => item.status === "completed"));
+});
+
+test("worker settings validate integers 1–20 and remain optional for legacy requests", () => {
+  for (const workersPerType of [1, 5, 20]) {
+    const input = { scopes: [{ profileType: "brand" as const, limit: 1000 }], workersPerType };
+    assert.equal(validateBulkSelection(input), undefined);
+    assert.ok(StartBulkBrandRunBody.safeParse({ requestId: "00000000-0000-4000-8000-000000000001", ...input }).success);
+  }
+  for (const workersPerType of [0, -1, 1.5, 21, NaN]) assert.ok(validateBulkSelection({ profileIds: [1], workersPerType }));
+});
+
+test("configured pools bound parallelism per type and never process one item twice", async () => {
+  const items = types.flatMap(profileType => Array.from({ length: 25 }, (_, id) => ({
+    id: `${profileType}-${id}`, candidate: { profileType }, status: "queued",
+  })));
+  const gate = deferred();
+  const active = new Map<string, number>();
+  const seen = new Set<string>();
+  const work = runScopedQueue(items, async () => false, async item => {
+    assert.equal(seen.has(item.id), false);
+    seen.add(item.id);
+    const type = item.candidate.profileType;
+    active.set(type, (active.get(type) ?? 0) + 1);
+    assert.ok(active.get(type)! <= 20);
+    await gate.promise;
+    item.status = "completed";
+    active.set(type, active.get(type)! - 1);
+  }, 20);
+  await setImmediate();
+  assert.deepEqual([...active.values()], [20, 20, 20]);
+  gate.resolve();
+  await work;
+  assert.equal(seen.size, 75);
+});
+
+test("multi-worker Stop drains in-flight work without starting queued profiles", async () => {
+  const items = Array.from({ length: 8 }, (_, id) => ({ id, candidate: {}, status: "queued" }));
+  const gate = deferred();
+  let stop = false;
+  const started: number[] = [];
+  const work = runScopedQueue(items, async () => stop, async item => {
+    started.push(item.id);
+    await gate.promise;
+    item.status = "completed";
+  }, 3);
+  await setImmediate();
+  assert.equal(started.length, 3);
+  stop = true;
+  gate.resolve();
+  await work;
+  assert.equal(started.length, 3);
+  assert.equal(items.filter(item => item.status === "queued").length, 5);
+});
+
+test("a multi-worker persistence error waits for in-flight siblings and blocks new claims", async () => {
+  const items = Array.from({ length: 10 }, (_, id) => ({ id, candidate: {}, status: "queued" }));
+  const gate = deferred();
+  const started: number[] = [];
+  let returned = false;
+  const work = runScopedQueue(items, async () => false, async item => {
+    started.push(item.id);
+    if (item.id === 0) throw new Error("snapshot write failed");
+    await gate.promise;
+    item.status = "completed";
+  }, 3).catch(error => { returned = true; assert.match(error.message, /snapshot write failed/); });
+  await setImmediate();
+  assert.equal(returned, false);
+  gate.resolve();
+  await work;
+  assert.deepEqual(started, [0, 1, 2]);
 });
 
 test("Stop lets current lookups finish but starts no further profile of any type", async () => {
@@ -155,6 +234,8 @@ test("legacy snapshots remain valid; requested multi-type scopes round-trip in s
     workerId: "test", resumeVersion: 1, stopRequested: false, estimatedCostUsd: 0, items: [],
   };
   assert.equal(GetBulkBrandRunResponse.parse(snapshot).scopes, undefined);
+  assert.equal(GetBulkBrandRunResponse.parse(snapshot).workersPerType, undefined);
+  assert.equal(GetBulkBrandRunResponse.parse(JSON.parse(JSON.stringify({ ...snapshot, workersPerType: 7 }))).workersPerType, 7);
   assert.deepEqual(GetBulkBrandRunResponse.parse({ ...snapshot, scopes: [{ profileType: "artist", limit: 1 }] }).scopes, [{ profileType: "artist", limit: 1 }]);
 });
 

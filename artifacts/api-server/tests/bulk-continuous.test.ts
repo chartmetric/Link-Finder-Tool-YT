@@ -40,6 +40,21 @@ test("continuous launch requires scopes and validates optional total profile cap
   assert.equal(validateBulkSelection({ scopes, continuous: true, profileLimit: 2 }), undefined);
 });
 
+test("a requested chunk can actually fill all 1000 slots through bounded catalog pages", async () => {
+  const state = fresh();
+  state.upperProfileId = 2000;
+  let reads = 0;
+  const next = await nextContinuousChunk(state, [{ profileType: "brand", limit: 1000 }], async input => {
+    reads++;
+    assert.ok(input.limit <= 250);
+    return response(Array.from({ length: input.limit }, (_, i) => candidate((input.afterId ?? 0) + i + 1)), true);
+  }, noPriorAttempts);
+  assert.equal(next.candidates.length, 1000);
+  assert.equal(new Set(next.candidates.map(row => row.profileId)).size, 1000);
+  assert.equal(next.cursors[0].afterId, 1000);
+  assert.equal(reads, 4);
+});
+
 test("remaining selection skips attempted and unlinked profiles without skipping the next unconsumed candidate", async () => {
   const state = fresh();
   const next = await nextContinuousChunk(state, scopes,

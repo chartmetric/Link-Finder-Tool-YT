@@ -7,6 +7,7 @@ import { CandidatePicker } from '@/components/bulk/candidate-picker';
 import { RunList } from '@/components/bulk/run-list';
 import { RunDetail } from '@/components/bulk/run-detail';
 import { LaunchWidget } from '@/components/bulk/launch-widget';
+import { CoveragePanel } from '@/components/bulk/coverage-panel';
 import { AutoLauncher } from '@/components/bulk/auto-launcher';
 import { isActiveRun, KIND_META, LAST_RUN_KEY, PROFILE_KINDS, apiError, kindOf, readStorage, selectionKey, writeStorage, type ProfileKind } from '@/lib/bulk';
 import '@/styles/bulk.css';
@@ -96,6 +97,8 @@ export default function BulkBrands() {
             <div><div className="inv-kicker">Bulk link finder / {m.plural.toLowerCase()}</div><h2>Find links across all {m.plural.toLowerCase()}</h2></div>
             <p className="inv-section-note">Results are suggestions for human review. No approvals or catalog writes happen here.</p>
           </div>
+
+          <CoveragePanel kind={kind} />
 
           <AutoLauncher kind={kind} blocked={!!startBlocked} onRun={setRunId} />
 

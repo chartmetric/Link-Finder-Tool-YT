@@ -24,6 +24,7 @@ import type {
   BulkBrandCandidates,
   BulkBrandRun,
   BulkBrandRunInput,
+  BulkCoverage,
   ExistingProfilePage,
   HealthStatus,
   ListBulkBrandCandidatesParams,
@@ -64,6 +65,83 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetBulkCoverageUrl = () => {
+
+
+
+
+  return `/api/bulk/coverage`
+}
+
+/**
+ * @summary Evidence-backed platform resolution coverage for all bulk profile types
+ */
+export const getBulkCoverage = async ( options?: Parameters<typeof customFetch>[1]): Promise<BulkCoverage> => {
+
+  return customFetch<BulkCoverage>(getGetBulkCoverageUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBulkCoverageQueryKey = () => {
+    return [
+    `/api/bulk/coverage`
+    ] as const;
+    }
+
+
+export const getGetBulkCoverageQueryOptions = <TData = Awaited<ReturnType<typeof getBulkCoverage>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBulkCoverage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBulkCoverageQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBulkCoverage>>> = ({ signal }) => getBulkCoverage({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBulkCoverage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBulkCoverageQueryResult = NonNullable<Awaited<ReturnType<typeof getBulkCoverage>>>
+export type GetBulkCoverageQueryError = ErrorType<void>
+
+
+/**
+ * @summary Evidence-backed platform resolution coverage for all bulk profile types
+ */
+
+export function useGetBulkCoverage<TData = Awaited<ReturnType<typeof getBulkCoverage>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBulkCoverage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBulkCoverageQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetMusicianCoverageUrl = () => {
 

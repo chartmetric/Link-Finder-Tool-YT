@@ -20,6 +20,12 @@ export interface BulkBrandRunInput {
      */
   profileLimit?: number;
   /**
+     * Integer concurrent profile lookups per selected type
+     * @minimum 1
+     * @maximum 20
+     */
+  workersPerType?: number;
+  /**
      * @minItems 1
      * @maxItems 25
      * @items.minimum 1
@@ -32,7 +38,7 @@ export interface BulkBrandRunInput {
      */
   profileTypes?: BulkProfileType[];
   /**
-     * Alternative to profileIds; one distinct entry per selected type. Combined limits must not exceed 25. Each type has at most one concurrent lookup.
+     * Alternative to profileIds; one distinct entry per selected type. Combined chunk limits must not exceed 1000. Each type uses the selected workersPerType concurrency.
      * @minItems 1
      * @maxItems 3
      */

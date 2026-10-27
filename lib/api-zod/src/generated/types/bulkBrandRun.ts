@@ -17,6 +17,12 @@ export interface BulkBrandRun {
   updatedAt: string;
   heartbeatAt: string;
   workerId: string;
+  /**
+     * Frozen integer concurrent profile lookups per type; legacy runs default to 1
+     * @minimum 1
+     * @maximum 20
+     */
+  workersPerType?: number;
   resumeVersion: number;
   stopRequested: boolean;
   estimatedCostUsd: number;

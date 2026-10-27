@@ -4,7 +4,7 @@ import { ChevronDown, ChevronUp, CircleAlert, Layers, Pause, Play, RefreshCw, Za
 import { getGetBulkBrandRunQueryKey, getListBulkBrandRunsQueryKey, useGetBulkBrandRun, useResumeBulkBrandRun, useStartBulkBrandRun, useStopBulkBrandRun, type BulkBrandRun } from '@workspace/api-client-react';
 import { continuousConfirm, parseCap, KIND_META, PROFILE_KINDS, WIDGET_KEY, apiError, canResume, isActiveRun, overallCounts, overallKindCounts, readStorage, resumeConfirm, runKinds, writeStorage, type ProfileKind } from '@/lib/bulk';
 
-const MAX_TOTAL = 25;
+const MAX_TOTAL = 1000;
 const DEFAULT_COUNT = 5;
 type WidgetState = { open: boolean; on: Record<ProfileKind, boolean>; counts: Record<ProfileKind, number> };
 const initial: WidgetState = { open: false, on: { brand: true, creator: false, artist: false }, counts: { brand: DEFAULT_COUNT, creator: DEFAULT_COUNT, artist: DEFAULT_COUNT } };
@@ -14,6 +14,7 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
   const [st, setSt] = useState<WidgetState>(() => ({ ...initial, ...readStorage<Partial<WidgetState>>(WIDGET_KEY, {}) }));
   const [ack, setAck] = useState(false);
   const [continuous, setContinuous] = useState(false);
+  const [workers, setWorkers] = useState(1);
   const [capRaw, setCapRaw] = useState('');
   const cap = parseCap(capRaw);
   const pending = useRef<{ id: string; key: string } | null>(null);
@@ -38,16 +39,17 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
   const scopes = PROFILE_KINDS.filter(k => st.on[k]).map(k => ({ profileType: k, limit: st.counts[k] }));
   const total = scopes.reduce((n, s) => n + s.limit, 0);
   const over = total > MAX_TOTAL;
-  const canStart = !(continuous && cap === undefined) && scopes.length > 0 && !over && ack && !busy && !active && !(runId && q.isLoading) && !(rootId && rq.isLoading);
+  const validWorkers = Number.isSafeInteger(workers) && workers >= 1 && workers <= 20;
+  const canStart = validWorkers && !(continuous && cap === undefined) && scopes.length > 0 && !over && ack && !busy && !active && !(runId && q.isLoading) && !(rootId && rq.isLoading);
 
   const setCount = (k: ProfileKind, v: number) => setSt(s => ({ ...s, counts: { ...s.counts, [k]: Math.max(1, Math.min(MAX_TOTAL, Math.round(v) || 1)) } }));
   const submit = () => {
     if (!canStart) return;
     const profileLimit = continuous && typeof cap === 'number' ? cap : undefined;
     if (continuous && !window.confirm(continuousConfirm(profileLimit ?? null))) return;
-    const key = JSON.stringify({ scopes, continuous, profileLimit });
+    const key = JSON.stringify({ scopes, continuous, profileLimit, workersPerType: workers });
     if (!pending.current || pending.current.key !== key) pending.current = { id: crypto.randomUUID(), key };
-    start.mutate({ data: { requestId: pending.current.id, scopes, continuous, ...(profileLimit !== undefined ? { profileLimit } : {}) } }, {
+    start.mutate({ data: { requestId: pending.current.id, scopes, continuous, workersPerType: workers, ...(profileLimit !== undefined ? { profileLimit } : {}) } }, {
       onSuccess: r => { pending.current = null; sync(r); onRun(r.id); setAck(false); },
     });
   };
@@ -67,7 +69,7 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
         <div className="blk-widget-body">
           {run && (
             <div className="blk-widget-run" data-testid="section-widget-run">
-              <div className="blk-widget-runhead"><span className="inv-mono">Run {run.id.slice(0, 8)}</span><span className="inv-mono">${run.estimatedCostUsd.toFixed(4)}</span></div>
+              <div className="blk-widget-runhead"><span className="inv-mono">Run {run.id.slice(0, 8)} · {run.workersPerType ?? 1} workers/type</span><span className="inv-mono">${run.estimatedCostUsd.toFixed(4)}</span></div>
               <ul className="blk-kind-rows">{runKinds(run).map(k => { const kc = overallKindCounts(run, k); return (
                 <li key={k} data-testid={`widget-kind-${k}`}><span className={`blk-kind k-${k}`}>{KIND_META[k].plural}</span><span className="inv-mono">{run.continuous ? `${kc.completed} done${kc.exhausted ? ' · none left' : ''}` : kc.total === 0 ? 'No eligible profiles' : `${kc.completed}/${kc.total}`}{kc.failed ? ` · ${kc.failed} failed` : ''}{kc.running ? ` · ${kc.running} live` : ''}</span>
                   {!run.continuous && <i className="blk-mini"><b style={{ transform: `scaleX(${kc.total ? (kc.completed + kc.failed) / kc.total : 0})` }} /></i>}</li>); })}</ul>
@@ -92,7 +94,11 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
           <label className="blk-cont"><input type="checkbox" checked={continuous} onChange={e => { setContinuous(e.target.checked); setAck(false); }} data-testid="checkbox-widget-continuous" /><div>Run continuously<span>Counts become chunk sizes, not a cap. Keeps processing all remaining profiles until exhausted or stopped, with no total spending cap, even after the browser closes.</span></div></label>
           {continuous && <div className={`blk-widget-type on`}><label htmlFor="widget-cap">Optional total profile cap</label><input id="widget-cap" type="text" inputMode="numeric" placeholder="All" value={capRaw} onChange={e => { setCapRaw(e.target.value); setAck(false); }} aria-invalid={cap === undefined} style={{ width: 90, border: '1px solid #cbd6e1', borderRadius: 6, padding: '5px 7px', font: '700 12px var(--app-font-mono)' }} data-testid="input-widget-cap" /></div>}
           {continuous && <p className={`inv-mono blk-widget-total${cap === undefined ? ' bad' : ''}`} data-testid="text-widget-cap">{cap === undefined ? 'Cap must be 1 to 4294967295 or blank' : typeof cap === 'number' ? `At most ${cap} distinct profiles; failures count. Explicit retries may add charges.` : 'Blank: all remaining, no total cap'}</p>}
-          <div className="blk-paid"><CircleAlert size={14} /><p><b>Paid service.</b> Fixed single worker per type: one lookup per type at a time. Each profile calls paid providers.</p></div>
+          <label className="blk-worker-field">Workers per type (1–20)
+            <input type="number" min={1} max={20} value={workers} onChange={e => { setWorkers(Number(e.target.value)); setAck(false); }} data-testid="input-widget-workers" />
+          </label>
+          {!validWorkers && <p className="inv-form-error" role="alert">Workers must be a whole number from 1 to 20.</p>}
+          <div className="blk-paid"><CircleAlert size={14} /><p><b>Paid service.</b> Up to {validWorkers ? workers * scopes.length : '—'} concurrent profile lookups across selected types. Higher counts spend credits faster and may hit provider rate limits. Settings apply to new runs only.</p></div>
           <label className="blk-ack"><input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} data-testid="checkbox-widget-ack" /> I understand this run makes paid requests.</label>
           <button type="button" className="inv-submit blk-small" disabled={!canStart} onClick={submit} data-testid="button-widget-start">
             <Zap size={14} /> {start.isPending ? 'Starting run' : continuous ? `Run all remaining · ${scopes.length} ${scopes.length === 1 ? 'type' : 'types'}` : `Start ${total} across ${scopes.length} ${scopes.length === 1 ? 'type' : 'types'}`}

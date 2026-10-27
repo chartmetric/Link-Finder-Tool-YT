@@ -13,6 +13,20 @@ tags:
   - name: profile-search
     description: Public profile discovery
 paths:
+  /bulk/coverage:
+    get:
+      operationId: getBulkCoverage
+      tags: [profile-search]
+      summary: Evidence-backed platform resolution coverage for all bulk profile types
+      responses:
+        "200":
+          description: Latest active catalog profiles with documented resolution on every supported platform
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkCoverage"
+        "503":
+          description: Coverage could not be calculated
   /profiles/musician-coverage:
     get:
       operationId: getMusicianCoverage
@@ -266,6 +280,32 @@ paths:
           description: Suggestion storage is unavailable
 components:
   schemas:
+    BulkCoverageBucket:
+      type: object
+      required: [group, total, covered]
+      properties:
+        group: { type: string, enum: [tiers_1_3, tiers_1_5, all] }
+        total: { type: number }
+        covered: { type: number }
+    BulkTypeCoverage:
+      type: object
+      required: [profileType, buckets]
+      properties:
+        profileType: { $ref: "#/components/schemas/BulkProfileType" }
+        buckets:
+          type: array
+          items: { $ref: "#/components/schemas/BulkCoverageBucket" }
+    BulkCoverage:
+      type: object
+      required: [types, generatedAt, platforms]
+      properties:
+        types:
+          type: array
+          items: { $ref: "#/components/schemas/BulkTypeCoverage" }
+        generatedAt: { type: string }
+        platforms:
+          type: array
+          items: { type: string }
     MusicianCoverageTier:
       type: object
       required: [tier, profiles, withLlmLinks, withInvestigationLinks]
@@ -353,7 +393,7 @@ components:
       required: [profileType, limit]
       properties:
         profileType: { $ref: "#/components/schemas/BulkProfileType" }
-        limit: { type: number, minimum: 1, maximum: 25 }
+        limit: { type: number, minimum: 1, maximum: 1000 }
     BulkBrandCandidate:
       type: object
       required: [profileId, profileName, tier, tierRank, accountId, platform, handle, url]
@@ -397,6 +437,7 @@ components:
         requestId: { type: string, pattern: "^[0-9a-fA-F-]{36}$" }
         continuous: { type: boolean, default: false, description: Process remaining unattempted eligible profiles in saved chunks until exhausted or stopped; scopes required }
         profileLimit: { type: number, minimum: 1, maximum: 4294967295, description: Optional total profile-attempt cap for continuous mode; omitted means all remaining eligible profiles }
+        workersPerType: { type: number, minimum: 1, maximum: 20, description: Integer concurrent profile lookups per selected type, frozen at start; defaults to 1 }
         profileIds:
           type: array
           minItems: 1
@@ -413,7 +454,7 @@ components:
           minItems: 1
           maxItems: 3
           items: { $ref: "#/components/schemas/BulkProfileScopeInput" }
-          description: Alternative to profileIds; one distinct entry per selected type. Combined limits must not exceed 25. Each type has at most one concurrent lookup.
+          description: Alternative to profileIds; one distinct entry per selected type. Combined chunk limits must not exceed 1000. Each type uses the selected workersPerType concurrency.
     BulkPlatformOutcome:
       type: object
       required: [platform, status, reason, evidenceUrls, checkedAt]
@@ -444,6 +485,7 @@ components:
         updatedAt: { type: string }
         heartbeatAt: { type: string }
         workerId: { type: string }
+        workersPerType: { type: number, minimum: 1, maximum: 20, description: Frozen integer concurrent profile lookups per type; legacy runs default to 1 }
         resumeVersion: { type: number }
         stopRequested: { type: boolean }
         estimatedCostUsd: { type: number }

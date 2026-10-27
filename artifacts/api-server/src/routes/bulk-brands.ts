@@ -7,8 +7,13 @@ import { listEligibleBrands } from "../lib/bulk-brand-candidates";
 import { readBulkBatchArchives, readBulkRuns } from "../lib/bulk-run-store";
 import { BulkError, getBulkRun, resumeBulkRun, startBulkRun, stopBulkRun } from "../lib/bulk-brand-runner";
 import { validateBulkSelection } from "../lib/bulk-profile-scopes";
+import { getBulkCoverage } from "../lib/bulk-coverage";
 
 const router: IRouter = Router();
+router.get("/bulk/coverage", async (req, res) => {
+  try { res.json(await getBulkCoverage()); }
+  catch (error) { respondError(req, res, error); }
+});
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function respondError(req: Request, res: Response, error: unknown) {
   req.log.error({ err: error }, "Bulk request failed");

@@ -29,6 +29,7 @@ export function RunDetail({ runId, onClose, onOpenRun }: { runId: string; onClos
         <button type="button" className="inv-retry" style={{ marginTop: 0 }} onClick={onClose} data-testid="button-close-run"><X size={14} /> Close</button>
       </div>
 
+      {run && <p className="inv-mono" data-testid="text-run-workers">{run.workersPerType ?? 1} workers per type · up to {(run.workersPerType ?? 1) * runKinds(run).length} concurrent profile lookups · frozen at start</p>}
       {q.isLoading && <div className="inv-history-card" aria-busy="true">{[0, 1, 2].map(i => <div className="inv-skel" key={i} />)}</div>}
       {q.isError && (
         <div className="inv-history-warn" role="alert" data-testid="status-run-error">
