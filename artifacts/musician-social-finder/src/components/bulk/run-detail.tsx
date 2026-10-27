@@ -57,7 +57,7 @@ function RunBody({ run, onStop, onResume, stopping, resuming, error, onOpenRun }
         <div className="blk-run-stat lead"><span>Status</span><strong className={`blk-pill r-${run.status}`} data-testid="status-run">{run.status}</strong>{run.stopRequested && active && <em>Stop requested: finishing current profiles</em>}</div>
         <div className="blk-run-stat"><span>Completed</span><strong data-testid="text-run-completed">{c.completed}/{run.items.length}</strong></div>
         <div className="blk-run-stat"><span>Failed</span><strong>{c.failed}</strong></div>
-        <div className="blk-run-stat"><span>Queued</span><strong>{c.queued + c.running}</strong></div>
+        <div className="blk-run-stat"><span>Running / queued</span><strong>{c.running} / {c.queued}</strong></div>
         <div className="blk-run-stat"><span>Est. cost</span><strong data-testid="text-run-cost">${run.estimatedCostUsd.toFixed(4)}</strong></div>
       </div>
       <div className="blk-progress" role="progressbar" aria-valuemin={0} aria-valuemax={run.items.length} aria-valuenow={c.completed + c.failed} aria-label="Run progress">
@@ -91,7 +91,6 @@ function ContinuousBody({ run, onStop, onResume, stopping, resuming, error, onOp
   const cap = cont.profileLimit;
   const processed = o.completed + o.failed;
   const capReached = !!cap && processed >= cap;
-  const allDone = capReached || (cont.cursors.length > 0 && cont.cursors.every(x => x.exhausted));
   return (
     <>
       <div className="blk-run-bar">
@@ -101,10 +100,17 @@ function ContinuousBody({ run, onStop, onResume, stopping, resuming, error, onOp
         <div className="blk-run-stat"><span>Saved chunks</span><strong data-testid="text-run-batches">{cont.batches}</strong></div>
         <div className="blk-run-stat"><span>Est. cost</span><strong data-testid="text-run-cost">${run.estimatedCostUsd.toFixed(4)}</strong></div>
       </div>
-      <div className="blk-progress" aria-hidden="true">{active && !allDone ? null : <i className="done" style={{ transform: `scaleX(${allDone ? 1 : 0})` }} />}</div>
+      <div className="blk-progress" role="progressbar" aria-label={cap ? "Continuous run progress toward profile cap" : "Current chunk progress"}
+        aria-valuemin={0} aria-valuemax={cap ?? (run.items.length || 1)}
+        aria-valuenow={Math.min(cap ?? (run.items.length || 1), cap ? processed : cur.completed + cur.failed)}
+        aria-valuetext={cap ? `${processed} of ${cap} profiles processed` : run.items.length ? `${cur.completed + cur.failed} of ${run.items.length} profiles processed in current chunk; overall total unknown` : active ? "Scanning for the next chunk; overall total unknown" : "No current chunk"}>
+        <i className="done" style={{ transform: `scaleX(${cap ? Math.min(1, o.completed / cap) : cur.completed / (run.items.length || 1)})` }} />
+        <i className="fail" style={{ transform: `scaleX(${cap ? Math.min(1, processed / cap) : (cur.completed + cur.failed) / (run.items.length || 1)})` }} />
+      </div>
       <div className="blk-cont-strip" data-testid="text-continuous-summary">
         {capReached ? <span data-testid="text-cap-reached"><b>Profile cap reached</b> ({processed} of {cap} profiles)</span> : cap ? <span><b>{processed} of {cap}</b> capped profiles processed</span> : <span><b>Total unknown</b> while the catalog still has remaining profiles</span>}
         <span>Current chunk: <b>{cur.completed + cur.failed}/{run.items.length}</b>{run.items.length === 0 ? (active ? ' (scanning)' : '') : ''}</span>
+        <span><b>{cur.running}</b> running · <b>{cur.queued}</b> queued in current chunk</span>
         <span>All earlier results are saved</span>
       </div>
       <ul className="blk-kind-rows" data-testid="list-run-kinds">{runKinds(run).map(k => { const kc = overallKindCounts(run, k); return (

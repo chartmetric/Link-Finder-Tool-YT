@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useIsMutating, useQueryClient } from '@tanstack/react-query';
 import { Activity, ArrowLeft, ArrowRight, CircleAlert, X } from 'lucide-react';
@@ -9,6 +9,7 @@ import { RunDetail } from '@/components/bulk/run-detail';
 import { LaunchWidget } from '@/components/bulk/launch-widget';
 import { CoveragePanel } from '@/components/bulk/coverage-panel';
 import { AutoLauncher } from '@/components/bulk/auto-launcher';
+import { RunProgress } from '@/components/bulk/run-progress';
 import { isActiveRun, KIND_META, LAST_RUN_KEY, PROFILE_KINDS, apiError, kindOf, readStorage, selectionKey, writeStorage, type ProfileKind } from '@/lib/bulk';
 import '@/styles/bulk.css';
 
@@ -29,10 +30,24 @@ export default function BulkBrands() {
   const pendingRequest = useRef<{ id: string; key: string } | null>(null);
   const start = useStartBulkBrandRun();
   const busy = useIsMutating() > 0;
-  const currentRun = useGetBulkBrandRun(runId ?? '', { query: { queryKey: getGetBulkBrandRunQueryKey(runId ?? ''), enabled: !!runId } });
+  const currentRun = useGetBulkBrandRun(runId ?? '', { query: { queryKey: getGetBulkBrandRunQueryKey(runId ?? ''), enabled: !!runId, refetchInterval: query => isActiveRun(query.state.data) ? 3000 : false } });
   const rootId = runId ? currentRun.data?.archiveOf : undefined;
-  const rootRun = useGetBulkBrandRun(rootId ?? '', { query: { queryKey: getGetBulkBrandRunQueryKey(rootId ?? ''), enabled: !!rootId } });
+  const rootRun = useGetBulkBrandRun(rootId ?? '', { query: { queryKey: getGetBulkBrandRunQueryKey(rootId ?? ''), enabled: !!rootId, refetchInterval: query => isActiveRun(query.state.data) ? 3000 : false } });
   const startBlocked = busy || isActiveRun(currentRun.data) || (!!runId && currentRun.isLoading) || isActiveRun(rootRun.data) || (!!rootId && rootRun.isLoading);
+
+  const summaryRef = useRef<HTMLElement>(null);
+  const detailRef = useRef<HTMLDivElement>(null);
+  const [scrollReq, setScrollReq] = useState(0);
+  const showRun = useCallback((id: string) => { setRunId(id); setScrollReq(n => n + 1); }, []);
+  useEffect(() => {
+    if (!scrollReq) return;
+    const el = summaryRef.current; if (!el) return;
+    el.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    el.focus({ preventScroll: true });
+  }, [scrollReq]);
+  const openDetail = () => detailRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  const summary = rootId ? rootRun : currentRun;
+  const summaryId = rootId ?? runId;
 
   useEffect(() => { for (const k of PROFILE_KINDS) writeStorage(selectionKey(k), [...sel[k].values()]); }, [sel]);
   useEffect(() => { writeStorage(LAST_RUN_KEY, runId); }, [runId]);
@@ -61,7 +76,7 @@ export default function BulkBrands() {
         pendingRequest.current = null;
         qc.setQueryData(getGetBulkBrandRunQueryKey(run.id), run);
         qc.invalidateQueries({ queryKey: getListBulkBrandRunsQueryKey() });
-        setRunId(run.id);
+        showRun(run.id);
         setSel(s => ({ ...s, [submittedKind]: new Map() }));
         setAck(false);
       },
@@ -98,9 +113,11 @@ export default function BulkBrands() {
             <p className="inv-section-note">Results are suggestions for human review. No approvals or catalog writes happen here.</p>
           </div>
 
+          {summaryId && <RunProgress ref={summaryRef} runId={summaryId} run={summary.data} loading={summary.isLoading} fetching={summary.isFetching} isError={summary.isError} error={summary.error} onRetry={() => summary.refetch()} onOpenDetail={openDetail} />}
+
           <CoveragePanel kind={kind} />
 
-          <AutoLauncher kind={kind} blocked={!!startBlocked} onRun={setRunId} />
+          <AutoLauncher kind={kind} blocked={!!startBlocked} onRun={showRun} />
 
           <CandidatePicker key={kind} kind={kind} selected={selected} onToggle={toggle} onSetMany={setMany} maxBatch={maxBatch} onMaxBatch={setMaxBatch} />
 
@@ -125,11 +142,11 @@ export default function BulkBrands() {
             </div>
           </section>
 
-          {runId && <RunDetail key={runId} runId={runId} onClose={() => setRunId(null)} onOpenRun={setRunId} />}
-          <RunList activeId={runId ?? undefined} onOpen={setRunId} />
+          {runId && <div ref={detailRef} id="blk-run-detail" className="blk-run-anchor"><RunDetail key={runId} runId={runId} onClose={() => setRunId(null)} onOpenRun={setRunId} /></div>}
+          <RunList activeId={runId ?? undefined} onOpen={showRun} />
         </main>
       </div>
-      <LaunchWidget runId={runId} onRun={setRunId} />
+      <LaunchWidget runId={runId} onRun={showRun} />
       <footer className="inv-footer inv-wrap"><span>PROFILE HANDLES ONLINE / BULK {m.plural.toUpperCase()}</span><span>Not found means no supported account was found, not that none exists.</span></footer>
     </div>
   );
