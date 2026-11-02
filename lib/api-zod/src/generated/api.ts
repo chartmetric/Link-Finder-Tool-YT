@@ -579,6 +579,17 @@ export const ListBulkBrandRunsResponse = zod.object({
   "completedAt": zod.string().optional(),
   "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
 })),
+  "preparation": zod.object({
+  "status": zod.enum(['selecting', 'ready']),
+  "mode": zod.enum(['manual', 'one_chunk', 'continuous']),
+  "requested": zod.number(),
+  "selected": zod.number(),
+  "message": zod.string(),
+  "profileIds": zod.array(zod.number()).optional(),
+  "profileLimit": zod.number().optional(),
+  "upperProfileId": zod.number().optional(),
+  "legacyChecked": zod.boolean().optional()
+}).optional(),
   "selectionMode": zod.enum(['remaining', 'rerun']).optional(),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
@@ -817,6 +828,17 @@ export const StartBulkBrandRunResponse = zod.object({
   "completedAt": zod.string().optional(),
   "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
 })),
+  "preparation": zod.object({
+  "status": zod.enum(['selecting', 'ready']),
+  "mode": zod.enum(['manual', 'one_chunk', 'continuous']),
+  "requested": zod.number(),
+  "selected": zod.number(),
+  "message": zod.string(),
+  "profileIds": zod.array(zod.number()).optional(),
+  "profileLimit": zod.number().optional(),
+  "upperProfileId": zod.number().optional(),
+  "legacyChecked": zod.boolean().optional()
+}).optional(),
   "selectionMode": zod.enum(['remaining', 'rerun']).optional(),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
@@ -1025,6 +1047,17 @@ export const GetBulkBrandRunResponse = zod.object({
   "completedAt": zod.string().optional(),
   "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
 })),
+  "preparation": zod.object({
+  "status": zod.enum(['selecting', 'ready']),
+  "mode": zod.enum(['manual', 'one_chunk', 'continuous']),
+  "requested": zod.number(),
+  "selected": zod.number(),
+  "message": zod.string(),
+  "profileIds": zod.array(zod.number()).optional(),
+  "profileLimit": zod.number().optional(),
+  "upperProfileId": zod.number().optional(),
+  "legacyChecked": zod.boolean().optional()
+}).optional(),
   "selectionMode": zod.enum(['remaining', 'rerun']).optional(),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
@@ -1239,6 +1272,17 @@ export const ListBulkRunBatchesResponse = zod.object({
   "completedAt": zod.string().optional(),
   "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
 })),
+  "preparation": zod.object({
+  "status": zod.enum(['selecting', 'ready']),
+  "mode": zod.enum(['manual', 'one_chunk', 'continuous']),
+  "requested": zod.number(),
+  "selected": zod.number(),
+  "message": zod.string(),
+  "profileIds": zod.array(zod.number()).optional(),
+  "profileLimit": zod.number().optional(),
+  "upperProfileId": zod.number().optional(),
+  "legacyChecked": zod.boolean().optional()
+}).optional(),
   "selectionMode": zod.enum(['remaining', 'rerun']).optional(),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
@@ -1458,6 +1502,17 @@ export const StopBulkBrandRunResponse = zod.object({
   "completedAt": zod.string().optional(),
   "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
 })),
+  "preparation": zod.object({
+  "status": zod.enum(['selecting', 'ready']),
+  "mode": zod.enum(['manual', 'one_chunk', 'continuous']),
+  "requested": zod.number(),
+  "selected": zod.number(),
+  "message": zod.string(),
+  "profileIds": zod.array(zod.number()).optional(),
+  "profileLimit": zod.number().optional(),
+  "upperProfileId": zod.number().optional(),
+  "legacyChecked": zod.boolean().optional()
+}).optional(),
   "selectionMode": zod.enum(['remaining', 'rerun']).optional(),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
@@ -1677,6 +1732,17 @@ export const ResumeBulkBrandRunResponse = zod.object({
   "completedAt": zod.string().optional(),
   "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
 })),
+  "preparation": zod.object({
+  "status": zod.enum(['selecting', 'ready']),
+  "mode": zod.enum(['manual', 'one_chunk', 'continuous']),
+  "requested": zod.number(),
+  "selected": zod.number(),
+  "message": zod.string(),
+  "profileIds": zod.array(zod.number()).optional(),
+  "profileLimit": zod.number().optional(),
+  "upperProfileId": zod.number().optional(),
+  "legacyChecked": zod.boolean().optional()
+}).optional(),
   "selectionMode": zod.enum(['remaining', 'rerun']).optional(),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),

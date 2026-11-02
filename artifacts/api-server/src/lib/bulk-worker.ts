@@ -13,6 +13,7 @@ export type WorkerDependencies = {
   nextChunk?: typeof nextContinuousChunk;
   saveHistory: (item: BulkBrandItem) => Promise<void>;
   warn: (error: unknown) => void;
+  prepare?: (run: BulkBrandRun, checkpoint: () => Promise<void>) => Promise<boolean>;
 };
 
 /** Only an explicit successful claim launches work; all lanes share its fence. */
@@ -39,7 +40,9 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
       run.stopRequested = saved.stopRequested;
       run.updatedAt = saved.updatedAt;
       run.heartbeatAt = saved.heartbeatAt;
-      await deps.archive(saved);
+      // Selection checkpoints live in the transactional coordinator. Do not
+      // append empty snapshots over a legacy archive before checking its ID.
+      if (saved.preparation?.status !== "selecting") await deps.archive(saved);
     }).catch(error => {
       failure = error;
       run.stopRequested = true;
@@ -48,6 +51,19 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
     return writes;
   };
   try {
+    if (run.preparation?.status === "selecting") {
+      if (!deps.prepare) throw new Error("This worker cannot prepare the run. No paid requests were started.");
+      const proceed = await deps.prepare(run, async () => {
+        await guard();
+        run.stopRequested ||= await deps.ownership.renew(lease);
+        if (run.stopRequested) throw new Error("Stopped during profile selection. No paid requests were started.");
+        await persist();
+      });
+      if (!proceed) return; // Legacy request restored and its lease released.
+      await guard();
+      run.stopRequested ||= await deps.ownership.renew(lease);
+      await persist(); // Full ready queue archived before any paid admission.
+    }
     for (;;) {
       const indices = new Map(run.items.map((item, index) => [item, index]));
       await runScopedQueue(run.items.filter(item => item.status === "queued"), async () => {
@@ -112,7 +128,7 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
     clearInterval(timer);
     if (heartbeat) await heartbeat;
     await guard();
-    run.status = run.items.some(item => item.status === "queued")
+    run.status = (run.stopRequested && run.preparation?.status === "selecting") || run.items.some(item => item.status === "queued")
       || (run.continuous && (run.stopRequested || (!continuousLimitReached(run.continuous) && !run.continuous.cursors.every(cursor => cursor.exhausted))))
       ? "stopped" : "completed";
     await persist(undefined, true);
@@ -120,12 +136,14 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
     clearInterval(timer);
     if (heartbeat) await heartbeat;
     run.status = "stopped";
-    run.error = error instanceof Error ? error.message : "Bulk queue stopped unexpectedly.";
+    run.error = run.preparation?.status === "selecting"
+      ? `Profile preparation stopped: ${error instanceof Error ? error.message : "catalog unavailable"}. No paid provider requests were started. You can explicitly resume this saved run.`
+      : error instanceof Error ? error.message : "Bulk queue stopped unexpectedly.";
     deps.warn(error);
     // Bypass a failed archive chain, but never bypass the authoritative fence.
     try {
       const saved = await deps.ownership.save(lease, run, undefined, true);
-      await deps.archive(saved);
+      if (saved.preparation?.status !== "selecting" || saved.preparation.legacyChecked) await deps.archive(saved);
     } catch (saveError) { deps.warn(saveError); }
   } finally {
     clearInterval(timer);

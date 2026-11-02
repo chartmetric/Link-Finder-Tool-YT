@@ -575,6 +575,35 @@ export const BulkBrandRunSelectionMode = {
   rerun: 'rerun',
 } as const;
 
+export type BulkRunPreparationStatus = typeof BulkRunPreparationStatus[keyof typeof BulkRunPreparationStatus];
+
+
+export const BulkRunPreparationStatus = {
+  selecting: 'selecting',
+  ready: 'ready',
+} as const;
+
+export type BulkRunPreparationMode = typeof BulkRunPreparationMode[keyof typeof BulkRunPreparationMode];
+
+
+export const BulkRunPreparationMode = {
+  manual: 'manual',
+  one_chunk: 'one_chunk',
+  continuous: 'continuous',
+} as const;
+
+export interface BulkRunPreparation {
+  status: BulkRunPreparationStatus;
+  mode: BulkRunPreparationMode;
+  requested: number;
+  selected: number;
+  message: string;
+  profileIds?: number[];
+  profileLimit?: number;
+  upperProfileId?: number;
+  legacyChecked?: boolean;
+}
+
 export type BulkContinuousProgressCursorsItem = {
   profileType: BulkProfileType;
   afterId: number;
@@ -610,6 +639,7 @@ export interface BulkBrandRun {
   stopRequested: boolean;
   estimatedCostUsd: number;
   items: BulkBrandItem[];
+  preparation?: BulkRunPreparation;
   selectionMode?: BulkBrandRunSelectionMode;
   scopes?: BulkProfileScopeInput[];
   continuous?: BulkContinuousProgress;

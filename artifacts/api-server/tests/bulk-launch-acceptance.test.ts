@@ -86,7 +86,7 @@ test("accepted starts and resumes persist once; delayed duplicate requests canno
     assert.equal((await getBulkRun(id))!.launchHistory!.length, 2);
     await resumeBulkRun(id, { requestId: nextRequest, resumeVersion: nextGeneration });
     await settle(id);
-    const restored = snapshots.get(id)!;
+    const restored = (await getBulkRun(id))!;
     assert.equal(restored.launchHistory!.length, 3);
     assert.equal(restored.launchHistory![2].source, "unknown");
     assert.equal(restored.launchHistory![2].settings.profileLimit, 8);

@@ -79,7 +79,7 @@ export class BulkOwnership {
           }
         }
         const retry = run.items.filter((item, i) => item.status !== "completed" && !existing!.uncertain.includes(i));
-        if (!retry.length && !run.continuous) {
+        if (!retry.length && !run.continuous && run.preparation?.status !== "selecting") {
           if (!existing!.uncertain.length) throw new BulkError("All brands in this run are already completed.");
           run.status = "stopped";
           run.error = "No safely retryable brands remain. Completed results are saved; uncertain paid work cannot be replayed.";
@@ -98,7 +98,7 @@ export class BulkOwnership {
         }
       }
       const maximum = run.scopes ? MAX_BULK_CHUNK : 25;
-      if ((!run.continuous && run.items.length < 1) || run.items.length > maximum) throw new BulkError(`Select 1–${maximum} profiles.`, 400);
+      if ((!run.continuous && run.preparation?.status !== "selecting" && run.items.length < 1) || run.items.length > maximum) throw new BulkError(`Select 1–${maximum} profiles.`, 400);
       // Global, durable monotonic fencing number; never use worker clocks for ordering.
       const token = ++tx.queue.fence;
       if (!Number.isSafeInteger(token)) throw new BulkError("Bulk fencing sequence exhausted.", 503);
@@ -134,10 +134,29 @@ export class BulkOwnership {
   async guard(lease: Lease) {
     await this.store.transact(lease.runId, tx => { this.owned(tx, lease); });
   }
+  /** Restore an old request without ever replaying its paid admissions. */
+  async restoreArchived(lease: Lease, archived: BulkBrandRun) {
+    return this.store.transact(lease.runId, tx => {
+      const record = this.owned(tx, lease);
+      const run = structuredClone(archived);
+      run.resumeVersion = lease.token;
+      run.workerId = lease.workerId;
+      run.updatedAt = run.heartbeatAt = new Date(tx.now).toISOString();
+      if (["running", "stopping", "interrupted"].includes(run.status)) {
+        run.status = "stopped";
+        run.error = "Archived run restored. Resume explicitly; uncertain paid work will not be repeated.";
+      }
+      record.run = run;
+      record.uncertain = run.items.flatMap((item, i) => item.status === "running" || item.retryBlocked ? [i] : []);
+      delete tx.queue.owner;
+      return structuredClone(run);
+    });
+  }
   async admit(lease: Lease, index: number) {
     return this.store.transact(lease.runId, tx => {
       const record = this.owned(tx, lease);
       if (record.run.stopRequested) return false;
+      if (record.run.preparation?.status === "selecting") throw new BulkError("Profile selection is not complete. Paid work is blocked.");
       const item = record.run.items[index];
       if (!item || item.status !== "queued" || record.uncertain.includes(index)) throw new BulkError("Brand already admitted; refusing duplicate paid work.");
       record.uncertain.push(index);

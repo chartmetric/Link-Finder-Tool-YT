@@ -46,6 +46,10 @@ export function RunDetail({ runId, onClose, onOpenRun }: { runId: string; onClos
       )}
 
       {run && <LaunchHistory run={run} />}
+      {run?.preparation?.status === 'selecting' && <div className="inv-history-warn" role="status" data-testid="text-run-preparing">
+        <strong>{isActiveRun(run) ? 'Preparing profile selection' : 'Profile preparation paused'}: {run.preparation.selected} / up to {run.preparation.requested} selected.</strong>
+        <p>{run.preparation.message} Paid lookups will not start until preparation is complete.</p>
+      </div>}
       {run && <RunBody run={run} onOpenRun={onOpenRun} stopping={stop.isPending} resuming={resume.isPending}
         onStop={() => stop.mutate({ runId: run.id, data: { resumeVersion: run.resumeVersion } })}
         onResume={() => { if (window.confirm(`${resumeConfirm(run)} Interrupted requests with unknown outcomes are not repeated.`)) resume.mutate({ runId: run.id, data: { ...bulkRequest(`resume:${run.id}`, 'run_monitor'), resumeVersion: run.resumeVersion } }); }}
@@ -62,7 +66,7 @@ function RunBody({ run, onStop, onResume, stopping, resuming, error, onOpenRun }
   return (
     <>
       <div className="blk-run-bar">
-        <div className="blk-run-stat lead"><span>Status</span><strong className={`blk-pill r-${run.status}`} data-testid="status-run">{run.status}</strong>{run.stopRequested && active && <em>Stop requested: finishing current profiles</em>}</div>
+        <div className="blk-run-stat lead"><span>Status</span><strong className={`blk-pill r-${run.status}`} data-testid="status-run">{run.preparation?.status === 'selecting' && active ? 'preparing' : run.status}</strong>{run.stopRequested && active && <em>Stop requested: finishing current step</em>}</div>
         <div className="blk-run-stat"><span>Completed</span><strong data-testid="text-run-completed">{c.completed}/{run.items.length}</strong></div>
         <div className="blk-run-stat"><span>Failed</span><strong>{c.failed}</strong></div>
         <div className="blk-run-stat"><span>Running / queued</span><strong>{c.running} / {c.queued}</strong></div>

@@ -648,6 +648,7 @@ components:
         stopRequested: { type: boolean }
         estimatedCostUsd: { type: number }
         items: { type: array, items: { $ref: "#/components/schemas/BulkBrandItem" } }
+        preparation: { $ref: "#/components/schemas/BulkRunPreparation" }
         selectionMode:
           type: string
           enum: [remaining, rerun]
@@ -662,6 +663,19 @@ components:
           type: array
           description: Append-only accepted user Starts and explicit Resumes. Automatic chunk continuation does not add events. Missing on older runs.
           items: { $ref: "#/components/schemas/BulkLaunchEvent" }
+    BulkRunPreparation:
+      type: object
+      required: [status, mode, requested, selected, message]
+      properties:
+        status: { type: string, enum: [selecting, ready] }
+        mode: { type: string, enum: [manual, one_chunk, continuous] }
+        requested: { type: number }
+        selected: { type: number }
+        message: { type: string }
+        profileIds: { type: array, items: { type: number } }
+        profileLimit: { type: number }
+        upperProfileId: { type: number }
+        legacyChecked: { type: boolean }
     BulkContinuousProgress:
       type: object
       required: [upperProfileId, batches, completed, failed, completedCostUsd, cursors]

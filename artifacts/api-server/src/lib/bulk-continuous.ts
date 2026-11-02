@@ -6,8 +6,8 @@ import { candidateAccountIds, readAttemptedBulkProfileIds } from "./bulk-run-sto
 
 export type ContinuousProgress = NonNullable<BulkBrandRun["continuous"]>;
 
-export async function initialContinuousProgress(scopes: BulkProfileScopeInput[], profileLimit?: number): Promise<ContinuousProgress> {
-  const rows = await clickHouseJson<{ maxId: number }>("SELECT max(id) AS maxId FROM new_vertical.profile FORMAT JSON");
+export async function initialContinuousProgress(scopes: BulkProfileScopeInput[], profileLimit?: number, readCatalog = clickHouseJson): Promise<ContinuousProgress> {
+  const rows = await readCatalog<{ maxId: number }>("SELECT max(id) AS maxId FROM new_vertical.profile FORMAT JSON");
   return {
     upperProfileId: Number(rows.data[0]?.maxId ?? 0), batches: 0, completed: 0, failed: 0, completedCostUsd: 0,
     ...(profileLimit !== undefined ? { profileLimit } : {}),

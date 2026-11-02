@@ -42,10 +42,22 @@ export function eligibleBrandSql(selectedIds = false, bounded = false, filters: 
       WHERE profile_type = {profileType:String} AND grain = 'global'
       GROUP BY profile HAVING tupleElement(assignment, 1) = {tier:UInt8}
     ),` : ""}
+    ${!selectedIds ? `
+    source_ids AS (
+      SELECT DISTINCT id FROM new_vertical.profile
+      WHERE id > {afterId:UInt64} ${bounded ? "AND id <= {upperId:UInt64}" : ""}
+        AND (profile_type = {profileType:String} OR has(profile_types, {profileType:String}))
+        ${filters.search ? `AND id IN (
+          SELECT id FROM matching_names
+          UNION DISTINCT SELECT tupleElement(link, 1) FROM matching_links
+        )` : ""}
+        ${filters.tier ? "AND id IN (SELECT profile FROM matching_tiers)" : ""}
+      ORDER BY id ASC LIMIT {rowLimit:UInt32}
+    ),` : ""}
     current_profiles AS (
       SELECT id, argMax(tuple(name, deleted_at, profile_type, profile_types), updated_at) AS data
       FROM new_vertical.profile
-      WHERE ${selectedIds ? "id IN {ids:Array(UInt64)}" : "id > {afterId:UInt64}"}
+      WHERE ${selectedIds ? "id IN {ids:Array(UInt64)}" : "id IN (SELECT id FROM source_ids)"}
       ${bounded ? "AND id <= {upperId:UInt64}" : ""}
       ${filters.search ? `AND id IN (
         SELECT id FROM matching_names
@@ -57,8 +69,14 @@ export function eligibleBrandSql(selectedIds = false, bounded = false, filters: 
         ${filters.tier ? "AND id IN (SELECT profile FROM matching_tiers)" : ""}
       ORDER BY id ASC LIMIT {rowLimit:UInt32}
     )
-    SELECT id AS profileId, tupleElement(data, 1) AS profileName
-    FROM current_profiles ORDER BY id ASC FORMAT JSON
+    SELECT id AS profileId, tupleElement(data, 1) AS profileName,
+      toUInt64(0) AS scanAfterId, toUInt64(0) AS scanCount
+    FROM current_profiles
+    ${!selectedIds ? `
+    UNION ALL
+    SELECT toUInt64(0) AS profileId, '' AS profileName, max(id) AS scanAfterId, count() AS scanCount
+    FROM source_ids` : ""}
+    ORDER BY profileId ASC FORMAT JSON
   `;
 }
 
@@ -141,28 +159,32 @@ export async function listEligibleBrands(input: { limit: number; afterId?: numbe
   let afterId = input.afterId ?? 0;
   for (let scan = 0; scan < 4; scan++) {
     const rowLimit = input.eligibleOnly && !input.profileIds ? 250 : input.limit + 1;
-    const rows = await readCatalog<Pick<CatalogRow, "profileId" | "profileName">>(eligibleBrandSql(Boolean(input.profileIds), input.maxProfileId !== undefined, { search: Boolean(search), tier: filters.tier !== undefined }), {
+    const rows = await readCatalog<Pick<CatalogRow, "profileId" | "profileName"> & { scanAfterId?: number; scanCount?: number }>(eligibleBrandSql(Boolean(input.profileIds), input.maxProfileId !== undefined, { search: Boolean(search), tier: filters.tier !== undefined }), {
       ids: JSON.stringify(input.profileIds ?? []), profileType: catalogProfileType(profileType),
       afterId: String(afterId), rowLimit: String(rowLimit),
       search, tier: String(filters.tier ?? 0),
       ...(input.maxProfileId !== undefined ? { upperId: String(input.maxProfileId) } : {}),
     }, 20_000);
-    const details = rows.data.length ? await readCatalog<Omit<CatalogRow, "profileName">>(profileAccountDetailsSql(), {
-      ids: JSON.stringify(rows.data.map(row => Number(row.profileId))), profileType: catalogProfileType(profileType),
+    // The sentinel preserves scan progress even when every historical candidate
+    // in a page is now deleted or belongs to a different type.
+    const scanState = rows.data.find(row => Number(row.profileId) === 0 && row.scanCount !== undefined);
+    const profileRows = rows.data.filter(row => Number(row.profileId) > 0);
+    const details = profileRows.length ? await readCatalog<Omit<CatalogRow, "profileName">>(profileAccountDetailsSql(), {
+      ids: JSON.stringify(profileRows.map(row => Number(row.profileId))), profileType: catalogProfileType(profileType),
     }, 20_000) : { data: [] };
     const byId = new Map(details.data.map(row => [Number(row.profileId), row]));
-    const candidates = rows.data.map(row => catalogCandidate({
+    const candidates = profileRows.map(row => catalogCandidate({
       ...row, tier: null, tierRank: null, accounts: [], ...byId.get(Number(row.profileId)),
     }, profileType));
     const attempted = input.remaining ? await readAttemptedBulkCandidates(candidates) : new Set<number>();
     collected.push(...candidates.filter(row => (!input.eligibleOnly || row.canInvestigate) && !attempted.has(row.profileId)));
-    const more = !input.profileIds && rows.data.length === rowLimit;
-    afterId = Number(rows.data.at(-1)?.profileId ?? afterId);
+    const more = !input.profileIds && Number(scanState?.scanCount ?? profileRows.length) === rowLimit;
+    afterId = Math.max(afterId, Number(scanState?.scanAfterId ?? profileRows.at(-1)?.profileId ?? afterId));
     if (collected.length > input.limit || !more || !input.eligibleOnly || input.remaining) {
       const page = collected.slice(0, input.limit);
       return {
         profiles: page, hasMore: collected.length > input.limit || more,
-        nextAfterId: Number(page.at(-1)?.profileId ?? afterId), maxBatchSize: MAX_BULK_BATCH,
+        nextAfterId: Number(collected.length > input.limit ? page.at(-1)?.profileId : afterId), maxBatchSize: MAX_BULK_BATCH,
       };
     }
   }
@@ -171,7 +193,7 @@ export async function listEligibleBrands(input: { limit: number; afterId?: numbe
 
 /** Bounded, deterministic auto-selection; never pay twice for the same catalog
  * profile when it appears under more than one requested type. */
-export async function selectBulkScopes(scopes: BulkProfileScopeInput[], fetchPage = listEligibleBrands, mode: "remaining" | "rerun" = "remaining", maxProfileId?: number) {
+export async function selectBulkScopes(scopes: BulkProfileScopeInput[], fetchPage = listEligibleBrands, mode: "remaining" | "rerun" = "remaining", maxProfileId?: number, progress?: (selected: BulkBrandCandidate[]) => Promise<void>) {
   const selected: BulkBrandCandidate[] = [];
   const seen = new Set<number>();
   const accounts = new Set<string>();
@@ -189,6 +211,7 @@ export async function selectBulkScopes(scopes: BulkProfileScopeInput[], fetchPag
         selected.push(candidate);
         if (++added >= scope.limit) break;
       }
+      await progress?.(selected);
       if (!page.hasMore) break;
       if (page.nextAfterId <= afterId) throw new Error("Catalog selection did not advance. No paid queue was started.");
       afterId = page.nextAfterId;

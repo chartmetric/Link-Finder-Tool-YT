@@ -28,6 +28,7 @@ const STAGE_LABELS: Record<BulkBrandItemStage, string> = {
 
 export const RunProgress = forwardRef<HTMLElement, Props>(function RunProgress({ runId, run, loading, fetching, error, isError, onRetry, onOpenDetail }, ref) {
   const active = isActiveRun(run);
+  const preparing = run?.preparation?.status === 'selecting';
   const cont = run?.continuous;
   const cur = run ? runCounts(run) : null;
   const o = run ? overallCounts(run) : null;
@@ -51,7 +52,7 @@ export const RunProgress = forwardRef<HTMLElement, Props>(function RunProgress({
           <span className="inv-kicker">Live run</span>
           <h2 id="blk-rp-title" className="inv-mono" data-testid="text-rp-run-id">{rootId.slice(0, 8)}{cont && <> <span className="blk-tag">continuous</span></>}</h2>
         </div>
-        {run && <strong className={`blk-pill r-${run.status}`} data-testid="status-rp">{run.status}</strong>}
+        {run && <strong className={`blk-pill r-${run.status}`} data-testid="status-rp">{preparing && active ? 'preparing' : run.status}</strong>}
         <span className="blk-rp-live inv-mono" role="status" aria-live="polite" data-testid="status-rp-sync">
           {loading ? 'Loading run' : isError ? (run ? 'Stale: polling failed' : 'Could not load') : active ? (fetching ? 'Refreshing' : 'Live, every 3s') : run ? 'Final state' : ''}
           {active && !isError && <i className="blk-rp-dot" aria-hidden="true" />}
@@ -70,6 +71,10 @@ export const RunProgress = forwardRef<HTMLElement, Props>(function RunProgress({
       {run && cur && o && (
         <>
           {!active && TERMINAL[run.status] && <p className={`blk-rp-term t-${run.status}`} data-testid="text-rp-terminal">{TERMINAL[run.status]}{run.error ? ` · ${run.error}` : ''}</p>}
+          {preparing && <div className="blk-rp-note" role="status" data-testid="text-rp-preparing">
+            <strong>Preparing profiles: {run.preparation!.selected} / up to {run.preparation!.requested} selected.</strong>
+            <p>{run.preparation!.message} {active ? 'You can close this page; preparation continues on the server.' : 'Open the run monitor to explicitly resume preparation.'}</p>
+          </div>}
           <dl className="blk-rp-stats">
             <div><dt>{cont ? 'Processed total' : 'Processed'}</dt><dd data-testid="text-rp-processed">{cont ? (cap ? `${processed}/${cap}` : processed) : `${chunkDone}/${chunkTotal}`}</dd></div>
             <div><dt>Successful</dt><dd data-testid="text-rp-completed">{cont ? o.completed : cur.completed}</dd></div>
@@ -79,12 +84,12 @@ export const RunProgress = forwardRef<HTMLElement, Props>(function RunProgress({
             <div><dt>Updated</dt><dd className="sm" data-testid="text-rp-updated">{new Date(run.updatedAt).toLocaleTimeString()}</dd></div>
           </dl>
 
-          {pct !== null ? (
+          {!preparing && (pct !== null ? (
             <div className="blk-rp-bar-row">
               <div className="blk-rp-bar" role="progressbar" aria-label={barLabel} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct * 100)}><b style={{ transform: `scaleX(${pct})` }} /></div>
               <span className="inv-mono" data-testid="text-rp-percent">{(pct * 100).toFixed(1)}%</span>
             </div>
-          ) : <p className="blk-rp-note" data-testid="text-rp-uncapped">No total cap: overall total unknown, so no overall percentage.</p>}
+          ) : <p className="blk-rp-note" data-testid="text-rp-uncapped">No total cap: overall total unknown, so no overall percentage.</p>)}
 
           {cont && (
             <div className="blk-rp-bar-row chunk">

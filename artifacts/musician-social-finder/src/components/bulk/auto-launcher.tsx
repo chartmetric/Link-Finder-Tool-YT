@@ -71,7 +71,7 @@ export function AutoLauncher({ kind, blocked, onRun }: { kind: ProfileKind; bloc
           {start.isPending ? 'Starting run' : continuous ? `Run all remaining ${m.plural.toLowerCase()}` : `Start next ${limit} ${(limit === 1 ? m.label : m.plural).toLowerCase()}`} <ArrowRight size={16} />
         </button>
         {blocked && !start.isPending && <p className="blk-link" style={{ textDecoration: 'none' }}>A run is active or another action is in progress.</p>}
-        {start.isError && <p className="inv-form-error" role="alert" data-testid="text-auto-error">{apiError(start.error, 'The run could not be started.')} Retrying the same settings is safe.</p>}
+        {start.isError && <p className="inv-form-error" role="alert" data-testid="text-auto-error">{apiError(start.error, 'The launch could not be confirmed.')} Check saved runs before starting again. Retrying unchanged settings reuses the same launch request.</p>}
       </div>
     </section>
   );

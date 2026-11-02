@@ -12,11 +12,16 @@ export function withBulkLaunch(
   run: BulkBrandRun, action: BulkLaunchEvent["action"], requestId: string,
   source: BulkLaunchSource | undefined, startSettings?: BulkAcceptedSettings,
 ): BulkBrandRun {
+  const preparing = run.preparation?.status === "selecting" ? run.preparation : undefined;
   const settings: BulkAcceptedSettings = startSettings ?? {
     scopes: run.scopes ?? [],
-    continuous: !!run.continuous,
+    continuous: !!run.continuous || preparing?.mode === "continuous",
     workersPerType: run.workersPerType ?? 1,
-    ...(run.continuous ? {
+    ...(preparing ? {
+      profileIds: preparing.profileIds,
+      profileLimit: preparing.profileLimit,
+      upperProfileId: preparing.upperProfileId,
+    } : run.continuous ? {
       profileLimit: run.continuous.profileLimit,
       upperProfileId: run.continuous.upperProfileId,
     } : {

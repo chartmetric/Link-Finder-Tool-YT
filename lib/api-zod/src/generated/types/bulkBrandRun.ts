@@ -11,6 +11,7 @@ import type { BulkBrandRunStatus } from './bulkBrandRunStatus';
 import type { BulkContinuousProgress } from './bulkContinuousProgress';
 import type { BulkLaunchEvent } from './bulkLaunchEvent';
 import type { BulkProfileScopeInput } from './bulkProfileScopeInput';
+import type { BulkRunPreparation } from './bulkRunPreparation';
 
 export interface BulkBrandRun {
   id: string;
@@ -29,6 +30,7 @@ export interface BulkBrandRun {
   stopRequested: boolean;
   estimatedCostUsd: number;
   items: BulkBrandItem[];
+  preparation?: BulkRunPreparation;
   selectionMode?: BulkBrandRunSelectionMode;
   scopes?: BulkProfileScopeInput[];
   continuous?: BulkContinuousProgress;
