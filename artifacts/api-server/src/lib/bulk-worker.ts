@@ -14,7 +14,7 @@ export type WorkerDependencies = {
   nextChunk?: typeof nextContinuousChunk;
   saveHistory: (item: BulkBrandItem) => Promise<void>;
   warn: (error: unknown) => void;
-  prepare?: (run: BulkBrandRun, checkpoint: () => Promise<void>) => Promise<boolean>;
+  prepare?: (run: BulkBrandRun, checkpoint: () => Promise<void>, signal: AbortSignal) => Promise<boolean>;
 };
 
 /** Only an explicit successful claim launches work; all lanes share its fence. */
@@ -23,6 +23,16 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
   let failure: unknown;
   let preparingPhase = false;
   let writes = Promise.resolve();
+  const preparationAbort = new AbortController();
+  const stopPreparation = () => preparationAbort.abort(new Error(
+    "Stopped during profile selection. Catalog reads cancelled; server cancellation is best effort with a 40-second execution deadline. No paid requests were started.",
+  ));
+  const unsubscribe = deps.ownership.onStop(lease, () => {
+    run.stopRequested = true;
+    stopPreparation();
+  });
+  let preparationPoll: ReturnType<typeof setInterval> | undefined;
+  let polling: Promise<void> | undefined;
   const guard = async () => {
     if (failure) throw failure;
     await deps.ownership.guard(lease);
@@ -31,7 +41,8 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
     if (heartbeat || failure) return;
     heartbeat = deps.ownership.renew(lease).then(stop => {
       run.stopRequested ||= stop;
-    }).catch(error => { failure = error; }).finally(() => { heartbeat = undefined; });
+      if (stop) stopPreparation();
+    }).catch(error => { failure = error; preparationAbort.abort(error); }).finally(() => { heartbeat = undefined; });
   }, 15_000);
   timer.unref();
   const persist = (acknowledgedIndex?: number, release = false) => {
@@ -55,14 +66,30 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
   try {
     if (run.preparation?.status === "selecting") {
       preparingPhase = true;
+      if (!deps.prepare) throw new Error("This worker cannot prepare the run. No paid requests were started.");
+      // Other replicas cannot receive local notifications. Poll only while
+      // preparing, with at most one coordinator read in flight.
+      preparationPoll = setInterval(() => {
+        if (polling || preparationAbort.signal.aborted) return;
+        polling = deps.ownership.renew(lease).then(stop => {
+          run.stopRequested ||= stop;
+          if (stop) stopPreparation();
+        }).catch(error => {
+          failure = error;
+          preparationAbort.abort(error);
+        }).finally(() => { polling = undefined; });
+      }, 1_000);
+      preparationPoll.unref();
       const proceed = await withPreparationDiagnostics(run, async () => {
-        if (!deps.prepare) throw new Error("This worker cannot prepare the run. No paid requests were started.");
-        const ready = await deps.prepare(run, async () => {
+        const ready = await deps.prepare!(run, async () => {
+          preparationAbort.signal.throwIfAborted();
           await guard();
           run.stopRequested ||= await deps.ownership.renew(lease);
           if (run.stopRequested) throw new Error("Stopped during profile selection. No paid requests were started.");
           await persist();
-        });
+        }, preparationAbort.signal);
+        clearInterval(preparationPoll);
+        if (polling) await polling;
         if (!ready) return false;
         await observePreparationRead("coordinator_checkpoint", async () => {
           await guard();
@@ -144,11 +171,16 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
     await persist(undefined, true);
   } catch (error) {
     clearInterval(timer);
+    clearInterval(preparationPoll);
     if (heartbeat) await heartbeat;
+    if (polling) await polling;
     run.status = "stopped";
     const preparing = preparingPhase || run.preparation?.status === "selecting";
+    const preparationError = preparationAbort.signal.aborted && run.stopRequested
+      ? "Stopped during profile selection. Catalog reads cancelled; server cancellation is best effort with a 40-second execution deadline. Paid admissions occurred: no."
+      : error instanceof PreparationReadError ? error.message : "Preparation validation or coordination failed. Paid admissions occurred: no.";
     run.error = preparing
-      ? `Profile preparation stopped: ${error instanceof PreparationReadError ? error.message : "Preparation validation or coordination failed. Paid admissions occurred: no."} No paid provider requests were started. You can explicitly resume this saved run.`
+      ? `Profile preparation stopped: ${preparationError} No paid provider requests were started. You can explicitly resume this saved run.`
       : error instanceof Error ? error.message : "Bulk queue stopped unexpectedly.";
     deps.warn(preparing ? new Error(run.error) : error);
     // Bypass a failed archive chain, but never bypass the authoritative fence.
@@ -162,5 +194,8 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
     }
   } finally {
     clearInterval(timer);
+    clearInterval(preparationPoll);
+    if (polling) await polling;
+    unsubscribe();
   }
 }

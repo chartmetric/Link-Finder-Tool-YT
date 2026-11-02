@@ -32,6 +32,17 @@ export function runView(record: RunRecord, queue: QueueState, now: number): Bulk
   return run;
 }
 export class BulkOwnership {
+  private stopListeners = new Map<string, Set<() => void>>();
+  onStop(lease: Lease, listener: () => void) {
+    const key = `${lease.runId}:${lease.token}`;
+    const listeners = this.stopListeners.get(key) ?? new Set();
+    listeners.add(listener);
+    this.stopListeners.set(key, listeners);
+    return () => {
+      listeners.delete(listener);
+      if (!listeners.size) this.stopListeners.delete(key);
+    };
+  }
   constructor(private store: OwnershipStore) {}
   async importLegacy(run: BulkBrandRun) {
     await this.store.transact(run.id, tx => {
@@ -195,7 +206,7 @@ export class BulkOwnership {
     });
   }
   async stop(id: string, expected: number) {
-    return this.store.transact(id, tx => {
+    const run = await this.store.transact(id, tx => {
       if (!tx.record) throw new BulkError("Bulk run not found.", 404);
       if (tx.record.run.resumeVersion !== expected) throw new BulkError("This run changed. Refresh before stopping.");
       if (["running", "stopping"].includes(tx.record.run.status)) {
@@ -204,6 +215,9 @@ export class BulkOwnership {
       }
       return runView(tx.record, tx.queue, tx.now);
     });
+    // Notify only after the durable, generation-checked transaction commits.
+    if (run.stopRequested) for (const notify of this.stopListeners.get(`${id}:${expected}`) ?? []) notify();
+    return run;
   }
 }
 export function selectionFingerprint(ids: number[]) {

@@ -6,52 +6,60 @@ import { candidateAccountIds, readArchivedBulkRuns } from "./bulk-run-store";
 import { bulkOwnership } from "./bulk-ownership-store";
 import type { Lease } from "./bulk-ownership";
 import { observePreparationRead, PreparationReadError, transientPreparationRead, withPreparationDiagnostics, type PreparationReadCategory } from "./bulk-preparation-diagnostics";
+import { abortable } from "./abortable";
+import { setTimeout as delay } from "node:timers/promises";
 
 /** Only read-only catalog requests are retried; never provider calls or writes. */
 export function preparationCatalogRead(
   checkpoint: (message: string) => Promise<void>,
   read = clickHouseJson,
-  wait = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms)),
+  wait = (ms: number) => delay(ms, undefined, { signal }),
+  signal?: AbortSignal,
 ): typeof clickHouseJson {
   return async <T>(sql: string, params: Record<string, string> = {}, _timeout?: number, category: PreparationReadCategory = "candidate_ids") => {
     for (let attempt = 1; ; attempt++) {
+      signal?.throwIfAborted();
       await checkpoint(attempt === 1
         ? "Reading the catalog. No paid lookups have started."
         : `Catalog read was slow or unavailable; retrying read ${attempt}/3. No paid lookups have started.`);
       try {
-        return await observePreparationRead(category, () => read<T>(sql, params, 45_000),
+        return await observePreparationRead(category,
+          () => abortable(signal, () => read<T>(sql, params, 45_000, category, { signal, maxExecutionSeconds: 40 })),
           result => result.data.length, attempt);
       }
       catch (error) {
+        signal?.throwIfAborted(); // User Stop / lost fence is never retryable.
         const retryable = error instanceof PreparationReadError ? error.retryable : transientPreparationRead(error);
         if (!retryable || attempt >= 3) throw error;
-        await wait(attempt * 1000);
+        await abortable(signal, () => wait(attempt * 1000));
       }
     }
   };
 }
 
 /** Runs inside the fenced worker, never inside the launch HTTP request. */
-export async function prepareBulkRun(run: BulkBrandRun, lease: Lease, checkpoint: () => Promise<void>) {
-  return withPreparationDiagnostics(run, () => prepare(run, lease, checkpoint));
+export async function prepareBulkRun(run: BulkBrandRun, lease: Lease, checkpoint: () => Promise<void>, signal?: AbortSignal) {
+  return withPreparationDiagnostics(run, () => prepare(run, lease, checkpoint, signal));
 }
 
-async function prepare(run: BulkBrandRun, lease: Lease, checkpoint: () => Promise<void>) {
+async function prepare(run: BulkBrandRun, lease: Lease, checkpoint: () => Promise<void>, signal?: AbortSignal) {
   const preparation = run.preparation!;
   const report = async (message: string) => {
+    signal?.throwIfAborted();
     preparation.message = message;
     await observePreparationRead("coordinator_checkpoint", checkpoint);
   };
+  const read = preparationCatalogRead(report, clickHouseJson, undefined, signal);
   await report("Checking the saved request before selecting profiles. No paid lookups have started.");
   if (!preparation.legacyChecked) {
-    const legacy = (await readArchivedBulkRuns(run.id))[0];
+    const legacy = (await abortable(signal, () => readArchivedBulkRuns(run.id, read)))[0];
+    signal?.throwIfAborted();
     if (legacy) {
       await observePreparationRead("coordinator_restore", () => bulkOwnership.restoreArchived(lease, legacy));
       return false;
     }
     preparation.legacyChecked = true;
   }
-  const read = preparationCatalogRead(report);
   const page: typeof listEligibleBrands = input => listEligibleBrands(input, read);
   // Re-selecting after an explicit resume is read-only and safe. No item can
   // have been admitted while the authoritative preparation state is selecting.

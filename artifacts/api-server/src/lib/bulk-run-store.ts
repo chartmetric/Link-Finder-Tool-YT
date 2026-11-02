@@ -63,20 +63,20 @@ export function decodeBulkSnapshot(row: { state: string; stopVersion: string | n
   return run;
 }
 
-export async function readArchivedBulkRuns(id?: string) {
-  return observePreparationRead("archive_lookup", () => readArchive(id), rows => rows.length);
+export async function readArchivedBulkRuns(id?: string, readCatalog = clickHouseJson) {
+  return observePreparationRead("archive_lookup", () => readArchive(id, readCatalog), rows => rows.length);
 }
 
-async function readArchive(id?: string) {
+async function readArchive(id?: string, readCatalog = clickHouseJson) {
   await ensureBulkStore();
-  const rows = await clickHouseJson<{ state: string; stopVersion: string }>(`
+  const rows = await readCatalog<{ state: string; stopVersion: string }>(`
     SELECT argMaxIf(data_json, version, event_type = 'snapshot') AS state,
       maxIf(version, event_type = 'stop') AS stopVersion, max(version) AS latest
     FROM ${table} ${id ? "WHERE run_id = {id:UUID}" : ""}
     GROUP BY run_id HAVING notEmpty(state)
       ${id ? "" : "AND JSONExtractString(state, 'archiveOf') = ''"}
     ORDER BY latest DESC LIMIT 30 FORMAT JSON
-  `, id ? { id } : {}, 10_000);
+  `, id ? { id } : {}, 10_000, "archive_lookup");
   return rows.data.map(decodeBulkSnapshot);
 }
 
@@ -137,11 +137,11 @@ export function attemptedCandidateIds(candidates: BulkBrandCandidate[], rows: { 
  * A later queued snapshot after Resume must never erase an earlier paid attempt.
  * Stable account IDs retain aliases and survive a change of reference account.
  */
-export async function readAttemptedBulkCandidates(candidates: BulkBrandCandidate[]) {
+export async function readAttemptedBulkCandidates(candidates: BulkBrandCandidate[], readCatalog = clickHouseJson) {
   if (!candidates.length) return new Set<number>();
   const rows = await observePreparationRead("prior_attempts_archive", async () => {
     await ensureBulkStore();
-    return clickHouseJson<{ profile_id: number; account_ids: string[] }>(`
+    return readCatalog<{ profile_id: number; account_ids: string[] }>(`
     SELECT profile_id, account_ids FROM (${paidProfilesSql})
     WHERE profile_id IN {ids:Array(UInt64)}
       OR hasAny(account_ids, JSONExtract({accounts:String}, 'Array(String)'))
@@ -150,7 +150,7 @@ export async function readAttemptedBulkCandidates(candidates: BulkBrandCandidate
     ids: JSON.stringify(candidates.map(candidate => candidate.profileId)),
     accounts: JSON.stringify([...new Set(candidates.flatMap(candidateAccountIds))]),
     historyPattern: bulkAttemptSnapshotPattern(candidates.map(candidate => candidate.profileId), candidates.flatMap(candidateAccountIds)),
-    }, 10_000);
+    }, 10_000, "prior_attempts_archive");
   }, result => result.data.length);
   const attempted = attemptedCandidateIds(candidates, rows.data.flatMap(row =>
     row.account_ids.map(account_id => ({ profile_id: row.profile_id, account_id }))));

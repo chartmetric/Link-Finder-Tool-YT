@@ -176,7 +176,7 @@ export async function listEligibleBrands(input: { limit: number; afterId?: numbe
     const candidates = profileRows.map(row => catalogCandidate({
       ...row, tier: null, tierRank: null, accounts: [], ...byId.get(Number(row.profileId)),
     }, profileType));
-    const attempted = input.remaining ? await readAttemptedBulkCandidates(candidates) : new Set<number>();
+    const attempted = input.remaining ? await readAttemptedBulkCandidates(candidates, readCatalog) : new Set<number>();
     collected.push(...candidates.filter(row => (!input.eligibleOnly || row.canInvestigate) && !attempted.has(row.profileId)));
     const more = !input.profileIds && Number(scanState?.scanCount ?? profileRows.length) === rowLimit;
     afterId = Math.max(afterId, Number(scanState?.scanAfterId ?? profileRows.at(-1)?.profileId ?? afterId));

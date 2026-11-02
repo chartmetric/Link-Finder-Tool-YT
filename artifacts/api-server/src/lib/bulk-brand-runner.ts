@@ -89,7 +89,7 @@ export async function resumeBulkRun(id: string, input: BulkRunResumeInput) {
 function launch(run: BulkBrandRun, lease: import("./bulk-ownership").Lease) {
   void executeBulkRun(run, lease, {
     ownership: bulkOwnership, processItem, archive: saveBulkRun,
-    prepare: (current, checkpoint) => prepareBulkRun(current, lease, checkpoint),
+    prepare: (current, checkpoint, signal) => prepareBulkRun(current, lease, checkpoint, signal),
     archiveChunk: async archive => {
       if (!(await readArchivedBulkRuns(archive.id))[0]) await saveBulkRun(archive);
     },

@@ -26,3 +26,9 @@ Catalog preparation is a fenced, pre-paid phase, separate from accepting a launc
 **Why:** Selecting a large cohort can exceed an HTTP deadline before any run exists, encouraging repeated starts. Catalog delays must not be confused with failed paid lookups or justify replaying provider work.
 
 **How to apply:** Save and acknowledge the launch before catalog selection, checkpoint preparation in the shared coordinator, and block all paid admissions until selection is validated. Explicit resume may repeat read-only selection, but never uncertain paid work. Check for an older archive under the same request ID before writing a new archive snapshot; preserve its results and uncertain admissions.
+
+Cancelling a catalog HTTP request is not proof that the remote database query terminated; server cancellation is supplemental, not a paid-work safety fence.
+
+**Why:** ClickHouse can deny query cancellation under the existing role, and server execution deadlines are checked cooperatively. Broadening database privileges is not authorized merely to improve Stop responsiveness.
+
+**How to apply:** Keep generation-checked admission and result-write fences authoritative. Set server execution limits before dispatch, narrowly target best-effort cancellation, and explain its limits without holding up the saved Stop state.

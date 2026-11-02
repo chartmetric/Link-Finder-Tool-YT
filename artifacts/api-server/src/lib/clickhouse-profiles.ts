@@ -1,3 +1,9 @@
+import { randomUUID } from "node:crypto";
+import { abortable } from "./abortable";
+import { logger } from "./logger";
+
+export type CatalogReadControl = { signal?: AbortSignal; maxExecutionSeconds?: number };
+
 type ClickHouseProfileRow = {
   profile_id: number;
   profile_name: string;
@@ -87,25 +93,59 @@ export async function clickHouseJson<T>(
   params: Record<string, string> = {},
   timeoutMs = 30_000,
   _preparationCategory?: import("./bulk-preparation-diagnostics").PreparationReadCategory,
+  control?: CatalogReadControl,
 ): Promise<ClickHouseResponse<T>> {
+  control?.signal?.throwIfAborted();
   const { url, username, password } = getConfig();
+  const cancellationBaseUrl = new URL(url);
+  const signal = control?.signal
+    ? AbortSignal.any([control.signal, AbortSignal.timeout(timeoutMs)])
+    : AbortSignal.timeout(timeoutMs);
+  const queryId = control ? `bulk-preparation-${randomUUID()}` : undefined;
+  if (queryId) url.searchParams.set("query_id", queryId);
+  if (control?.maxExecutionSeconds !== undefined) {
+    url.searchParams.set("max_execution_time", String(control.maxExecutionSeconds));
+    url.searchParams.set("timeout_overflow_mode", "throw");
+    url.searchParams.set("timeout_before_checking_execution_speed", "0");
+  }
+  const cancel = () => {
+    if (!queryId) return;
+    // Same credentials and exact query ID only. Never request additional grants.
+    const cancellationUrl = new URL(cancellationBaseUrl);
+    cancellationUrl.searchParams.set("param_queryId", queryId);
+    cancellationUrl.searchParams.set("max_execution_time", "2");
+    void fetch(cancellationUrl, {
+      method: "POST",
+      headers: { "X-ClickHouse-User": username, "X-ClickHouse-Key": password },
+      body: "KILL QUERY WHERE query_id = {queryId:String} AND user = currentUser() ASYNC",
+      signal: AbortSignal.timeout(2_000),
+    }).then(async response => {
+      await response.body?.cancel();
+      if (!response.ok) logger.warn({ queryId, status: response.status }, "ClickHouse cancellation unavailable; preparation query retains its server execution deadline");
+    }).catch(() => logger.warn({ queryId }, "ClickHouse cancellation failed; preparation query retains its server execution deadline"));
+  };
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(`param_${key}`, value);
   }
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "X-ClickHouse-User": username,
-      "X-ClickHouse-Key": password,
-      "Content-Type": "text/plain; charset=utf-8",
-    },
-    body: sql,
-    signal: AbortSignal.timeout(timeoutMs),
-  });
-  if (!response.ok) {
-    throw new Error(`CLICKHOUSE_QUERY_FAILED:${response.status}:${await response.text()}`);
-  }
-  return (await response.json()) as ClickHouseResponse<T>;
+  signal.addEventListener("abort", cancel, { once: true });
+  try {
+    return await abortable(signal, async () => {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "X-ClickHouse-User": username,
+          "X-ClickHouse-Key": password,
+          "Content-Type": "text/plain; charset=utf-8",
+        },
+        body: sql,
+        signal,
+      });
+      if (!response.ok) {
+        throw new Error(`CLICKHOUSE_QUERY_FAILED:${response.status}:${await response.text()}`);
+      }
+      return (await response.json()) as ClickHouseResponse<T>;
+    });
+  } finally { signal.removeEventListener("abort", cancel); }
 }
 
 export async function listExistingProfiles(input: {
