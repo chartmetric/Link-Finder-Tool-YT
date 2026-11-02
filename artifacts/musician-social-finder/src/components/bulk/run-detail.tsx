@@ -1,11 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, CircleAlert, Pause, Play, RefreshCw, X } from 'lucide-react';
+import { ArrowLeft, CircleAlert, Download, Pause, Play, RefreshCw, X } from 'lucide-react';
 import { getGetBulkBrandRunQueryKey, getListBulkBrandRunsQueryKey, useGetBulkBrandRun, useResumeBulkBrandRun, useStopBulkBrandRun, type BulkBrandRun } from '@workspace/api-client-react';
 import { BrandResult } from './brand-result';
 import { BatchArchive } from './batch-archive';
 import { KIND_META, apiError, canResume, isActiveRun, kindCounts, overallCounts, overallKindCounts, resumeConfirm, runCounts, runKinds } from '@/lib/bulk';
 import { bulkRequest, completeBulkRequest } from '@/lib/bulk-requests';
 import { LaunchHistory } from './launch-history';
+import { downloadBulkRunCsv } from '@/lib/bulk-csv';
 
 export function RunDetail({ runId, onClose, onOpenRun }: { runId: string; onClose: () => void; onOpenRun?: (id: string) => void }) {
   const qc = useQueryClient();
@@ -79,10 +80,12 @@ function RunBody({ run, onStop, onResume, stopping, resuming, error, onOpenRun }
           Updated {new Date(run.updatedAt).toLocaleTimeString()} · Est. cost excludes provider credits and failed calls
         </span>
         <div>
+          <button type="button" className="inv-retry" style={{ marginTop: 0 }} onClick={() => downloadBulkRunCsv(run)} title="Download this saved snapshot only. No new searches or approvals." data-testid="button-export-bulk-csv"><Download size={14} /> Download CSV</button>
           {active && <button type="button" className="inv-retry" style={{ marginTop: 0 }} disabled={stopping || run.stopRequested} onClick={onStop} data-testid="button-stop-run"><Pause size={14} /> {run.stopRequested ? 'Stopping after current' : 'Stop after current profiles'}</button>}
           {canResume(run) && <button type="button" className="inv-submit blk-small" disabled={resuming} onClick={onResume} data-testid="button-resume-run">{resuming ? <RefreshCw size={14} className="inv-spin" /> : <Play size={14} />} Resume unfinished</button>}
         </div>
       </div>
+      <p className="blk-quiet">CSV exports this saved snapshot only, including unfinished and failed items. Net confidence is an evidence score, not a calibrated probability; “not found” does not confirm absence.</p>
       {run.error && <div className="inv-save-warn" role="alert"><CircleAlert size={15} /><span><b>Run error:</b> {run.error}</span></div>}
       {error && <div className="inv-save-warn" role="alert"><CircleAlert size={15} /><span>{error}</span></div>}
       <div className="blk-items">{run.items.map((item, i) => <BrandResult key={item.candidate.profileId} item={item} index={i} />)}</div>
@@ -125,10 +128,12 @@ function ContinuousBody({ run, onStop, onResume, stopping, resuming, error, onOp
       <div className="blk-run-actions">
         <span className="inv-mono">Updated {new Date(run.updatedAt).toLocaleTimeString()} · {cap ? `Total cap ${cap} profiles` : 'No total cap'} · Est. cost is cumulative and excludes provider credits and failed calls</span>
         <div>
+          <button type="button" className="inv-retry" style={{ marginTop: 0 }} onClick={() => downloadBulkRunCsv(run)} title="Download only the current saved chunk. Open an earlier chunk to export its saved results. No new searches or approvals." data-testid="button-export-bulk-csv"><Download size={14} /> Download current chunk CSV</button>
           {active && <button type="button" className="inv-retry" style={{ marginTop: 0 }} disabled={stopping || run.stopRequested} onClick={onStop} data-testid="button-stop-run"><Pause size={14} /> {run.stopRequested ? 'Stopping' : 'Stop continuous run'}</button>}
           {canResume(run) && <button type="button" className="inv-submit blk-small" disabled={resuming} onClick={onResume} data-testid="button-resume-run">{resuming ? <RefreshCw size={14} className="inv-spin" /> : <Play size={14} />} Resume continuous run</button>}
         </div>
       </div>
+      <p className="blk-quiet">CSV exports the current saved chunk only, including unfinished and failed items. Open earlier saved chunks below to export them separately. Net confidence is an evidence score, not a calibrated probability; “not found” does not confirm absence.</p>
       {run.status === 'interrupted' && <div className="inv-save-warn" role="status"><CircleAlert size={15} /><span>Paused by a server restart. Nothing runs until someone resumes it.</span></div>}
       {run.error && <div className="inv-save-warn" role="alert"><CircleAlert size={15} /><span><b>Run error:</b> {run.error}</span></div>}
       {error && <div className="inv-save-warn" role="alert"><CircleAlert size={15} /><span>{error}</span></div>}
