@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useIsMutating, useQueryClient } from '@tanstack/react-query';
 import { ChevronDown, ChevronUp, CircleAlert, Layers, Pause, Play, RefreshCw, Zap } from 'lucide-react';
 import { getGetBulkBrandRunQueryKey, getListBulkBrandRunsQueryKey, useGetBulkBrandRun, useResumeBulkBrandRun, useStartBulkBrandRun, useStopBulkBrandRun, type BulkBrandRun } from '@workspace/api-client-react';
 import { continuousConfirm, parseCap, KIND_META, PROFILE_KINDS, WIDGET_KEY, apiError, canResume, isActiveRun, overallCounts, overallKindCounts, readStorage, resumeConfirm, runKinds, writeStorage, type ProfileKind } from '@/lib/bulk';
+import { bulkRequest, completeBulkRequest } from '@/lib/bulk-requests';
 
 const MAX_TOTAL = 1000;
 const DEFAULT_COUNT = 5;
@@ -18,7 +19,6 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
   const workers = Number(workersRaw);
   const [capRaw, setCapRaw] = useState('');
   const cap = parseCap(capRaw);
-  const pending = useRef<{ id: string; key: string } | null>(null);
   useEffect(() => { writeStorage(WIDGET_KEY, st); }, [st]);
 
   const start = useStartBulkBrandRun();
@@ -28,7 +28,10 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
   });
   const sync = (run: BulkBrandRun) => { qc.setQueryData(getGetBulkBrandRunQueryKey(run.id), run); qc.invalidateQueries({ queryKey: getListBulkBrandRunsQueryKey() }); };
   const stop = useStopBulkBrandRun({ mutation: { onSuccess: sync } });
-  const resume = useResumeBulkBrandRun({ mutation: { onSuccess: sync } });
+  const resume = useResumeBulkBrandRun({ mutation: { onSuccess: (run, vars) => {
+    completeBulkRequest(`resume:${run.id}`, vars.data.requestId);
+    sync(run);
+  } } });
   // When an archived chunk is open, follow its continuous root for progress and controls.
   const rootId = runId ? q.data?.archiveOf : undefined;
   const rq = useGetBulkBrandRun(rootId ?? '', {
@@ -48,11 +51,11 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
     if (!canStart) return;
     const profileLimit = continuous && typeof cap === 'number' ? cap : undefined;
     if (continuous && !window.confirm(continuousConfirm(profileLimit ?? null))) return;
-    const key = JSON.stringify({ scopes, continuous, profileLimit, workersPerType: workers });
-    if (!pending.current || pending.current.key !== key) pending.current = { id: crypto.randomUUID(), key };
-    start.mutate({ data: { requestId: pending.current.id, scopes, continuous, workersPerType: workers, ...(profileLimit !== undefined ? { profileLimit } : {}) } }, {
+    const key = `widget:${JSON.stringify({ scopes, continuous, profileLimit, workersPerType: workers })}`;
+    const request = bulkRequest(key, 'multi_type_widget');
+    start.mutate({ data: { ...request, scopes, continuous, workersPerType: workers, ...(profileLimit !== undefined ? { profileLimit } : {}) } }, {
       onSuccess: r => {
-        pending.current = null;
+        completeBulkRequest(key, request.requestId);
         sync(r);
         // Reveal the summary we are about to focus, especially on mobile where
         // the expanded launcher can cover the entire progress section.
@@ -84,7 +87,7 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
                   {!run.continuous && <i className="blk-mini"><b style={{ transform: `scaleX(${kc.total ? (kc.completed + kc.failed) / kc.total : 0})` }} /></i>}</li>); })}</ul>
               <div className="blk-widget-ctl">
                 {active && <button type="button" className="inv-retry" style={{ marginTop: 0 }} disabled={stop.isPending || run.stopRequested} onClick={() => stop.mutate({ runId: run.id })} data-testid="button-widget-stop"><Pause size={13} /> {run.stopRequested ? 'Stopping' : 'Stop all'}</button>}
-                {canResume(run) && <button type="button" className="inv-retry" style={{ marginTop: 0 }} disabled={resume.isPending} onClick={() => { if (window.confirm(resumeConfirm(run))) resume.mutate({ runId: run.id }); }} data-testid="button-widget-resume">{resume.isPending ? <RefreshCw size={13} className="inv-spin" /> : <Play size={13} />} Resume unfinished</button>}
+                {canResume(run) && <button type="button" className="inv-retry" style={{ marginTop: 0 }} disabled={resume.isPending} onClick={() => { if (window.confirm(resumeConfirm(run))) resume.mutate({ runId: run.id, data: bulkRequest(`resume:${run.id}`, 'multi_type_widget') }); }} data-testid="button-widget-resume">{resume.isPending ? <RefreshCw size={13} className="inv-spin" /> : <Play size={13} />} Resume unfinished</button>}
               </div>
               {(stop.error || resume.error) && <p className="inv-form-error" role="alert">{stop.error ? apiError(stop.error, 'Stop failed.') : apiError(resume.error, 'Resume failed.')}</p>}
             </div>

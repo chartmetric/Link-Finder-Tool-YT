@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, CircleAlert, Infinity as InfinityIcon } from 'lucide-react';
 import { getGetBulkBrandRunQueryKey, getListBulkBrandRunsQueryKey, useStartBulkBrandRun } from '@workspace/api-client-react';
 import { KIND_META, apiError, continuousConfirm, parseCap, type ProfileKind } from '@/lib/bulk';
+import { bulkRequest, completeBulkRequest } from '@/lib/bulk-requests';
 
 export function AutoLauncher({ kind, blocked, onRun }: { kind: ProfileKind; blocked: boolean; onRun: (id: string) => void }) {
   const qc = useQueryClient();
@@ -13,7 +14,6 @@ export function AutoLauncher({ kind, blocked, onRun }: { kind: ProfileKind; bloc
   const [continuous, setContinuous] = useState(false);
   const [capRaw, setCapRaw] = useState('');
   const cap = parseCap(capRaw);
-  const pending = useRef<{ id: string; key: string } | null>(null);
   const start = useStartBulkBrandRun();
   useEffect(() => { setContinuous(false); setCapRaw(''); start.reset(); }, [kind]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -24,11 +24,11 @@ export function AutoLauncher({ kind, blocked, onRun }: { kind: ProfileKind; bloc
     const profileLimit = continuous && typeof cap === 'number' ? cap : undefined;
     if (continuous && !window.confirm(continuousConfirm(profileLimit ?? null))) return;
     const scopes = [{ profileType: kind, limit }];
-    const key = JSON.stringify({ scopes, continuous, profileLimit, workersPerType: workers });
-    if (!pending.current || pending.current.key !== key) pending.current = { id: crypto.randomUUID(), key };
-    start.mutate({ data: { requestId: pending.current.id, scopes, continuous, workersPerType: workers, ...(profileLimit !== undefined ? { profileLimit } : {}) } }, {
+    const key = `automatic:${JSON.stringify({ scopes, continuous, profileLimit, workersPerType: workers })}`;
+    const request = bulkRequest(key, 'automatic_launcher');
+    start.mutate({ data: { ...request, scopes, continuous, workersPerType: workers, ...(profileLimit !== undefined ? { profileLimit } : {}) } }, {
       onSuccess: run => {
-        pending.current = null;
+        completeBulkRequest(key, request.requestId);
         qc.setQueryData(getGetBulkBrandRunQueryKey(run.id), run);
         qc.invalidateQueries({ queryKey: getListBulkBrandRunsQueryKey() });
         onRun(run.id);

@@ -304,9 +304,24 @@ export interface BulkBrandCandidates {
   maxBatchSize: number;
 }
 
+/**
+ * Client-described UI source only; not identity or authorization. Omission is recorded as unknown.
+ */
+export type BulkLaunchSource = typeof BulkLaunchSource[keyof typeof BulkLaunchSource];
+
+
+export const BulkLaunchSource = {
+  automatic_launcher: 'automatic_launcher',
+  manual_selection: 'manual_selection',
+  multi_type_widget: 'multi_type_widget',
+  run_monitor: 'run_monitor',
+  unknown: 'unknown',
+} as const;
+
 export interface BulkBrandRunInput {
   /** @pattern ^[0-9a-fA-F-]{36}$ */
   requestId: string;
+  launchSource?: BulkLaunchSource;
   /** Process remaining unattempted eligible profiles in saved chunks until exhausted or stopped; scopes required */
   continuous?: boolean;
   /**
@@ -339,6 +354,42 @@ export interface BulkBrandRunInput {
      * @maxItems 3
      */
   scopes?: BulkProfileScopeInput[];
+}
+
+export interface BulkRunResumeInput {
+  /** @pattern ^[0-9a-fA-F-]{36}$ */
+  requestId: string;
+  launchSource?: BulkLaunchSource;
+}
+
+export interface BulkAcceptedSettings {
+  scopes: BulkProfileScopeInput[];
+  continuous: boolean;
+  /**
+     * @minimum 1
+     * @maximum 20
+     */
+  workersPerType?: number;
+  profileIds?: number[];
+  profileLimit?: number;
+  upperProfileId?: number;
+}
+
+export type BulkLaunchEventAction = typeof BulkLaunchEventAction[keyof typeof BulkLaunchEventAction];
+
+
+export const BulkLaunchEventAction = {
+  start: 'start',
+  resume: 'resume',
+} as const;
+
+export interface BulkLaunchEvent {
+  action: BulkLaunchEventAction;
+  requestId: string;
+  acceptedAt: string;
+  source: BulkLaunchSource;
+  settings: BulkAcceptedSettings;
+  chunkNumber: number;
 }
 
 export type BulkPlatformOutcomePlatform = typeof BulkPlatformOutcomePlatform[keyof typeof BulkPlatformOutcomePlatform];
@@ -457,6 +508,8 @@ export interface BulkBrandRun {
   archiveOf?: string;
   batchNumber?: number;
   error?: string;
+  /** Append-only accepted user Starts and explicit Resumes. Automatic chunk continuation does not add events. Missing on older runs. */
+  launchHistory?: BulkLaunchEvent[];
 }
 
 export interface BulkBatchArchives {

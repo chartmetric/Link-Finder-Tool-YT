@@ -25,6 +25,7 @@ import type {
   BulkBrandRun,
   BulkBrandRunInput,
   BulkCoverage,
+  BulkRunResumeInput,
   ExistingProfilePage,
   HealthStatus,
   ListBulkBrandCandidatesParams,
@@ -888,14 +889,15 @@ export const getResumeBulkBrandRunUrl = (runId: string,) => {
   return `/api/bulk/brands/runs/${runId}/resume`
 }
 
-export const resumeBulkBrandRun = async (runId: string, options?: Parameters<typeof customFetch>[1]): Promise<BulkBrandRun> => {
+export const resumeBulkBrandRun = async (runId: string,
+    bulkRunResumeInput: BulkRunResumeInput, options?: Parameters<typeof customFetch>[1]): Promise<BulkBrandRun> => {
 
   return customFetch<BulkBrandRun>(getResumeBulkBrandRunUrl(runId),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(bulkRunResumeInput)
   }
 );}
 
@@ -904,8 +906,8 @@ export const resumeBulkBrandRun = async (runId: string, options?: Parameters<typ
 
 
 export const getResumeBulkBrandRunMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resumeBulkBrandRun>>, TError,{runId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof resumeBulkBrandRun>>, TError,{runId: string}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resumeBulkBrandRun>>, TError,{runId: string;data: BodyType<BulkRunResumeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resumeBulkBrandRun>>, TError,{runId: string;data: BodyType<BulkRunResumeInput>}, TContext> => {
 
 const mutationKey = ['resumeBulkBrandRun'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -917,10 +919,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resumeBulkBrandRun>>, {runId: string}> = (props) => {
-          const {runId} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resumeBulkBrandRun>>, {runId: string;data: BodyType<BulkRunResumeInput>}> = (props) => {
+          const {runId,data} = props ?? {};
 
-          return  resumeBulkBrandRun(runId,requestOptions)
+          return  resumeBulkBrandRun(runId,data,requestOptions)
         }
 
 
@@ -931,15 +933,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type ResumeBulkBrandRunMutationResult = NonNullable<Awaited<ReturnType<typeof resumeBulkBrandRun>>>
-
+    export type ResumeBulkBrandRunMutationBody = BodyType<BulkRunResumeInput>
     export type ResumeBulkBrandRunMutationError = ErrorType<unknown>
 
     export const useResumeBulkBrandRun = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resumeBulkBrandRun>>, TError,{runId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resumeBulkBrandRun>>, TError,{runId: string;data: BodyType<BulkRunResumeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof resumeBulkBrandRun>>,
         TError,
-        {runId: string},
+        {runId: string;data: BodyType<BulkRunResumeInput>},
         TContext
       > => {
       return useMutation(getResumeBulkBrandRunMutationOptions(options));

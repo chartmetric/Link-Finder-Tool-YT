@@ -8,6 +8,7 @@
 import type { BulkBrandItem } from './bulkBrandItem';
 import type { BulkBrandRunStatus } from './bulkBrandRunStatus';
 import type { BulkContinuousProgress } from './bulkContinuousProgress';
+import type { BulkLaunchEvent } from './bulkLaunchEvent';
 import type { BulkProfileScopeInput } from './bulkProfileScopeInput';
 
 export interface BulkBrandRun {
@@ -32,4 +33,6 @@ export interface BulkBrandRun {
   archiveOf?: string;
   batchNumber?: number;
   error?: string;
+  /** Append-only accepted user Starts and explicit Resumes. Automatic chunk continuation does not add events. Missing on older runs. */
+  launchHistory?: BulkLaunchEvent[];
 }

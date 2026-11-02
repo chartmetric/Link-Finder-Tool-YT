@@ -12,6 +12,7 @@ import { AutoLauncher } from '@/components/bulk/auto-launcher';
 import { RunProgress } from '@/components/bulk/run-progress';
 import { isActiveRun, KIND_META, LAST_RUN_KEY, PROFILE_KINDS, apiError, kindOf, readStorage, selectionKey, writeStorage, type ProfileKind } from '@/lib/bulk';
 import '@/styles/bulk.css';
+import { bulkRequest, completeBulkRequest } from '@/lib/bulk-requests';
 
 type Selections = Record<ProfileKind, Map<number, BulkBrandCandidate>>;
 const load = (k: ProfileKind) => new Map(readStorage<BulkBrandCandidate[]>(selectionKey(k), []).filter(c => kindOf(c) === k).map(c => [c.profileId, c]));
@@ -27,7 +28,6 @@ export default function BulkBrands() {
   const [maxBatch, setMaxBatch] = useState(25);
   const [runId, setRunId] = useState<string | null>(() => readStorage<string | null>(LAST_RUN_KEY, null));
   const [ack, setAck] = useState(false);
-  const pendingRequest = useRef<{ id: string; key: string } | null>(null);
   const start = useStartBulkBrandRun();
   const busy = useIsMutating() > 0;
   const currentRun = useGetBulkBrandRun(runId ?? '', { query: { queryKey: getGetBulkBrandRunQueryKey(runId ?? ''), enabled: !!runId, refetchInterval: query => isActiveRun(query.state.data) ? 3000 : false } });
@@ -68,12 +68,12 @@ export default function BulkBrands() {
   const ids = [...selected.keys()].sort((a, b) => a - b);
   const submit = () => {
     if (startBlocked || ids.length === 0 || !ack) return;
-    const key = `${kind}:${ids.join(',')}`;
-    if (!pendingRequest.current || pendingRequest.current.key !== key) pendingRequest.current = { id: crypto.randomUUID(), key };
+    const key = `manual:${kind}:${ids.join(',')}`;
+    const request = bulkRequest(key, 'manual_selection');
     const submittedKind = kind;
-    start.mutate({ data: { requestId: pendingRequest.current.id, profileIds: ids, profileTypes: [kind] } }, {
+    start.mutate({ data: { ...request, profileIds: ids, profileTypes: [kind] } }, {
       onSuccess: run => {
-        pendingRequest.current = null;
+        completeBulkRequest(key, request.requestId);
         qc.setQueryData(getGetBulkBrandRunQueryKey(run.id), run);
         qc.invalidateQueries({ queryKey: getListBulkBrandRunsQueryKey() });
         showRun(run.id);

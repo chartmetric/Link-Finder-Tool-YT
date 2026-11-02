@@ -4,6 +4,8 @@ import { getGetBulkBrandRunQueryKey, getListBulkBrandRunsQueryKey, useGetBulkBra
 import { BrandResult } from './brand-result';
 import { BatchArchive } from './batch-archive';
 import { KIND_META, apiError, canResume, isActiveRun, kindCounts, overallCounts, overallKindCounts, resumeConfirm, runCounts, runKinds } from '@/lib/bulk';
+import { bulkRequest, completeBulkRequest } from '@/lib/bulk-requests';
+import { LaunchHistory } from './launch-history';
 
 export function RunDetail({ runId, onClose, onOpenRun }: { runId: string; onClose: () => void; onOpenRun?: (id: string) => void }) {
   const qc = useQueryClient();
@@ -11,7 +13,8 @@ export function RunDetail({ runId, onClose, onOpenRun }: { runId: string; onClos
     query: {
       queryKey: getGetBulkBrandRunQueryKey(runId),
       enabled: !!runId,
-      refetchInterval: query => (isActiveRun(query.state.data) ? 3000 : false),
+      // A stopped run can be explicitly resumed from a different tab/browser.
+      refetchInterval: query => query.state.data?.archiveOf ? false : isActiveRun(query.state.data) ? 3000 : 10000,
     },
   });
   const sync = (run: BulkBrandRun) => {
@@ -19,7 +22,10 @@ export function RunDetail({ runId, onClose, onOpenRun }: { runId: string; onClos
     qc.invalidateQueries({ queryKey: getListBulkBrandRunsQueryKey() });
   };
   const stop = useStopBulkBrandRun({ mutation: { onSuccess: sync } });
-  const resume = useResumeBulkBrandRun({ mutation: { onSuccess: sync } });
+  const resume = useResumeBulkBrandRun({ mutation: { onSuccess: (run, vars) => {
+    completeBulkRequest(`resume:${run.id}`, vars.data.requestId);
+    sync(run);
+  } } });
   const run = q.data;
 
   return (
@@ -38,9 +44,10 @@ export function RunDetail({ runId, onClose, onOpenRun }: { runId: string; onClos
         </div>
       )}
 
+      {run && <LaunchHistory run={run} />}
       {run && <RunBody run={run} onOpenRun={onOpenRun} stopping={stop.isPending} resuming={resume.isPending}
         onStop={() => stop.mutate({ runId: run.id })}
-        onResume={() => { if (window.confirm(resumeConfirm(run))) resume.mutate({ runId: run.id }); }}
+        onResume={() => { if (window.confirm(resumeConfirm(run))) resume.mutate({ runId: run.id, data: bulkRequest(`resume:${run.id}`, 'run_monitor') }); }}
         error={stop.error ? apiError(stop.error, 'Stop failed.') : resume.error ? apiError(resume.error, 'Resume failed.') : ''} />}
     </section>
   );

@@ -1,5 +1,5 @@
 import {
-  SearchProfilesResponse, type BulkBrandRun, type BulkBrandItem, type BulkBrandRunInput,
+  SearchProfilesResponse, type BulkBrandRun, type BulkBrandItem, type BulkBrandRunInput, type BulkRunResumeInput,
 } from "@workspace/api-zod";
 import { listEligibleBrands, MAX_BULK_BATCH } from "./bulk-brand-candidates";
 import { commitContinuousArchive, continuousArchive, continuousLimitReached, initialContinuousProgress, nextContinuousChunk } from "./bulk-continuous";
@@ -11,6 +11,8 @@ import { saveProfileInvestigation } from "./profile-investigations";
 import { invalidateMusicianCoverage } from "./musician-coverage";
 import { logger } from "./logger";
 import { advanceItemStage, clearItemStage } from "./bulk-item-progress";
+
+import { acceptedBulkRequest, withBulkLaunch } from "./bulk-launch-history";
 
 const localRuns = new Map<string, BulkBrandRun>();
 let activeId: string | undefined;
@@ -55,6 +57,7 @@ function assertProviders() {
   }
 }
 export async function startBulkRun(requestId: string, input: (Omit<BulkBrandRunInput, "requestId" | "continuous"> & { continuous?: boolean }) | number[]) {
+  requestId = requestId.toLowerCase();
   return exclusive(async () => {
     const existing = await getBulkRun(requestId);
     if (existing) return existing; // Retrying the same request never starts paid work twice.
@@ -76,7 +79,7 @@ export async function startBulkRun(requestId: string, input: (Omit<BulkBrandRunI
     }
     if (!selection.continuous && !candidates.length) throw new BulkError("No unattempted profiles with a usable existing link were found in this scan. Continuous mode can scan further; no paid queue was started.");
     const now = new Date().toISOString();
-    const run: BulkBrandRun = {
+    const initial: BulkBrandRun = {
       id: requestId, status: "running", createdAt: now, updatedAt: now,
       heartbeatAt: now, workerId: bulkWorkerId, resumeVersion: bulkVersion(),
       workersPerType: selection.workersPerType ?? 1,
@@ -85,6 +88,14 @@ export async function startBulkRun(requestId: string, input: (Omit<BulkBrandRunI
       ...(selection.continuous ? { continuous: automatic } : {}),
       items: candidates.map(candidate => ({ candidate, status: "queued", platforms: [] })),
     };
+    const run = withBulkLaunch(initial, "start", requestId, selection.launchSource, {
+      scopes: initial.scopes!, continuous: !!selection.continuous,
+      workersPerType: initial.workersPerType ?? 1,
+      ...(selection.profileIds ? { profileIds: selection.profileIds } : {}),
+      ...(selection.continuous ? {
+        profileLimit: automatic?.profileLimit, upperProfileId: automatic?.upperProfileId,
+      } : {}),
+    });
     await saveBulkRun(run); // Persist the queue before launching paid requests.
     launch(run);
     return run;
@@ -99,12 +110,17 @@ export async function stopBulkRun(id: string) {
   if (local) { local.stopRequested = true; local.status = "stopping"; }
   return { ...run, stopRequested: true, status: "stopping" as const };
 }
-export async function resumeBulkRun(id: string) {
+export async function resumeBulkRun(id: string, input: BulkRunResumeInput) {
   return exclusive(async () => {
-    const run = await getBulkRun(id);
-    if (!run) throw new BulkError("Bulk run not found.", 404);
+    const previous = await getBulkRun(id);
+    if (!previous) throw new BulkError("Bulk run not found.", 404);
+    // Check before idle/status/provider checks: a delayed retry never authorizes more work.
+    if (acceptedBulkRequest(previous, input.requestId)) return previous;
+    if (previous.archiveOf) throw new BulkError("Resume the continuous root run, not an archived chunk.");
     await assertIdle();
     assertProviders();
+    // Failed persistence must not alter the in-memory accepted state or history.
+    const run = withBulkLaunch(structuredClone(previous), "resume", input.requestId, input.launchSource);
     const retry = run.items.filter(item => item.status !== "completed");
     if (!retry.length && (!run.continuous || run.status === "completed")) throw new BulkError("All profiles in this run are already completed.");
     for (const item of retry) {

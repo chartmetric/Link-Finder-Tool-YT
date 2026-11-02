@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './bulkAcceptedSettings';
 export * from './bulkBatchArchives';
 export * from './bulkBrandCandidate';
 export * from './bulkBrandCandidateAccountsItem';
@@ -21,11 +22,15 @@ export * from './bulkContinuousProgressCursorsItem';
 export * from './bulkCoverage';
 export * from './bulkCoverageBucket';
 export * from './bulkCoverageBucketGroup';
+export * from './bulkLaunchEvent';
+export * from './bulkLaunchEventAction';
+export * from './bulkLaunchSource';
 export * from './bulkPlatformOutcome';
 export * from './bulkPlatformOutcomePlatform';
 export * from './bulkPlatformOutcomeStatus';
 export * from './bulkProfileScopeInput';
 export * from './bulkProfileType';
+export * from './bulkRunResumeInput';
 export * from './bulkTypeCoverage';
 export * from './existingProfile';
 export * from './existingProfileAccount';

@@ -19,7 +19,7 @@ Allow explicitly authorized continuous searching through all remaining eligible 
 
 **Why:** The user requested automatic searching among all eligible profiles, then explicitly requested configurable workers/processors. Keep a conservative default and upper bound because uncontrolled concurrency multiplies provider charges and provider throttling.
 
-**How to apply:** Treat the existing batch cap as a chunk bound, not a total continuous-run cap. Freeze settings and the source-ID ceiling, checkpoint cursors, archive completed chunks before clearing them, and expose paginated archive access. Skip previously attempted profiles automatically, including failed/interrupted attempts; retries require explicit authorization. Preserve completed results and require explicit paid Start/Resume; selecting types, navigating, or restarting the server must never launch work. Optional profile caps count distinct profiles, not physical provider requests; explicit retries may cost more.
+**How to apply:** Preserve the distinction between an explicitly approved continuous run and automatic work triggered by navigation or recovery. A chunk boundary is not a new paid authorization. Follow the current operational constraints in `replit.md`; do not treat a distinct-profile cap as a guarantee about provider charges.
 
 Preserve the distinction between finding no account and establishing that an official account is unavailable.
 

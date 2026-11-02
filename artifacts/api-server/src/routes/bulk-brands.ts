@@ -1,7 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   ListBulkBrandCandidatesQueryParams, ListBulkBrandCandidatesResponse,
-  ListBulkBrandRunsResponse, StartBulkBrandRunBody, GetBulkBrandRunResponse, ListBulkRunBatchesResponse,
+  ListBulkBrandRunsResponse, StartBulkBrandRunBody, ResumeBulkBrandRunBody, GetBulkBrandRunResponse, ListBulkRunBatchesResponse,
 } from "@workspace/api-zod";
 import { listEligibleBrands } from "../lib/bulk-brand-candidates";
 import { readBulkBatchArchives, readBulkRuns } from "../lib/bulk-run-store";
@@ -68,8 +68,12 @@ router.get("/bulk/brands/runs/:runId/batches/:afterBatch", async (req, res) => {
 });
 for (const action of ["stop", "resume"] as const) router.post(`/bulk/brands/runs/:runId/${action}`, async (req, res) => {
   if (!uuid.test(req.params.runId)) { res.status(400).json({ error: "Invalid run ID." }); return; }
+  const body = action === "resume" ? ResumeBulkBrandRunBody.safeParse(req.body) : undefined;
+  if (body && (!body.success || !uuid.test(body.data.requestId))) {
+    res.status(400).json({ error: "Use a valid request ID to resume this run safely." }); return;
+  }
   try {
-    const run = await (action === "stop" ? stopBulkRun(req.params.runId) : resumeBulkRun(req.params.runId));
+    const run = await (body?.success ? resumeBulkRun(req.params.runId, body.data) : stopBulkRun(req.params.runId));
     res.json(GetBulkBrandRunResponse.parse(run));
   } catch (error) { respondError(req, res, error); }
 });

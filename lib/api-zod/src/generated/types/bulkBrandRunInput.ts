@@ -5,12 +5,14 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { BulkLaunchSource } from './bulkLaunchSource';
 import type { BulkProfileScopeInput } from './bulkProfileScopeInput';
 import type { BulkProfileType } from './bulkProfileType';
 
 export interface BulkBrandRunInput {
   /** @pattern ^[0-9a-fA-F-]{36}$ */
   requestId: string;
+  launchSource?: BulkLaunchSource;
   /** Process remaining unattempted eligible profiles in saved chunks until exhausted or stopped; scopes required */
   continuous?: boolean;
   /**

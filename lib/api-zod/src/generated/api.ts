@@ -378,6 +378,10 @@ export const listBulkBrandRunsResponseRunsItemItemsItemResultMethodsUsedItemDura
 
 export const listBulkBrandRunsResponseRunsItemScopesItemLimitMax = 1000;
 
+export const listBulkBrandRunsResponseRunsItemLaunchHistoryItemSettingsScopesItemLimitMax = 1000;
+
+export const listBulkBrandRunsResponseRunsItemLaunchHistoryItemSettingsWorkersPerTypeMax = 20;
+
 
 
 export const ListBulkBrandRunsResponse = zod.object({
@@ -537,7 +541,25 @@ export const ListBulkBrandRunsResponse = zod.object({
 }).optional(),
   "archiveOf": zod.string().optional(),
   "batchNumber": zod.number().optional(),
-  "error": zod.string().optional()
+  "error": zod.string().optional(),
+  "launchHistory": zod.array(zod.object({
+  "action": zod.enum(['start', 'resume']),
+  "requestId": zod.string(),
+  "acceptedAt": zod.string(),
+  "source": zod.enum(['automatic_launcher', 'manual_selection', 'multi_type_widget', 'run_monitor', 'unknown']).describe('Client-described UI source only; not identity or authorization. Omission is recorded as unknown.'),
+  "settings": zod.object({
+  "scopes": zod.array(zod.object({
+  "profileType": zod.enum(['brand', 'creator', 'artist']),
+  "limit": zod.number().min(1).max(listBulkBrandRunsResponseRunsItemLaunchHistoryItemSettingsScopesItemLimitMax)
+})),
+  "continuous": zod.boolean(),
+  "workersPerType": zod.number().min(1).max(listBulkBrandRunsResponseRunsItemLaunchHistoryItemSettingsWorkersPerTypeMax).optional(),
+  "profileIds": zod.array(zod.number()).optional(),
+  "profileLimit": zod.number().optional(),
+  "upperProfileId": zod.number().optional()
+}),
+  "chunkNumber": zod.number()
+})).optional().describe('Append-only accepted user Starts and explicit Resumes. Automatic chunk continuation does not add events. Missing on older runs.')
 }))
 })
 
@@ -561,6 +583,7 @@ export const startBulkBrandRunBodyScopesMax = 3;
 
 export const StartBulkBrandRunBody = zod.object({
   "requestId": zod.string().regex(startBulkBrandRunBodyRequestIdRegExp),
+  "launchSource": zod.enum(['automatic_launcher', 'manual_selection', 'multi_type_widget', 'run_monitor', 'unknown']).optional().describe('Client-described UI source only; not identity or authorization. Omission is recorded as unknown.'),
   "continuous": zod.boolean().default(startBulkBrandRunBodyContinuousDefault).describe('Process remaining unattempted eligible profiles in saved chunks until exhausted or stopped; scopes required'),
   "profileLimit": zod.number().min(1).max(startBulkBrandRunBodyProfileLimitMax).optional().describe('Optional total profile-attempt cap for continuous mode; omitted means all remaining eligible profiles'),
   "workersPerType": zod.number().min(1).max(startBulkBrandRunBodyWorkersPerTypeMax).optional().describe('Integer concurrent profile lookups per selected type'),
@@ -589,6 +612,10 @@ export const startBulkBrandRunResponseItemsItemResultProfilesItemJevVerification
 export const startBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin = 0;
 
 export const startBulkBrandRunResponseScopesItemLimitMax = 1000;
+
+export const startBulkBrandRunResponseLaunchHistoryItemSettingsScopesItemLimitMax = 1000;
+
+export const startBulkBrandRunResponseLaunchHistoryItemSettingsWorkersPerTypeMax = 20;
 
 
 
@@ -748,7 +775,25 @@ export const StartBulkBrandRunResponse = zod.object({
 }).optional(),
   "archiveOf": zod.string().optional(),
   "batchNumber": zod.number().optional(),
-  "error": zod.string().optional()
+  "error": zod.string().optional(),
+  "launchHistory": zod.array(zod.object({
+  "action": zod.enum(['start', 'resume']),
+  "requestId": zod.string(),
+  "acceptedAt": zod.string(),
+  "source": zod.enum(['automatic_launcher', 'manual_selection', 'multi_type_widget', 'run_monitor', 'unknown']).describe('Client-described UI source only; not identity or authorization. Omission is recorded as unknown.'),
+  "settings": zod.object({
+  "scopes": zod.array(zod.object({
+  "profileType": zod.enum(['brand', 'creator', 'artist']),
+  "limit": zod.number().min(1).max(startBulkBrandRunResponseLaunchHistoryItemSettingsScopesItemLimitMax)
+})),
+  "continuous": zod.boolean(),
+  "workersPerType": zod.number().min(1).max(startBulkBrandRunResponseLaunchHistoryItemSettingsWorkersPerTypeMax).optional(),
+  "profileIds": zod.array(zod.number()).optional(),
+  "profileLimit": zod.number().optional(),
+  "upperProfileId": zod.number().optional()
+}),
+  "chunkNumber": zod.number()
+})).optional().describe('Append-only accepted user Starts and explicit Resumes. Automatic chunk continuation does not add events. Missing on older runs.')
 })
 
 
@@ -773,6 +818,10 @@ export const getBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationVe
 export const getBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin = 0;
 
 export const getBulkBrandRunResponseScopesItemLimitMax = 1000;
+
+export const getBulkBrandRunResponseLaunchHistoryItemSettingsScopesItemLimitMax = 1000;
+
+export const getBulkBrandRunResponseLaunchHistoryItemSettingsWorkersPerTypeMax = 20;
 
 
 
@@ -932,7 +981,25 @@ export const GetBulkBrandRunResponse = zod.object({
 }).optional(),
   "archiveOf": zod.string().optional(),
   "batchNumber": zod.number().optional(),
-  "error": zod.string().optional()
+  "error": zod.string().optional(),
+  "launchHistory": zod.array(zod.object({
+  "action": zod.enum(['start', 'resume']),
+  "requestId": zod.string(),
+  "acceptedAt": zod.string(),
+  "source": zod.enum(['automatic_launcher', 'manual_selection', 'multi_type_widget', 'run_monitor', 'unknown']).describe('Client-described UI source only; not identity or authorization. Omission is recorded as unknown.'),
+  "settings": zod.object({
+  "scopes": zod.array(zod.object({
+  "profileType": zod.enum(['brand', 'creator', 'artist']),
+  "limit": zod.number().min(1).max(getBulkBrandRunResponseLaunchHistoryItemSettingsScopesItemLimitMax)
+})),
+  "continuous": zod.boolean(),
+  "workersPerType": zod.number().min(1).max(getBulkBrandRunResponseLaunchHistoryItemSettingsWorkersPerTypeMax).optional(),
+  "profileIds": zod.array(zod.number()).optional(),
+  "profileLimit": zod.number().optional(),
+  "upperProfileId": zod.number().optional()
+}),
+  "chunkNumber": zod.number()
+})).optional().describe('Append-only accepted user Starts and explicit Resumes. Automatic chunk continuation does not add events. Missing on older runs.')
 })
 
 
@@ -962,6 +1029,10 @@ export const listBulkRunBatchesResponseRunsItemItemsItemResultProfilesItemJevVer
 export const listBulkRunBatchesResponseRunsItemItemsItemResultMethodsUsedItemDurationMsMin = 0;
 
 export const listBulkRunBatchesResponseRunsItemScopesItemLimitMax = 1000;
+
+export const listBulkRunBatchesResponseRunsItemLaunchHistoryItemSettingsScopesItemLimitMax = 1000;
+
+export const listBulkRunBatchesResponseRunsItemLaunchHistoryItemSettingsWorkersPerTypeMax = 20;
 
 
 
@@ -1122,7 +1193,25 @@ export const ListBulkRunBatchesResponse = zod.object({
 }).optional(),
   "archiveOf": zod.string().optional(),
   "batchNumber": zod.number().optional(),
-  "error": zod.string().optional()
+  "error": zod.string().optional(),
+  "launchHistory": zod.array(zod.object({
+  "action": zod.enum(['start', 'resume']),
+  "requestId": zod.string(),
+  "acceptedAt": zod.string(),
+  "source": zod.enum(['automatic_launcher', 'manual_selection', 'multi_type_widget', 'run_monitor', 'unknown']).describe('Client-described UI source only; not identity or authorization. Omission is recorded as unknown.'),
+  "settings": zod.object({
+  "scopes": zod.array(zod.object({
+  "profileType": zod.enum(['brand', 'creator', 'artist']),
+  "limit": zod.number().min(1).max(listBulkRunBatchesResponseRunsItemLaunchHistoryItemSettingsScopesItemLimitMax)
+})),
+  "continuous": zod.boolean(),
+  "workersPerType": zod.number().min(1).max(listBulkRunBatchesResponseRunsItemLaunchHistoryItemSettingsWorkersPerTypeMax).optional(),
+  "profileIds": zod.array(zod.number()).optional(),
+  "profileLimit": zod.number().optional(),
+  "upperProfileId": zod.number().optional()
+}),
+  "chunkNumber": zod.number()
+})).optional().describe('Append-only accepted user Starts and explicit Resumes. Automatic chunk continuation does not add events. Missing on older runs.')
 })),
   "hasMore": zod.boolean(),
   "nextBatch": zod.number()
@@ -1150,6 +1239,10 @@ export const stopBulkBrandRunResponseItemsItemResultProfilesItemJevVerificationV
 export const stopBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin = 0;
 
 export const stopBulkBrandRunResponseScopesItemLimitMax = 1000;
+
+export const stopBulkBrandRunResponseLaunchHistoryItemSettingsScopesItemLimitMax = 1000;
+
+export const stopBulkBrandRunResponseLaunchHistoryItemSettingsWorkersPerTypeMax = 20;
 
 
 
@@ -1309,12 +1402,38 @@ export const StopBulkBrandRunResponse = zod.object({
 }).optional(),
   "archiveOf": zod.string().optional(),
   "batchNumber": zod.number().optional(),
-  "error": zod.string().optional()
+  "error": zod.string().optional(),
+  "launchHistory": zod.array(zod.object({
+  "action": zod.enum(['start', 'resume']),
+  "requestId": zod.string(),
+  "acceptedAt": zod.string(),
+  "source": zod.enum(['automatic_launcher', 'manual_selection', 'multi_type_widget', 'run_monitor', 'unknown']).describe('Client-described UI source only; not identity or authorization. Omission is recorded as unknown.'),
+  "settings": zod.object({
+  "scopes": zod.array(zod.object({
+  "profileType": zod.enum(['brand', 'creator', 'artist']),
+  "limit": zod.number().min(1).max(stopBulkBrandRunResponseLaunchHistoryItemSettingsScopesItemLimitMax)
+})),
+  "continuous": zod.boolean(),
+  "workersPerType": zod.number().min(1).max(stopBulkBrandRunResponseLaunchHistoryItemSettingsWorkersPerTypeMax).optional(),
+  "profileIds": zod.array(zod.number()).optional(),
+  "profileLimit": zod.number().optional(),
+  "upperProfileId": zod.number().optional()
+}),
+  "chunkNumber": zod.number()
+})).optional().describe('Append-only accepted user Starts and explicit Resumes. Automatic chunk continuation does not add events. Missing on older runs.')
 })
 
 
 export const ResumeBulkBrandRunParams = zod.object({
   "runId": zod.coerce.string()
+})
+
+export const resumeBulkBrandRunBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F-]{36}$');
+
+
+export const ResumeBulkBrandRunBody = zod.object({
+  "requestId": zod.string().regex(resumeBulkBrandRunBodyRequestIdRegExp),
+  "launchSource": zod.enum(['automatic_launcher', 'manual_selection', 'multi_type_widget', 'run_monitor', 'unknown']).optional().describe('Client-described UI source only; not identity or authorization. Omission is recorded as unknown.')
 })
 
 export const resumeBulkBrandRunResponseWorkersPerTypeMax = 20;
@@ -1334,6 +1453,10 @@ export const resumeBulkBrandRunResponseItemsItemResultProfilesItemJevVerificatio
 export const resumeBulkBrandRunResponseItemsItemResultMethodsUsedItemDurationMsMin = 0;
 
 export const resumeBulkBrandRunResponseScopesItemLimitMax = 1000;
+
+export const resumeBulkBrandRunResponseLaunchHistoryItemSettingsScopesItemLimitMax = 1000;
+
+export const resumeBulkBrandRunResponseLaunchHistoryItemSettingsWorkersPerTypeMax = 20;
 
 
 
@@ -1493,7 +1616,25 @@ export const ResumeBulkBrandRunResponse = zod.object({
 }).optional(),
   "archiveOf": zod.string().optional(),
   "batchNumber": zod.number().optional(),
-  "error": zod.string().optional()
+  "error": zod.string().optional(),
+  "launchHistory": zod.array(zod.object({
+  "action": zod.enum(['start', 'resume']),
+  "requestId": zod.string(),
+  "acceptedAt": zod.string(),
+  "source": zod.enum(['automatic_launcher', 'manual_selection', 'multi_type_widget', 'run_monitor', 'unknown']).describe('Client-described UI source only; not identity or authorization. Omission is recorded as unknown.'),
+  "settings": zod.object({
+  "scopes": zod.array(zod.object({
+  "profileType": zod.enum(['brand', 'creator', 'artist']),
+  "limit": zod.number().min(1).max(resumeBulkBrandRunResponseLaunchHistoryItemSettingsScopesItemLimitMax)
+})),
+  "continuous": zod.boolean(),
+  "workersPerType": zod.number().min(1).max(resumeBulkBrandRunResponseLaunchHistoryItemSettingsWorkersPerTypeMax).optional(),
+  "profileIds": zod.array(zod.number()).optional(),
+  "profileLimit": zod.number().optional(),
+  "upperProfileId": zod.number().optional()
+}),
+  "chunkNumber": zod.number()
+})).optional().describe('Append-only accepted user Starts and explicit Resumes. Automatic chunk continuation does not add events. Missing on older runs.')
 })
 
 

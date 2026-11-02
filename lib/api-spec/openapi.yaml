@@ -186,6 +186,11 @@ paths:
       tags: [bulk]
       parameters:
         - { name: runId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BulkRunResumeInput" }
       responses:
         "200":
           description: Resume queued items and explicitly retry failed items without repeating completed ones
@@ -435,6 +440,7 @@ components:
       required: [requestId]
       properties:
         requestId: { type: string, pattern: "^[0-9a-fA-F-]{36}$" }
+        launchSource: { $ref: "#/components/schemas/BulkLaunchSource" }
         continuous: { type: boolean, default: false, description: Process remaining unattempted eligible profiles in saved chunks until exhausted or stopped; scopes required }
         profileLimit: { type: number, minimum: 1, maximum: 4294967295, description: Optional total profile-attempt cap for continuous mode; omitted means all remaining eligible profiles }
         workersPerType: { type: number, minimum: 1, maximum: 20, description: Integer concurrent profile lookups per selected type, frozen at start; defaults to 1 }
@@ -455,6 +461,36 @@ components:
           maxItems: 3
           items: { $ref: "#/components/schemas/BulkProfileScopeInput" }
           description: Alternative to profileIds; one distinct entry per selected type. Combined chunk limits must not exceed 1000. Each type uses the selected workersPerType concurrency.
+    BulkLaunchSource:
+      type: string
+      enum: [automatic_launcher, manual_selection, multi_type_widget, run_monitor, unknown]
+      description: Client-described UI source only; not identity or authorization. Omission is recorded as unknown.
+    BulkRunResumeInput:
+      type: object
+      required: [requestId]
+      properties:
+        requestId: { type: string, pattern: "^[0-9a-fA-F-]{36}$" }
+        launchSource: { $ref: "#/components/schemas/BulkLaunchSource" }
+    BulkAcceptedSettings:
+      type: object
+      required: [scopes, continuous]
+      properties:
+        scopes: { type: array, items: { $ref: "#/components/schemas/BulkProfileScopeInput" } }
+        continuous: { type: boolean }
+        workersPerType: { type: number, minimum: 1, maximum: 20 }
+        profileIds: { type: array, items: { type: number } }
+        profileLimit: { type: number }
+        upperProfileId: { type: number }
+    BulkLaunchEvent:
+      type: object
+      required: [action, requestId, acceptedAt, source, settings, chunkNumber]
+      properties:
+        action: { type: string, enum: [start, resume] }
+        requestId: { type: string }
+        acceptedAt: { type: string }
+        source: { $ref: "#/components/schemas/BulkLaunchSource" }
+        settings: { $ref: "#/components/schemas/BulkAcceptedSettings" }
+        chunkNumber: { type: number }
     BulkPlatformOutcome:
       type: object
       required: [platform, status, reason, evidenceUrls, checkedAt]
@@ -504,6 +540,10 @@ components:
         archiveOf: { type: string }
         batchNumber: { type: number }
         error: { type: string }
+        launchHistory:
+          type: array
+          description: Append-only accepted user Starts and explicit Resumes. Automatic chunk continuation does not add events. Missing on older runs.
+          items: { $ref: "#/components/schemas/BulkLaunchEvent" }
     BulkContinuousProgress:
       type: object
       required: [upperProfileId, batches, completed, failed, completedCostUsd, cursors]

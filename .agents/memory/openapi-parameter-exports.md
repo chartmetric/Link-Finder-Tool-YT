@@ -7,4 +7,4 @@ Keep path-parameter schemas and generated query-parameter type exports unambiguo
 
 **Why:** The workspace's current Orval setup re-exports both Zod schemas and generated types. An operation combining a run-ID path parameter with cursor query parameters produced colliding parameter exports and failed the shared-library typecheck.
 
-**How to apply:** For new saved-batch pagination, keep the cursor in the path rather than suppressing the type error or hand-editing generated files. If changing parameter conventions, verify both generated exports through the normal codegen/typecheck flow.
+**How to apply:** Check both generated export sets when choosing parameter names. Verify changes through codegen and the shared-library typecheck rather than suppressing errors or hand-editing generated output.
