@@ -3,6 +3,12 @@ name: Bulk profile workflow
 description: User-approved profile types, catalog access boundaries, and paid-run operating constraints.
 ---
 
+Do not show a separate paid-request acknowledgement checkbox in the automatic bulk launcher.
+
+**Why:** The user has repeatedly asked to delete this element.
+
+**How to apply:** Keep the explicit Start action usable without that checkbox. Preserve the paid-service notice and continuous-run confirmation; do not restore checkbox gating during unrelated changes.
+
 The bulk finder must expose all Brands, Creators, and Artists, including profiles without tiers and profiles with zero, one, or multiple active accounts. Discovery requires at least one usable existing profile link.
 
 **Why:** The user superseded the original one-account cohort with access to all profiles in the new verticals database. They explicitly chose “show them, but require an existing link to run discovery” for profiles with no existing links.
@@ -23,7 +29,7 @@ Candidate-catalog filters and saved-run review filters are separate product scop
 
 Allow explicitly authorized continuous searching through all remaining eligible profiles, with automatic chunk sizes up to 1,000 as requested by the user. The user also wants to pick workers/processors; expose bounded parallel workers per type rather than fixing each type to one.
 
-**Why:** The user requested automatic searching among all eligible profiles, then explicitly requested configurable workers/processors. Keep a conservative default and upper bound because uncontrolled concurrency multiplies provider charges and provider throttling.
+**Why:** The user requested automatic searching among all eligible profiles, configurable workers/processors, and automatic-launcher defaults of 500 profiles per run and 20 parallel workers. Keep the existing upper bounds because concurrency multiplies provider charges and provider throttling.
 
 **How to apply:** Preserve the distinction between an explicitly approved continuous run and automatic work triggered by navigation or recovery. A chunk boundary is not a new paid authorization. Follow the current operational constraints in `replit.md`; do not treat a distinct-profile cap as a guarantee about provider charges.
 
