@@ -51,7 +51,15 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
     const key = JSON.stringify({ scopes, continuous, profileLimit, workersPerType: workers });
     if (!pending.current || pending.current.key !== key) pending.current = { id: crypto.randomUUID(), key };
     start.mutate({ data: { requestId: pending.current.id, scopes, continuous, workersPerType: workers, ...(profileLimit !== undefined ? { profileLimit } : {}) } }, {
-      onSuccess: r => { pending.current = null; sync(r); onRun(r.id); setAck(false); },
+      onSuccess: r => {
+        pending.current = null;
+        sync(r);
+        // Reveal the summary we are about to focus, especially on mobile where
+        // the expanded launcher can cover the entire progress section.
+        setSt(s => ({ ...s, open: false }));
+        onRun(r.id);
+        setAck(false);
+      },
     });
   };
 

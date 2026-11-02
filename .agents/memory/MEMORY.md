@@ -8,3 +8,4 @@
 - [Profile URL aliases](profile-url-aliases.md) — retain both handle and ID URLs for the same account; URL equivalence is separate from artist identity.
 - [Confidence presentation](confidence-presentation.md) — headline net confidence must not confuse discovery strength or verdict-label confidence with positive identity evidence.
 - [Bulk profile workflow](bulk-brand-workflow.md) — all profile types, linked-only discovery; continuous remaining-profile runs use bounded chunks, explicit paid start/resume and saved archives.
+- [Browser fixture timers](browser-fixture-timers.md) — frozen browser timers can strand React Query on loading skeletons despite successful fixture responses.

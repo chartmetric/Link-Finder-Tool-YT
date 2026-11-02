@@ -7,6 +7,8 @@ Searches Google through Serper.dev and returns the strongest official Instagram,
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
+- `pnpm --filter @workspace/musician-social-finder run test:e2e` — fixture-only desktop/mobile run-progress browser regressions; requires only the frontend workflow, never a running API or paid credentials
+- `pnpm --filter @workspace/musician-social-finder run typecheck:e2e` — typecheck browser tests and Playwright configuration
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required secret: `SERPERDEV_API_KEY` — Serper.dev API key
