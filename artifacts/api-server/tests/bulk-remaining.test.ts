@@ -51,11 +51,11 @@ test("shared accounts and profile IDs across types are selected once, paging to 
 test("remaining history is all-event, fail-closed and keyed by stable profile and account IDs, not URL aliases", () => {
   const sql = eligibleBrandSql();
   assert.match(paidProfilesSql, /poc_new_verticals\.profile_bulk_events/);
-  assert.match(paidProfilesSql, /'candidate', 'profileId'/);
-  assert.match(paidProfilesSql, /'candidate', 'accountId'/);
-  assert.match(paidProfilesSql, /'candidate', 'accounts'/);
+  assert.match(paidProfilesSql, /candidate Tuple\(profileId UInt64, accountId String, accounts/);
+  assert.match(paidProfilesSql, /attemptedItem\.candidate\.accountId/);
+  assert.match(paidProfilesSql, /account\.accountId/);
   assert.match(paidProfilesSql, /'completed', 'failed', 'running'/);
-  assert.match(paidProfilesSql, /'startedAt'/);
+  assert.match(paidProfilesSql, /entry\.startedAt/);
   assert.doesNotMatch(paidProfilesSql, /LIMIT|argMax|known_profile_url|'queued'/);
   assert.doesNotMatch(sql, /INSERT|ALTER|DELETE|UPDATE|DROP|TRUNCATE/);
   assert.doesNotMatch(eligibleBrandSql(false, false), /paid_profiles|profile_bulk_events/);

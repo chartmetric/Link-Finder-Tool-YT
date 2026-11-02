@@ -32,3 +32,9 @@ Cancelling a catalog HTTP request is not proof that the remote database query te
 **Why:** ClickHouse can deny query cancellation under the existing role, and server execution deadlines are checked cooperatively. Broadening database privileges is not authorized merely to improve Stop responsiveness.
 
 **How to apply:** Keep generation-checked admission and result-write fences authoritative. Set server execution limits before dispatch, narrowly target best-effort cancellation, and explain its limits without holding up the saved Stop state.
+
+Historical attempt evidence may be reused only within one fenced, pre-paid selection, not across resumes or paid continuous chunks.
+
+**Why:** Re-reading large result archives for every catalog page caused preparation to exceed ClickHouse's execution deadline. A selection-scoped identity snapshot avoids repeated scans, but reusing its negative results after paid work could admit duplicate charges. The shared queue's exclusive owner prevents concurrent paid admission during that selection.
+
+**How to apply:** Read all historical admissions, including older snapshots hidden by later queued/reset states, and retain profile IDs even without an account ID. Extract only admission and identity fields, discard the selection snapshot at each chunk/resume boundary, and continue checking the transactional coordinator. Never treat an archive read failure as empty history.

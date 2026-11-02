@@ -3,6 +3,8 @@ import { GetBulkBrandRunResponse, type BulkBrandRun, type BulkBrandCandidate } f
 import { clickHouseJson, clickHouseRequest } from "./clickhouse-profiles";
 import { bulkOwnership } from "./bulk-ownership-store";
 import { observePreparationRead } from "./bulk-preparation-diagnostics";
+import { compactPaidProfilesSql, allPaidProfilesSql } from "./bulk-attempt-sql";
+import { selectionAttemptHistory, type AttemptRow } from "./bulk-attempt-history";
 
 const table = "poc_new_verticals.profile_bulk_events";
 export const bulkWorkerId = randomUUID();
@@ -95,20 +97,7 @@ export async function readBulkRuns(id?: string) {
 
 /** Conservatively skip prior paid attempts, including failures/interruptions.
  * Never automatically charge again merely because an earlier outcome was incomplete. */
-export const paidProfilesSql = `
-  SELECT
-    JSONExtractUInt(item, 'candidate', 'profileId') AS profile_id,
-    arrayDistinct(arrayConcat(
-      [JSONExtractString(item, 'candidate', 'accountId')],
-      arrayMap(account -> JSONExtractString(account, 'accountId'),
-        JSONExtractArrayRaw(item, 'candidate', 'accounts'))
-    )) AS account_ids
-  FROM poc_new_verticals.profile_bulk_events
-  ARRAY JOIN JSONExtractArrayRaw(data_json, 'items') AS item
-  PREWHERE event_type = 'snapshot' AND match(data_json, {historyPattern:String})
-  WHERE (JSONExtractString(item, 'status') IN ('completed', 'failed', 'running')
-      OR notEmpty(JSONExtractString(item, 'startedAt')))
-`;
+export const paidProfilesSql = compactPaidProfilesSql;
 
 export function candidateAccountIds(candidate: Pick<BulkBrandCandidate, "accountId" | "accounts">) {
   return [...new Set([candidate.accountId, ...(candidate.accounts ?? []).map(account => account.accountId)].filter(Boolean))];
@@ -139,6 +128,21 @@ export function attemptedCandidateIds(candidates: BulkBrandCandidate[], rows: { 
  */
 export async function readAttemptedBulkCandidates(candidates: BulkBrandCandidate[], readCatalog = clickHouseJson) {
   if (!candidates.length) return new Set<number>();
+  const history = selectionAttemptHistory(async () => {
+    await ensureBulkStore();
+    const rows = await readCatalog<AttemptRow>(`${allPaidProfilesSql} FORMAT JSON`, {}, 45_000, "prior_attempts_archive");
+    return rows.data;
+  });
+  if (history) {
+    const archived = await observePreparationRead("prior_attempts_archive", () => history, result => result.profiles.size);
+    const attempted = new Set(candidates.filter(candidate =>
+      archived.profiles.has(candidate.profileId) ||
+      candidateAccountIds(candidate).some(id => archived.accounts.has(id))).map(candidate => candidate.profileId));
+    const coordinated = await observePreparationRead("prior_attempts_coordinator",
+      () => bulkOwnership.attempted(candidates.map(candidate => candidate.profileId)), result => result.size);
+    for (const id of coordinated) attempted.add(id);
+    return attempted;
+  }
   const rows = await observePreparationRead("prior_attempts_archive", async () => {
     await ensureBulkStore();
     return readCatalog<{ profile_id: number; account_ids: string[] }>(`
@@ -153,7 +157,7 @@ export async function readAttemptedBulkCandidates(candidates: BulkBrandCandidate
     }, 10_000, "prior_attempts_archive");
   }, result => result.data.length);
   const attempted = attemptedCandidateIds(candidates, rows.data.flatMap(row =>
-    row.account_ids.map(account_id => ({ profile_id: row.profile_id, account_id }))));
+    ["", ...row.account_ids].map(account_id => ({ profile_id: row.profile_id, account_id }))));
   const coordinated = await observePreparationRead("prior_attempts_coordinator",
     () => bulkOwnership.attempted(candidates.map(candidate => candidate.profileId)), result => result.size);
   for (const id of coordinated) attempted.add(id);
@@ -162,16 +166,21 @@ export async function readAttemptedBulkCandidates(candidates: BulkBrandCandidate
 
 export async function readAttemptedBulkProfileIds(ids: number[]) {
   if (!ids.length) return new Set<number>();
+  const history = selectionAttemptHistory(async () => {
+    await ensureBulkStore();
+    const rows = await clickHouseJson<AttemptRow>(`${allPaidProfilesSql} FORMAT JSON`, {}, 45_000);
+    return rows.data;
+  });
+  if (history) {
+    const archived = await history;
+    const attempted = await bulkOwnership.attempted(ids);
+    for (const id of ids) if (archived.profiles.has(id)) attempted.add(id);
+    return attempted;
+  }
   await ensureBulkStore();
   const rows = await clickHouseJson<{ profileId: number }>(`
-    SELECT DISTINCT JSONExtractUInt(item, 'candidate', 'profileId') AS profileId
-    FROM ${table} ARRAY JOIN JSONExtractArrayRaw(data_json, 'items') AS item
-    PREWHERE event_type = 'snapshot' AND match(data_json, {historyPattern:String})
-    WHERE profileId IN {ids:Array(UInt64)}
-      AND (JSONExtractString(item, 'status') IN ('completed', 'failed', 'running')
-        OR notEmpty(JSONExtractString(item, 'startedAt')))
-    FORMAT JSON
-  `, { ids: JSON.stringify(ids), historyPattern: bulkAttemptSnapshotPattern(ids) }, 10_000);
+    SELECT DISTINCT profile_id AS profileId FROM (${paidProfilesSql}) FORMAT JSON
+  `, { ids: JSON.stringify(ids), accounts: "[]" }, 45_000);
   const attempted = await bulkOwnership.attempted(ids);
   for (const row of rows.data) attempted.add(Number(row.profileId));
   return attempted;

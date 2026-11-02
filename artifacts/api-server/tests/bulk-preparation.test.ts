@@ -220,7 +220,7 @@ for (const phase of ["boundary", "profiles", "accounts", "attempts"] as const) {
       if (sql.includes("CREATE TABLE") || sql.includes("INSERT INTO")) return new Response("");
       const current = sql.includes("argMaxIf") ? "archive"
         : sql.includes("SELECT max(id)") ? "boundary"
-        : sql.includes("SELECT profile_id, account_ids") ? "attempts"
+        : sql.includes("AS attemptedItem") ? "attempts"
         : sql.includes("current_relationships") ? "accounts" : "profiles";
       queries.push(current);
       if (current === phase) {

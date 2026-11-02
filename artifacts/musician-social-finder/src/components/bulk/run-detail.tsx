@@ -77,7 +77,7 @@ function RunBody({ run, onStop, onResume, stopping, resuming, error, onOpenRun }
         <i className="fail" style={{ transform: `scaleX(${(c.completed + c.failed) / total})` }} />
       </div>
       <ul className="blk-kind-rows" data-testid="list-run-kinds">{runKinds(run).map(k => { const kc = kindCounts(run, k); return (
-        <li key={k} data-testid={`row-run-kind-${k}`}><span className={`blk-kind k-${k}`}>{KIND_META[k].plural}</span><span className="inv-mono">{kc.total === 0 ? 'No eligible profiles' : `${kc.completed}/${kc.total} done`}{kc.failed ? ` · ${kc.failed} failed` : ''}{kc.running ? ` · ${kc.running} running` : ''}</span>
+        <li key={k} data-testid={`row-run-kind-${k}`}><span className={`blk-kind k-${k}`}>{KIND_META[k].plural}</span><span className="inv-mono">{run.preparation?.status === 'selecting' ? active ? 'Preparing selection — eligibility is still being checked' : 'Preparation stopped — selection is incomplete' : kc.total === 0 ? 'No eligible profiles' : `${kc.completed}/${kc.total} done`}{kc.failed ? ` · ${kc.failed} failed` : ''}{kc.running ? ` · ${kc.running} running` : ''}</span>
           <i className="blk-mini"><b style={{ transform: `scaleX(${kc.total ? (kc.completed + kc.failed) / kc.total : 0})` }} /></i></li>); })}</ul>
       <div className="blk-run-actions">
         <span className="inv-mono" title={`Heartbeat ${new Date(run.heartbeatAt).toLocaleTimeString()} · resume version ${run.resumeVersion}`}>

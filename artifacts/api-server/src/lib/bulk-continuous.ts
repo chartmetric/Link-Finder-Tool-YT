@@ -3,6 +3,7 @@ import type { BulkBrandCandidate, BulkBrandRun, BulkProfileScopeInput } from "@w
 import { listEligibleBrands } from "./bulk-brand-candidates";
 import { clickHouseJson } from "./clickhouse-profiles";
 import { candidateAccountIds, readAttemptedBulkProfileIds } from "./bulk-run-store";
+import { withBulkAttemptHistory } from "./bulk-attempt-history";
 
 export type ContinuousProgress = NonNullable<BulkBrandRun["continuous"]>;
 
@@ -22,6 +23,15 @@ export async function nextContinuousChunk(
   scopes: BulkProfileScopeInput[],
   page = listEligibleBrands,
   attempted = readAttemptedBulkProfileIds,
+) {
+  return withBulkAttemptHistory(() => selectContinuousChunk(progress, scopes, page, attempted));
+}
+
+async function selectContinuousChunk(
+  progress: ContinuousProgress,
+  scopes: BulkProfileScopeInput[],
+  page: typeof listEligibleBrands,
+  attempted: typeof readAttemptedBulkProfileIds,
 ) {
   const cursors = progress.cursors.map(cursor => ({ ...cursor }));
   const selected: BulkBrandCandidate[] = [];

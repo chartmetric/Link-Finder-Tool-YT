@@ -8,6 +8,7 @@ import type { Lease } from "./bulk-ownership";
 import { observePreparationRead, PreparationReadError, transientPreparationRead, withPreparationDiagnostics, type PreparationReadCategory } from "./bulk-preparation-diagnostics";
 import { abortable } from "./abortable";
 import { setTimeout as delay } from "node:timers/promises";
+import { withBulkAttemptHistory } from "./bulk-attempt-history";
 
 /** Only read-only catalog requests are retried; never provider calls or writes. */
 export function preparationCatalogRead(
@@ -19,9 +20,13 @@ export function preparationCatalogRead(
   return async <T>(sql: string, params: Record<string, string> = {}, _timeout?: number, category: PreparationReadCategory = "candidate_ids") => {
     for (let attempt = 1; ; attempt++) {
       signal?.throwIfAborted();
+      const step = category === "prior_attempts_archive" ? "Checking saved attempt history"
+        : category === "account_enrichment" ? "Reading linked accounts"
+        : category === "catalog_boundary" ? "Reading the catalog boundary"
+        : category === "archive_lookup" ? "Checking the saved launch request" : "Reading candidate profiles";
       await checkpoint(attempt === 1
-        ? "Reading the catalog. No paid lookups have started."
-        : `Catalog read was slow or unavailable; retrying read ${attempt}/3. No paid lookups have started.`);
+        ? `${step}. No paid lookups have started.`
+        : `${step} was slow or unavailable; retrying read ${attempt}/3. No paid lookups have started.`);
       try {
         return await observePreparationRead(category,
           () => abortable(signal, () => read<T>(sql, params, 45_000, category, { signal, maxExecutionSeconds: 40 })),
@@ -39,14 +44,15 @@ export function preparationCatalogRead(
 
 /** Runs inside the fenced worker, never inside the launch HTTP request. */
 export async function prepareBulkRun(run: BulkBrandRun, lease: Lease, checkpoint: () => Promise<void>, signal?: AbortSignal) {
-  return withPreparationDiagnostics(run, () => prepare(run, lease, checkpoint, signal));
+  return withPreparationDiagnostics(run, () => withBulkAttemptHistory(() => prepare(run, lease, checkpoint, signal)));
 }
 
 async function prepare(run: BulkBrandRun, lease: Lease, checkpoint: () => Promise<void>, signal?: AbortSignal) {
   const preparation = run.preparation!;
+  let pagesChecked = 0;
   const report = async (message: string) => {
     signal?.throwIfAborted();
-    preparation.message = message;
+    preparation.message = pagesChecked ? `Checked ${pagesChecked} catalog pages. ${message}` : message;
     await observePreparationRead("coordinator_checkpoint", checkpoint);
   };
   const read = preparationCatalogRead(report, clickHouseJson, undefined, signal);
@@ -82,6 +88,7 @@ async function prepare(run: BulkBrandRun, lease: Lease, checkpoint: () => Promis
     : preparation.mode === "manual"
       ? (await page({ limit: 25, profileIds: preparation.profileIds, profileType: scopes[0].profileType, eligibleOnly: true })).profiles
       : await selectBulkScopes(scopes, page, run.selectionMode ?? "remaining", preparation.upperProfileId, async selected => {
+        pagesChecked++;
         run.items = selected.map(candidate => ({ candidate, status: "queued", platforms: [] }));
         preparation.selected = selected.length;
         await report(`Selected ${selected.length} of up to ${preparation.requested} eligible profiles. No paid lookups have started.`);

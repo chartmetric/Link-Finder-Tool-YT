@@ -109,7 +109,7 @@ test("real preparation paths distinguish archives, boundary, candidates, account
     if (sql.includes("CREATE TABLE")) return new Response("");
     const category: PreparationReadCategory = sql.includes("argMaxIf") ? "archive_lookup"
       : sql.includes("max(id) AS maxId") ? "catalog_boundary"
-      : sql.includes("SELECT profile_id, account_ids") ? "prior_attempts_archive"
+      : sql.includes("AS attemptedItem") ? "prior_attempts_archive"
       : sql.includes("linked_accounts AS") ? "account_enrichment" : "candidate_ids";
     if (category === fail) return new Response("https://private:secret@database.invalid", { status: 403 });
     return Response.json({ data: category === "archive_lookup" && legacy
