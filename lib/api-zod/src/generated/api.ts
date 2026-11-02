@@ -525,7 +525,8 @@ export const ListBulkBrandRunsResponse = zod.object({
 }).optional(),
   "error": zod.string().optional(),
   "startedAt": zod.string().optional(),
-  "completedAt": zod.string().optional()
+  "completedAt": zod.string().optional(),
+  "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
 })),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
@@ -759,7 +760,8 @@ export const StartBulkBrandRunResponse = zod.object({
 }).optional(),
   "error": zod.string().optional(),
   "startedAt": zod.string().optional(),
-  "completedAt": zod.string().optional()
+  "completedAt": zod.string().optional(),
+  "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
 })),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
@@ -965,7 +967,8 @@ export const GetBulkBrandRunResponse = zod.object({
 }).optional(),
   "error": zod.string().optional(),
   "startedAt": zod.string().optional(),
-  "completedAt": zod.string().optional()
+  "completedAt": zod.string().optional(),
+  "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
 })),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
@@ -1177,7 +1180,8 @@ export const ListBulkRunBatchesResponse = zod.object({
 }).optional(),
   "error": zod.string().optional(),
   "startedAt": zod.string().optional(),
-  "completedAt": zod.string().optional()
+  "completedAt": zod.string().optional(),
+  "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
 })),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
@@ -1227,6 +1231,14 @@ export const ListBulkRunBatchesResponse = zod.object({
 
 export const StopBulkBrandRunParams = zod.object({
   "runId": zod.coerce.string()
+})
+
+export const stopBulkBrandRunBodyResumeVersionMin = 0;
+
+
+
+export const StopBulkBrandRunBody = zod.object({
+  "resumeVersion": zod.number().min(stopBulkBrandRunBodyResumeVersionMin)
 })
 
 export const stopBulkBrandRunResponseWorkersPerTypeMax = 20;
@@ -1386,7 +1398,8 @@ export const StopBulkBrandRunResponse = zod.object({
 }).optional(),
   "error": zod.string().optional(),
   "startedAt": zod.string().optional(),
-  "completedAt": zod.string().optional()
+  "completedAt": zod.string().optional(),
+  "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
 })),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
@@ -1436,10 +1449,13 @@ export const ResumeBulkBrandRunParams = zod.object({
 })
 
 export const resumeBulkBrandRunBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F-]{36}$');
+export const resumeBulkBrandRunBodyResumeVersionMin = 0;
+
 
 
 export const ResumeBulkBrandRunBody = zod.object({
   "requestId": zod.string().regex(resumeBulkBrandRunBodyRequestIdRegExp),
+  "resumeVersion": zod.number().min(resumeBulkBrandRunBodyResumeVersionMin),
   "launchSource": zod.enum(['automatic_launcher', 'manual_selection', 'multi_type_widget', 'run_monitor', 'unknown']).optional().describe('Client-described UI source only; not identity or authorization. Omission is recorded as unknown.')
 })
 
@@ -1600,7 +1616,8 @@ export const ResumeBulkBrandRunResponse = zod.object({
 }).optional(),
   "error": zod.string().optional(),
   "startedAt": zod.string().optional(),
-  "completedAt": zod.string().optional()
+  "completedAt": zod.string().optional(),
+  "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
 })),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),

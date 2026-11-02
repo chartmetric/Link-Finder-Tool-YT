@@ -186,6 +186,11 @@ paths:
       tags: [bulk]
       parameters:
         - { name: runId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BulkRunControl" }
       responses:
         "200":
           description: Stop requested; the current profile finishes before the queue stops
@@ -205,7 +210,7 @@ paths:
             schema: { $ref: "#/components/schemas/BulkRunResumeInput" }
       responses:
         "200":
-          description: Resume queued items and explicitly retry failed items without repeating completed ones
+          description: Resume queued and acknowledged failed items; never repeat completed or unacknowledged paid work
           content:
             application/json:
               schema: { $ref: "#/components/schemas/BulkBrandRun" }
@@ -479,9 +484,10 @@ components:
       description: Client-described UI source only; not identity or authorization. Omission is recorded as unknown.
     BulkRunResumeInput:
       type: object
-      required: [requestId]
+      required: [requestId, resumeVersion]
       properties:
         requestId: { type: string, pattern: "^[0-9a-fA-F-]{36}$" }
+        resumeVersion: { type: number, minimum: 0 }
         launchSource: { $ref: "#/components/schemas/BulkLaunchSource" }
     BulkAcceptedSettings:
       type: object
@@ -530,6 +536,14 @@ components:
         error: { type: string }
         startedAt: { type: string }
         completedAt: { type: string }
+        retryBlocked:
+          type: boolean
+          description: An interrupted paid request has an unknown outcome and must not be replayed by Resume
+    BulkRunControl:
+      type: object
+      required: [resumeVersion]
+      properties:
+        resumeVersion: { type: number, minimum: 0 }
     BulkBrandRun:
       type: object
       required: [id, status, createdAt, updatedAt, heartbeatAt, workerId, resumeVersion, stopRequested, estimatedCostUsd, items]

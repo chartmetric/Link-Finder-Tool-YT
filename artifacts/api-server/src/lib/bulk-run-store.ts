@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { GetBulkBrandRunResponse, type BulkBrandRun } from "@workspace/api-zod";
 import { clickHouseJson, clickHouseRequest } from "./clickhouse-profiles";
+import { bulkOwnership } from "./bulk-ownership-store";
 
 const table = "poc_new_verticals.profile_bulk_events";
 export const bulkWorkerId = randomUUID();
@@ -61,7 +62,7 @@ export function decodeBulkSnapshot(row: { state: string; stopVersion: string | n
   return run;
 }
 
-export async function readBulkRuns(id?: string) {
+export async function readArchivedBulkRuns(id?: string) {
   await ensureBulkStore();
   const rows = await clickHouseJson<{ state: string; stopVersion: string }>(`
     SELECT argMaxIf(data_json, version, event_type = 'snapshot') AS state,
@@ -72,6 +73,19 @@ export async function readBulkRuns(id?: string) {
     ORDER BY latest DESC LIMIT 30 FORMAT JSON
   `, id ? { id } : {}, 10_000);
   return rows.data.map(decodeBulkSnapshot);
+}
+
+export async function readBulkRuns(id?: string) {
+  const managed = await bulkOwnership.read(id);
+  if (id && managed.length) return managed;
+  const archived = await readArchivedBulkRuns(id);
+  // A stale worker's late archive append must not surface even if its run is
+  // outside the coordinator's latest-30 window.
+  const missingIds = archived.filter(run => !managed.some(current => current.id === run.id)).map(run => run.id);
+  if (missingIds.length) managed.push(...await bulkOwnership.read(missingIds));
+  const ids = new Set(managed.map(run => run.id));
+  return [...managed, ...archived.filter(run => !ids.has(run.id))]
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 30);
 }
 
 /** Conservatively skip prior paid attempts, including failures/interruptions.
@@ -90,7 +104,9 @@ export async function readAttemptedBulkProfileIds(ids: number[]) {
         OR notEmpty(JSONExtractString(item, 'startedAt')))
     FORMAT JSON
   `, { ids: JSON.stringify(ids) }, 10_000);
-  return new Set(rows.data.map(row => Number(row.profileId)));
+  const attempted = await bulkOwnership.attempted(ids);
+  for (const row of rows.data) attempted.add(Number(row.profileId));
+  return attempted;
 }
 
 export async function readBulkBatchArchives(rootId: string, afterBatch: number) {

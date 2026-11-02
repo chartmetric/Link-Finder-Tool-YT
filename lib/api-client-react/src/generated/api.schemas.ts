@@ -359,6 +359,8 @@ export interface BulkBrandRunInput {
 export interface BulkRunResumeInput {
   /** @pattern ^[0-9a-fA-F-]{36}$ */
   requestId: string;
+  /** @minimum 0 */
+  resumeVersion: number;
   launchSource?: BulkLaunchSource;
 }
 
@@ -455,6 +457,13 @@ export interface BulkBrandItem {
   error?: string;
   startedAt?: string;
   completedAt?: string;
+  /** An interrupted paid request has an unknown outcome and must not be replayed by Resume */
+  retryBlocked?: boolean;
+}
+
+export interface BulkRunControl {
+  /** @minimum 0 */
+  resumeVersion: number;
 }
 
 export type BulkBrandRunStatus = typeof BulkBrandRunStatus[keyof typeof BulkBrandRunStatus];

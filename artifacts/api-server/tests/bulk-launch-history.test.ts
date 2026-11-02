@@ -70,8 +70,9 @@ test("older runs never infer a launcher from profile type, and missing labels st
 test("resume requires a stable ID; source labels are bounded metadata and extra personal fields are discarded", () => {
   assert.equal(ResumeBulkBrandRunBody.safeParse({}).success, false);
   assert.equal(ResumeBulkBrandRunBody.safeParse({ requestId: resumeId, launchSource: "admin" }).success, false);
-  const body = ResumeBulkBrandRunBody.parse({ requestId: resumeId, actor: "not-stored", ip: "not-stored" });
-  assert.deepEqual(body, { requestId: resumeId });
+  assert.equal(ResumeBulkBrandRunBody.safeParse({ requestId: resumeId }).success, false);
+  const body = ResumeBulkBrandRunBody.parse({ requestId: resumeId, resumeVersion: 100, actor: "not-stored", ip: "not-stored" });
+  assert.deepEqual(body, { requestId: resumeId, resumeVersion: 100 });
   assert.equal(StartBulkBrandRunBody.parse({ requestId: id }).launchSource, undefined);
 });
 

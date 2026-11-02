@@ -47,8 +47,8 @@ export function RunDetail({ runId, onClose, onOpenRun }: { runId: string; onClos
 
       {run && <LaunchHistory run={run} />}
       {run && <RunBody run={run} onOpenRun={onOpenRun} stopping={stop.isPending} resuming={resume.isPending}
-        onStop={() => stop.mutate({ runId: run.id })}
-        onResume={() => { if (window.confirm(resumeConfirm(run))) resume.mutate({ runId: run.id, data: bulkRequest(`resume:${run.id}`, 'run_monitor') }); }}
+        onStop={() => stop.mutate({ runId: run.id, data: { resumeVersion: run.resumeVersion } })}
+        onResume={() => { if (window.confirm(`${resumeConfirm(run)} Interrupted requests with unknown outcomes are not repeated.`)) resume.mutate({ runId: run.id, data: { ...bulkRequest(`resume:${run.id}`, 'run_monitor'), resumeVersion: run.resumeVersion } }); }}
         error={stop.error ? apiError(stop.error, 'Stop failed.') : resume.error ? apiError(resume.error, 'Resume failed.') : ''} />}
     </section>
   );

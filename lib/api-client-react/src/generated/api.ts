@@ -25,6 +25,7 @@ import type {
   BulkBrandRun,
   BulkBrandRunInput,
   BulkCoverage,
+  BulkRunControl,
   BulkRunResumeInput,
   ExistingProfilePage,
   HealthStatus,
@@ -824,14 +825,15 @@ export const getStopBulkBrandRunUrl = (runId: string,) => {
   return `/api/bulk/brands/runs/${runId}/stop`
 }
 
-export const stopBulkBrandRun = async (runId: string, options?: Parameters<typeof customFetch>[1]): Promise<BulkBrandRun> => {
+export const stopBulkBrandRun = async (runId: string,
+    bulkRunControl: BulkRunControl, options?: Parameters<typeof customFetch>[1]): Promise<BulkBrandRun> => {
 
   return customFetch<BulkBrandRun>(getStopBulkBrandRunUrl(runId),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(bulkRunControl)
   }
 );}
 
@@ -840,8 +842,8 @@ export const stopBulkBrandRun = async (runId: string, options?: Parameters<typeo
 
 
 export const getStopBulkBrandRunMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopBulkBrandRun>>, TError,{runId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof stopBulkBrandRun>>, TError,{runId: string}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopBulkBrandRun>>, TError,{runId: string;data: BodyType<BulkRunControl>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof stopBulkBrandRun>>, TError,{runId: string;data: BodyType<BulkRunControl>}, TContext> => {
 
 const mutationKey = ['stopBulkBrandRun'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -853,10 +855,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof stopBulkBrandRun>>, {runId: string}> = (props) => {
-          const {runId} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof stopBulkBrandRun>>, {runId: string;data: BodyType<BulkRunControl>}> = (props) => {
+          const {runId,data} = props ?? {};
 
-          return  stopBulkBrandRun(runId,requestOptions)
+          return  stopBulkBrandRun(runId,data,requestOptions)
         }
 
 
@@ -867,15 +869,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type StopBulkBrandRunMutationResult = NonNullable<Awaited<ReturnType<typeof stopBulkBrandRun>>>
-
+    export type StopBulkBrandRunMutationBody = BodyType<BulkRunControl>
     export type StopBulkBrandRunMutationError = ErrorType<unknown>
 
     export const useStopBulkBrandRun = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopBulkBrandRun>>, TError,{runId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopBulkBrandRun>>, TError,{runId: string;data: BodyType<BulkRunControl>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof stopBulkBrandRun>>,
         TError,
-        {runId: string},
+        {runId: string;data: BodyType<BulkRunControl>},
         TContext
       > => {
       return useMutation(getStopBulkBrandRunMutationOptions(options));

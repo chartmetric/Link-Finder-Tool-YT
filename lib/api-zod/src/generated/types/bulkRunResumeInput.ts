@@ -10,5 +10,7 @@ import type { BulkLaunchSource } from './bulkLaunchSource';
 export interface BulkRunResumeInput {
   /** @pattern ^[0-9a-fA-F-]{36}$ */
   requestId: string;
+  /** @minimum 0 */
+  resumeVersion: number;
   launchSource?: BulkLaunchSource;
 }

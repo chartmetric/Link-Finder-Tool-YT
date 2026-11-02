@@ -1,4 +1,5 @@
 import { groupYouTubeAliases, youtubeAliases } from "./youtube-aliases";
+import { providerFetch as fetch } from "./paid-request-guard";
 import { parsePublicReference, resolvePublicReference } from "./public-reference";
 import { lookupStartingProfile } from "./starting-profile-lookup";
 

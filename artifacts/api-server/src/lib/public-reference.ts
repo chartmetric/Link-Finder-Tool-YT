@@ -1,4 +1,5 @@
 /** Public HTTP(S) references only; never fetch user-supplied URLs on this server. */
+import { providerFetch as fetch } from "./paid-request-guard";
 export function parsePublicReference(value: string): URL | undefined {
   try {
     const trimmed = value.trim();

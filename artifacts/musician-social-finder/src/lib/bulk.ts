@@ -15,7 +15,7 @@ export function isActiveRun(run?: Pick<BulkBrandRun, 'status'>) {
 export function canResume(run?: BulkBrandRun) {
   if (!run || isActiveRun(run)) return false;
   if (run.continuous && !run.archiveOf && (run.status === 'stopped' || run.status === 'interrupted')) return true;
-  return run.items.some(item => item.status !== 'completed');
+  return run.items.some(item => item.status !== 'completed' && !item.retryBlocked);
 }
 
 export function runCounts(run: BulkBrandRun) {

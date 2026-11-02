@@ -30,6 +30,7 @@ export * from './bulkPlatformOutcomePlatform';
 export * from './bulkPlatformOutcomeStatus';
 export * from './bulkProfileScopeInput';
 export * from './bulkProfileType';
+export * from './bulkRunControl';
 export * from './bulkRunResumeInput';
 export * from './bulkTypeCoverage';
 export * from './existingProfile';

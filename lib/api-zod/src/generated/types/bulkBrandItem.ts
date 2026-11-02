@@ -23,4 +23,6 @@ export interface BulkBrandItem {
   error?: string;
   startedAt?: string;
   completedAt?: string;
+  /** An interrupted paid request has an unknown outcome and must not be replayed by Resume */
+  retryBlocked?: boolean;
 }
