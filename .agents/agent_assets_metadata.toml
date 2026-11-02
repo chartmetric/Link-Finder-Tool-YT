@@ -56,3 +56,17 @@ mtime_ms = 1793641947252
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/d9411f6a-62fd-4d26-bc46-e38e56315048/bb9c19dd-933c-498e-907d-d3485a18aa3c"
 storage_version_token = "1793641972695800"
 content_type = "text/csv"
+
+[[outputs]]
+id = "DBgdYmz1pqTROt9RxOhgp"
+uri = "file://generated-artifacts/cricket-next-1000/selection.csv"
+type = "table"
+title = "Next 1,000 cricketers — selected profiles"
+description = "Excludes all previously queued/searched cricket profiles and the pilot. Includes Sportmonks IDs, country, team and recorded match activity. No paid searches started."
+logical_id = "d0ed0924-ef5c-4e4c-8645-bbd7288d8b9a"
+content_hash = "sha256:ef813194b90fe250c4a50b47c9d773653b71ff76573f15e8bd1a294d686593ac"
+size = 93800
+mtime_ms = 1793645920724
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/d0ed0924-ef5c-4e4c-8645-bbd7288d8b9a/825b4622-0359-4c67-bcff-3338aee78a1f"
+storage_version_token = "1793645927752446"
+content_type = "text/csv"
