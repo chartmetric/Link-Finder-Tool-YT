@@ -5,6 +5,7 @@ import { runScopedQueue } from "./bulk-profile-scopes";
 import { advanceItemStage, clearItemStage } from "./bulk-item-progress";
 import { commitContinuousArchive, continuousArchive, continuousLimitReached, nextContinuousChunk } from "./bulk-continuous";
 import { observePreparationRead, PreparationReadError, withPreparationDiagnostics } from "./bulk-preparation-diagnostics";
+import type { ProviderCreditError } from "./provider-credit-error";
 
 export type WorkerDependencies = {
   ownership: BulkOwnership;
@@ -23,6 +24,8 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
   let failure: unknown;
   let preparingPhase = false;
   let writes = Promise.resolve();
+  let creditFailure: ProviderCreditError | undefined;
+  let creditStop: Promise<void> | undefined;
   const preparationAbort = new AbortController();
   const stopPreparation = () => preparationAbort.abort(new Error(
     "Stopped during profile selection. Catalog reads cancelled; server cancellation is best effort with a 40-second execution deadline. No paid requests were started.",
@@ -62,6 +65,25 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
       throw error;
     });
     return writes;
+  };
+  const stopForCredit = (error: ProviderCreditError) => {
+    if (!creditFailure) {
+      // Close the local dispatch gate synchronously, then commit the Stop under
+      // this generation. Existing admissions/results remain fenced and saved.
+      creditFailure = error;
+      run.error = error.message;
+      run.stopRequested = true;
+      run.status = "stopping";
+      creditStop = deps.ownership.stop(run.id, lease.token).then(() => persist()).catch(error => {
+        failure = error;
+        throw error;
+      });
+    }
+    return creditStop!;
+  };
+  const paidGuard = async () => {
+    await guard();
+    if (creditFailure) throw creditFailure;
   };
   try {
     if (run.preparation?.status === "selecting") {
@@ -108,6 +130,7 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
         run.stopRequested ||= await deps.ownership.renew(lease);
         return run.stopRequested;
       }, async item => {
+        if (creditFailure || run.stopRequested) return;
         const index = indices.get(item)!;
         if (!await deps.ownership.admit(lease, index)) { run.stopRequested = true; return; }
         item.status = "running";
@@ -115,10 +138,10 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
         advanceItemStage(item, "reading_reference");
         await persist();
         try {
-          await withPaidRequestGuard(guard, () => deps.processItem(item, stage => {
+          await withPaidRequestGuard(paidGuard, () => deps.processItem(item, stage => {
             if (!advanceItemStage(item, stage) || failure) return;
             void persist().catch(error => { failure = error; run.stopRequested = true; });
-          }));
+          }), stopForCredit);
         } catch (error) {
           // A lost lease must leave its admission uncertain, never acknowledged.
           await guard();
@@ -165,7 +188,7 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
     clearInterval(timer);
     if (heartbeat) await heartbeat;
     await guard();
-    run.status = (run.stopRequested && run.preparation?.status === "selecting") || run.items.some(item => item.status === "queued")
+    run.status = !!creditFailure || (run.stopRequested && run.preparation?.status === "selecting") || run.items.some(item => item.status === "queued")
       || (run.continuous && (run.stopRequested || (!continuousLimitReached(run.continuous) && !run.continuous.cursors.every(cursor => cursor.exhausted))))
       ? "stopped" : "completed";
     await persist(undefined, true);

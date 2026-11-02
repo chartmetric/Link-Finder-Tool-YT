@@ -17,7 +17,7 @@ type Props = {
 
 const TERMINAL: Record<string, string> = {
   completed: 'Finished: all profiles processed',
-  stopped: 'Stopped by request',
+  stopped: 'Stopped; explicit resume required',
   interrupted: 'Paused by server restart; needs resume',
 };
 
@@ -74,6 +74,7 @@ export const RunProgress = forwardRef<HTMLElement, Props>(function RunProgress({
         <>
           {kinds.length > 1 && <p className="blk-rp-note" data-testid="text-rp-scope">Showing {KIND_META[kind].plural.toLowerCase()} only from this multi-type run. Open the run monitor for all types.{scoped?.sharedCap ? ` The ${scoped.sharedCap.toLocaleString()}-profile cap is shared across all types.` : ''}</p>}
           {!active && TERMINAL[run.status] && <p className={`blk-rp-term t-${run.status}`} data-testid="text-rp-terminal">{TERMINAL[run.status]}{run.error ? ` · ${run.error}` : ''}</p>}
+          {active && run.stopRequested && run.error && <p className="blk-rp-term t-stopped" role="alert" data-testid="text-rp-auto-stop">{run.error}</p>}
           {preparing && <div className="blk-rp-note" role="status" data-testid="text-rp-preparing">
             <strong>{kinds.length > 1 ? 'Preparing selection across the run’s profile types.' : `Preparing profiles: ${run.preparation!.selected} / up to ${run.preparation!.requested} selected.`}</strong>
             <p>{run.preparation!.message} {active ? 'You can close this page; preparation continues on the server.' : 'Open the run monitor to explicitly resume preparation.'}</p>

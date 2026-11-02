@@ -38,3 +38,9 @@ Historical attempt evidence may be reused only within one fenced, pre-paid selec
 **Why:** Re-reading large result archives for every catalog page caused preparation to exceed ClickHouse's execution deadline. A selection-scoped identity snapshot avoids repeated scans, but reusing its negative results after paid work could admit duplicate charges. The shared queue's exclusive owner prevents concurrent paid admission during that selection.
 
 **How to apply:** Read all historical admissions, including older snapshots hidden by later queued/reset states, and retain profile IDs even without an account ID. Extract only admission and identity fields, discard the selection snapshot at each chunk/resume boundary, and continue checking the transactional coordinator. Never treat an archive read failure as empty history.
+
+Provider credit exhaustion must stop the shared run, not merely mark individual search methods incomplete.
+
+**Why:** The user approved automatic stops after a provider credit failure allowed a batch to continue calling other paid providers.
+
+**How to apply:** Close every lane's dispatch gate, persist a generation-checked stop and a sanitized provider-specific reason, and preserve existing results. Already-dispatched requests may still charge; do not replay them. Never automatically resume after funding or a server restart, and never expose raw provider error bodies or credentials. Ordinary rate limiting without credit-exhaustion evidence is not the same condition.
