@@ -13,4 +13,10 @@ Single-profile discovery may start from text alone, such as “cricketer: virat 
 
 **Why:** The user explicitly requested text-based search after learning Sportmonks does not supply public reference-profile URLs.
 
-**How to apply:** Treat this as permission for user-initiated single-profile text searches, not automatic name-only bulk jobs. Do not present a text description as a verified reference account or count discovery-only results as resolved platform coverage.
+**How to apply:** Do not present a text description as a verified reference account or count discovery-only results as resolved platform coverage.
+
+User-initiated cricketer batches may search from names and country/team context without an existing profile link.
+
+**Why:** After the text-search pilot, the user explicitly requested scaling discovery to a selected batch of 1,000 cricketers.
+
+**How to apply:** This is a cricket-specific exception to linked-only catalog discovery, not permission to broaden brand/creator/artist bulk eligibility. Keep results unverified, retain provider-qualified player IDs, and never automatically replay uncertain paid calls.

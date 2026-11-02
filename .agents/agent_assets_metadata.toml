@@ -42,3 +42,17 @@ mtime_ms = 1793640032764
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2c2723a2-e83f-41e7-940f-66490fc38dc4/35037068-ade0-4d48-bef0-73574fddcbd6"
 storage_version_token = "1793640040063083"
 content_type = "text/csv"
+
+[[outputs]]
+id = "O0p3B3nhcgex2YgKn5SY0"
+uri = "file://generated-artifacts/cricket-1000/d7b57271-aa89-44b7-a1ca-31b8db4662bd.csv"
+type = "table"
+title = "1,000 cricketers — completed Instagram discovery batch"
+description = "Final saved outcomes: 311 players with candidates, 688 with no candidates, and one failed lookup. Includes Sportmonks IDs, candidate URLs, context, estimated costs, and errors."
+logical_id = "d9411f6a-62fd-4d26-bc46-e38e56315048"
+content_hash = "sha256:3d391998e1e1c43f2bd4102a851a23d0032c5efa735a4dee0300ff03456ab82a"
+size = 177550
+mtime_ms = 1793641947252
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/d9411f6a-62fd-4d26-bc46-e38e56315048/bb9c19dd-933c-498e-907d-d3485a18aa3c"
+storage_version_token = "1793641972695800"
+content_type = "text/csv"
