@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { keepPreviousData } from '@tanstack/react-query';
 import { ArrowUpRight, ChevronLeft, ChevronRight, CircleAlert, Inbox, RefreshCw } from 'lucide-react';
 import { getListBulkBrandCandidatesQueryKey, useListBulkBrandCandidates, type BulkBrandCandidate } from '@workspace/api-client-react';
 import { PlatformIcon } from '@/pages/SingleArtist';
@@ -16,12 +15,16 @@ export function CandidatePicker({ kind, selected, onToggle, onSetMany, maxBatch,
   onMaxBatch: (n: number) => void;
 }) {
   const [limit, setLimit] = useState(10);
+  const [draftSearch, setDraftSearch] = useState('');
+  const [search, setSearch] = useState('');
+  const [tier, setTier] = useState<number | undefined>();
   const [cursors, setCursors] = useState<number[]>([0]);
   const afterId = cursors[cursors.length - 1];
-  const params = { limit, afterId, profileType: kind };
+  const params = { limit, afterId, profileType: kind, search: search || undefined, tier };
   const m = KIND_META[kind]; const pl = m.plural.toLowerCase();
   const q = useListBulkBrandCandidates(params, {
-    query: { queryKey: getListBulkBrandCandidatesQueryKey(params), placeholderData: keepPreviousData, staleTime: 30000 },
+    // Never expose a previous filter/type's rows as selectable current results.
+    query: { queryKey: getListBulkBrandCandidatesQueryKey(params), staleTime: 30000 },
   });
   const rows = q.data?.profiles ?? [];
   const serverMax = q.data?.maxBatchSize;
@@ -29,6 +32,8 @@ export function CandidatePicker({ kind, selected, onToggle, onSetMany, maxBatch,
   const runnable = rows.filter(canInvestigate);
   const allOn = runnable.length > 0 && runnable.every(r => selected.has(r.profileId));
   const room = maxBatch - selected.size;
+  const filtered = !!search || tier !== undefined;
+  const clearFilters = () => { setDraftSearch(''); setSearch(''); setTier(undefined); setCursors([0]); };
 
   return (
     <section className="inv-panel blk-picker" aria-labelledby="blk-pick-title" data-testid="section-bulk-candidates">
@@ -41,6 +46,31 @@ export function CandidatePicker({ kind, selected, onToggle, onSetMany, maxBatch,
           </select>
         </label>
       </div>
+
+      <form className="blk-filters" role="search" aria-label={`Search catalog ${pl}`} onSubmit={e => {
+        e.preventDefault();
+        setSearch(draftSearch.trim().replace(/^@/, '').trim());
+        setCursors([0]);
+      }}>
+        <label className="blk-limit blk-search">
+          <span className="inv-mono">Name or handle</span>
+          <input type="search" value={draftSearch} maxLength={120} placeholder="Search name or @handle"
+            onChange={e => setDraftSearch(e.target.value)} data-testid="input-candidate-search" />
+        </label>
+        <button type="submit" className="inv-retry" data-testid="button-search-candidates">Search</button>
+        <label className="blk-limit">
+          <span className="inv-mono">Tier</span>
+          <select value={tier ?? ''} onChange={e => { setTier(e.target.value ? Number(e.target.value) : undefined); setCursors([0]); }} data-testid="select-candidate-tier">
+            <option value="">All tiers</option>
+            {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>Tier {n}</option>)}
+          </select>
+        </label>
+        {(filtered || draftSearch) && <button type="button" className="inv-retry" onClick={clearFilters} data-testid="button-clear-candidate-filters">Clear filters</button>}
+        <p className="blk-filter-note" aria-live="polite" data-testid="text-candidate-filters">
+          {search ? `Showing matches for “${search}”` : 'Showing all names and handles'}{tier !== undefined ? ` · Tier ${tier}` : ' · All tiers'}.
+          {' '}Selections stay selected when hidden by filters. Searching never starts a lookup.
+        </p>
+      </form>
 
       {q.isLoading && <div className="inv-history-card" aria-busy="true" data-testid="status-candidates-loading">{[0, 1, 2, 3].map(i => <div className="inv-skel" key={i} />)}</div>}
 
@@ -57,7 +87,8 @@ export function CandidatePicker({ kind, selected, onToggle, onSetMany, maxBatch,
       {q.data && rows.length === 0 && (
         <div className="inv-empty-card" data-testid="status-candidates-empty">
           <span className="inv-state-icon"><Inbox size={23} /></span>
-          <div className="inv-state-copy"><h3>{cursors.length > 1 ? `No more ${pl}` : `No ${pl} found`}</h3><p>This list includes profiles with zero, one, or multiple active accounts.</p>
+          <div className="inv-state-copy"><h3>{cursors.length > 1 ? `No more ${pl}` : filtered ? `No ${pl} match these filters` : `No ${pl} found`}</h3><p>This list includes profiles with zero, one, or multiple active accounts.</p>
+            {filtered && <button type="button" className="inv-retry" onClick={clearFilters}>Clear filters</button>}
             {cursors.length > 1 && <button type="button" className="inv-retry" onClick={() => setCursors([0])}>Back to first page</button>}</div>
         </div>
       )}

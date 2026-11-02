@@ -9,6 +9,15 @@
 
 .blk-limit { display: flex; flex-direction: column; gap: 5px; font-size: 9px; color: var(--subtle); text-transform: uppercase; letter-spacing: .1em; }
 .blk-limit select { border: 1px solid #cbd6e1; border-radius: 6px; background: #f8fbfc; padding: 7px 10px; font: 700 12px var(--app-font-mono); color: var(--ink); }
+.blk-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 0 24px 20px; }
+.blk-search { flex: 1 1 220px; min-width: 0; }
+.blk-search input { width: 100%; min-width: 0; border: 1px solid #cbd6e1; border-radius: 6px; background: #f8fbfc; padding: 8px 10px; font: inherit; font-size: 13px; letter-spacing: normal; color: var(--ink); }
+.blk-filters .inv-retry { margin-top: 0; min-height: 34px; }
+.blk-filter-note { flex-basis: 100%; margin: 0; font-size: 11px; line-height: 1.6; color: var(--subtle); overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .blk-filters { padding: 0 16px 16px; gap: 10px; }
+  .blk-search { flex-basis: 100%; }
+}
 .blk-table { min-width: 620px; }
 .blk-check-col { width: 44px; }
 .blk-table input[type=checkbox], .blk-ack input { width: 17px; height: 17px; accent-color: var(--blue); cursor: pointer; }

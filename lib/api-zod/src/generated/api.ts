@@ -324,13 +324,20 @@ export const listBulkBrandCandidatesQueryLimitMax = 25;
 
 export const listBulkBrandCandidatesQueryAfterIdDefault = 0;
 export const listBulkBrandCandidatesQueryAfterIdMin = 0;
+export const listBulkBrandCandidatesQueryAfterIdMax = 9007199254740991;
+
+export const listBulkBrandCandidatesQuerySearchMax = 120;
+
+export const listBulkBrandCandidatesQueryTierMax = 5;
 
 
 
 export const ListBulkBrandCandidatesQueryParams = zod.object({
-  "limit": zod.coerce.number().min(1).max(listBulkBrandCandidatesQueryLimitMax).default(listBulkBrandCandidatesQueryLimitDefault),
-  "afterId": zod.coerce.number().min(listBulkBrandCandidatesQueryAfterIdMin).default(listBulkBrandCandidatesQueryAfterIdDefault),
-  "profileType": zod.enum(['brand', 'creator', 'artist']).optional()
+  "limit": zod.coerce.number().int().min(1).max(listBulkBrandCandidatesQueryLimitMax).default(listBulkBrandCandidatesQueryLimitDefault),
+  "afterId": zod.coerce.number().int().min(listBulkBrandCandidatesQueryAfterIdMin).max(listBulkBrandCandidatesQueryAfterIdMax).default(listBulkBrandCandidatesQueryAfterIdDefault),
+  "profileType": zod.enum(['brand', 'creator', 'artist']).optional(),
+  "search": zod.coerce.string().max(listBulkBrandCandidatesQuerySearchMax).optional().describe('Case-insensitive literal substring of the latest profile name or any active linked account handle. Whitespace and an optional leading @ are ignored. Does not start an investigation.'),
+  "tier": zod.coerce.number().int().min(1).max(listBulkBrandCandidatesQueryTierMax).optional().describe('Latest global tier; omit for all tiers including unranked profiles.')
 })
 
 export const ListBulkBrandCandidatesResponse = zod.object({

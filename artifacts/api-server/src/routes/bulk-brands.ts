@@ -22,14 +22,21 @@ function respondError(req: Request, res: Response, error: unknown) {
   });
 }
 router.get("/bulk/brands/candidates", async (req, res) => {
+  // Express permits repeated and structured query parameters; codegen coerces
+  // strings/numbers, so reject non-scalar values before generated validation.
+  if (["limit", "afterId", "profileType", "search", "tier"].some(key =>
+    req.query[key] !== undefined && typeof req.query[key] !== "string")) {
+    res.status(400).json({ error: "Candidate filters must each be a single query value." }); return;
+  }
   const params = ListBulkBrandCandidatesQueryParams.safeParse(req.query);
   if (!params.success || !Number.isSafeInteger(params.data.limit ?? 10)
     || !Number.isSafeInteger(params.data.afterId ?? 0)) {
-    res.status(400).json({ error: "Use an integer batch size from 1–25 and a valid page cursor." }); return;
+    res.status(400).json({ error: "Use a valid profile type, a search of at most 120 characters, a tier from 1–5, an integer page size from 1–25 and a valid page cursor." }); return;
   }
   try {
     res.json(ListBulkBrandCandidatesResponse.parse(await listEligibleBrands({
       limit: params.data.limit ?? 10, afterId: params.data.afterId ?? 0, profileType: params.data.profileType,
+      search: params.data.search, tier: params.data.tier,
     })));
   } catch (error) { respondError(req, res, error); }
 });

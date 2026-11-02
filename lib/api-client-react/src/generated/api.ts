@@ -492,7 +492,7 @@ export const getListBulkBrandCandidatesQueryKey = (params?: ListBulkBrandCandida
     }
 
 
-export const getListBulkBrandCandidatesQueryOptions = <TData = Awaited<ReturnType<typeof listBulkBrandCandidates>>, TError = ErrorType<unknown>>(params?: ListBulkBrandCandidatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBulkBrandCandidates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListBulkBrandCandidatesQueryOptions = <TData = Awaited<ReturnType<typeof listBulkBrandCandidates>>, TError = ErrorType<void>>(params?: ListBulkBrandCandidatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBulkBrandCandidates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -511,11 +511,11 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ListBulkBrandCandidatesQueryResult = NonNullable<Awaited<ReturnType<typeof listBulkBrandCandidates>>>
-export type ListBulkBrandCandidatesQueryError = ErrorType<unknown>
+export type ListBulkBrandCandidatesQueryError = ErrorType<void>
 
 
 
-export function useListBulkBrandCandidates<TData = Awaited<ReturnType<typeof listBulkBrandCandidates>>, TError = ErrorType<unknown>>(
+export function useListBulkBrandCandidates<TData = Awaited<ReturnType<typeof listBulkBrandCandidates>>, TError = ErrorType<void>>(
  params?: ListBulkBrandCandidatesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBulkBrandCandidates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {

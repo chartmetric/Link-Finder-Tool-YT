@@ -1,21 +1,58 @@
-import type { BulkBrandCandidate, BulkProfileType, BulkProfileScopeInput } from "@workspace/api-zod";
+import { ListBulkBrandCandidatesQueryParams, type BulkBrandCandidate, type BulkProfileType, type BulkProfileScopeInput } from "@workspace/api-zod";
 import { clickHouseJson } from "./clickhouse-profiles";
 import { parseKnownProfileUrl } from "./musician-search";
 
 import { catalogProfileType, MAX_BULK_BATCH } from "./bulk-profile-scopes";
 export { MAX_BULK_BATCH } from "./bulk-profile-scopes";
 
-/** Catalog reads only. Current profile classification, including unranked profiles. */
-export function eligibleBrandSql(selectedIds = false, bounded = false) {
+/** Catalog reads only. Filter current values before limiting the profile page.
+ * Optional filter CTEs never embed/repeat the full current-profile aggregation. */
+export function eligibleBrandSql(selectedIds = false, bounded = false, filters: { search?: boolean; tier?: boolean } = {}) {
   return `
-    WITH current_profiles AS (
+    WITH ${filters.search ? `
+    matching_names AS (
+      SELECT id, argMax(tuple(name), updated_at) AS name_data
+      FROM new_vertical.profile WHERE id IN (
+        SELECT id FROM new_vertical.profile
+        WHERE positionCaseInsensitiveUTF8(ifNull(name, ''), {search:String}) > 0
+      )
+      GROUP BY id HAVING positionCaseInsensitiveUTF8(ifNull(tupleElement(name_data, 1), ''), {search:String}) > 0
+    ), matching_accounts AS (
+      SELECT id, argMax(tuple(handle, is_active), modified_at) AS account
+      FROM new_vertical.account WHERE id IN (
+        SELECT id FROM new_vertical.account
+        WHERE positionCaseInsensitiveUTF8(ifNull(handle, ''), {search:String}) > 0
+      )
+      GROUP BY id HAVING tupleElement(account, 2) = 1
+        AND positionCaseInsensitiveUTF8(ifNull(tupleElement(account, 1), ''), {search:String}) > 0
+    ), matching_links AS (
+      SELECT id, argMax(tuple(profile_id, account_id, disconnected_at), modified_at) AS link
+      FROM new_vertical.l_profile_account WHERE id IN (
+        SELECT id FROM new_vertical.l_profile_account WHERE account_id IN (SELECT id FROM matching_accounts)
+      )
+      GROUP BY id HAVING tupleElement(link, 3) IS NULL
+        AND tupleElement(link, 2) IN (SELECT id FROM matching_accounts)
+    ),` : ""}
+    ${filters.tier ? `
+    matching_tiers AS (
+      SELECT profile, argMax(tuple(tier, tier_rank), tuple(computed_at, updated_at)) AS assignment
+      FROM new_vertical.l_profile_tier
+      WHERE profile_type = {profileType:String} AND grain = 'global'
+      GROUP BY profile HAVING tupleElement(assignment, 1) = {tier:UInt8}
+    ),` : ""}
+    current_profiles AS (
       SELECT id, argMax(tuple(name, deleted_at, profile_type, profile_types), updated_at) AS data
       FROM new_vertical.profile
       WHERE ${selectedIds ? "id IN {ids:Array(UInt64)}" : "id > {afterId:UInt64}"}
       ${bounded ? "AND id <= {upperId:UInt64}" : ""}
+      ${filters.search ? `AND id IN (
+        SELECT id FROM matching_names
+        UNION DISTINCT SELECT tupleElement(link, 1) FROM matching_links
+      )` : ""}
       GROUP BY id HAVING tupleElement(data, 2) IS NULL
         AND (tupleElement(data, 3) = {profileType:String}
           OR has(tupleElement(data, 4), {profileType:String}))
+        ${filters.tier ? "AND id IN (SELECT profile FROM matching_tiers)" : ""}
       ORDER BY id ASC LIMIT {rowLimit:UInt32}
     )
     SELECT id AS profileId, tupleElement(data, 1) AS profileName
@@ -84,18 +121,31 @@ export function catalogCandidate(row: CatalogRow, profileType: BulkProfileType):
   };
 }
 
-export async function listEligibleBrands(input: { limit: number; afterId?: number; profileIds?: number[]; profileType?: BulkProfileType; eligibleOnly?: boolean; maxProfileId?: number }) {
-  const profileType = input.profileType ?? "brand";
+export async function listEligibleBrands(input: { limit: number; afterId?: number; profileIds?: number[]; profileType?: BulkProfileType; eligibleOnly?: boolean; maxProfileId?: number; search?: string; tier?: number }, readCatalog = clickHouseJson) {
+  // Guard internal callers as well as the HTTP boundary before binding UInts.
+  // Continuous selection already uses bounded 250-row internal reads. The HTTP
+  // contract remains capped at 25; only a frozen source ceiling permits more.
+  const filters = ListBulkBrandCandidatesQueryParams.parse({ ...input, limit: Math.min(input.limit, MAX_BULK_BATCH) });
+  if (!Number.isSafeInteger(input.limit) || input.limit > (input.maxProfileId !== undefined ? 250 : MAX_BULK_BATCH)
+    || !Number.isSafeInteger(input.afterId ?? 0)
+    || (input.maxProfileId !== undefined && (!Number.isSafeInteger(input.maxProfileId) || input.maxProfileId < 0))
+    || (input.profileIds && (!input.profileIds.length || input.profileIds.length > MAX_BULK_BATCH
+      || input.profileIds.some(id => !Number.isSafeInteger(id) || id < 1)))) {
+    throw new Error("Invalid candidate page bounds or profile IDs.");
+  }
+  const profileType = filters.profileType ?? "brand";
+  const search = (filters.search ?? "").trim().replace(/^@/, "").trim();
   const collected: BulkBrandCandidate[] = [];
   let afterId = input.afterId ?? 0;
   for (let scan = 0; scan < 4; scan++) {
     const rowLimit = input.eligibleOnly && !input.profileIds ? 250 : input.limit + 1;
-    const rows = await clickHouseJson<Pick<CatalogRow, "profileId" | "profileName">>(eligibleBrandSql(Boolean(input.profileIds), input.maxProfileId !== undefined), {
+    const rows = await readCatalog<Pick<CatalogRow, "profileId" | "profileName">>(eligibleBrandSql(Boolean(input.profileIds), input.maxProfileId !== undefined, { search: Boolean(search), tier: filters.tier !== undefined }), {
       ids: JSON.stringify(input.profileIds ?? []), profileType: catalogProfileType(profileType),
       afterId: String(afterId), rowLimit: String(rowLimit),
+      search, tier: String(filters.tier ?? 0),
       ...(input.maxProfileId !== undefined ? { upperId: String(input.maxProfileId) } : {}),
     }, 20_000);
-    const details = rows.data.length ? await clickHouseJson<Omit<CatalogRow, "profileName">>(profileAccountDetailsSql(), {
+    const details = rows.data.length ? await readCatalog<Omit<CatalogRow, "profileName">>(profileAccountDetailsSql(), {
       ids: JSON.stringify(rows.data.map(row => Number(row.profileId))), profileType: catalogProfileType(profileType),
     }, 20_000) : { data: [] };
     const byId = new Map(details.data.map(row => [Number(row.profileId), row]));

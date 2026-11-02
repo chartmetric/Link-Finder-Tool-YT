@@ -597,9 +597,21 @@ export type ListBulkBrandCandidatesParams = {
 limit?: number;
 /**
  * @minimum 0
+ * @maximum 9007199254740991
  */
 afterId?: number;
 profileType?: BulkProfileType;
+/**
+ * Case-insensitive literal substring of the latest profile name or any active linked account handle. Whitespace and an optional leading @ are ignored. Does not start an investigation.
+ * @maxLength 120
+ */
+search?: string;
+/**
+ * Latest global tier; omit for all tiers including unranked profiles.
+ * @minimum 1
+ * @maximum 5
+ */
+tier?: number;
 };
 
 export type ListBulkBrandRuns200 = {

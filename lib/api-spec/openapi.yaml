@@ -105,16 +105,28 @@ paths:
       operationId: listBulkBrandCandidates
       tags: [bulk]
       parameters:
-        - { name: limit, in: query, schema: { type: number, minimum: 1, maximum: 25, default: 10 } }
-        - { name: afterId, in: query, schema: { type: number, minimum: 0, default: 0 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 25, default: 10 } }
+        - { name: afterId, in: query, schema: { type: integer, minimum: 0, maximum: 9007199254740991, default: 0 } }
         - { name: profileType, in: query, schema: { $ref: "#/components/schemas/BulkProfileType" } }
+        - name: search
+          in: query
+          description: Case-insensitive literal substring of the latest profile name or any active linked account handle. Whitespace and an optional leading @ are ignored. Does not start an investigation.
+          schema: { type: string, maxLength: 120 }
+        - name: tier
+          in: query
+          description: Latest global tier; omit for all tiers including unranked profiles.
+          schema: { type: integer, minimum: 1, maximum: 5 }
       responses:
         "200":
-          description: All non-deleted profiles of the selected type, including unranked profiles and profiles without active accounts; defaults to brands
+          description: Filtered non-deleted profiles of the selected type, including unranked profiles and profiles without active accounts; ordered by profile ID, defaults to brands
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/BulkBrandCandidates"
+        "400":
+          description: Invalid profile type, search, tier, page size or cursor
+        "503":
+          description: Candidate catalog unavailable; no investigation has been started
   /bulk/brands/runs:
     get:
       operationId: listBulkBrandRuns

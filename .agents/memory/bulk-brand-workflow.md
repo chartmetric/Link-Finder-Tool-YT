@@ -7,13 +7,19 @@ The bulk finder must expose all Brands, Creators, and Artists, including profile
 
 **Why:** The user superseded the original one-account cohort with access to all profiles in the new verticals database. They explicitly chose “show them, but require an existing link to run discovery” for profiles with no existing links.
 
-**How to apply:** Never use tier assignment or an exact account-count condition as the catalog inclusion rule. Use current profile classifications (including multi-type membership); Artists correspond to musician. Keep unlinked profiles visible but non-runnable; do not introduce name-only paid discovery. Preserve separate manual selections and the shared floating launcher. Catalog records supply starting identities; newly discovered links still come from external providers.
+**How to apply:** Never use tier assignment or an exact account-count condition as the catalog inclusion rule. Default to all tiers including unranked profiles, with optional name/handle search and tier filters before a run. Use current profile classifications (including multi-type membership); Artists correspond to musician. Keep unlinked profiles visible but non-runnable; do not introduce name-only paid discovery. Preserve separate manual selections and the shared floating launcher. Catalog records supply starting identities; newly discovered links still come from external providers.
 
 Bound account/tier enrichment to the profile IDs returned by the catalog page rather than repeatedly embedding the entire profile query in ClickHouse CTEs.
 
-**Why:** ClickHouse expands reused CTEs, so a large current-profile aggregation repeated across account joins makes a small page unnecessarily slow.
+**Why:** ClickHouse expands reused CTEs, so a large current-profile aggregation repeated across account joins makes a small page unnecessarily slow. Broad no-match searches can also time out if the entire profile catalog is aggregated before narrowing matching identities.
 
-**How to apply:** Read the profile page once, then enrich those bounded IDs using parameterized reads. This keeps full-catalog access without full-catalog account enrichment.
+**How to apply:** Read the profile page once, then enrich those bounded IDs using parameterized reads. For search, narrow identities using latest matching names and linked handles before aggregating current profile classifications. This keeps full-catalog access without full-catalog account enrichment; check no-match searches as well as successful matches.
+
+Candidate-catalog filters and saved-run review filters are separate product scopes.
+
+**Why:** The user explicitly scoped name/handle search and tiers to finding eligible profiles before starting a batch, not to reviewing saved results.
+
+**How to apply:** Keep catalog filtering read-only and independent of paid Start/Resume and saved-run review. Do not reinterpret a candidate filter as a change to which saved outcomes need review.
 
 Allow explicitly authorized continuous searching through all remaining eligible profiles, with automatic chunk sizes up to 1,000 as requested by the user. The user also wants to pick workers/processors; expose bounded parallel workers per type rather than fixing each type to one.
 
