@@ -28,3 +28,17 @@ mtime_ms = 1790629161080
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/f1495ccd-21bc-433a-b3e3-5e8d4d2fa740/f9da27d4-31ab-4c0f-9469-24e67b38bbdb"
 storage_version_token = "1790629170025783"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "MFHqzF69Q3QMPj3W26sAh"
+uri = "file://generated-artifacts/cricket-search/instagram-candidates.csv"
+type = "table"
+title = "10 cricketers — Instagram discovery results"
+description = "Candidate Instagram URLs linked to Sportmonks player IDs, with provider statuses and unverified discovery scores."
+logical_id = "2c2723a2-e83f-41e7-940f-66490fc38dc4"
+content_hash = "sha256:9660670f686a55c01376c43e618ba4ba9dde622bb35f665b1590937e11e159e0"
+size = 1604
+mtime_ms = 1793640032764
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2c2723a2-e83f-41e7-940f-66490fc38dc4/35037068-ade0-4d48-bef0-73574fddcbd6"
+storage_version_token = "1793640040063083"
+content_type = "text/csv"
