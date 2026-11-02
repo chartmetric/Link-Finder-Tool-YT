@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { bulkCoverageSql } from "../src/lib/bulk-coverage";
+import { bulkCoverageSql, bulkCoverageProfilesSql } from "../src/lib/bulk-coverage";
 import { coverageReferenceKeySql } from "../src/lib/coverage-reference-sql";
 import { clickHouseJson } from "../src/lib/clickhouse-profiles";
 
@@ -25,7 +25,7 @@ function history(id: number, value: unknown, date = "2026-10-27 10:00:00", known
     toDateTime64('${date}', 3, 'UTC') AS searched_at`;
 }
 function fixtureSql(historyRows: string[], bulkItems: unknown[] = [], links = [ref], ambiguous = false) {
-  const catalog = `SELECT toUInt64(1) AS id, NULL AS deleted_at, 'brand' AS profile_type,
+  const catalog = `SELECT toUInt64(1) AS id, 'Current name' AS name, NULL AS deleted_at, 'brand' AS profile_type,
     ['brand', 'creator'] AS profile_types, toDateTime('2026-01-01') AS updated_at`;
   const sources: Record<string, string> = {
     "poc_new_verticals.profile_bulk_events": `SELECT 'run' AS run_id, 'snapshot' AS event_type,
@@ -113,4 +113,19 @@ test("confirmed aliases link without inventing channel-ID equivalence", { skip: 
     [], ["https://youtube.com/channel/UCAbc"])), 1);
   assert.equal(await covered(fixtureSql([history(1, value, undefined, value.referenceProfile.url)],
     [], ["https://youtube.com/channel/UCabc"])), 0);
+});
+
+test("uncovered single-profile evidence is available from coverage buckets with its saved source", { skip: !integration }, async () => {
+  const sql = fixtureSql([history(1, result("likely"))]);
+  const ctes = sql.split("\nSELECT profileType,")[0];
+  const detailSelect = bulkCoverageProfilesSql.slice(bulkCoverageProfilesSql.indexOf("\nSELECT profileId, profileName"));
+  const rows = await clickHouseJson<{ profileId: number; sourceRunId: string; sourceHistoryId: string; state: string }>(
+    ctes + detailSelect, {
+      profileType: "brand", group: "all", platform: "TikTok", state: "likely_only", afterId: "0", pageSize: "26",
+    });
+  assert.equal(rows.data.length, 1);
+  assert.equal(Number(rows.data[0].profileId), 1);
+  assert.equal(rows.data[0].state, "likely_only");
+  assert.equal(rows.data[0].sourceRunId, "");
+  assert.equal(rows.data[0].sourceHistoryId, "00000000-0000-0000-0000-000000000001");
 });

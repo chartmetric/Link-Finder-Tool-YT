@@ -27,6 +27,27 @@ paths:
                 $ref: "#/components/schemas/BulkCoverage"
         "503":
           description: Coverage could not be calculated
+  /bulk/coverage/{profileType}/{group}/{platform}/{state}/profiles/{afterId}/{limit}:
+    get:
+      operationId: listBulkCoverageProfiles
+      tags: [profile-search]
+      summary: Read-only active investigated profiles in a platform evidence bucket
+      description: Only profiles not fully covered are included. Explicit absence is sourced evidence for this platform, not a coverage blocker. Navigation never starts discovery or paid retries. Live keyset pagination can change as evidence or catalog membership changes.
+      parameters:
+        - { name: profileType, in: path, required: true, schema: { $ref: "#/components/schemas/BulkProfileType" } }
+        - { name: group, in: path, required: true, schema: { $ref: "#/components/schemas/BulkCoverageGroup" } }
+        - { name: platform, in: path, required: true, schema: { type: string, enum: [Instagram, TikTok, YouTube] } }
+        - { name: state, in: path, required: true, schema: { $ref: "#/components/schemas/BulkCoverageState" } }
+        - { name: afterId, in: path, required: true, schema: { type: integer, minimum: 0 } }
+        - { name: limit, in: path, required: true, schema: { type: integer, minimum: 1, maximum: 50 } }
+      responses:
+        "200":
+          description: Bounded page ordered by stable catalog ID
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BulkCoverageProfiles" }
+        "400": { description: Invalid bucket or cursor }
+        "503": { description: Coverage evidence unavailable }
   /profiles/musician-coverage:
     get:
       operationId: getMusicianCoverage
@@ -302,13 +323,64 @@ paths:
           description: Suggestion storage is unavailable
 components:
   schemas:
+    BulkCoverageGroup:
+      type: string
+      enum: [tiers_1_3, tiers_1_5, all]
+    BulkCoverageState:
+      type: string
+      enum: [likely_only, needs_review, no_match, explicit_absence, provider_failure, unresolved]
+    BulkCoverageStateCount:
+      type: object
+      required: [state, count]
+      properties:
+        state: { $ref: "#/components/schemas/BulkCoverageState" }
+        count: { type: number }
+    BulkCoveragePlatform:
+      type: object
+      required: [platform, states]
+      properties:
+        platform: { type: string, enum: [Instagram, TikTok, YouTube] }
+        states:
+          type: array
+          items: { $ref: "#/components/schemas/BulkCoverageStateCount" }
+    BulkCoverageProfile:
+      type: object
+      required: [profileId, profileName, tier, platform, state, reason, evidenceUrls, checkedAt, sourceRunId, referenceUrl]
+      properties:
+        profileId: { type: number }
+        profileName: { type: string }
+        tier: { type: [number, "null"] }
+        platform: { type: string }
+        state: { $ref: "#/components/schemas/BulkCoverageState" }
+        reason: { type: string }
+        evidenceUrls: { type: array, items: { type: string } }
+        checkedAt: { type: string }
+        sourceRunId: { type: string, description: Saved bulk run ID; empty for single-profile evidence }
+        sourceHistoryId: { type: string, description: Saved single-profile investigation ID; empty for bulk evidence }
+        referenceUrl: { type: string }
+    BulkCoverageProfiles:
+      type: object
+      required: [profiles, hasMore, nextAfterId, generatedAt]
+      properties:
+        profiles:
+          type: array
+          items: { $ref: "#/components/schemas/BulkCoverageProfile" }
+        hasMore: { type: boolean }
+        nextAfterId: { type: number }
+        generatedAt: { type: string }
     BulkCoverageBucket:
       type: object
-      required: [group, total, covered]
+      required: [group, total, covered, investigated, uncoveredInvestigated, platformBreakdown]
       properties:
-        group: { type: string, enum: [tiers_1_3, tiers_1_5, all] }
+        group: { $ref: "#/components/schemas/BulkCoverageGroup" }
         total: { type: number }
         covered: { type: number }
+        investigated: { type: number }
+        uncoveredInvestigated: { type: number }
+        platformBreakdown:
+          description: Counts among uncovered investigated active profiles only. Platforms overlap; sourced explicit absence resolves that platform, not the whole profile.
+          type: array
+          items: { $ref: "#/components/schemas/BulkCoveragePlatform" }
     BulkTypeCoverage:
       type: object
       required: [profileType, buckets]

@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type BulkCoverageBucketGroup = typeof BulkCoverageBucketGroup[keyof typeof BulkCoverageBucketGroup];
+export type BulkCoverageGroup = typeof BulkCoverageGroup[keyof typeof BulkCoverageGroup];
 
 
-export const BulkCoverageBucketGroup = {
+export const BulkCoverageGroup = {
   tiers_1_3: 'tiers_1_3',
   tiers_1_5: 'tiers_1_5',
   all: 'all',

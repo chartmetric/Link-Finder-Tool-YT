@@ -253,6 +253,27 @@
 .blk-cov-error .inv-retry { margin-top: 0; }
 .blk-cov-empty { margin-top: 12px; font-size: 12px; color: var(--subtle); padding: 10px 12px; border: 1px dashed #cad7e0; border-radius: 10px; }
 .blk-cov-foot { margin-top: 12px; font-size: 10px; line-height: 1.6; color: #4a6177; }
+.blk-cov-breakdown-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 18px; }
+.blk-cov-breakdown-head h3, .blk-cov-profiles h3 { font-size: 13px; font-weight: 700; }
+.blk-cov-breakdown-head label { font-size: 11px; }
+.blk-cov-breakdown-head select { margin-left: 6px; padding: 5px; border: 1px solid #ccd9e5; border-radius: 5px; background: white; }
+.blk-cov-breakdown { font-size: 11px; line-height: 1.6; color: #4a6177; }
+.blk-cov-breakdown p { margin-top: 8px; }
+.blk-cov-table-scroll { overflow-x: auto; margin-top: 10px; }
+.blk-cov-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.blk-cov-table th, .blk-cov-table td { text-align: left; padding: 7px 8px; border-bottom: 1px solid #dce6e9; }
+.blk-cov-table th { font-weight: 600; }
+.blk-cov-table td button { color: #086e60; text-decoration: underline; font: 600 12px var(--app-font-mono); padding: 3px 7px; border-radius: 4px; }
+.blk-cov-table td button:disabled { color: #718696; text-decoration: none; cursor: default; }
+.blk-cov-table td button[aria-pressed="true"] { background: #d7f1e7; }
+.blk-cov-table button:focus-visible { outline: 2px solid #086e60; }
+.blk-cov-profiles { margin-top: 12px; padding: 12px; border: 1px solid #ccd9e5; border-radius: 8px; background: white; overflow-wrap: anywhere; }
+.blk-cov-profile-list { list-style: none; }
+.blk-cov-profile-list li { padding: 12px 0; border-bottom: 1px solid #dce6e9; }
+.blk-cov-profile-list small { display: block; font-size: 10px; margin-top: 6px; }
+.blk-cov-links { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 5px; }
+.blk-cov-links a { color: #086e60; text-decoration: underline; }
+.blk-cov-pages { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 @media (max-width: 767px) { .blk-cov-grid { grid-template-columns: 1fr; } }
 
 /* Compact run progress */

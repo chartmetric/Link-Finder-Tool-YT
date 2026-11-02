@@ -1,6 +1,8 @@
 import { RotateCw } from 'lucide-react';
+import { useState } from 'react';
 import { getGetBulkCoverageQueryKey, useGetBulkCoverage, type BulkCoverageBucket } from '@workspace/api-client-react';
 import { KIND_META, apiError, type ProfileKind } from '@/lib/bulk';
+import { CoverageBreakdown } from './coverage-breakdown';
 
 const GROUPS: { group: BulkCoverageBucket['group']; label: (plural: string) => string }[] = [
   { group: 'tiers_1_3', label: () => 'Tiers 1–3' },
@@ -39,6 +41,7 @@ function Donut({ label, bucket, id }: { label: string; bucket?: BulkCoverageBuck
 }
 
 export function CoveragePanel({ kind }: { kind: ProfileKind }) {
+  const [group, setGroup] = useState<BulkCoverageBucket['group']>('tiers_1_3');
   const m = KIND_META[kind];
   const q = useGetBulkCoverage({ query: { queryKey: getGetBulkCoverageQueryKey(), staleTime: 60000, refetchInterval: 60000 } });
   const type = q.data?.types.find(t => t.profileType === kind);
@@ -63,9 +66,18 @@ export function CoveragePanel({ kind }: { kind: ProfileKind }) {
       ) : !type ? (
         <p className="blk-cov-empty" data-testid="status-coverage-empty">No coverage data was returned for {m.plural.toLowerCase()}.</p>
       ) : (
+        <>
         <ul className="blk-cov-grid">
           {GROUPS.map(g => <Donut key={g.group} id={g.group} label={g.label(m.plural)} bucket={type.buckets.find(b => b.group === g.group)} />)}
         </ul>
+        <div className="blk-cov-breakdown-head">
+          <h3>What prevents full coverage?</h3>
+          <label>Profile group <select value={group} onChange={e => setGroup(e.target.value as BulkCoverageBucket['group'])}>
+            {GROUPS.map(g => <option key={g.group} value={g.group}>{g.label(m.plural)}</option>)}
+          </select></label>
+        </div>
+        {type.buckets.find(b => b.group === group) && <CoverageBreakdown key={`${kind}-${group}`} kind={kind} bucket={type.buckets.find(b => b.group === group)!} />}
+        </>
       )}
 
       <p className="blk-cov-foot" data-testid="text-coverage-footnote">

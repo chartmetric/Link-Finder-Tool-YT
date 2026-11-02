@@ -3,16 +3,25 @@ import {
   ListBulkBrandCandidatesQueryParams, ListBulkBrandCandidatesResponse,
   ListBulkBrandRunsResponse, StartBulkBrandRunBody, ResumeBulkBrandRunBody, StopBulkBrandRunBody,
   GetBulkBrandRunResponse, ListBulkRunBatchesResponse,
+  ListBulkCoverageProfilesParams, ListBulkCoverageProfilesResponse,
 } from "@workspace/api-zod";
 import { listEligibleBrands } from "../lib/bulk-brand-candidates";
 import { readBulkBatchArchives, readBulkRuns } from "../lib/bulk-run-store";
 import { BulkError, getBulkRun, resumeBulkRun, startBulkRun, stopBulkRun } from "../lib/bulk-brand-runner";
 import { validateBulkSelection } from "../lib/bulk-profile-scopes";
-import { getBulkCoverage } from "../lib/bulk-coverage";
+import { getBulkCoverage, listBulkCoverageProfiles } from "../lib/bulk-coverage";
 
 const router: IRouter = Router();
 router.get("/bulk/coverage", async (req, res) => {
   try { res.json(await getBulkCoverage()); }
+  catch (error) { respondError(req, res, error); }
+});
+router.get("/bulk/coverage/:profileType/:group/:platform/:state/profiles/:afterId/:limit", async (req, res) => {
+  const params = ListBulkCoverageProfilesParams.safeParse(req.params);
+  if (!params.success || !Number.isSafeInteger(params.data.afterId)) {
+    res.status(400).json({ error: "Use a valid coverage bucket, non-negative safe integer cursor and page size from 1–50." }); return;
+  }
+  try { res.json(ListBulkCoverageProfilesResponse.parse(await listBulkCoverageProfiles(params.data))); }
   catch (error) { respondError(req, res, error); }
 });
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

@@ -5,19 +5,78 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export type BulkCoverageBucketGroup = typeof BulkCoverageBucketGroup[keyof typeof BulkCoverageBucketGroup];
+export type BulkCoverageGroup = typeof BulkCoverageGroup[keyof typeof BulkCoverageGroup];
 
 
-export const BulkCoverageBucketGroup = {
+export const BulkCoverageGroup = {
   tiers_1_3: 'tiers_1_3',
   tiers_1_5: 'tiers_1_5',
   all: 'all',
 } as const;
 
+export type BulkCoverageState = typeof BulkCoverageState[keyof typeof BulkCoverageState];
+
+
+export const BulkCoverageState = {
+  likely_only: 'likely_only',
+  needs_review: 'needs_review',
+  no_match: 'no_match',
+  explicit_absence: 'explicit_absence',
+  provider_failure: 'provider_failure',
+  unresolved: 'unresolved',
+} as const;
+
+export interface BulkCoverageStateCount {
+  state: BulkCoverageState;
+  count: number;
+}
+
+export type BulkCoveragePlatformPlatform = typeof BulkCoveragePlatformPlatform[keyof typeof BulkCoveragePlatformPlatform];
+
+
+export const BulkCoveragePlatformPlatform = {
+  Instagram: 'Instagram',
+  TikTok: 'TikTok',
+  YouTube: 'YouTube',
+} as const;
+
+export interface BulkCoveragePlatform {
+  platform: BulkCoveragePlatformPlatform;
+  states: BulkCoverageStateCount[];
+}
+
+export interface BulkCoverageProfile {
+  profileId: number;
+  profileName: string;
+  /** @nullable */
+  tier: number | null;
+  platform: string;
+  state: BulkCoverageState;
+  reason: string;
+  evidenceUrls: string[];
+  checkedAt: string;
+  /** Saved bulk run ID; empty for single-profile evidence */
+  sourceRunId: string;
+  /** Saved single-profile investigation ID; empty for bulk evidence */
+  sourceHistoryId?: string;
+  referenceUrl: string;
+}
+
+export interface BulkCoverageProfiles {
+  profiles: BulkCoverageProfile[];
+  hasMore: boolean;
+  nextAfterId: number;
+  generatedAt: string;
+}
+
 export interface BulkCoverageBucket {
-  group: BulkCoverageBucketGroup;
+  group: BulkCoverageGroup;
   total: number;
   covered: number;
+  investigated: number;
+  uncoveredInvestigated: number;
+  /** Counts among uncovered investigated active profiles only. Platforms overlap; sourced explicit absence resolves that platform, not the whole profile. */
+  platformBreakdown: BulkCoveragePlatform[];
 }
 
 export type BulkProfileType = typeof BulkProfileType[keyof typeof BulkProfileType];

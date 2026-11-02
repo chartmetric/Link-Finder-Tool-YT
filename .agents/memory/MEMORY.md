@@ -12,3 +12,4 @@
 - [Browser fixture timers](browser-fixture-timers.md) — frozen browser timers can strand React Query on loading skeletons despite successful fixture responses.
 - [Provider test observations](provider-test-observations.md) — assert captured mock-call observations after discovery returns; provider error handlers can swallow assertions inside fetch stubs.
 - [Bulk paid-work safety](bulk-paid-work-safety.md) — uncertain provider calls are not replayable; transactional coordination supplements rather than replaces ClickHouse.
+- [ClickHouse string parameters](clickhouse-string-parameters.md) — typed String parameters interpret escapes; nested JSON-in-string fixtures can silently become invalid JSON.

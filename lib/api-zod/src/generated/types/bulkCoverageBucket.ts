@@ -5,10 +5,15 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { BulkCoverageBucketGroup } from './bulkCoverageBucketGroup';
+import type { BulkCoverageGroup } from './bulkCoverageGroup';
+import type { BulkCoveragePlatform } from './bulkCoveragePlatform';
 
 export interface BulkCoverageBucket {
-  group: BulkCoverageBucketGroup;
+  group: BulkCoverageGroup;
   total: number;
   covered: number;
+  investigated: number;
+  uncoveredInvestigated: number;
+  /** Counts among uncovered investigated active profiles only. Platforms overlap; sourced explicit absence resolves that platform, not the whole profile. */
+  platformBreakdown: BulkCoveragePlatform[];
 }

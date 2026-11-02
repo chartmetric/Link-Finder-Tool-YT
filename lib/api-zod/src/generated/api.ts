@@ -17,11 +17,59 @@ export const GetBulkCoverageResponse = zod.object({
   "buckets": zod.array(zod.object({
   "group": zod.enum(['tiers_1_3', 'tiers_1_5', 'all']),
   "total": zod.number(),
-  "covered": zod.number()
+  "covered": zod.number(),
+  "investigated": zod.number(),
+  "uncoveredInvestigated": zod.number(),
+  "platformBreakdown": zod.array(zod.object({
+  "platform": zod.enum(['Instagram', 'TikTok', 'YouTube']),
+  "states": zod.array(zod.object({
+  "state": zod.enum(['likely_only', 'needs_review', 'no_match', 'explicit_absence', 'provider_failure', 'unresolved']),
+  "count": zod.number()
+}))
+})).describe('Counts among uncovered investigated active profiles only. Platforms overlap; sourced explicit absence resolves that platform, not the whole profile.')
 }))
 })),
   "generatedAt": zod.string(),
   "platforms": zod.array(zod.string())
+})
+
+
+/**
+ * Only profiles not fully covered are included. Explicit absence is sourced evidence for this platform, not a coverage blocker. Navigation never starts discovery or paid retries. Live keyset pagination can change as evidence or catalog membership changes.
+ * @summary Read-only active investigated profiles in a platform evidence bucket
+ */
+export const listBulkCoverageProfilesPathAfterIdMin = 0;
+
+export const listBulkCoverageProfilesPathLimitMax = 50;
+
+
+
+export const ListBulkCoverageProfilesParams = zod.object({
+  "profileType": zod.enum(['brand', 'creator', 'artist']),
+  "group": zod.enum(['tiers_1_3', 'tiers_1_5', 'all']),
+  "platform": zod.enum(['Instagram', 'TikTok', 'YouTube']),
+  "state": zod.enum(['likely_only', 'needs_review', 'no_match', 'explicit_absence', 'provider_failure', 'unresolved']),
+  "afterId": zod.coerce.number().int().min(listBulkCoverageProfilesPathAfterIdMin),
+  "limit": zod.coerce.number().int().min(1).max(listBulkCoverageProfilesPathLimitMax)
+})
+
+export const ListBulkCoverageProfilesResponse = zod.object({
+  "profiles": zod.array(zod.object({
+  "profileId": zod.number(),
+  "profileName": zod.string(),
+  "tier": zod.number().nullable(),
+  "platform": zod.string(),
+  "state": zod.enum(['likely_only', 'needs_review', 'no_match', 'explicit_absence', 'provider_failure', 'unresolved']),
+  "reason": zod.string(),
+  "evidenceUrls": zod.array(zod.string()),
+  "checkedAt": zod.string(),
+  "sourceRunId": zod.string().describe('Saved bulk run ID; empty for single-profile evidence'),
+  "sourceHistoryId": zod.string().optional().describe('Saved single-profile investigation ID; empty for bulk evidence'),
+  "referenceUrl": zod.string()
+})),
+  "hasMore": zod.boolean(),
+  "nextAfterId": zod.number(),
+  "generatedAt": zod.string()
 })
 
 

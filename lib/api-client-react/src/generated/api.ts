@@ -25,6 +25,10 @@ import type {
   BulkBrandRun,
   BulkBrandRunInput,
   BulkCoverage,
+  BulkCoverageGroup,
+  BulkCoverageProfiles,
+  BulkCoverageState,
+  BulkProfileType,
   BulkRunControl,
   BulkRunResumeInput,
   ExistingProfilePage,
@@ -133,6 +137,109 @@ export function useGetBulkCoverage<TData = Awaited<ReturnType<typeof getBulkCove
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetBulkCoverageQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListBulkCoverageProfilesUrl = (profileType: BulkProfileType,
+    group: BulkCoverageGroup,
+    platform: 'Instagram' | 'TikTok' | 'YouTube',
+    state: BulkCoverageState,
+    afterId: number,
+    limit: number,) => {
+
+
+
+
+  return `/api/bulk/coverage/${profileType}/${group}/${platform}/${state}/profiles/${afterId}/${limit}`
+}
+
+/**
+ * Only profiles not fully covered are included. Explicit absence is sourced evidence for this platform, not a coverage blocker. Navigation never starts discovery or paid retries. Live keyset pagination can change as evidence or catalog membership changes.
+ * @summary Read-only active investigated profiles in a platform evidence bucket
+ */
+export const listBulkCoverageProfiles = async (profileType: BulkProfileType,
+    group: BulkCoverageGroup,
+    platform: 'Instagram' | 'TikTok' | 'YouTube',
+    state: BulkCoverageState,
+    afterId: number,
+    limit: number, options?: Parameters<typeof customFetch>[1]): Promise<BulkCoverageProfiles> => {
+
+  return customFetch<BulkCoverageProfiles>(getListBulkCoverageProfilesUrl(profileType,group,platform,state,afterId,limit),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListBulkCoverageProfilesQueryKey = (profileType: BulkProfileType,
+    group: BulkCoverageGroup,
+    platform: 'Instagram' | 'TikTok' | 'YouTube',
+    state: BulkCoverageState,
+    afterId: number,
+    limit: number,) => {
+    return [
+    `/api/bulk/coverage/${profileType}/${group}/${platform}/${state}/profiles/${afterId}/${limit}`
+    ] as const;
+    }
+
+
+export const getListBulkCoverageProfilesQueryOptions = <TData = Awaited<ReturnType<typeof listBulkCoverageProfiles>>, TError = ErrorType<void>>(profileType: BulkProfileType,
+    group: BulkCoverageGroup,
+    platform: 'Instagram' | 'TikTok' | 'YouTube',
+    state: BulkCoverageState,
+    afterId: number,
+    limit: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBulkCoverageProfiles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBulkCoverageProfilesQueryKey(profileType,group,platform,state,afterId,limit);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBulkCoverageProfiles>>> = ({ signal }) => listBulkCoverageProfiles(profileType,group,platform,state,afterId,limit, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: profileType !== null && profileType !== undefined && group !== null && group !== undefined && platform !== null && platform !== undefined && state !== null && state !== undefined && afterId !== null && afterId !== undefined && limit !== null && limit !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBulkCoverageProfiles>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListBulkCoverageProfilesQueryResult = NonNullable<Awaited<ReturnType<typeof listBulkCoverageProfiles>>>
+export type ListBulkCoverageProfilesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Read-only active investigated profiles in a platform evidence bucket
+ */
+
+export function useListBulkCoverageProfiles<TData = Awaited<ReturnType<typeof listBulkCoverageProfiles>>, TError = ErrorType<void>>(
+ profileType: BulkProfileType,
+    group: BulkCoverageGroup,
+    platform: 'Instagram' | 'TikTok' | 'YouTube',
+    state: BulkCoverageState,
+    afterId: number,
+    limit: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBulkCoverageProfiles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListBulkCoverageProfilesQueryOptions(profileType,group,platform,state,afterId,limit,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
