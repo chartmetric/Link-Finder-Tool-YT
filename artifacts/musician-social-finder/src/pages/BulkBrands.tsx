@@ -5,7 +5,7 @@ import { Activity, ArrowLeft, ArrowRight, CircleAlert, X } from 'lucide-react';
 import { getGetBulkBrandRunQueryKey, getListBulkBrandRunsQueryKey, useGetBulkBrandRun, useListBulkBrandRuns, useStartBulkBrandRun, type BulkBrandCandidate } from '@workspace/api-client-react';
 import { CandidatePicker } from '@/components/bulk/candidate-picker';
 import { RunList } from '@/components/bulk/run-list';
-import { RunDetail } from '@/components/bulk/run-detail';
+import { RunMonitorModal } from '@/components/bulk/run-monitor-modal';
 import { LaunchWidget } from '@/components/bulk/launch-widget';
 import { CoveragePanel } from '@/components/bulk/coverage-panel';
 import { AutoLauncher } from '@/components/bulk/auto-launcher';
@@ -47,7 +47,13 @@ export default function BulkBrands() {
   const startBlocked = busy || isActiveRun(currentRun.data) || (!!runId && currentRun.isLoading) || isActiveRun(rootRun.data) || (!!rootId && rootRun.isLoading);
 
   const summaryRef = useRef<HTMLElement>(null);
-  const detailRef = useRef<HTMLDivElement>(null);
+  const [monitorOpen, setMonitorOpen] = useState(false);
+  const monitorTriggerRef = useRef<HTMLElement | null>(null);
+  const openMonitor = (id: string) => {
+    monitorTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setRunId(id);
+    setMonitorOpen(true);
+  };
   const [scrollReq, setScrollReq] = useState(0);
   const showRun = useCallback((id: string) => { setRunId(id); setScrollReq(n => n + 1); }, []);
   useEffect(() => {
@@ -56,15 +62,10 @@ export default function BulkBrands() {
     el.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     el.focus({ preventScroll: true });
   }, [scrollReq]);
-  const [detailScrollReq, setDetailScrollReq] = useState(0);
   const openDetail = () => {
     if (!summaryId) return;
-    setRunId(summaryId);
-    setDetailScrollReq(n => n + 1);
+    openMonitor(summaryId);
   };
-  useEffect(() => {
-    if (detailScrollReq) detailRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
-  }, [detailScrollReq]);
 
   useEffect(() => { for (const k of PROFILE_KINDS) writeStorage(selectionKey(k), [...sel[k].values()]); }, [sel]);
   useEffect(() => { writeStorage(LAST_RUN_KEY, runId); }, [runId]);
@@ -163,10 +164,10 @@ export default function BulkBrands() {
             </div>
           </section>
 
-          {runId && <div ref={detailRef} id="blk-run-detail" className="blk-run-anchor"><RunDetail key={runId} runId={runId} onClose={() => setRunId(null)} onOpenRun={setRunId} /></div>}
-          <RunList activeId={runId ?? undefined} onOpen={showRun} />
+          <RunList activeId={monitorOpen ? runId ?? undefined : undefined} onOpen={openMonitor} />
         </main>
       </div>
+      <RunMonitorModal runId={runId} open={monitorOpen} onOpenChange={setMonitorOpen} onOpenRun={setRunId} triggerRef={monitorTriggerRef} />
       <LaunchWidget runId={runId} onRun={showRun} />
       <footer className="inv-footer inv-wrap"><span>PROFILE HANDLES ONLINE / BULK {m.plural.toUpperCase()}</span><span>Not found means no supported account was found, not that none exists.</span></footer>
     </div>

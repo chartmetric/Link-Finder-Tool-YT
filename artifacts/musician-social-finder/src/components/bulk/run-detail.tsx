@@ -8,7 +8,7 @@ import { bulkRequest, completeBulkRequest } from '@/lib/bulk-requests';
 import { LaunchHistory } from './launch-history';
 import { downloadBulkRunCsv } from '@/lib/bulk-csv';
 
-export function RunDetail({ runId, onClose, onOpenRun }: { runId: string; onClose: () => void; onOpenRun?: (id: string) => void }) {
+export function RunDetail({ runId, onClose, onOpenRun, modal = false }: { runId: string; onClose: () => void; onOpenRun?: (id: string) => void; modal?: boolean }) {
   const qc = useQueryClient();
   const q = useGetBulkBrandRun(runId, {
     query: {
@@ -33,7 +33,7 @@ export function RunDetail({ runId, onClose, onOpenRun }: { runId: string; onClos
     <section className="inv-panel blk-run" aria-labelledby="blk-run-title" aria-live="polite" data-testid="section-bulk-run">
       <div className="inv-panel-head">
         <div><div className="inv-kicker">03 / Run monitor</div><h2 id="blk-run-title">{run?.archiveOf ? `Chunk ${run.batchNumber ?? '?'} of ${run.archiveOf.slice(0, 8)}` : `Run ${runId.slice(0, 8)}`}{run?.continuous && <> <span className="blk-tag">continuous</span></>}</h2>{run?.archiveOf && onOpenRun && <button type="button" className="blk-backlink" onClick={() => onOpenRun(run.archiveOf!)} data-testid="button-open-root-run"><ArrowLeft size={12} /> Back to continuous run</button>}<p>The queue runs on the server and keeps going if you close this page.</p></div>
-        <button type="button" className="inv-retry" style={{ marginTop: 0 }} onClick={onClose} data-testid="button-close-run"><X size={14} /> Close</button>
+        {!modal && <button type="button" className="inv-retry" style={{ marginTop: 0 }} onClick={onClose} data-testid="button-close-run"><X size={14} /> Close</button>}
       </div>
 
       {run && <p className="inv-mono" data-testid="text-run-workers">{run.workersPerType ?? 1} workers per type · up to {(run.workersPerType ?? 1) * runKinds(run).length} concurrent profile lookups · frozen at start</p>}
