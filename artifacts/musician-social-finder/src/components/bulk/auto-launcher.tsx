@@ -51,13 +51,13 @@ export function AutoLauncher({ kind, blocked, onRun }: { kind: ProfileKind; bloc
           <label className="blk-auto-field">{continuous ? 'Chunk size' : 'Profiles this run'}
             <input type="number" min={1} max={1000} value={limit} onChange={e => setLimit(Math.max(1, Math.min(1000, Math.round(Number(e.target.value)) || 1)))} data-testid="input-auto-limit" />
           </label>
+          <label className="blk-auto-field">Parallel workers (1–20)
+            <input type="number" min={1} max={20} step={1} value={workersRaw} onChange={e => setWorkersRaw(e.target.value)} aria-invalid={!validWorkers} data-testid="input-auto-workers" />
+          </label>
           {continuous && <label className="blk-auto-field">Optional total profile cap
             <input type="text" inputMode="numeric" placeholder="All remaining" value={capRaw} onChange={e => setCapRaw(e.target.value)} aria-invalid={cap === undefined} data-testid="input-auto-cap" />
           </label>}
         </div>
-        <label className="blk-worker-field">Parallel workers (1–20)
-          <input type="number" min={1} max={20} step={1} value={workersRaw} onChange={e => setWorkersRaw(e.target.value)} aria-invalid={!validWorkers} data-testid="input-auto-workers" />
-        </label>
         {!validWorkers && <p className="inv-form-error" role="alert">Workers must be a whole number from 1 to 20.</p>}
         {continuous && <p className="blk-auto-note warn" data-testid="text-auto-continuous-note">{cap === undefined ? 'Total cap must be a whole number from 1 to 4294967295, or blank.' : typeof cap === 'number' ? `${limit} is the chunk size. At most ${cap} distinct profiles (failures count), then the run completes. Explicit retries may add charges.` : `${limit} is the chunk size, not a total cap. No total cap: continues through every remaining ${m.label.toLowerCase()} until exhausted or stopped, saving each chunk.`}</p>}
       </div>

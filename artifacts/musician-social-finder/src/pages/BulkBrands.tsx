@@ -113,11 +113,11 @@ export default function BulkBrands() {
             <p className="inv-section-note">Results are suggestions for human review. No approvals or catalog writes happen here.</p>
           </div>
 
+          <AutoLauncher kind={kind} blocked={!!startBlocked} onRun={showRun} />
+
           {summaryId && <RunProgress ref={summaryRef} runId={summaryId} run={summary.data} loading={summary.isLoading} fetching={summary.isFetching} isError={summary.isError} error={summary.error} onRetry={() => summary.refetch()} onOpenDetail={openDetail} />}
 
           <CoveragePanel kind={kind} />
-
-          <AutoLauncher kind={kind} blocked={!!startBlocked} onRun={showRun} />
 
           <CandidatePicker key={kind} kind={kind} selected={selected} onToggle={toggle} onSetMany={setMany} maxBatch={maxBatch} onMaxBatch={setMaxBatch} />
 
