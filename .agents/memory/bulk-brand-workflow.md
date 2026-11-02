@@ -39,6 +39,12 @@ Preserve the distinction between finding no account and establishing that an off
 
 **How to apply:** Keep incomplete searches separate from completed no-match searches and require a sourced first-party statement for an explicit no-account claim.
 
+Profile-type pages must show processed, successful, failed, running and queued counts for the selected type, not a globally remembered run's combined totals.
+
+**Why:** The user reported identical totals while switching Brands, Creators and Artists and expects those tabs to scope progress.
+
+**How to apply:** Keep per-type summaries distinct from the run-wide monitor and floating multi-type launcher. Include archived continuous chunks in per-type totals; a shared run cap must not be presented as each type's individual denominator.
+
 Coverage donuts must measure fully resolved platform evidence, not completed investigations or profiles with any known link.
 
 **Why:** The user defined coverage as “we've gathered all available links out there and have confirmed any platforms where that profile genuinely does not have a link.”

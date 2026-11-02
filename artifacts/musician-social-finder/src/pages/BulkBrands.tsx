@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useIsMutating, useQueryClient } from '@tanstack/react-query';
 import { Activity, ArrowLeft, ArrowRight, CircleAlert, X } from 'lucide-react';
-import { getGetBulkBrandRunQueryKey, getListBulkBrandRunsQueryKey, useGetBulkBrandRun, useStartBulkBrandRun, type BulkBrandCandidate } from '@workspace/api-client-react';
+import { getGetBulkBrandRunQueryKey, getListBulkBrandRunsQueryKey, useGetBulkBrandRun, useListBulkBrandRuns, useStartBulkBrandRun, type BulkBrandCandidate } from '@workspace/api-client-react';
 import { CandidatePicker } from '@/components/bulk/candidate-picker';
 import { RunList } from '@/components/bulk/run-list';
 import { RunDetail } from '@/components/bulk/run-detail';
@@ -10,7 +10,7 @@ import { LaunchWidget } from '@/components/bulk/launch-widget';
 import { CoveragePanel } from '@/components/bulk/coverage-panel';
 import { AutoLauncher } from '@/components/bulk/auto-launcher';
 import { RunProgress } from '@/components/bulk/run-progress';
-import { isActiveRun, KIND_META, LAST_RUN_KEY, PROFILE_KINDS, apiError, kindOf, readStorage, selectionKey, writeStorage, type ProfileKind } from '@/lib/bulk';
+import { isActiveRun, KIND_META, LAST_RUN_KEY, PROFILE_KINDS, apiError, kindOf, readStorage, selectionKey, writeStorage, summaryRunForKind, type ProfileKind } from '@/lib/bulk';
 import '@/styles/bulk.css';
 import { bulkRequest, completeBulkRequest } from '@/lib/bulk-requests';
 
@@ -33,6 +33,17 @@ export default function BulkBrands() {
   const currentRun = useGetBulkBrandRun(runId ?? '', { query: { queryKey: getGetBulkBrandRunQueryKey(runId ?? ''), enabled: !!runId, refetchInterval: query => isActiveRun(query.state.data) ? 3000 : false } });
   const rootId = runId ? currentRun.data?.archiveOf : undefined;
   const rootRun = useGetBulkBrandRun(rootId ?? '', { query: { queryKey: getGetBulkBrandRunQueryKey(rootId ?? ''), enabled: !!rootId, refetchInterval: query => isActiveRun(query.state.data) ? 3000 : false } });
+  const recentRuns = useListBulkBrandRuns({ query: { queryKey: getListBulkBrandRunsQueryKey(), refetchInterval: 5000 } });
+  const summaryCandidate = summaryRunForKind([
+    ...(rootRun.data ? [rootRun.data] : []),
+    ...(currentRun.data ? [currentRun.data] : []),
+    ...(recentRuns.data?.runs ?? []),
+  ], kind, rootId ?? runId);
+  const summaryId = summaryCandidate?.id;
+  const summary = useGetBulkBrandRun(summaryId ?? '', { query: {
+    queryKey: getGetBulkBrandRunQueryKey(summaryId ?? ''), enabled: !!summaryId,
+    refetchInterval: query => isActiveRun(query.state.data) ? 3000 : false,
+  } });
   const startBlocked = busy || isActiveRun(currentRun.data) || (!!runId && currentRun.isLoading) || isActiveRun(rootRun.data) || (!!rootId && rootRun.isLoading);
 
   const summaryRef = useRef<HTMLElement>(null);
@@ -45,9 +56,15 @@ export default function BulkBrands() {
     el.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
     el.focus({ preventScroll: true });
   }, [scrollReq]);
-  const openDetail = () => detailRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
-  const summary = rootId ? rootRun : currentRun;
-  const summaryId = rootId ?? runId;
+  const [detailScrollReq, setDetailScrollReq] = useState(0);
+  const openDetail = () => {
+    if (!summaryId) return;
+    setRunId(summaryId);
+    setDetailScrollReq(n => n + 1);
+  };
+  useEffect(() => {
+    if (detailScrollReq) detailRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  }, [detailScrollReq]);
 
   useEffect(() => { for (const k of PROFILE_KINDS) writeStorage(selectionKey(k), [...sel[k].values()]); }, [sel]);
   useEffect(() => { writeStorage(LAST_RUN_KEY, runId); }, [runId]);
@@ -115,7 +132,11 @@ export default function BulkBrands() {
 
           <AutoLauncher kind={kind} blocked={!!startBlocked} onRun={showRun} />
 
-          {summaryId && <RunProgress ref={summaryRef} runId={summaryId} run={summary.data} loading={summary.isLoading} fetching={summary.isFetching} isError={summary.isError} error={summary.error} onRetry={() => summary.refetch()} onOpenDetail={openDetail} />}
+          {summaryId ? <RunProgress ref={summaryRef} kind={kind} runId={summaryId} run={summary.data} loading={summary.isLoading} fetching={summary.isFetching} isError={summary.isError} error={summary.error} onRetry={() => summary.refetch()} onOpenDetail={openDetail} /> : (
+            <p className="blk-quiet" role="status" data-testid="text-no-scoped-run">
+              {recentRuns.isError ? `Could not load recent ${m.plural.toLowerCase()} runs. Refresh the recent runs list below to retry.` : recentRuns.isLoading ? `Loading ${m.plural.toLowerCase()} run progress…` : `No saved run for ${m.plural.toLowerCase()} in recent history. Start a run or open an older matching run below to view its progress.`}
+            </p>
+          )}
 
           <CoveragePanel kind={kind} />
 

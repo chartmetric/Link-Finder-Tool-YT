@@ -88,6 +88,7 @@ export function runKinds(run: BulkBrandRun): ProfileKind[] {
   const s = new Set<ProfileKind>();
   for (const sc of run.scopes ?? []) s.add(kindOf(sc));
   for (const i of run.items) s.add(kindOf(i.candidate));
+  for (const cursor of run.continuous?.cursors ?? []) s.add(kindOf(cursor));
   if (s.size === 0) s.add('brand');
   return PROFILE_KINDS.filter(k => s.has(k));
 }
@@ -107,6 +108,25 @@ export function overallKindCounts(run: BulkBrandRun, kind: ProfileKind) {
   const c = kindCounts(run, kind);
   const cur = run.continuous?.cursors.find(x => kindOf(x) === kind);
   return { ...c, completed: c.completed + (cur?.completed ?? 0), failed: c.failed + (cur?.failed ?? 0), exhausted: cur?.exhausted ?? false };
+}
+/** Page summaries must never fall back to another profile type's run. Archive
+ * cards belong to their continuous root; the detailed monitor remains run-wide. */
+export function summaryRunForKind(runs: BulkBrandRun[], kind: ProfileKind, preferredId?: string | null) {
+  const candidates = runs.filter(run => !run.archiveOf && runKinds(run).includes(kind));
+  const preferred = candidates.find(run => run.id === preferredId);
+  if (preferred) return preferred;
+  return [...candidates].sort((a, b) =>
+    Number(isActiveRun(b)) - Number(isActiveRun(a)) ||
+    Date.parse(b.createdAt) - Date.parse(a.createdAt))[0];
+}
+
+export function scopedRunProgress(run: BulkBrandRun, kind: ProfileKind) {
+  const current = kindCounts(run, kind);
+  const overall = overallKindCounts(run, kind);
+  // A multi-type continuous cap is shared: it is not a denominator for each type.
+  const sharedCap = run.continuous?.profileLimit;
+  const cap = runKinds(run).length === 1 ? sharedCap : undefined;
+  return { current, overall, cap, sharedCap, processed: overall.completed + overall.failed };
 }
 export const MAX_PROFILE_CAP = 4294967295;
 /** Parses the optional total cap input. '' -> null (no cap); invalid -> undefined. */
