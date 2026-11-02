@@ -274,6 +274,8 @@
 .blk-rp-note { font-size: 11px; color: #4a6177; }
 .blk-rp-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 14px; font-size: 11px; color: #3c5368; }
 .blk-rp-foot p span { font-weight: 800; color: var(--blue-deep); }
+.blk-rp-foot p .blk-rp-profile { font-weight: 600; color: inherit; }
+.blk-rp-profile small { font-size: inherit; font-weight: 400; }
 .blk-rp-foot ul { display: flex; flex-wrap: wrap; gap: 10px; }
 .blk-rp-foot li { display: inline-flex; gap: 6px; align-items: center; font-size: 10px; }
 .blk-run-anchor { scroll-margin-top: 16px; }

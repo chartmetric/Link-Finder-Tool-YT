@@ -470,6 +470,13 @@ components:
       properties:
         candidate: { $ref: "#/components/schemas/BulkBrandCandidate" }
         status: { type: string, enum: [queued, running, completed, failed] }
+        stage:
+          type: string
+          enum: [reading_reference, searching_platforms, verifying_candidates]
+          description: Current coarse lookup stage for running items. Optional for older saved runs; cleared on completion, failure or resume.
+        stageStartedAt:
+          type: string
+          description: Time the current stage began; unchanged by heartbeats.
         platforms: { type: array, items: { $ref: "#/components/schemas/BulkPlatformOutcome" } }
         result: { $ref: "#/components/schemas/ProfileSearchResponse" }
         error: { type: string }

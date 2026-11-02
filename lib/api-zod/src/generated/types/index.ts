@@ -11,6 +11,7 @@ export * from './bulkBrandCandidate';
 export * from './bulkBrandCandidateAccountsItem';
 export * from './bulkBrandCandidates';
 export * from './bulkBrandItem';
+export * from './bulkBrandItemStage';
 export * from './bulkBrandItemStatus';
 export * from './bulkBrandRun';
 export * from './bulkBrandRunInput';

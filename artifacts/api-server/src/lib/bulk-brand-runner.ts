@@ -10,6 +10,7 @@ import { findProfiles, parseKnownProfileUrl, resolveKnownProfileIdentity } from 
 import { saveProfileInvestigation } from "./profile-investigations";
 import { invalidateMusicianCoverage } from "./musician-coverage";
 import { logger } from "./logger";
+import { advanceItemStage, clearItemStage } from "./bulk-item-progress";
 
 const localRuns = new Map<string, BulkBrandRun>();
 let activeId: string | undefined;
@@ -108,6 +109,7 @@ export async function resumeBulkRun(id: string) {
     if (!retry.length && (!run.continuous || run.status === "completed")) throw new BulkError("All profiles in this run are already completed.");
     for (const item of retry) {
       item.status = "queued";
+      clearItemStage(item);
       delete item.error;
       delete item.startedAt;
       delete item.completedAt;
@@ -131,7 +133,7 @@ function launch(run: BulkBrandRun) {
   activeId = run.id;
   void execute(run).catch(error => logger.error({ err: error, runId: run.id }, "Bulk queue failed"));
 }
-async function processItem(item: BulkBrandItem) {
+async function processItem(item: BulkBrandItem, onProgress: (stage: "searching_platforms" | "verifying_candidates") => void) {
   const parsed = parseKnownProfileUrl(item.candidate.url);
   if (!parsed) throw new Error("The single active account does not have a usable public reference URL.");
   const resolved = await resolveKnownProfileIdentity(
@@ -144,6 +146,7 @@ async function processItem(item: BulkBrandItem) {
     serperApiKey: process.env.SERPERDEV_API_KEY ?? process.env.SERPER_API_KEY,
     openrouterApiKey: process.env.OPENROUTER_API_KEY,
     scrapeCreatorsApiKey: process.env.SCRAPECREATORS_API_KEY,
+    onProgress,
   }));
   item.result = result;
   item.platforms = derivePlatformOutcomes(result, resolved.handlePlatform);
@@ -185,9 +188,18 @@ async function execute(run: BulkBrandRun) {
     }, async item => {
       item.status = "running";
       item.startedAt = new Date().toISOString();
+      advanceItemStage(item, "reading_reference");
       run.heartbeatAt = item.startedAt;
       await persist();
-      try { await processItem(item); }
+      try { await processItem(item, stage => {
+        if (!advanceItemStage(item, stage) || persistenceError) return;
+        // Queue a bounded snapshot without waiting on storage inside a provider
+        // phase. A failed progress write stops new work, never retries paid calls.
+        void persist().catch(error => {
+          persistenceError = error instanceof Error ? error : new Error("Bulk stage could not be saved.");
+          run.stopRequested = true;
+        });
+      }); }
       catch (error) {
         item.status = "failed";
         item.error = error instanceof Error ? error.message : "Profile lookup failed.";
@@ -197,6 +209,7 @@ async function execute(run: BulkBrandRun) {
           reason: `The investigation failed: ${item.error} Availability was not established.`,
         }));
       }
+      clearItemStage(item);
       run.estimatedCostUsd = (run.continuous?.completedCostUsd ?? 0)
         + run.items.reduce((total, row) => total + (row.result?.estimatedCostUsd ?? 0), 0);
       run.heartbeatAt = new Date().toISOString();

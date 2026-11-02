@@ -661,6 +661,7 @@ export async function findProfiles(input: {
   openrouterApiKey?: string;
   scrapeCreatorsApiKey?: string;
   socialCrawlApiKey?: string;
+  onProgress?: (stage: "searching_platforms" | "verifying_candidates") => void;
 }) {
   if (input.methods?.includes("tavily")) {
     throw new Error("Tavily is disabled for this project. Use Serper or Gemini instead.");
@@ -878,6 +879,7 @@ export async function findProfiles(input: {
     }
   };
 
+  input.onProgress?.("searching_platforms");
   await Promise.all([
     selected.includes("serper")
       ? input.serperApiKey
@@ -1036,6 +1038,7 @@ export async function findProfiles(input: {
     (a, b) => b.confidence - a.confidence || b.methods.length - a.methods.length,
   );
 
+  if (profiles.length > 0) input.onProgress?.("verifying_candidates");
   if (input.scrapeCreatorsApiKey && input.knownProfileUrl && input.handlePlatform) {
     const referencePlatform = targetsForPlatform(input.handlePlatform);
     const geminiPlatforms = new Set(geminiDiscovery.map((profile) => profile.platform));

@@ -380,9 +380,25 @@ export const BulkBrandItemStatus = {
   failed: 'failed',
 } as const;
 
+/**
+ * Current coarse lookup stage for running items. Optional for older saved runs; cleared on completion, failure or resume.
+ */
+export type BulkBrandItemStage = typeof BulkBrandItemStage[keyof typeof BulkBrandItemStage];
+
+
+export const BulkBrandItemStage = {
+  reading_reference: 'reading_reference',
+  searching_platforms: 'searching_platforms',
+  verifying_candidates: 'verifying_candidates',
+} as const;
+
 export interface BulkBrandItem {
   candidate: BulkBrandCandidate;
   status: BulkBrandItemStatus;
+  /** Current coarse lookup stage for running items. Optional for older saved runs; cleared on completion, failure or resume. */
+  stage?: BulkBrandItemStage;
+  /** Time the current stage began; unchanged by heartbeats. */
+  stageStartedAt?: string;
   platforms: BulkPlatformOutcome[];
   result?: ProfileSearchResponse;
   error?: string;

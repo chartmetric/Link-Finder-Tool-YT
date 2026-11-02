@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { BulkBrandCandidate } from './bulkBrandCandidate';
+import type { BulkBrandItemStage } from './bulkBrandItemStage';
 import type { BulkBrandItemStatus } from './bulkBrandItemStatus';
 import type { BulkPlatformOutcome } from './bulkPlatformOutcome';
 import type { ProfileSearchResponse } from './profileSearchResponse';
@@ -13,6 +14,10 @@ import type { ProfileSearchResponse } from './profileSearchResponse';
 export interface BulkBrandItem {
   candidate: BulkBrandCandidate;
   status: BulkBrandItemStatus;
+  /** Current coarse lookup stage for running items. Optional for older saved runs; cleared on completion, failure or resume. */
+  stage?: BulkBrandItemStage;
+  /** Time the current stage began; unchanged by heartbeats. */
+  stageStartedAt?: string;
   platforms: BulkPlatformOutcome[];
   result?: ProfileSearchResponse;
   error?: string;

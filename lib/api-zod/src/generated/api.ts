@@ -414,6 +414,8 @@ export const ListBulkBrandRunsResponse = zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
   "status": zod.enum(['queued', 'running', 'completed', 'failed']),
+  "stage": zod.enum(['reading_reference', 'searching_platforms', 'verifying_candidates']).optional().describe('Current coarse lookup stage for running items. Optional for older saved runs; cleared on completion, failure or resume.'),
+  "stageStartedAt": zod.string().optional().describe('Time the current stage began; unchanged by heartbeats.'),
   "platforms": zod.array(zod.object({
   "platform": zod.enum(['Instagram', 'TikTok', 'YouTube']),
   "status": zod.enum(['reference', 'found', 'needs_review', 'not_found', 'incomplete', 'explicit_unavailable']),
@@ -623,6 +625,8 @@ export const StartBulkBrandRunResponse = zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
   "status": zod.enum(['queued', 'running', 'completed', 'failed']),
+  "stage": zod.enum(['reading_reference', 'searching_platforms', 'verifying_candidates']).optional().describe('Current coarse lookup stage for running items. Optional for older saved runs; cleared on completion, failure or resume.'),
+  "stageStartedAt": zod.string().optional().describe('Time the current stage began; unchanged by heartbeats.'),
   "platforms": zod.array(zod.object({
   "platform": zod.enum(['Instagram', 'TikTok', 'YouTube']),
   "status": zod.enum(['reference', 'found', 'needs_review', 'not_found', 'incomplete', 'explicit_unavailable']),
@@ -805,6 +809,8 @@ export const GetBulkBrandRunResponse = zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
   "status": zod.enum(['queued', 'running', 'completed', 'failed']),
+  "stage": zod.enum(['reading_reference', 'searching_platforms', 'verifying_candidates']).optional().describe('Current coarse lookup stage for running items. Optional for older saved runs; cleared on completion, failure or resume.'),
+  "stageStartedAt": zod.string().optional().describe('Time the current stage began; unchanged by heartbeats.'),
   "platforms": zod.array(zod.object({
   "platform": zod.enum(['Instagram', 'TikTok', 'YouTube']),
   "status": zod.enum(['reference', 'found', 'needs_review', 'not_found', 'incomplete', 'explicit_unavailable']),
@@ -993,6 +999,8 @@ export const ListBulkRunBatchesResponse = zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
   "status": zod.enum(['queued', 'running', 'completed', 'failed']),
+  "stage": zod.enum(['reading_reference', 'searching_platforms', 'verifying_candidates']).optional().describe('Current coarse lookup stage for running items. Optional for older saved runs; cleared on completion, failure or resume.'),
+  "stageStartedAt": zod.string().optional().describe('Time the current stage began; unchanged by heartbeats.'),
   "platforms": zod.array(zod.object({
   "platform": zod.enum(['Instagram', 'TikTok', 'YouTube']),
   "status": zod.enum(['reference', 'found', 'needs_review', 'not_found', 'incomplete', 'explicit_unavailable']),
@@ -1178,6 +1186,8 @@ export const StopBulkBrandRunResponse = zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
   "status": zod.enum(['queued', 'running', 'completed', 'failed']),
+  "stage": zod.enum(['reading_reference', 'searching_platforms', 'verifying_candidates']).optional().describe('Current coarse lookup stage for running items. Optional for older saved runs; cleared on completion, failure or resume.'),
+  "stageStartedAt": zod.string().optional().describe('Time the current stage began; unchanged by heartbeats.'),
   "platforms": zod.array(zod.object({
   "platform": zod.enum(['Instagram', 'TikTok', 'YouTube']),
   "status": zod.enum(['reference', 'found', 'needs_review', 'not_found', 'incomplete', 'explicit_unavailable']),
@@ -1360,6 +1370,8 @@ export const ResumeBulkBrandRunResponse = zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
   "status": zod.enum(['queued', 'running', 'completed', 'failed']),
+  "stage": zod.enum(['reading_reference', 'searching_platforms', 'verifying_candidates']).optional().describe('Current coarse lookup stage for running items. Optional for older saved runs; cleared on completion, failure or resume.'),
+  "stageStartedAt": zod.string().optional().describe('Time the current stage began; unchanged by heartbeats.'),
   "platforms": zod.array(zod.object({
   "platform": zod.enum(['Instagram', 'TikTok', 'YouTube']),
   "status": zod.enum(['reference', 'found', 'needs_review', 'not_found', 'incomplete', 'explicit_unavailable']),

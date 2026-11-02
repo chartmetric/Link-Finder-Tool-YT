@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
 import { ArrowDown, CircleAlert, RefreshCw } from 'lucide-react';
-import type { BulkBrandRun } from '@workspace/api-client-react';
+import type { BulkBrandRun, BulkBrandItemStage } from '@workspace/api-client-react';
 import { KIND_META, apiError, isActiveRun, kindCounts, overallCounts, overallKindCounts, runCounts, runKinds } from '@/lib/bulk';
 
 type Props = {
@@ -20,6 +20,12 @@ const TERMINAL: Record<string, string> = {
   interrupted: 'Paused by server restart; needs resume',
 };
 
+const STAGE_LABELS: Record<BulkBrandItemStage, string> = {
+  reading_reference: 'Reading reference profile',
+  searching_platforms: 'Searching platforms',
+  verifying_candidates: 'Verifying candidates',
+};
+
 export const RunProgress = forwardRef<HTMLElement, Props>(function RunProgress({ runId, run, loading, fetching, error, isError, onRetry, onOpenDetail }, ref) {
   const active = isActiveRun(run);
   const cont = run?.continuous;
@@ -34,7 +40,7 @@ export const RunProgress = forwardRef<HTMLElement, Props>(function RunProgress({
   if (run && !cont) { pct = chunkTotal ? chunkDone / chunkTotal : 0; barLabel = `${chunkDone} of ${chunkTotal} processed`; }
   else if (run && cap) { pct = Math.min(1, processed / cap); barLabel = `${processed} of ${cap} capped profiles processed`; }
   const chunkPct = chunkTotal ? chunkDone / chunkTotal : 0;
-  const runningNames = run ? run.items.filter(i => i.status === 'running').map(i => i.candidate.profileName) : [];
+  const runningItems = run ? run.items.filter(i => i.status === 'running') : [];
   const kinds = run ? runKinds(run) : [];
   const rootId = run?.id ?? runId;
 
@@ -87,9 +93,14 @@ export const RunProgress = forwardRef<HTMLElement, Props>(function RunProgress({
             </div>
           )}
 
-          {(runningNames.length > 0 || kinds.length > 1) && (
+          {(runningItems.length > 0 || kinds.length > 1) && (
             <div className="blk-rp-foot">
-              {runningNames.length > 0 && <p data-testid="text-rp-running-names"><span>Now:</span> {runningNames.slice(0, 3).join(', ')}{runningNames.length > 3 ? ` +${runningNames.length - 3} more` : ''}</p>}
+              {runningItems.length > 0 && <p data-testid="text-rp-running-names" aria-live="polite"><span>{active ? 'Now:' : 'Last active:'}</span> {runningItems.slice(0, 3).map((item, index) => (
+                <span className="blk-rp-profile" key={item.candidate.profileId}>
+                  {index > 0 ? '; ' : ''}{item.candidate.profileName}
+                  <small data-testid={`text-rp-stage-${item.candidate.profileId}`}> — {item.stage ? STAGE_LABELS[item.stage] : 'In progress'}</small>
+                </span>
+              ))}{runningItems.length > 3 ? ` +${runningItems.length - 3} more` : ''}</p>}
               {kinds.length > 1 && <ul data-testid="list-rp-kinds">{kinds.map(k => { const kc = cont ? overallKindCounts(run, k) : kindCounts(run, k); return (
                 <li key={k}><span className={`blk-kind k-${k}`}>{KIND_META[k].code}</span><span className="inv-mono">{kc.completed} ok · {kc.failed} fail · {kc.running} run</span></li>); })}</ul>}
             </div>
