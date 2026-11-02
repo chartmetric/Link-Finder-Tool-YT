@@ -39,6 +39,35 @@ There is **no exactly-once billing guarantee** from the external providers. No s
 - Storage errors prevent new provider dispatch. Any in-flight request may still incur charges. Paid estimates exclude some provider credits/failed calls and are not a billing reconciliation.
 - The coordinator remains the durable checkpoint if ClickHouse archival fails. Keep it; the next explicit resume retains completed results. There is no automatic archive-repair worker.
 
+## Preparation read diagnostics
+
+Filter application logs by `event: bulk_preparation_read` and `runId`. `requestId`
+identifies the accepted Start/Resume request and `generation` identifies the
+worker fence. These are application timings, not ClickHouse query-log timings.
+
+- Categories separate `catalog_boundary`, `candidate_ids`, `account_enrichment`,
+  `prior_attempts_archive`, `prior_attempts_coordinator`, and `archive_lookup`.
+- `coordinator_checkpoint` measures the complete fenced checkpoint wait
+  (including the required initial ready-queue archive); `coordinator_restore`
+  measures restoring an existing archive. These are operation timings, not
+  individual PostgreSQL statement or lock timings.
+- Every operation emits `started` then `succeeded` or `failed`, with monotonic
+  `durationMs`, a one-based `attempt`, and returned `rowCount`. Unknown counts
+  (including failures and checkpoint operations) are `null`, not zero. Catalog
+  row counts include any pagination sentinel; they are not selected-profile totals.
+- Only catalog reads retain their existing three-attempt transient retry policy.
+  Archive reads, prior-attempt checks and coordinator operations do not gain retries.
+- Events include no SQL, query parameters, account/profile values, URLs or raw
+  error text. Failures use a bounded category and failure kind instead.
+
+`paidAdmissionsOccurred: false` describes this fenced preparation phase, including
+its final ready checkpoint, not historical paid work in a restored archive.
+No paid admissions are allowed until preparation and that checkpoint succeed.
+Read failures retain their category in the stopped run's error and explicitly state
+that no paid admissions occurred. A `started` event without a terminal event can
+identify an outstanding wait or process interruption; do not infer it from worker
+counts. Timings do not cancel requests or change historical-attempt selection SQL.
+
 ## Deterministic verification (no paid requests)
 
 ```sh

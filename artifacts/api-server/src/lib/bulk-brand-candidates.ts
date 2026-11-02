@@ -164,14 +164,14 @@ export async function listEligibleBrands(input: { limit: number; afterId?: numbe
       afterId: String(afterId), rowLimit: String(rowLimit),
       search, tier: String(filters.tier ?? 0),
       ...(input.maxProfileId !== undefined ? { upperId: String(input.maxProfileId) } : {}),
-    }, 20_000);
+    }, 20_000, "candidate_ids");
     // The sentinel preserves scan progress even when every historical candidate
     // in a page is now deleted or belongs to a different type.
     const scanState = rows.data.find(row => Number(row.profileId) === 0 && row.scanCount !== undefined);
     const profileRows = rows.data.filter(row => Number(row.profileId) > 0);
     const details = profileRows.length ? await readCatalog<Omit<CatalogRow, "profileName">>(profileAccountDetailsSql(), {
       ids: JSON.stringify(profileRows.map(row => Number(row.profileId))), profileType: catalogProfileType(profileType),
-    }, 20_000) : { data: [] };
+    }, 20_000, "account_enrichment") : { data: [] };
     const byId = new Map(details.data.map(row => [Number(row.profileId), row]));
     const candidates = profileRows.map(row => catalogCandidate({
       ...row, tier: null, tierRank: null, accounts: [], ...byId.get(Number(row.profileId)),

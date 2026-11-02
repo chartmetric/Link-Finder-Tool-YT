@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { GetBulkBrandRunResponse, type BulkBrandRun, type BulkBrandCandidate } from "@workspace/api-zod";
 import { clickHouseJson, clickHouseRequest } from "./clickhouse-profiles";
 import { bulkOwnership } from "./bulk-ownership-store";
+import { observePreparationRead } from "./bulk-preparation-diagnostics";
 
 const table = "poc_new_verticals.profile_bulk_events";
 export const bulkWorkerId = randomUUID();
@@ -63,6 +64,10 @@ export function decodeBulkSnapshot(row: { state: string; stopVersion: string | n
 }
 
 export async function readArchivedBulkRuns(id?: string) {
+  return observePreparationRead("archive_lookup", () => readArchive(id), rows => rows.length);
+}
+
+async function readArchive(id?: string) {
   await ensureBulkStore();
   const rows = await clickHouseJson<{ state: string; stopVersion: string }>(`
     SELECT argMaxIf(data_json, version, event_type = 'snapshot') AS state,
@@ -134,8 +139,9 @@ export function attemptedCandidateIds(candidates: BulkBrandCandidate[], rows: { 
  */
 export async function readAttemptedBulkCandidates(candidates: BulkBrandCandidate[]) {
   if (!candidates.length) return new Set<number>();
-  await ensureBulkStore();
-  const rows = await clickHouseJson<{ profile_id: number; account_ids: string[] }>(`
+  const rows = await observePreparationRead("prior_attempts_archive", async () => {
+    await ensureBulkStore();
+    return clickHouseJson<{ profile_id: number; account_ids: string[] }>(`
     SELECT profile_id, account_ids FROM (${paidProfilesSql})
     WHERE profile_id IN {ids:Array(UInt64)}
       OR hasAny(account_ids, JSONExtract({accounts:String}, 'Array(String)'))
@@ -144,10 +150,13 @@ export async function readAttemptedBulkCandidates(candidates: BulkBrandCandidate
     ids: JSON.stringify(candidates.map(candidate => candidate.profileId)),
     accounts: JSON.stringify([...new Set(candidates.flatMap(candidateAccountIds))]),
     historyPattern: bulkAttemptSnapshotPattern(candidates.map(candidate => candidate.profileId), candidates.flatMap(candidateAccountIds)),
-  }, 10_000);
+    }, 10_000);
+  }, result => result.data.length);
   const attempted = attemptedCandidateIds(candidates, rows.data.flatMap(row =>
     row.account_ids.map(account_id => ({ profile_id: row.profile_id, account_id }))));
-  for (const id of await bulkOwnership.attempted(candidates.map(candidate => candidate.profileId))) attempted.add(id);
+  const coordinated = await observePreparationRead("prior_attempts_coordinator",
+    () => bulkOwnership.attempted(candidates.map(candidate => candidate.profileId)), result => result.size);
+  for (const id of coordinated) attempted.add(id);
   return attempted;
 }
 

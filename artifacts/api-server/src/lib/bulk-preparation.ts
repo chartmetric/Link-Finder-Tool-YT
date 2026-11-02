@@ -5,6 +5,7 @@ import { initialContinuousProgress } from "./bulk-continuous";
 import { candidateAccountIds, readArchivedBulkRuns } from "./bulk-run-store";
 import { bulkOwnership } from "./bulk-ownership-store";
 import type { Lease } from "./bulk-ownership";
+import { observePreparationRead, PreparationReadError, transientPreparationRead, withPreparationDiagnostics, type PreparationReadCategory } from "./bulk-preparation-diagnostics";
 
 /** Only read-only catalog requests are retried; never provider calls or writes. */
 export function preparationCatalogRead(
@@ -12,17 +13,17 @@ export function preparationCatalogRead(
   read = clickHouseJson,
   wait = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms)),
 ): typeof clickHouseJson {
-  return async <T>(sql: string, params: Record<string, string> = {}) => {
+  return async <T>(sql: string, params: Record<string, string> = {}, _timeout?: number, category: PreparationReadCategory = "candidate_ids") => {
     for (let attempt = 1; ; attempt++) {
       await checkpoint(attempt === 1
         ? "Reading the catalog. No paid lookups have started."
         : `Catalog read was slow or unavailable; retrying read ${attempt}/3. No paid lookups have started.`);
-      try { return await read<T>(sql, params, 45_000); }
+      try {
+        return await observePreparationRead(category, () => read<T>(sql, params, 45_000),
+          result => result.data.length, attempt);
+      }
       catch (error) {
-        const message = error instanceof Error ? error.message : "";
-        const retryable = error instanceof Error && (
-          ["TimeoutError", "AbortError"].includes(error.name) ||
-          /fetch failed|ECONNRESET|CLICKHOUSE_QUERY_FAILED:(429|5\d\d):/.test(message));
+        const retryable = error instanceof PreparationReadError ? error.retryable : transientPreparationRead(error);
         if (!retryable || attempt >= 3) throw error;
         await wait(attempt * 1000);
       }
@@ -32,16 +33,20 @@ export function preparationCatalogRead(
 
 /** Runs inside the fenced worker, never inside the launch HTTP request. */
 export async function prepareBulkRun(run: BulkBrandRun, lease: Lease, checkpoint: () => Promise<void>) {
+  return withPreparationDiagnostics(run, () => prepare(run, lease, checkpoint));
+}
+
+async function prepare(run: BulkBrandRun, lease: Lease, checkpoint: () => Promise<void>) {
   const preparation = run.preparation!;
   const report = async (message: string) => {
     preparation.message = message;
-    await checkpoint();
+    await observePreparationRead("coordinator_checkpoint", checkpoint);
   };
   await report("Checking the saved request before selecting profiles. No paid lookups have started.");
   if (!preparation.legacyChecked) {
     const legacy = (await readArchivedBulkRuns(run.id))[0];
     if (legacy) {
-      await bulkOwnership.restoreArchived(lease, legacy);
+      await observePreparationRead("coordinator_restore", () => bulkOwnership.restoreArchived(lease, legacy));
       return false;
     }
     preparation.legacyChecked = true;

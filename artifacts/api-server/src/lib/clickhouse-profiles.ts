@@ -86,6 +86,7 @@ export async function clickHouseJson<T>(
   sql: string,
   params: Record<string, string> = {},
   timeoutMs = 30_000,
+  _preparationCategory?: import("./bulk-preparation-diagnostics").PreparationReadCategory,
 ): Promise<ClickHouseResponse<T>> {
   const { url, username, password } = getConfig();
   for (const [key, value] of Object.entries(params)) {

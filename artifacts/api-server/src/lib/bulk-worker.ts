@@ -4,6 +4,7 @@ import { withPaidRequestGuard } from "./paid-request-guard";
 import { runScopedQueue } from "./bulk-profile-scopes";
 import { advanceItemStage, clearItemStage } from "./bulk-item-progress";
 import { commitContinuousArchive, continuousArchive, continuousLimitReached, nextContinuousChunk } from "./bulk-continuous";
+import { observePreparationRead, PreparationReadError, withPreparationDiagnostics } from "./bulk-preparation-diagnostics";
 
 export type WorkerDependencies = {
   ownership: BulkOwnership;
@@ -20,6 +21,7 @@ export type WorkerDependencies = {
 export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: WorkerDependencies) {
   let heartbeat: Promise<void> | undefined;
   let failure: unknown;
+  let preparingPhase = false;
   let writes = Promise.resolve();
   const guard = async () => {
     if (failure) throw failure;
@@ -52,17 +54,25 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
   };
   try {
     if (run.preparation?.status === "selecting") {
-      if (!deps.prepare) throw new Error("This worker cannot prepare the run. No paid requests were started.");
-      const proceed = await deps.prepare(run, async () => {
-        await guard();
-        run.stopRequested ||= await deps.ownership.renew(lease);
-        if (run.stopRequested) throw new Error("Stopped during profile selection. No paid requests were started.");
-        await persist();
+      preparingPhase = true;
+      const proceed = await withPreparationDiagnostics(run, async () => {
+        if (!deps.prepare) throw new Error("This worker cannot prepare the run. No paid requests were started.");
+        const ready = await deps.prepare(run, async () => {
+          await guard();
+          run.stopRequested ||= await deps.ownership.renew(lease);
+          if (run.stopRequested) throw new Error("Stopped during profile selection. No paid requests were started.");
+          await persist();
+        });
+        if (!ready) return false;
+        await observePreparationRead("coordinator_checkpoint", async () => {
+          await guard();
+          run.stopRequested ||= await deps.ownership.renew(lease);
+          await persist(); // Full ready queue archived before any paid admission.
+        });
+        return true;
       });
       if (!proceed) return; // Legacy request restored and its lease released.
-      await guard();
-      run.stopRequested ||= await deps.ownership.renew(lease);
-      await persist(); // Full ready queue archived before any paid admission.
+      preparingPhase = false;
     }
     for (;;) {
       const indices = new Map(run.items.map((item, index) => [item, index]));
@@ -136,15 +146,20 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
     clearInterval(timer);
     if (heartbeat) await heartbeat;
     run.status = "stopped";
-    run.error = run.preparation?.status === "selecting"
-      ? `Profile preparation stopped: ${error instanceof Error ? error.message : "catalog unavailable"}. No paid provider requests were started. You can explicitly resume this saved run.`
+    const preparing = preparingPhase || run.preparation?.status === "selecting";
+    run.error = preparing
+      ? `Profile preparation stopped: ${error instanceof PreparationReadError ? error.message : "Preparation validation or coordination failed. Paid admissions occurred: no."} No paid provider requests were started. You can explicitly resume this saved run.`
       : error instanceof Error ? error.message : "Bulk queue stopped unexpectedly.";
-    deps.warn(error);
+    deps.warn(preparing ? new Error(run.error) : error);
     // Bypass a failed archive chain, but never bypass the authoritative fence.
     try {
       const saved = await deps.ownership.save(lease, run, undefined, true);
       if (saved.preparation?.status !== "selecting" || saved.preparation.legacyChecked) await deps.archive(saved);
-    } catch (saveError) { deps.warn(saveError); }
+    } catch (saveError) {
+      deps.warn(preparing
+        ? new Error("Preparation recovery checkpoint failed [coordinator_checkpoint]. Paid admissions occurred: no.")
+        : saveError);
+    }
   } finally {
     clearInterval(timer);
   }
