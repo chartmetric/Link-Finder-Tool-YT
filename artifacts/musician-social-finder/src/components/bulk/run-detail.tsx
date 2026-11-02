@@ -67,7 +67,7 @@ function RunBody({ run, onStop, onResume, stopping, resuming, error, onOpenRun }
     <>
       <div className="blk-run-bar">
         <div className="blk-run-stat lead"><span>Status</span><strong className={`blk-pill r-${run.status}`} data-testid="status-run">{run.preparation?.status === 'selecting' && active ? 'preparing' : run.status}</strong>{run.stopRequested && active && <em>Stop requested: finishing current step</em>}</div>
-        <div className="blk-run-stat"><span>Completed</span><strong data-testid="text-run-completed">{c.completed}/{run.items.length}</strong></div>
+        <div className="blk-run-stat" title="Jobs finished without a job-level error; not a count of fully resolved profiles."><span>Jobs finished</span><strong data-testid="text-run-completed">{c.completed}/{run.items.length}</strong></div>
         <div className="blk-run-stat"><span>Failed</span><strong>{c.failed}</strong></div>
         <div className="blk-run-stat"><span>Running / queued</span><strong>{c.running} / {c.queued}</strong></div>
         <div className="blk-run-stat"><span>Est. cost</span><strong data-testid="text-run-cost">${run.estimatedCostUsd.toFixed(4)}</strong></div>

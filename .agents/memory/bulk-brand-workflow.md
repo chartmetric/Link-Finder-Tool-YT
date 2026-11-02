@@ -51,6 +51,12 @@ Coverage donuts must measure fully resolved platform evidence, not completed inv
 
 **How to apply:** Scope the metric explicitly to supported platforms; unresolved, failed and no-match searches cannot count as confirmed absence. Never claim exhaustive internet-wide discovery from public search evidence.
 
+A finished processing job must not be presented as a successfully resolved profile when platform searches failed or remain unknown.
+
+**Why:** The user specifically challenged green “Completed” cards for profiles with all three platform outcomes marked incomplete, and asked to distinguish genuinely sourced no-account evidence from failed searches.
+
+**How to apply:** Keep processing state separate from visible search outcome. Distinguish incomplete searches, partial results, completed searches with no supported match, and sourced first-party no-account statements. Missing assessments or missing absence sources stay unresolved. Apply presentation to saved results without automatically repeating paid work.
+
 Treat “remaining” as never previously attempted, not just “not completed.” Keep uncertain paid attempts out of new automatic batches; reviewing and retrying interrupted work is a separate workflow.
 
 **Why:** The user wants successive new batches to advance without silently paying for the same work. A failed or interrupted lookup may have incurred charges without producing a completed result, and resetting a run for resume must not erase that risk. Parsing every full-result snapshot can also exceed the database request budget as history grows.

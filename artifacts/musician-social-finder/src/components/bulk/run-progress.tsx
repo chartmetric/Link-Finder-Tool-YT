@@ -80,7 +80,7 @@ export const RunProgress = forwardRef<HTMLElement, Props>(function RunProgress({
           </div>}
           <dl className="blk-rp-stats">
             <div><dt>{cont ? 'Processed total' : 'Processed'}</dt><dd data-testid="text-rp-processed">{cont ? (cap ? `${processed}/${cap}` : processed) : `${chunkDone}/${chunkTotal}`}</dd></div>
-            <div><dt>Successful</dt><dd data-testid="text-rp-completed">{cont ? o.completed : cur.completed}</dd></div>
+            <div title="Processing jobs that finished without a job-level error. Individual platform searches can still be incomplete."><dt>Jobs finished</dt><dd data-testid="text-rp-completed">{cont ? o.completed : cur.completed}</dd></div>
             <div><dt>Failed</dt><dd data-testid="text-rp-failed">{cont ? o.failed : cur.failed}</dd></div>
             <div><dt>Running</dt><dd data-testid="text-rp-running">{cur.running}</dd></div>
             <div><dt>{cont ? 'Queued (chunk)' : 'Queued'}</dt><dd data-testid="text-rp-queued">{cur.queued}</dd></div>
