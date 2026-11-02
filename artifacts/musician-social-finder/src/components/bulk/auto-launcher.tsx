@@ -41,7 +41,6 @@ export function AutoLauncher({ kind, blocked, onRun }: { kind: ProfileKind; bloc
       <div className="blk-auto-main">
         <div><h2 id="blk-auto-title">Process remaining {m.plural.toLowerCase()} without picking</h2></div>
         <div className="blk-auto-fields">
-          <div className="blk-auto-field">Profiles to process<strong data-testid="text-auto-scope">Remaining eligible profiles</strong></div>
           <div className="blk-auto-field">Mode
             <div className="blk-mode" role="group" aria-label="Run mode">
               <button type="button" className={!continuous ? 'on' : ''} aria-pressed={!continuous} onClick={() => setContinuous(false)} data-testid="button-auto-mode-once">One chunk</button>
