@@ -39,7 +39,7 @@ export function AutoLauncher({ kind, blocked, onRun }: { kind: ProfileKind; bloc
   return (
     <section className="inv-panel blk-auto" aria-labelledby="blk-auto-title" data-testid="section-auto-launch">
       <div className="blk-auto-main">
-        <div><div className="inv-kicker">Automatic / {m.plural.toLowerCase()}</div><h2 id="blk-auto-title">Process remaining {m.plural.toLowerCase()} without picking</h2></div>
+        <div><h2 id="blk-auto-title">Process remaining {m.plural.toLowerCase()} without picking</h2></div>
         <div className="blk-auto-fields">
           <div className="blk-auto-field">Profiles to process<strong data-testid="text-auto-scope">Remaining eligible profiles</strong></div>
           <div className="blk-auto-field">Mode
@@ -59,7 +59,6 @@ export function AutoLauncher({ kind, blocked, onRun }: { kind: ProfileKind; bloc
           <input type="number" min={1} max={20} step={1} value={workersRaw} onChange={e => setWorkersRaw(e.target.value)} aria-invalid={!validWorkers} data-testid="input-auto-workers" />
         </label>
         {!validWorkers && <p className="inv-form-error" role="alert">Workers must be a whole number from 1 to 20.</p>}
-        <p className="blk-auto-note">Picks the next eligible {m.plural.toLowerCase()} automatically. Skips prior bulk attempts and profiles with no linked account. Source catalog is read-only. Up to {validWorkers ? workers : '—'} concurrent lookups. Higher counts spend credits faster and may hit provider rate limits. Worker settings are frozen when the run starts.</p>
         {continuous && <p className="blk-auto-note warn" data-testid="text-auto-continuous-note">{cap === undefined ? 'Total cap must be a whole number from 1 to 4294967295, or blank.' : typeof cap === 'number' ? `${limit} is the chunk size. At most ${cap} distinct profiles (failures count), then the run completes. Explicit retries may add charges.` : `${limit} is the chunk size, not a total cap. No total cap: continues through every remaining ${m.label.toLowerCase()} until exhausted or stopped, saving each chunk.`}</p>}
       </div>
       <div className="blk-launch-side">
