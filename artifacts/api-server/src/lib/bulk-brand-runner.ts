@@ -1,11 +1,11 @@
 import {
   SearchProfilesResponse, type BulkBrandRun, type BulkBrandItem, type BulkBrandRunInput, type BulkRunResumeInput,
 } from "@workspace/api-zod";
-import { listEligibleBrands, MAX_BULK_BATCH } from "./bulk-brand-candidates";
-import { initialContinuousProgress, nextContinuousChunk } from "./bulk-continuous";
+import { listEligibleBrands, MAX_BULK_BATCH, selectBulkScopes } from "./bulk-brand-candidates";
+import { initialContinuousProgress } from "./bulk-continuous";
 import { validateBulkSelection } from "./bulk-profile-scopes";
 import { derivePlatformOutcomes } from "./bulk-platform-outcomes";
-import { bulkWorkerId, readArchivedBulkRuns, saveBulkRun } from "./bulk-run-store";
+import { bulkWorkerId, candidateAccountIds, readArchivedBulkRuns, saveBulkRun } from "./bulk-run-store";
 import { bulkOwnership } from "./bulk-ownership-store";
 import { BulkError } from "./bulk-ownership";
 import { executeBulkRun } from "./bulk-worker";
@@ -26,9 +26,9 @@ function assertProviders() {
     throw new BulkError("Bulk lookup requires Serper, OpenRouter and ScrapeCreators. No paid queue was started.", 503);
   }
 }
-export async function startBulkRun(requestId: string, input: (Omit<BulkBrandRunInput, "requestId" | "continuous"> & { continuous?: boolean }) | number[]) {
+export async function startBulkRun(requestId: string, input: Omit<BulkBrandRunInput, "requestId" | "continuous"> & { continuous?: boolean }) {
   requestId = requestId.toLowerCase();
-  const selection = Array.isArray(input) ? { profileIds: input, continuous: false } : input;
+  const selection = input;
   const error = validateBulkSelection(selection);
   if (error) throw new BulkError(error, 400);
   const fingerprint = JSON.stringify({
@@ -37,6 +37,7 @@ export async function startBulkRun(requestId: string, input: (Omit<BulkBrandRunI
     scopes: selection.scopes ? [...selection.scopes].sort((a, b) => a.profileType.localeCompare(b.profileType)) : undefined,
     continuous: selection.continuous ?? false, profileLimit: selection.profileLimit,
     workersPerType: selection.workersPerType ?? 1,
+    selectionMode: selection.selectionMode === "rerun" ? "rerun" : undefined,
   });
   const existing = (await bulkOwnership.read(requestId))[0];
   if (existing) {
@@ -47,7 +48,7 @@ export async function startBulkRun(requestId: string, input: (Omit<BulkBrandRunI
   assertProviders();
   const automatic = selection.scopes ? await initialContinuousProgress(selection.scopes, selection.profileLimit) : undefined;
   const candidates = selection.continuous ? [] : selection.scopes
-    ? (await nextContinuousChunk(automatic!, selection.scopes)).candidates
+    ? await selectBulkScopes(selection.scopes, listEligibleBrands, selection.selectionMode ?? "remaining", automatic?.upperProfileId)
     : (await listEligibleBrands({
       limit: MAX_BULK_BATCH, profileIds: selection.profileIds, eligibleOnly: true,
       profileType: selection.profileTypes?.[0] ?? "brand",
@@ -55,13 +56,16 @@ export async function startBulkRun(requestId: string, input: (Omit<BulkBrandRunI
   if (!selection.scopes && candidates.length !== selection.profileIds!.length) {
     throw new BulkError("Some selected profiles are no longer eligible for this type. Refresh the selection; no queue was started.");
   }
-  if (!selection.continuous && !candidates.length) throw new BulkError("No unattempted profiles with a usable existing link were found. No paid queue was started.");
+  const accountIds = candidates.flatMap(candidateAccountIds);
+  if (new Set(accountIds).size !== accountIds.length) throw new BulkError("Some selected profiles share the same account. Select only one profile per account; no paid queue was started.");
+  if (!selection.continuous && !candidates.length) throw new BulkError("No eligible profiles remain for this selection. Remaining mode skips completed and previously attempted lookups; review saved runs or choose an explicit paid rerun. No paid queue was started.");
   const now = new Date().toISOString();
   const initial: BulkBrandRun = {
     id: requestId, status: "running", createdAt: now, updatedAt: now,
     heartbeatAt: now, workerId: bulkWorkerId, resumeVersion: 0,
     workersPerType: selection.workersPerType ?? 1,
     stopRequested: false, estimatedCostUsd: 0,
+    selectionMode: selection.selectionMode ?? "remaining",
     scopes: selection.scopes ?? [{ profileType: selection.profileTypes?.[0] ?? "brand", limit: candidates.length }],
     ...(selection.continuous ? { continuous: automatic } : {}),
     items: candidates.map(candidate => ({ candidate, status: "queued", platforms: [] })),

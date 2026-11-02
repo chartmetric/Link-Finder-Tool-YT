@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { BulkBrandItem } from './bulkBrandItem';
+import type { BulkBrandRunSelectionMode } from './bulkBrandRunSelectionMode';
 import type { BulkBrandRunStatus } from './bulkBrandRunStatus';
 import type { BulkContinuousProgress } from './bulkContinuousProgress';
 import type { BulkLaunchEvent } from './bulkLaunchEvent';
@@ -28,6 +29,7 @@ export interface BulkBrandRun {
   stopRequested: boolean;
   estimatedCostUsd: number;
   items: BulkBrandItem[];
+  selectionMode?: BulkBrandRunSelectionMode;
   scopes?: BulkProfileScopeInput[];
   continuous?: BulkContinuousProgress;
   archiveOf?: string;

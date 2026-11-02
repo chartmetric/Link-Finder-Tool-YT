@@ -576,6 +576,7 @@ export const ListBulkBrandRunsResponse = zod.object({
   "completedAt": zod.string().optional(),
   "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
 })),
+  "selectionMode": zod.enum(['remaining', 'rerun']).optional(),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
   "limit": zod.number().min(1).max(listBulkBrandRunsResponseRunsItemScopesItemLimitMax)
@@ -643,6 +644,8 @@ export const StartBulkBrandRunBody = zod.object({
   "continuous": zod.boolean().default(startBulkBrandRunBodyContinuousDefault).describe('Process remaining unattempted eligible profiles in saved chunks until exhausted or stopped; scopes required'),
   "profileLimit": zod.number().min(1).max(startBulkBrandRunBodyProfileLimitMax).optional().describe('Optional total profile-attempt cap for continuous mode; omitted means all remaining eligible profiles'),
   "workersPerType": zod.number().min(1).max(startBulkBrandRunBodyWorkersPerTypeMax).optional().describe('Integer concurrent profile lookups per selected type'),
+  "selectionMode": zod.enum(['remaining', 'rerun']).optional().describe('Automatic scopes default to remaining, excluding completed and previously attempted profiles across all saved bulk events. Manual IDs require rerun.'),
+  "paidAcknowledged": zod.boolean().describe('Must be explicitly true to start paid work, including reruns of completed or uncertain attempts.'),
   "profileIds": zod.array(zod.number().min(1)).min(1).max(startBulkBrandRunBodyProfileIdsMax).optional(),
   "profileTypes": zod.array(zod.enum(['brand', 'creator', 'artist'])).min(1).max(startBulkBrandRunBodyProfileTypesMax).optional().describe('Manual profileIds selection type; defaults to brand. Use scopes for automatic multi-type selection.'),
   "scopes": zod.array(zod.object({
@@ -811,6 +814,7 @@ export const StartBulkBrandRunResponse = zod.object({
   "completedAt": zod.string().optional(),
   "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
 })),
+  "selectionMode": zod.enum(['remaining', 'rerun']).optional(),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
   "limit": zod.number().min(1).max(startBulkBrandRunResponseScopesItemLimitMax)
@@ -1018,6 +1022,7 @@ export const GetBulkBrandRunResponse = zod.object({
   "completedAt": zod.string().optional(),
   "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
 })),
+  "selectionMode": zod.enum(['remaining', 'rerun']).optional(),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
   "limit": zod.number().min(1).max(getBulkBrandRunResponseScopesItemLimitMax)
@@ -1231,6 +1236,7 @@ export const ListBulkRunBatchesResponse = zod.object({
   "completedAt": zod.string().optional(),
   "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
 })),
+  "selectionMode": zod.enum(['remaining', 'rerun']).optional(),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
   "limit": zod.number().min(1).max(listBulkRunBatchesResponseRunsItemScopesItemLimitMax)
@@ -1449,6 +1455,7 @@ export const StopBulkBrandRunResponse = zod.object({
   "completedAt": zod.string().optional(),
   "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
 })),
+  "selectionMode": zod.enum(['remaining', 'rerun']).optional(),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
   "limit": zod.number().min(1).max(stopBulkBrandRunResponseScopesItemLimitMax)
@@ -1667,6 +1674,7 @@ export const ResumeBulkBrandRunResponse = zod.object({
   "completedAt": zod.string().optional(),
   "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
 })),
+  "selectionMode": zod.enum(['remaining', 'rerun']).optional(),
   "scopes": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
   "limit": zod.number().min(1).max(resumeBulkBrandRunResponseScopesItemLimitMax)

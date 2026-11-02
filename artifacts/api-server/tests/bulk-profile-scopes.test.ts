@@ -12,10 +12,10 @@ test("Artists map to musician catalog records, with other cohorts unchanged", ()
   assert.equal(catalogProfileType("brand"), "brand");
 });
 
-test("legacy brand selections, typed manual selections, and bounded combined scopes are accepted", () => {
-  assert.equal(validateBulkSelection({ profileIds: [1, 2] }), undefined);
-  assert.equal(validateBulkSelection({ profileIds: [1], profileTypes: ["artist"] }), undefined);
-  assert.equal(validateBulkSelection({ scopes: [
+test("acknowledged explicit manual selections and bounded remaining scopes are accepted", () => {
+  assert.equal(validateBulkSelection({ profileIds: [1, 2], selectionMode: "rerun", paidAcknowledged: true }), undefined);
+  assert.equal(validateBulkSelection({ profileIds: [1], profileTypes: ["artist"], selectionMode: "rerun", paidAcknowledged: true }), undefined);
+  assert.equal(validateBulkSelection({ paidAcknowledged: true, scopes: [
     { profileType: "brand", limit: 8 }, { profileType: "creator", limit: 8 }, { profileType: "artist", limit: 9 },
   ] }), undefined);
 });
@@ -30,22 +30,22 @@ test("ambiguous input, duplicate scopes, fractional limits, invalid types and ov
     { scopes: [{ profileType: "brand", limit: 0 }] },
     { profileIds: [1], profileTypes: ["creator", "artist"] },
     { scopes: [{ profileType: "actor", limit: 1 }] },
-  ]) assert.ok(validateBulkSelection(input as Parameters<typeof validateBulkSelection>[0]), JSON.stringify(input));
+  ]) assert.ok(validateBulkSelection({ paidAcknowledged: true, ...input } as Parameters<typeof validateBulkSelection>[0]), JSON.stringify(input));
 });
 
 test("generated request contracts accept scopes and reject unsupported types", () => {
   const requestId = "00000000-0000-4000-8000-000000000001";
-  assert.ok(StartBulkBrandRunBody.safeParse({ requestId, scopes: [{ profileType: "artist", limit: 1 }] }).success);
+  assert.ok(StartBulkBrandRunBody.safeParse({ requestId, paidAcknowledged: true, scopes: [{ profileType: "artist", limit: 1 }] }).success);
   assert.equal(StartBulkBrandRunBody.safeParse({ requestId, scopes: [{ profileType: "actor", limit: 1 }] }).success, false);
-  assert.ok(StartBulkBrandRunBody.safeParse({ requestId, scopes: [{ profileType: "brand", limit: 1000 }] }).success);
+  assert.ok(StartBulkBrandRunBody.safeParse({ requestId, paidAcknowledged: true, scopes: [{ profileType: "brand", limit: 1000 }] }).success);
   assert.equal(StartBulkBrandRunBody.safeParse({ requestId, scopes: [{ profileType: "brand", limit: 1001 }] }).success, false);
 });
 
 test("automatic chunks accept 1000 total profiles without raising the manual selection limit", () => {
-  assert.equal(validateBulkSelection({ scopes: [{ profileType: "brand", limit: 1000 }] }), undefined);
-  assert.equal(validateBulkSelection({ scopes: [{ profileType: "brand", limit: 500 }, { profileType: "artist", limit: 500 }] }), undefined);
-  assert.ok(validateBulkSelection({ scopes: [{ profileType: "brand", limit: 1001 }] }));
-  assert.ok(validateBulkSelection({ profileIds: Array.from({ length: 26 }, (_, i) => i + 1) }));
+  assert.equal(validateBulkSelection({ paidAcknowledged: true, scopes: [{ profileType: "brand", limit: 1000 }] }), undefined);
+  assert.equal(validateBulkSelection({ paidAcknowledged: true, scopes: [{ profileType: "brand", limit: 500 }, { profileType: "artist", limit: 500 }] }), undefined);
+  assert.ok(validateBulkSelection({ paidAcknowledged: true, scopes: [{ profileType: "brand", limit: 1001 }] }));
+  assert.ok(validateBulkSelection({ paidAcknowledged: true, selectionMode: "rerun", profileIds: Array.from({ length: 26 }, (_, i) => i + 1) }));
 });
 
 const types: BulkProfileType[] = ["brand", "creator", "artist"];
@@ -88,11 +88,11 @@ test("three types run simultaneously, with at most one active item per type", as
 
 test("worker settings validate integers 1–20 and remain optional for legacy requests", () => {
   for (const workersPerType of [1, 5, 20]) {
-    const input = { scopes: [{ profileType: "brand" as const, limit: 1000 }], workersPerType };
+    const input = { paidAcknowledged: true, scopes: [{ profileType: "brand" as const, limit: 1000 }], workersPerType };
     assert.equal(validateBulkSelection(input), undefined);
     assert.ok(StartBulkBrandRunBody.safeParse({ requestId: "00000000-0000-4000-8000-000000000001", ...input }).success);
   }
-  for (const workersPerType of [0, -1, 1.5, 21, NaN]) assert.ok(validateBulkSelection({ profileIds: [1], workersPerType }));
+  for (const workersPerType of [0, -1, 1.5, 21, NaN]) assert.ok(validateBulkSelection({ paidAcknowledged: true, selectionMode: "rerun", profileIds: [1], workersPerType }));
 });
 
 test("configured pools bound parallelism per type and never process one item twice", async () => {

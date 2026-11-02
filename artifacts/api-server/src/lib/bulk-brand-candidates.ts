@@ -1,6 +1,8 @@
 import { ListBulkBrandCandidatesQueryParams, type BulkBrandCandidate, type BulkProfileType, type BulkProfileScopeInput } from "@workspace/api-zod";
 import { clickHouseJson } from "./clickhouse-profiles";
 import { parseKnownProfileUrl } from "./musician-search";
+import { candidateAccountIds, readAttemptedBulkCandidates } from "./bulk-run-store";
+export { paidProfilesSql } from "./bulk-run-store";
 
 import { catalogProfileType, MAX_BULK_BATCH } from "./bulk-profile-scopes";
 export { MAX_BULK_BATCH } from "./bulk-profile-scopes";
@@ -121,7 +123,7 @@ export function catalogCandidate(row: CatalogRow, profileType: BulkProfileType):
   };
 }
 
-export async function listEligibleBrands(input: { limit: number; afterId?: number; profileIds?: number[]; profileType?: BulkProfileType; eligibleOnly?: boolean; maxProfileId?: number; search?: string; tier?: number }, readCatalog = clickHouseJson) {
+export async function listEligibleBrands(input: { limit: number; afterId?: number; profileIds?: number[]; profileType?: BulkProfileType; eligibleOnly?: boolean; maxProfileId?: number; search?: string; tier?: number; remaining?: boolean }, readCatalog = clickHouseJson) {
   // Guard internal callers as well as the HTTP boundary before binding UInts.
   // Continuous selection already uses bounded 250-row internal reads. The HTTP
   // contract remains capped at 25; only a frozen source ceiling permits more.
@@ -149,12 +151,14 @@ export async function listEligibleBrands(input: { limit: number; afterId?: numbe
       ids: JSON.stringify(rows.data.map(row => Number(row.profileId))), profileType: catalogProfileType(profileType),
     }, 20_000) : { data: [] };
     const byId = new Map(details.data.map(row => [Number(row.profileId), row]));
-    collected.push(...rows.data.map(row => catalogCandidate({
+    const candidates = rows.data.map(row => catalogCandidate({
       ...row, tier: null, tierRank: null, accounts: [], ...byId.get(Number(row.profileId)),
-    }, profileType)).filter(row => !input.eligibleOnly || row.canInvestigate));
+    }, profileType));
+    const attempted = input.remaining ? await readAttemptedBulkCandidates(candidates) : new Set<number>();
+    collected.push(...candidates.filter(row => (!input.eligibleOnly || row.canInvestigate) && !attempted.has(row.profileId)));
     const more = !input.profileIds && rows.data.length === rowLimit;
     afterId = Number(rows.data.at(-1)?.profileId ?? afterId);
-    if (collected.length > input.limit || !more || !input.eligibleOnly) {
+    if (collected.length > input.limit || !more || !input.eligibleOnly || input.remaining) {
       const page = collected.slice(0, input.limit);
       return {
         profiles: page, hasMore: collected.length > input.limit || more,
@@ -167,18 +171,27 @@ export async function listEligibleBrands(input: { limit: number; afterId?: numbe
 
 /** Bounded, deterministic auto-selection; never pay twice for the same catalog
  * profile when it appears under more than one requested type. */
-export async function selectBulkScopes(scopes: BulkProfileScopeInput[], fetchPage = listEligibleBrands) {
+export async function selectBulkScopes(scopes: BulkProfileScopeInput[], fetchPage = listEligibleBrands, mode: "remaining" | "rerun" = "remaining", maxProfileId?: number) {
   const selected: BulkBrandCandidate[] = [];
   const seen = new Set<number>();
+  const accounts = new Set<string>();
   // Read in a fixed order so a retried selection has a stable duplicate owner.
   for (const scope of scopes) {
-    const page = await fetchPage({ limit: MAX_BULK_BATCH, profileType: scope.profileType, eligibleOnly: true });
     let added = 0;
-    for (const candidate of page.profiles) {
-      if (seen.has(candidate.profileId)) continue;
-      seen.add(candidate.profileId);
-      selected.push(candidate);
-      if (++added >= scope.limit) break;
+    let afterId = 0;
+    while (added < scope.limit) {
+      const page = await fetchPage({ limit: Math.min(maxProfileId !== undefined ? 250 : MAX_BULK_BATCH, scope.limit - added), profileType: scope.profileType, eligibleOnly: true, afterId, remaining: mode === "remaining", maxProfileId });
+      for (const candidate of page.profiles) {
+        const ids = candidateAccountIds(candidate);
+        if (seen.has(candidate.profileId) || ids.some(id => accounts.has(id))) continue;
+        seen.add(candidate.profileId);
+        ids.forEach(id => accounts.add(id));
+        selected.push(candidate);
+        if (++added >= scope.limit) break;
+      }
+      if (!page.hasMore) break;
+      if (page.nextAfterId <= afterId) throw new Error("Catalog selection did not advance. No paid queue was started.");
+      afterId = page.nextAfterId;
     }
   }
   return selected;

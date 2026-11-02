@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { BulkBrandRunInputSelectionMode } from './bulkBrandRunInputSelectionMode';
 import type { BulkLaunchSource } from './bulkLaunchSource';
 import type { BulkProfileScopeInput } from './bulkProfileScopeInput';
 import type { BulkProfileType } from './bulkProfileType';
@@ -27,6 +28,10 @@ export interface BulkBrandRunInput {
      * @maximum 20
      */
   workersPerType?: number;
+  /** Automatic scopes default to remaining, excluding completed and previously attempted profiles across all saved bulk events. Manual IDs require rerun. */
+  selectionMode?: BulkBrandRunInputSelectionMode;
+  /** Must be explicitly true to start paid work, including reruns of completed or uncertain attempts. */
+  paidAcknowledged: boolean;
   /**
      * @minItems 1
      * @maxItems 25

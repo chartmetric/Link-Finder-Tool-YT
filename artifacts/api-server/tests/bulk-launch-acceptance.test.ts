@@ -52,7 +52,7 @@ test("accepted starts and resumes persist once; delayed duplicate requests canno
   };
   try {
     const id = "aabbccdd-0000-4000-a000-000000000010";
-    const settings = { scopes: [{ profileType: "creator" as const, limit: 2 }], continuous: true, profileLimit: 8, workersPerType: 3, launchSource: "automatic_launcher" as const };
+    const settings = { paidAcknowledged: true, scopes: [{ profileType: "creator" as const, limit: 2 }], continuous: true, profileLimit: 8, workersPerType: 3, launchSource: "automatic_launcher" as const };
     const [first, duplicate] = await Promise.all([
       startBulkRun(id.toUpperCase(), settings),
       startBulkRun(id, { ...settings, launchSource: "multi_type_widget" }),

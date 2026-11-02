@@ -73,7 +73,7 @@ test("resume requires a stable ID; source labels are bounded metadata and extra 
   assert.equal(ResumeBulkBrandRunBody.safeParse({ requestId: resumeId }).success, false);
   const body = ResumeBulkBrandRunBody.parse({ requestId: resumeId, resumeVersion: 100, actor: "not-stored", ip: "not-stored" });
   assert.deepEqual(body, { requestId: resumeId, resumeVersion: 100 });
-  assert.equal(StartBulkBrandRunBody.parse({ requestId: id }).launchSource, undefined);
+  assert.equal(StartBulkBrandRunBody.parse({ requestId: id, paidAcknowledged: true }).launchSource, undefined);
 });
 
 test("uncertain browser requests survive reloads and cross-type navigation without launching work", async () => {

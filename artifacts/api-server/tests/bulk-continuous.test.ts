@@ -37,7 +37,7 @@ test("continuous launch requires scopes and validates optional total profile cap
   assert.ok(validateBulkSelection({ scopes, profileLimit: 2 }));
   assert.ok(validateBulkSelection({ scopes, continuous: true, profileLimit: 1.5 }));
   assert.ok(validateBulkSelection({ scopes, continuous: true, profileLimit: 0 }));
-  assert.equal(validateBulkSelection({ scopes, continuous: true, profileLimit: 2 }), undefined);
+  assert.equal(validateBulkSelection({ paidAcknowledged: true, scopes, continuous: true, profileLimit: 2 }), undefined);
 });
 
 test("a requested chunk can actually fill all 1000 slots through bounded catalog pages", async () => {

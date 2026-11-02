@@ -71,7 +71,7 @@ export default function BulkBrands() {
     const key = `manual:${kind}:${ids.join(',')}`;
     const request = bulkRequest(key, 'manual_selection');
     const submittedKind = kind;
-    start.mutate({ data: { ...request, profileIds: ids, profileTypes: [kind] } }, {
+    start.mutate({ data: { ...request, profileIds: ids, profileTypes: [kind], selectionMode: 'rerun', paidAcknowledged: ack } }, {
       onSuccess: run => {
         completeBulkRequest(key, request.requestId);
         qc.setQueryData(getGetBulkBrandRunQueryKey(run.id), run);
@@ -132,8 +132,8 @@ export default function BulkBrands() {
               ) : <p className="blk-quiet">Tick {m.plural.toLowerCase()} above. Each scope keeps its own selection on this device across pages and reloads.</p>}
             </div>
             <div className="blk-launch-side">
-              <div className="blk-paid"><CircleAlert size={15} /><p><b>Paid service.</b> Each {m.label.toLowerCase()} calls paid discovery and verification providers. Shown cost estimates exclude provider credits and failed calls.</p></div>
-              <label className="blk-ack"><input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} data-testid="checkbox-ack-paid" /> I understand this run will make paid requests.</label>
+              <div className="blk-paid"><CircleAlert size={15} /><p><b>Explicit paid selection / rerun.</b> Selected profiles may already have completed or uncertain paid lookups. This starts them again and may charge for the same work. Use Remaining profiles in the floating launcher to skip previous attempts. Shown cost estimates exclude provider credits and failed calls.</p></div>
+              <label className="blk-ack"><input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} data-testid="checkbox-ack-paid" /> I explicitly agree to paid requests, including paying again for previously investigated profiles.</label>
               <button type="button" className="inv-submit" disabled={!ack || selected.size === 0 || !!startBlocked} onClick={submit} data-testid="button-start-bulk">
                 {start.isPending ? 'Starting run' : `Start ${selected.size || ''} ${noun(selected.size)}`} <ArrowRight size={16} />
               </button>

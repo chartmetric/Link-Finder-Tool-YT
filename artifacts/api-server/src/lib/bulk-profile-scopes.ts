@@ -9,7 +9,10 @@ export function catalogProfileType(type: BulkProfileType) {
   return type === "artist" ? "musician" : type;
 }
 
-export function validateBulkSelection(input: Pick<BulkBrandRunInput, "profileIds" | "profileTypes" | "scopes"> & { continuous?: boolean; profileLimit?: number; workersPerType?: number }): string | undefined {
+export function validateBulkSelection(input: Pick<BulkBrandRunInput, "profileIds" | "profileTypes" | "scopes" | "selectionMode" | "paidAcknowledged"> & { continuous?: boolean; profileLimit?: number; workersPerType?: number }): string | undefined {
+  if (input.paidAcknowledged !== true) return "Explicitly acknowledge paid provider requests before starting this run.";
+  if (input.selectionMode !== undefined && !["remaining", "rerun"].includes(input.selectionMode)) return "Choose remaining profiles or an explicit paid rerun.";
+  if (input.continuous && input.selectionMode === "rerun") return "Continuous runs use remaining profiles only. Turn off continuous mode for an explicit paid rerun.";
   if (input.workersPerType !== undefined && (!Number.isSafeInteger(input.workersPerType) || input.workersPerType < 1 || input.workersPerType > MAX_WORKERS_PER_TYPE)) {
     return "Use an integer worker count from 1–20 per profile type.";
   }
@@ -27,6 +30,7 @@ export function validateBulkSelection(input: Pick<BulkBrandRunInput, "profileIds
     if (input.scopes.reduce((total, scope) => total + scope.limit, 0) > MAX_BULK_CHUNK) return "The combined chunk cannot exceed 1000 profiles across all types.";
     return;
   }
+  if (input.selectionMode !== "rerun") return "Manual profile selection requires explicit paid rerun mode; previously investigated profiles may incur charges again.";
   if (!input.profileIds?.length || input.profileIds.length > MAX_BULK_BATCH
     || input.profileIds.some(id => !Number.isSafeInteger(id) || id < 1)
     || new Set(input.profileIds).size !== input.profileIds.length) return "Select 1–25 distinct valid profile IDs.";

@@ -16,6 +16,8 @@ export * from './bulkBrandItemStage';
 export * from './bulkBrandItemStatus';
 export * from './bulkBrandRun';
 export * from './bulkBrandRunInput';
+export * from './bulkBrandRunInputSelectionMode';
+export * from './bulkBrandRunSelectionMode';
 export * from './bulkBrandRunStatus';
 export * from './bulkContinuousProgress';
 export * from './bulkContinuousProgressCursorsItem';

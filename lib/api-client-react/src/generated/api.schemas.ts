@@ -364,6 +364,17 @@ export interface BulkBrandCandidates {
 }
 
 /**
+ * Automatic scopes default to remaining, excluding completed and previously attempted profiles across all saved bulk events. Manual IDs require rerun.
+ */
+export type BulkBrandRunInputSelectionMode = typeof BulkBrandRunInputSelectionMode[keyof typeof BulkBrandRunInputSelectionMode];
+
+
+export const BulkBrandRunInputSelectionMode = {
+  remaining: 'remaining',
+  rerun: 'rerun',
+} as const;
+
+/**
  * Client-described UI source only; not identity or authorization. Omission is recorded as unknown.
  */
 export type BulkLaunchSource = typeof BulkLaunchSource[keyof typeof BulkLaunchSource];
@@ -395,6 +406,10 @@ export interface BulkBrandRunInput {
      * @maximum 20
      */
   workersPerType?: number;
+  /** Automatic scopes default to remaining, excluding completed and previously attempted profiles across all saved bulk events. Manual IDs require rerun. */
+  selectionMode?: BulkBrandRunInputSelectionMode;
+  /** Must be explicitly true to start paid work, including reruns of completed or uncertain attempts. */
+  paidAcknowledged: boolean;
   /**
      * @minItems 1
      * @maxItems 25
@@ -536,6 +551,14 @@ export const BulkBrandRunStatus = {
   interrupted: 'interrupted',
 } as const;
 
+export type BulkBrandRunSelectionMode = typeof BulkBrandRunSelectionMode[keyof typeof BulkBrandRunSelectionMode];
+
+
+export const BulkBrandRunSelectionMode = {
+  remaining: 'remaining',
+  rerun: 'rerun',
+} as const;
+
 export type BulkContinuousProgressCursorsItem = {
   profileType: BulkProfileType;
   afterId: number;
@@ -571,6 +594,7 @@ export interface BulkBrandRun {
   stopRequested: boolean;
   estimatedCostUsd: number;
   items: BulkBrandItem[];
+  selectionMode?: BulkBrandRunSelectionMode;
   scopes?: BulkProfileScopeInput[];
   continuous?: BulkContinuousProgress;
   archiveOf?: string;

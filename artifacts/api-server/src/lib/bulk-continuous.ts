@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type { BulkBrandCandidate, BulkBrandRun, BulkProfileScopeInput } from "@workspace/api-zod";
 import { listEligibleBrands } from "./bulk-brand-candidates";
 import { clickHouseJson } from "./clickhouse-profiles";
-import { readAttemptedBulkProfileIds } from "./bulk-run-store";
+import { candidateAccountIds, readAttemptedBulkProfileIds } from "./bulk-run-store";
 
 export type ContinuousProgress = NonNullable<BulkBrandRun["continuous"]>;
 
@@ -27,16 +27,21 @@ export async function nextContinuousChunk(
   const selected: BulkBrandCandidate[] = [];
   const remaining = progress.profileLimit === undefined ? Infinity : Math.max(0, progress.profileLimit - progress.completed - progress.failed);
   const seen = new Set<number>();
+  const accounts = new Set<string>();
   for (const scope of scopes) {
     if (selected.length >= remaining) break;
     const cursor = cursors.find(row => row.profileType === scope.profileType)!;
     let added = 0;
     for (let scans = 0; !cursor.exhausted && added < scope.limit && scans < 4; scans++) {
       const result = await page({
-        profileType: scope.profileType, afterId: cursor.afterId, limit: Math.min(250, Math.max(25, scope.limit - added)), maxProfileId: progress.upperProfileId,
+        profileType: scope.profileType, afterId: cursor.afterId, limit: Math.min(250, Math.max(25, scope.limit - added)), maxProfileId: progress.upperProfileId, remaining: true,
       });
       if (!result.profiles.length) {
-        if (result.hasMore) throw new Error("Catalog pagination did not advance. The queue stopped without starting another paid lookup.");
+        if (result.hasMore) {
+          if (result.nextAfterId <= cursor.afterId) throw new Error("Catalog pagination did not advance. The queue stopped without starting another paid lookup.");
+          cursor.afterId = result.nextAfterId;
+          continue;
+        }
         cursor.exhausted = true;
         break;
       }
@@ -46,9 +51,11 @@ export async function nextContinuousChunk(
         if (profile.profileId <= cursor.afterId) throw new Error("Catalog cursor moved backwards; no further paid work was started.");
         cursor.afterId = profile.profileId;
         consumed++;
-        if (!(profile.canInvestigate ?? Boolean(profile.url)) || existing.has(profile.profileId) || seen.has(profile.profileId)) continue;
+        const accountIds = candidateAccountIds(profile);
+        if (!(profile.canInvestigate ?? Boolean(profile.url)) || existing.has(profile.profileId) || seen.has(profile.profileId) || accountIds.some(id => accounts.has(id))) continue;
         selected.push(profile);
         seen.add(profile.profileId);
+        accountIds.forEach(id => accounts.add(id));
         if (++added >= scope.limit || selected.length >= remaining) break;
       }
       if (consumed === result.profiles.length && !result.hasMore) cursor.exhausted = true;

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { GetBulkBrandRunResponse, type BulkBrandRun } from "@workspace/api-zod";
+import { GetBulkBrandRunResponse, type BulkBrandRun, type BulkBrandCandidate } from "@workspace/api-zod";
 import { clickHouseJson, clickHouseRequest } from "./clickhouse-profiles";
 import { bulkOwnership } from "./bulk-ownership-store";
 
@@ -90,20 +90,79 @@ export async function readBulkRuns(id?: string) {
 
 /** Conservatively skip prior paid attempts, including failures/interruptions.
  * Never automatically charge again merely because an earlier outcome was incomplete. */
+export const paidProfilesSql = `
+  SELECT
+    JSONExtractUInt(item, 'candidate', 'profileId') AS profile_id,
+    arrayDistinct(arrayConcat(
+      [JSONExtractString(item, 'candidate', 'accountId')],
+      arrayMap(account -> JSONExtractString(account, 'accountId'),
+        JSONExtractArrayRaw(item, 'candidate', 'accounts'))
+    )) AS account_ids
+  FROM poc_new_verticals.profile_bulk_events
+  ARRAY JOIN JSONExtractArrayRaw(data_json, 'items') AS item
+  PREWHERE event_type = 'snapshot' AND match(data_json, {historyPattern:String})
+  WHERE (JSONExtractString(item, 'status') IN ('completed', 'failed', 'running')
+      OR notEmpty(JSONExtractString(item, 'startedAt')))
+`;
+
+export function candidateAccountIds(candidate: Pick<BulkBrandCandidate, "accountId" | "accounts">) {
+  return [...new Set([candidate.accountId, ...(candidate.accounts ?? []).map(account => account.accountId)].filter(Boolean))];
+}
+
+/** A no-false-negative prefilter on identity fields avoids parsing every large
+ * result snapshot for every catalog page. Whitespace is allowed; patterns are
+ * escaped JSON values, never caller-supplied regular expressions. The parsed
+ * item/status filters below remain authoritative (raw matches may be unrelated).
+ */
+export function bulkAttemptSnapshotPattern(ids: number[], accounts: string[] = []) {
+  const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const patterns = [`"profileId"\\s*:\\s*(?:${ids.map(String).join("|")})\\s*[,}]`];
+  if (accounts.length) patterns.push(`"accountId"\\s*:\\s*(?:${accounts.map(id => escape(JSON.stringify(id))).join("|")})\\s*[,}]`);
+  return patterns.join("|");
+}
+
+export function attemptedCandidateIds(candidates: BulkBrandCandidate[], rows: { profile_id: number; account_id: string }[]) {
+  const profiles = new Set(rows.map(row => Number(row.profile_id)));
+  const accounts = new Set(rows.map(row => row.account_id).filter(Boolean));
+  return new Set(candidates.filter(candidate => profiles.has(candidate.profileId)
+    || candidateAccountIds(candidate).some(id => accounts.has(id))).map(candidate => candidate.profileId));
+}
+
+/** Restrict output to the bounded catalog page, but inspect ALL historical starts.
+ * A later queued snapshot after Resume must never erase an earlier paid attempt.
+ * Stable account IDs retain aliases and survive a change of reference account.
+ */
+export async function readAttemptedBulkCandidates(candidates: BulkBrandCandidate[]) {
+  if (!candidates.length) return new Set<number>();
+  await ensureBulkStore();
+  const rows = await clickHouseJson<{ profile_id: number; account_ids: string[] }>(`
+    SELECT profile_id, account_ids FROM (${paidProfilesSql})
+    WHERE profile_id IN {ids:Array(UInt64)}
+      OR hasAny(account_ids, JSONExtract({accounts:String}, 'Array(String)'))
+    FORMAT JSON
+  `, {
+    ids: JSON.stringify(candidates.map(candidate => candidate.profileId)),
+    accounts: JSON.stringify([...new Set(candidates.flatMap(candidateAccountIds))]),
+    historyPattern: bulkAttemptSnapshotPattern(candidates.map(candidate => candidate.profileId), candidates.flatMap(candidateAccountIds)),
+  }, 10_000);
+  const attempted = attemptedCandidateIds(candidates, rows.data.flatMap(row =>
+    row.account_ids.map(account_id => ({ profile_id: row.profile_id, account_id }))));
+  for (const id of await bulkOwnership.attempted(candidates.map(candidate => candidate.profileId))) attempted.add(id);
+  return attempted;
+}
+
 export async function readAttemptedBulkProfileIds(ids: number[]) {
   if (!ids.length) return new Set<number>();
   await ensureBulkStore();
   const rows = await clickHouseJson<{ profileId: number }>(`
     SELECT DISTINCT JSONExtractUInt(item, 'candidate', 'profileId') AS profileId
-    FROM (
-      SELECT argMax(data_json, version) AS state FROM ${table}
-      WHERE event_type = 'snapshot' GROUP BY run_id
-    ) ARRAY JOIN JSONExtractArrayRaw(state, 'items') AS item
+    FROM ${table} ARRAY JOIN JSONExtractArrayRaw(data_json, 'items') AS item
+    PREWHERE event_type = 'snapshot' AND match(data_json, {historyPattern:String})
     WHERE profileId IN {ids:Array(UInt64)}
       AND (JSONExtractString(item, 'status') IN ('completed', 'failed', 'running')
         OR notEmpty(JSONExtractString(item, 'startedAt')))
     FORMAT JSON
-  `, { ids: JSON.stringify(ids) }, 10_000);
+  `, { ids: JSON.stringify(ids), historyPattern: bulkAttemptSnapshotPattern(ids) }, 10_000);
   const attempted = await bulkOwnership.attempted(ids);
   for (const row of rows.data) attempted.add(Number(row.profileId));
   return attempted;

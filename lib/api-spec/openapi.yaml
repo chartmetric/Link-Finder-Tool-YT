@@ -526,13 +526,20 @@ components:
         maxBatchSize: { type: number }
     BulkBrandRunInput:
       type: object
-      required: [requestId]
+      required: [requestId, paidAcknowledged]
       properties:
         requestId: { type: string, pattern: "^[0-9a-fA-F-]{36}$" }
         launchSource: { $ref: "#/components/schemas/BulkLaunchSource" }
         continuous: { type: boolean, default: false, description: Process remaining unattempted eligible profiles in saved chunks until exhausted or stopped; scopes required }
         profileLimit: { type: number, minimum: 1, maximum: 4294967295, description: Optional total profile-attempt cap for continuous mode; omitted means all remaining eligible profiles }
         workersPerType: { type: number, minimum: 1, maximum: 20, description: Integer concurrent profile lookups per selected type, frozen at start; defaults to 1 }
+        selectionMode:
+          type: string
+          enum: [remaining, rerun]
+          description: Automatic scopes default to remaining, excluding completed and previously attempted profiles across all saved bulk events. Manual IDs require rerun.
+        paidAcknowledged:
+          type: boolean
+          description: Must be explicitly true to start paid work, including reruns of completed or uncertain attempts.
         profileIds:
           type: array
           minItems: 1
@@ -631,6 +638,9 @@ components:
         stopRequested: { type: boolean }
         estimatedCostUsd: { type: number }
         items: { type: array, items: { $ref: "#/components/schemas/BulkBrandItem" } }
+        selectionMode:
+          type: string
+          enum: [remaining, rerun]
         scopes:
           type: array
           items: { $ref: "#/components/schemas/BulkProfileScopeInput" }

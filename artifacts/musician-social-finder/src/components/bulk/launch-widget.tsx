@@ -19,6 +19,7 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
   const workers = Number(workersRaw);
   const [capRaw, setCapRaw] = useState('');
   const cap = parseCap(capRaw);
+  const [mode, setMode] = useState<'remaining' | 'rerun'>('remaining');
   useEffect(() => { writeStorage(WIDGET_KEY, st); }, [st]);
 
   const start = useStartBulkBrandRun();
@@ -51,9 +52,9 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
     if (!canStart) return;
     const profileLimit = continuous && typeof cap === 'number' ? cap : undefined;
     if (continuous && !window.confirm(continuousConfirm(profileLimit ?? null))) return;
-    const key = `widget:${JSON.stringify({ scopes, continuous, profileLimit, workersPerType: workers })}`;
+    const key = `widget:${JSON.stringify({ scopes, continuous, profileLimit, workersPerType: workers, mode })}`;
     const request = bulkRequest(key, 'multi_type_widget');
-    start.mutate({ data: { ...request, scopes, continuous, workersPerType: workers, ...(profileLimit !== undefined ? { profileLimit } : {}) } }, {
+    start.mutate({ data: { ...request, scopes, continuous, workersPerType: workers, selectionMode: mode, paidAcknowledged: ack, ...(profileLimit !== undefined ? { profileLimit } : {}) } }, {
       onSuccess: r => {
         completeBulkRequest(key, request.requestId);
         sync(r);
@@ -94,7 +95,13 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
           )}
 
           <fieldset className="blk-widget-types">
-            <legend className="inv-mono">Profiles to process: remaining eligible, per type</legend>
+            <legend className="inv-mono">Auto-pick eligible profiles per type</legend>
+            <label className="blk-widget-selection">Selection
+              <select aria-label="Profile selection mode" value={mode} onChange={e => { const next = e.target.value as 'remaining' | 'rerun'; setMode(next); if (next === 'rerun') setContinuous(false); setAck(false); }} data-testid="select-widget-mode">
+                <option value="remaining">Remaining profiles (skip previous attempts)</option>
+                <option value="rerun">Explicit paid rerun (include previous lookups)</option>
+              </select>
+            </label>
             {PROFILE_KINDS.map(k => (
               <div key={k} className={`blk-widget-type${st.on[k] ? ' on' : ''}`}>
                 <label><input type="checkbox" checked={st.on[k]} onChange={e => setSt(s => ({ ...s, on: { ...s.on, [k]: e.target.checked } }))} data-testid={`checkbox-widget-${k}`} /> {KIND_META[k].plural}</label>
@@ -103,7 +110,7 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
             ))}
           </fieldset>
           <p className={`inv-mono blk-widget-total${over ? ' bad' : ''}`} data-testid="text-widget-total">{total} of {MAX_TOTAL} max {continuous ? 'per chunk' : 'per run'}{over ? ' · reduce counts' : ''}</p>
-          <label className="blk-cont"><input type="checkbox" checked={continuous} onChange={e => { setContinuous(e.target.checked); setAck(false); }} data-testid="checkbox-widget-continuous" /><div>Run continuously<span>Counts become chunk sizes, not a cap. Keeps processing all remaining profiles until exhausted or stopped, with no total spending cap, even after the browser closes.</span></div></label>
+          <label className="blk-cont"><input type="checkbox" checked={continuous} disabled={mode === 'rerun'} onChange={e => { setContinuous(e.target.checked); setAck(false); }} data-testid="checkbox-widget-continuous" /><div>Run continuously<span>Remaining profiles only. Counts become chunk sizes, not a cap. Keeps processing all remaining profiles until exhausted or stopped, with no total spending cap, even after the browser closes.</span></div></label>
           {continuous && <div className={`blk-widget-type on`}><label htmlFor="widget-cap">Optional total profile cap</label><input id="widget-cap" type="text" inputMode="numeric" placeholder="All" value={capRaw} onChange={e => { setCapRaw(e.target.value); setAck(false); }} aria-invalid={cap === undefined} style={{ width: 90, border: '1px solid #cbd6e1', borderRadius: 6, padding: '5px 7px', font: '700 12px var(--app-font-mono)' }} data-testid="input-widget-cap" /></div>}
           {continuous && <p className={`inv-mono blk-widget-total${cap === undefined ? ' bad' : ''}`} data-testid="text-widget-cap">{cap === undefined ? 'Cap must be 1 to 4294967295 or blank' : typeof cap === 'number' ? `At most ${cap} distinct profiles; failures count. Explicit retries may add charges.` : 'Blank: all remaining, no total cap'}</p>}
           <label className="blk-worker-field">Workers per type (1–20)
@@ -111,7 +118,10 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
           </label>
           {!validWorkers && <p className="inv-form-error" role="alert">Workers must be a whole number from 1 to 20.</p>}
           <div className="blk-paid"><CircleAlert size={14} /><p><b>Paid service.</b> Up to {validWorkers ? workers * scopes.length : '—'} concurrent profile lookups across selected types. Higher counts spend credits faster and may hit provider rate limits. Settings apply to new runs only.</p></div>
-          <label className="blk-ack"><input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} data-testid="checkbox-widget-ack" /> I understand this run makes paid requests.</label>
+          <p className="blk-widget-policy">{mode === 'remaining'
+            ? 'Skips completed, failed and previously started profiles across saved runs. Untouched queued profiles remain eligible. Review or resume uncertain attempts separately.'
+            : 'Warning: starts again from the first eligible profiles, including completed or uncertain paid lookups. You may pay for the same work again.'}</p>
+          <label className="blk-ack"><input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} data-testid="checkbox-widget-ack" /> {mode === 'rerun' ? 'I explicitly agree to pay again for previously investigated profiles.' : 'I understand this run makes paid requests.'}</label>
           <button type="button" className="inv-submit blk-small" disabled={!canStart} onClick={submit} data-testid="button-widget-start">
             <Zap size={14} /> {start.isPending ? 'Starting run' : continuous ? `Run all remaining · ${scopes.length} ${scopes.length === 1 ? 'type' : 'types'}` : `Start ${total} across ${scopes.length} ${scopes.length === 1 ? 'type' : 'types'}`}
           </button>

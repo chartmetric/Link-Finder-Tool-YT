@@ -39,6 +39,12 @@ Coverage donuts must measure fully resolved platform evidence, not completed inv
 
 **How to apply:** Scope the metric explicitly to supported platforms; unresolved, failed and no-match searches cannot count as confirmed absence. Never claim exhaustive internet-wide discovery from public search evidence.
 
+Treat “remaining” as never previously attempted, not just “not completed.” Keep uncertain paid attempts out of new automatic batches; reviewing and retrying interrupted work is a separate workflow.
+
+**Why:** The user wants successive new batches to advance without silently paying for the same work. A failed or interrupted lookup may have incurred charges without producing a completed result, and resetting a run for resume must not erase that risk. Parsing every full-result snapshot can also exceed the database request budget as history grows.
+
+**How to apply:** Preserve evidence of prior starts across all saved history, not only recent runs or the latest run state. Use lossless identity prefilters to reduce deep JSON parsing rather than truncating history; prefilters must handle JSON escaping and whitespace. Untouched queued profiles remain eligible. Explicit reruns must explain that users may pay again.
+
 Keep the bulk run monitor compact, with platform statuses visible and long explanations and evidence available through expandable details.
 
 **Why:** The user requested a more compact monitor after the large summary bar and expanded evidence made a single brand occupy most of the screen.
