@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Activity, ArrowRight, ArrowUpRight, Check, ChevronDown, CircleAlert, Clipboard, Compass, ExternalLink, Fingerprint, Link2, RefreshCw, SearchCheck, ShieldCheck, Sparkles } from 'lucide-react';
+import { Activity, Type, ArrowRight, ArrowUpRight, Check, ChevronDown, CircleAlert, Clipboard, Compass, ExternalLink, Fingerprint, Link2, RefreshCw, SearchCheck, ShieldCheck, Sparkles } from 'lucide-react';
 import { SiInstagram, SiSpotify, SiTiktok, SiYoutube } from 'react-icons/si';
 import { getGetMusicianCoverageQueryKey, getListProfileInvestigationsQueryKey, searchProfiles, type ProfileInvestigation, type ProfileMatch, type ProfileSearchResponse } from '@workspace/api-client-react';
 import { MusicianCoverage } from '@/components/musician-coverage';
@@ -12,6 +12,7 @@ import { InvestigationHistory } from '@/components/investigation-history';
 import { PresetProfileLinks } from '@/components/preset-profile-links';
 import { ProfileUrlAliases } from '@/components/profile-url-aliases';
 import { isProfileUrl, normalizeProfileUrl } from '@/lib/profile-input';
+import { parseTextProfileInput, PLATFORM_LABELS, type TextTargetPlatform } from '@/lib/text-profile-input';
 import { getNetConfidence } from '@/lib/net-confidence';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 
@@ -50,6 +51,15 @@ const stages = [
   { title: 'Comparing the evidence', detail: 'Checking candidate signals and identity overlap.' },
   { title: 'Preparing the review', detail: 'Waiting for the complete response and verification.' },
 ];
+
+const textStages = [
+  { title: 'Reading the name', detail: 'Using the typed name and context as the only identity clue.' },
+  { title: 'Searching requested platforms', detail: 'Looking for accounts on the platforms in scope.' },
+  { title: 'Comparing the evidence', detail: 'Checking candidate signals against the name and context.' },
+  { title: 'Preparing the review', detail: 'Waiting for the complete response.' },
+];
+
+const TEXT_PLACEHOLDER = 'cricketer: virat kohli: instagram link';
 
 function getStage(seconds: number) {
   return seconds < 4 ? 0 : seconds < 14 ? 1 : seconds < 31 ? 2 : 3;
@@ -177,10 +187,19 @@ export default function SingleArtist() {
   const resultRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const [historyPage, setHistoryPage] = useState(1);
+  const [mode, setMode] = useState<'url' | 'text'>('url');
+  const [searchKind, setSearchKind] = useState<'url' | 'text'>('url');
+  const [textDraft, setTextDraft] = useState('');
+  const [textError, setTextError] = useState('');
+  const [textQuery, setTextQuery] = useState<{ raw: string; name: string; context?: string; subject: string; targetPlatforms?: TextTargetPlatform[] } | null>(null);
+  const textInputRef = useRef<HTMLInputElement>(null);
 
   function openSaved(item: ProfileInvestigation) {
     if (status === 'pending') return;
     requestId.current++;
+    setMode('url');
+    setSearchKind('url');
+    setTextQuery(null);
     form.setValue('url', item.knownProfileUrl);
     setSearchedUrl(item.knownProfileUrl);
     setResult(item.result);
@@ -200,6 +219,8 @@ export default function SingleArtist() {
     if (status === 'pending') return;
     const url = values.url.trim();
     const currentRequest = ++requestId.current;
+    setSearchKind('url');
+    setTextQuery(null);
     setSearchedUrl(url);
     setResult(null);
     setFailure('');
@@ -221,15 +242,58 @@ export default function SingleArtist() {
     }
   }
 
+  async function runTextSearch(raw: string = textDraft) {
+    if (status === 'pending') return;
+    const parsed = parseTextProfileInput(raw);
+    if (!parsed.ok) {
+      setTextError(parsed.error);
+      textInputRef.current?.focus();
+      return;
+    }
+    setTextError('');
+    const currentRequest = ++requestId.current;
+    const query = { raw: raw.trim(), name: parsed.name, context: parsed.context, subject: parsed.subject, targetPlatforms: parsed.targetPlatforms };
+    setSearchKind('text');
+    setTextQuery(query);
+    setSearchedUrl('');
+    setResult(null);
+    setFailure('');
+    setElapsed(0);
+    setStatus('pending');
+    window.setTimeout(() => resultRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' }), 80);
+    try {
+      const body: Parameters<typeof searchProfiles>[0] = { subject: parsed.subject, methods: ['serper', 'gemini'] };
+      if (parsed.targetPlatforms) body.targetPlatforms = parsed.targetPlatforms;
+      const response = await searchProfiles(body, { signal: AbortSignal.timeout(65000) });
+      if (currentRequest !== requestId.current) return;
+      setResult(response);
+      setStatus('success');
+    } catch (error) {
+      if (currentRequest !== requestId.current) return;
+      setFailure(errorMessage(error));
+      setStatus('error');
+    }
+  }
+
+  const retry = () => { if (searchKind === 'text' && textQuery) void runTextSearch(textQuery.raw); else void form.handleSubmit(runSearch)(); };
+  const isText = searchKind === 'text';
+  const textScopeNames = textQuery?.targetPlatforms?.map(p => PLATFORM_LABELS[p]);
   const stage = getStage(elapsed);
-  const referencePlatform = platformFromUrl(searchedUrl);
-  const availablePlatforms = platforms.filter(platform => platform.name !== referencePlatform);
+  const referencePlatform = isText ? undefined : platformFromUrl(searchedUrl);
+  const availablePlatforms = isText
+    ? platforms.filter(platform => !textScopeNames || (textScopeNames as string[]).includes(platform.name))
+    : platforms.filter(platform => platform.name !== referencePlatform);
+  const draftParsed = parseTextProfileInput(textDraft);
+  const draftTextScope = textDraft.trim() && draftParsed.ok && draftParsed.targetPlatforms ? draftParsed.targetPlatforms.map(p => PLATFORM_LABELS[p] as string) : null;
   const draftUrl = form.watch('url');
   const draftPlatform = platformFromUrl(normalizeProfileUrl(draftUrl));
   const sortedProfiles = result ? result.profiles
-    .filter(profile => profile.platform.toLowerCase() !== referencePlatform?.toLowerCase())
+    .filter(profile => isText
+      ? !textScopeNames || textScopeNames.some(name => name.toLowerCase() === profile.platform.toLowerCase())
+      : profile.platform.toLowerCase() !== referencePlatform?.toLowerCase())
     .sort((a, b) => (getNetConfidence(b).score ?? -1) - (getNetConfidence(a).score ?? -1) || verificationRank(b) - verificationRank(a) || b.confidence - a.confidence) : [];
-  const sources = (result?.sources ?? []).filter(source => platformFromUrl(source.url) !== referencePlatform);
+  const sources = (result?.sources ?? []).filter(source => isText || platformFromUrl(source.url) !== referencePlatform);
+  const activeStages = isText ? textStages : stages;
 
   return (
     <div className="investigation">
@@ -249,10 +313,46 @@ export default function SingleArtist() {
       <main>
         <div className="inv-wrap inv-workspace">
           <div className="inv-section-head">
-            <div><div className="inv-kicker">01 / Starting point</div><h2>Enter a known profile</h2></div>
-            <p className="inv-section-note">Use a public profile or reference page, such as ESPN.</p>
+            <div><div className="inv-kicker">01 / Starting point</div><h2>{mode === 'url' ? 'Enter a known profile' : 'Describe the person'}</h2></div>
+            <p className="inv-section-note">{mode === 'url' ? 'Use a public profile or reference page, such as ESPN.' : 'Type a role, a name, and optionally one platform.'}</p>
           </div>
-          <div className="inv-search-card">
+          <div className="inv-mode-switch" role="radiogroup" aria-label="Search input type" data-testid="group-search-mode">
+            {([['url', 'URL', Link2, 'Investigate a known profile URL'], ['text', 'Text', Type, 'Search by name and role text']] as const).map(([value, label, Icon, aria]) => (
+              <button key={value} type="button" role="radio" aria-checked={mode === value} aria-label={aria} className={`inv-mode-btn ${mode === value ? 'active' : ''}`} disabled={status === 'pending'} onClick={() => { setMode(value); setTextError(''); }} data-testid={`button-mode-${value}`}>
+                <Icon size={14} aria-hidden="true" /> {label}
+              </button>
+            ))}
+          </div>
+          {mode === 'text' && (
+            <div className="inv-search-card" data-testid="card-text-search">
+              <form noValidate onSubmit={event => { event.preventDefault(); void runTextSearch(); }} data-testid="form-text-profile-search">
+                <div className="inv-search-top">
+                  <div className="inv-search-entry">
+                    <label htmlFor="single-profile-text" className="inv-label">Role, name, and optional platform</label>
+                    <div className="inv-input-row">
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="inv-input-wrap"><Type size={19} aria-hidden="true" /><input ref={textInputRef} id="single-profile-text" className="inv-input" type="text" autoComplete="off" spellCheck={false} maxLength={300} placeholder={TEXT_PLACEHOLDER} value={textDraft} onChange={event => { setTextDraft(event.target.value); if (textError) setTextError(''); }} aria-invalid={!!textError} aria-describedby="text-search-help" disabled={status === 'pending'} data-testid="input-profile-text" /></div>
+                        {textError && <p className="inv-form-error" role="alert" data-testid="text-text-error">{textError}</p>}
+                      </div>
+                      <button type="submit" className="inv-submit" disabled={status === 'pending'} data-testid="button-start-text-search">
+                        {status === 'pending' ? 'Searching' : 'Search by name'} <ArrowRight size={16} />
+                      </button>
+                    </div>
+                    <div id="text-search-help">
+                      <p className="inv-input-hint">Format: role: name: platform link. Role and platform are optional; with three parts the last must be Instagram, TikTok, or YouTube; a plain name searches Instagram, TikTok, and YouTube.</p>
+                      <p className="inv-input-hint" data-testid="text-text-mode-note"><b>No known account anchors this search.</b> Results cannot be verified against a reference profile: identity comparison and JEV verification are not run, so net confidence is unassessed. Text searches are not saved in the shared URL history. Each search calls paid providers (Serper and Gemini).</p>
+                    </div>
+                  </div>
+                  <div className="inv-search-aside">
+                    <span className="inv-mono">{draftTextScope ? 'Requested platform' : 'Search scope / all platforms'}</span>
+                    {platforms.filter(platform => !draftTextScope || draftTextScope.includes(platform.name)).map(({ name }) => <strong key={name}><PlatformIcon platform={name} size={13} /> {name}</strong>)}
+                  </div>
+                </div>
+                <div className="inv-search-bottom inv-mono"><span>SEARCH INPUT / NAME TEXT, NO REFERENCE</span><span>REQUESTED DISCOVERY / <b>SERPER + GEMINI</b></span></div>
+              </form>
+            </div>
+          )}
+          {mode === 'url' && <div className="inv-search-card">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(runSearch)} noValidate data-testid="form-single-profile-search">
                 <div className="inv-search-top">
@@ -283,7 +383,7 @@ export default function SingleArtist() {
                 <div className="inv-search-bottom inv-mono"><span>SEARCH INPUT / ONE REFERENCE URL</span><span>REQUESTED DISCOVERY / <b>SERPER + GEMINI</b></span></div>
               </form>
             </Form>
-          </div>
+          </div>}
 
           <InvestigationHistory page={historyPage} onPageChange={setHistoryPage} onOpen={openSaved} activeId={result?.historyId ? result.historyId : undefined} disabled={status === 'pending'} />
 
@@ -294,7 +394,7 @@ export default function SingleArtist() {
                 <div className="inv-journey">
                   <div className="inv-journey-main">
                     <div className="inv-progress-note"><CircleAlert size={14} /> Visual progress indicator only — not live provider events or statuses.</div>
-                    {stages.map((item, i) => <div key={item.title} className={`inv-stage ${i === stage ? 'current' : i < stage ? 'past' : ''}`}>
+                    {activeStages.map((item, i) => <div key={item.title} className={`inv-stage ${i === stage ? 'current' : i < stage ? 'past' : ''}`}>
                       <span className="inv-stage-index">{i < stage ? <Check size={13} /> : String(i + 1).padStart(2, '0')}</span>
                       <div><div className="inv-stage-title">{item.title}</div><p className="inv-stage-detail">{item.detail}</p></div>
                     </div>)}
@@ -307,26 +407,28 @@ export default function SingleArtist() {
             {status === 'error' && (
               <section className="inv-panel" aria-label="Search failed" data-testid="status-investigation-error">
                 <div className="inv-panel-head"><div><h2>Investigation interrupted</h2><p>No candidate or provider result was returned.</p></div></div>
-                <div className="inv-error-card"><span className="inv-state-icon"><CircleAlert size={23} /></span><div className="inv-state-copy"><h3>We couldn’t complete this search.</h3><p data-testid="text-search-error">{failure}</p><p>Check the profile URL or try again. The same link is still in the field above.</p><button type="button" className="inv-retry" onClick={form.handleSubmit(runSearch)} data-testid="button-retry-search"><RefreshCw size={14} /> Retry investigation</button></div></div>
+                <div className="inv-error-card"><span className="inv-state-icon"><CircleAlert size={23} /></span><div className="inv-state-copy"><h3>We couldn’t complete this search.</h3><p data-testid="text-search-error">{failure}</p><p>{isText ? 'Check the name text or try again.' : 'Check the profile URL or try again. The same link is still in the field above.'}</p><button type="button" className="inv-retry" onClick={retry} data-testid="button-retry-search"><RefreshCw size={14} /> Retry investigation</button></div></div>
               </section>
             )}
 
             {status === 'success' && result && (
               <section className="inv-panel" aria-labelledby="result-title" data-testid="section-investigation-results">
                 <div className="inv-panel-head">
-                  <div><div className="inv-kicker">02 / Review the findings</div><h2 id="result-title">Investigation complete</h2><p>Read the evidence before treating any candidate as official.</p></div>
+                  <div><div className="inv-kicker">02 / Review the findings</div><h2 id="result-title">{isText ? 'Text search complete' : 'Investigation complete'}</h2><p>{isText ? 'No known account anchors these results. Treat every candidate as unverified.' : 'Read the evidence before treating any candidate as official.'}</p></div>
                   <div className="inv-results-meta"><span className="inv-meta-pill" data-testid="text-searched-at">{new Date(result.searchedAt).toLocaleString()}</span></div>
                 </div>
                 {result.historySaveError ? <div className="inv-save-warn" role="alert" data-testid="status-history-save-error"><CircleAlert size={16} /><span><b>This search was not saved to history.</b> {result.historySaveError} The results below are still available in this session only.</span></div> : null}
+                {isText && <div className="inv-save-warn" role="note" data-testid="status-text-unverified"><CircleAlert size={16} /><span><b>Text search, session only.</b> These results lack known-account verification and are not saved in the shared URL history.</span></div>}
                 <div className="inv-summary">
-                  <div className="inv-summary-lead"><span>Known {referencePlatform} profile</span><h3 data-testid="text-result-subject">{result.subject || cleanDisplayUrl(searchedUrl)}</h3><p title={searchedUrl}><PlatformIcon platform={referencePlatform} size={12} /><a href={searchedUrl} target="_blank" rel="noopener noreferrer">{cleanDisplayUrl(searchedUrl)}</a></p><ProfileUrlAliases profile={result.referenceProfile ? { ...result.referenceProfile, url: searchedUrl } : undefined} /></div>
-                  <div className="inv-summary-stat"><span>Other-platform candidates</span><strong data-testid="text-total-found">{sortedProfiles.length}</strong></div>
+                  {isText && textQuery ? <div className="inv-summary-lead"><span>Searched by text{textQuery.context ? ` / ${textQuery.context}` : ''}</span><h3 data-testid="text-result-subject">{textQuery.name}</h3><p data-testid="text-result-scope">Scope: {textScopeNames ? textScopeNames.join(', ') : 'All platforms (Instagram, TikTok, YouTube)'}</p></div> :
+                  <div className="inv-summary-lead"><span>Known {referencePlatform} profile</span><h3 data-testid="text-result-subject">{result.subject || cleanDisplayUrl(searchedUrl)}</h3><p title={searchedUrl}><PlatformIcon platform={referencePlatform} size={12} /><a href={searchedUrl} target="_blank" rel="noopener noreferrer">{cleanDisplayUrl(searchedUrl)}</a></p><ProfileUrlAliases profile={result.referenceProfile ? { ...result.referenceProfile, url: searchedUrl } : undefined} /></div>}
+                  <div className="inv-summary-stat"><span>{isText ? 'Candidates in scope' : 'Other-platform candidates'}</span><strong data-testid="text-total-found">{sortedProfiles.length}</strong></div>
                   <div className="inv-summary-stat"><span>Net confidence ≥80%</span><strong data-testid="text-high-confidence">{sortedProfiles.filter(profile => (getNetConfidence(profile).score ?? -1) >= 80).length}</strong></div>
                   <div className="inv-summary-stat"><span>Est. cost</span><strong data-testid="text-estimated-cost" style={{ fontSize: 16 }}>${result.estimatedCostUsd.toFixed(4)}</strong></div>
                 </div>
                 <div className="inv-results-layout">
                   <div>
-                    {sortedProfiles.length === 0 && <div className="inv-empty-card" data-testid="status-no-candidates"><span className="inv-state-icon"><Compass size={23} /></span><div className="inv-state-copy"><h3>No other-platform accounts found</h3><p>This search did not return profile links on the other platforms. Review the provider statuses or try another known profile URL.</p><button type="button" className="inv-retry" onClick={form.handleSubmit(runSearch)} data-testid="button-retry-empty"><RefreshCw size={14} /> Run this search again</button></div></div>}
+                    {sortedProfiles.length === 0 && <div className="inv-empty-card" data-testid="status-no-candidates"><span className="inv-state-icon"><Compass size={23} /></span><div className="inv-state-copy"><h3>{isText ? 'No accounts found for this name' : 'No other-platform accounts found'}</h3><p>{isText ? 'This search did not return profile links on the requested platforms. Review the provider statuses or add more context, such as a role.' : 'This search did not return profile links on the other platforms. Review the provider statuses or try another known profile URL.'}</p><button type="button" className="inv-retry" onClick={retry} data-testid="button-retry-empty"><RefreshCw size={14} /> Run this search again</button></div></div>}
                     {availablePlatforms.map(({ name }) => {
                       const matches = sortedProfiles.filter(p => p.platform.toLowerCase() === name.toLowerCase());
                       return <div className="inv-result-section" key={name}>

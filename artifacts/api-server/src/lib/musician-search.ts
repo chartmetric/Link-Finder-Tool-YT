@@ -650,6 +650,7 @@ function compareIdentity(reference: IdentityMetadata, candidate: IdentityMetadat
 
 export async function findProfiles(input: {
   subject?: string;
+  targetPlatforms?: ("instagram" | "tiktok" | "youtube")[];
   handle?: string;
   handlePlatform?: "instagram" | "tiktok" | "youtube" | "spotify" | "web" | "x" | "twitter" | "facebook";
   knownProfileUrl?: string;
@@ -678,7 +679,9 @@ export async function findProfiles(input: {
   const referencePlatform = input.excludeReferencePlatform ? targetsForPlatform(input.handlePlatform) : undefined;
   const targets: DiscoveryPlatform[] = socialPlatformDefinitions
     .map((platform) => platform.name)
+    .filter((platform) => !input.targetPlatforms || input.targetPlatforms.some(target => target === platform.toLowerCase()))
     .filter((platform) => platform !== referencePlatform);
+  if (!targets.length) throw new Error("Choose at least one platform other than the reference account.");
   const selected = input.methods?.length
     ? input.methods
     : ["serper", "gemini", "scrapecreators", "socialcrawl"];
@@ -909,7 +912,7 @@ export async function findProfiles(input: {
 
   const query = queries.join(" | ");
   const sources = organic
-    .filter((result) => result.link && (!input.excludeReferencePlatform || isTargetProfileUrl(result.link, targets)))
+    .filter((result) => result.link && (!(input.excludeReferencePlatform || input.targetPlatforms) || isTargetProfileUrl(result.link, targets)))
     .map((result) => ({
       title: result.title ?? "Untitled result",
       url: result.link!,
@@ -923,7 +926,7 @@ export async function findProfiles(input: {
         const url = new URL(result.link);
         const recognized = classifyUrl(url);
         if (!recognized) return [];
-        if (input.excludeReferencePlatform && !isTargetProfileUrl(result.link, targets)) return [];
+        if ((input.excludeReferencePlatform || input.targetPlatforms) && !isTargetProfileUrl(result.link, targets)) return [];
         const ranked = rankResult(result, subject, url, recognized);
         return [{
           platform: recognized.name,
@@ -988,7 +991,7 @@ export async function findProfiles(input: {
       profiles.push(...(data.profiles ?? []).flatMap((profile): ProfileMatch[] => {
         const platform = targetsForPlatform(profile.platform);
         if (!profile.url || !platform || !fallbackPlatforms.includes(platform)
-          || (input.excludeReferencePlatform && !isTargetProfileUrl(profile.url, targets))) return [];
+          || ((input.excludeReferencePlatform || input.targetPlatforms) && !isTargetProfileUrl(profile.url, targets))) return [];
         try {
           const url = new URL(profile.url);
           return [{
@@ -1019,7 +1022,7 @@ export async function findProfiles(input: {
     }
   }
 
-  if (input.excludeReferencePlatform) {
+  if (input.excludeReferencePlatform || input.targetPlatforms) {
     profiles = profiles.filter((profile) => isTargetProfileUrl(profile.url, targets));
   }
   const merged = new Map<string, ProfileMatch>();
@@ -1268,7 +1271,7 @@ export async function findProfiles(input: {
               }))
         : organic
             .filter((result) => result.method === method && result.link
-              && (!input.excludeReferencePlatform || isTargetProfileUrl(result.link, targets)))
+              && (!(input.excludeReferencePlatform || input.targetPlatforms) || isTargetProfileUrl(result.link, targets)))
             .slice(0, 30)
             .map((result) => ({
               title: result.title ?? "Untitled result",

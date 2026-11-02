@@ -7,13 +7,21 @@
  */
 import type { ProfileSearchInputHandlePlatform } from './profileSearchInputHandlePlatform';
 import type { ProfileSearchInputMethodsItem } from './profileSearchInputMethodsItem';
+import type { ProfileSearchInputTargetPlatformsItem } from './profileSearchInputTargetPlatformsItem';
 
 export interface ProfileSearchInput {
   /**
+     * Person or entity name, optionally including role or other identity context. Supports text-only discovery without a reference URL; results require human review.
      * @minLength 2
      * @maxLength 120
      */
   subject?: string;
+  /**
+     * Platforms to search. Omit to search all supported platforms.
+     * @minItems 1
+     * @maxItems 3
+     */
+  targetPlatforms?: ProfileSearchInputTargetPlatformsItem[];
   /**
      * Known social handle, with or without a leading @
      * @minLength 2

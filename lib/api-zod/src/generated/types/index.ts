@@ -67,6 +67,7 @@ export * from './profileMatchCategory';
 export * from './profileSearchInput';
 export * from './profileSearchInputHandlePlatform';
 export * from './profileSearchInputMethodsItem';
+export * from './profileSearchInputTargetPlatformsItem';
 export * from './profileSearchResponse';
 export * from './profileSuggestionApproval';
 export * from './profileSuggestionApprovalResult';

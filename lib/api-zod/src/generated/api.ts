@@ -237,6 +237,8 @@ export const HealthCheckResponse = zod.object({
 export const searchProfilesBodySubjectMin = 2;
 export const searchProfilesBodySubjectMax = 120;
 
+export const searchProfilesBodyTargetPlatformsMax = 3;
+
 export const searchProfilesBodyHandleMin = 2;
 export const searchProfilesBodyHandleMax = 120;
 
@@ -251,7 +253,8 @@ export const searchProfilesBodyCountryMax = 2;
 
 
 export const SearchProfilesBody = zod.object({
-  "subject": zod.string().min(searchProfilesBodySubjectMin).max(searchProfilesBodySubjectMax).optional(),
+  "subject": zod.string().min(searchProfilesBodySubjectMin).max(searchProfilesBodySubjectMax).optional().describe('Person or entity name, optionally including role or other identity context. Supports text-only discovery without a reference URL; results require human review.'),
+  "targetPlatforms": zod.array(zod.enum(['instagram', 'tiktok', 'youtube'])).min(1).max(searchProfilesBodyTargetPlatformsMax).optional().describe('Platforms to search. Omit to search all supported platforms.'),
   "handle": zod.string().min(searchProfilesBodyHandleMin).max(searchProfilesBodyHandleMax).optional().describe('Known social handle, with or without a leading @'),
   "handlePlatform": zod.enum(['instagram', 'tiktok', 'youtube', 'spotify', 'web', 'x', 'twitter', 'facebook']).optional().describe('Platform where the known handle belongs'),
   "knownProfileUrl": zod.string().max(searchProfilesBodyKnownProfileUrlMax).optional().describe('Public reference-page URL, including ESPN and ESPNcricinfo, or a supported social profile or Spotify artist URL. May be submitted alone; the server resolves the identity from profile metadata or the reference page\'s indexed title and description.'),

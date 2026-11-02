@@ -121,6 +121,10 @@ router.post("/profiles/search", async (req, res): Promise<void> => {
     return;
   }
   const urlOnly = !input.data.subject?.trim() && !input.data.handle?.trim();
+  if (input.data.subject !== undefined && input.data.subject.trim().length < 2) {
+    res.status(400).json({ error: "Enter a person or entity name with at least two characters." });
+    return;
+  }
   if (urlOnly && !input.data.knownProfileUrl) {
     res.status(400).json({ error: "Enter a name, a known social handle, or a profile URL." });
     return;
@@ -128,6 +132,13 @@ router.post("/profiles/search", async (req, res): Promise<void> => {
   if (urlOnly && !parseKnownProfileUrl(input.data.knownProfileUrl!)) {
     res.status(400).json({ error: "Enter a public profile or reference-page URL, such as ESPN. For social platforms, use a profile rather than a post or video." });
     return;
+  }
+  if (urlOnly && input.data.targetPlatforms?.length) {
+    const reference = parseKnownProfileUrl(input.data.knownProfileUrl!)?.platform;
+    if (input.data.targetPlatforms.every(platform => platform === reference)) {
+      res.status(400).json({ error: "Choose a target platform other than the reference account's platform." });
+      return;
+    }
   }
 
   let timeout: NodeJS.Timeout | undefined;

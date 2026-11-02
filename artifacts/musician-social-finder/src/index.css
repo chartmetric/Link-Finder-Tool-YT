@@ -465,3 +465,9 @@
 .inv-cov-tiers .inv-cov-pair { grid-template-columns: 1fr; }
 .inv-cov-stamp { margin-top: 14px; font-size: 10px; color: #738398; }
 @media (max-width: 900px) { .inv-cov-tiers, .inv-cov-pair { grid-template-columns: 1fr; } }
+
+.inv-mode-switch { display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: 10px; background: #eaf0f5; }
+.inv-mode-btn { display: inline-flex; align-items: center; gap: 7px; padding: 7px 16px; border-radius: 7px; font-size: 12px; font-weight: 700; color: var(--subtle); background: transparent; border: 0; cursor: pointer; transition: background-color .15s, color .15s; }
+.inv-mode-btn.active { background: var(--blue); color: #f4fbf6; }
+.inv-mode-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.inv-mode-btn:disabled { cursor: not-allowed; opacity: .6; }
