@@ -15,6 +15,12 @@ Keep existing LLM enrichment coverage separate from this app’s investigation c
 
 **How to apply:** Preserve distinct source labels and do not imply discovered links are officially approved. Match investigations to musician profiles using the trusted reference URL, not a fuzzy artist-name match.
 
+Coverage may link saved single investigations through trusted account URL equivalence, but must consume historical verification verdicts unchanged.
+
+**Why:** The user authorized including verified single-profile evidence in coverage, not paid rediscovery or historical reclassification. Source catalog tables must remain read-only.
+
+**How to apply:** Do not rerun verification or infer new absence claims from old results to improve coverage. Exclude ambiguous catalog matches rather than guessing from names.
+
 Do not search the existing musician database for discovery results for now.
 
 **Why:** The user explicitly said, “let's not search db for now.”

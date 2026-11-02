@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { SearchProfilesResponse, type ProfileSearchResponse } from "@workspace/api-zod";
 import { clickHouseJson, clickHouseRequest } from "./clickhouse-profiles";
+import { invalidateBulkCoverage } from "./bulk-coverage";
 
 const table = "poc_new_verticals.profile_search_history";
 let initialization: Promise<void> | undefined;
@@ -39,6 +40,7 @@ export async function saveProfileInvestigation(knownProfileUrl: string, result: 
   });
   const response = await clickHouseRequest(`INSERT INTO ${table} FORMAT JSONEachRow\n${row}`, 3_000);
   if (!response.ok) throw new Error(`HISTORY_SAVE_FAILED:${response.status}:${await response.text()}`);
+  invalidateBulkCoverage();
   return id;
 }
 

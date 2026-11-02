@@ -69,7 +69,7 @@ export function CoveragePanel({ kind }: { kind: ProfileKind }) {
       )}
 
       <p className="blk-cov-foot" data-testid="text-coverage-footnote">
-        Counts only active {m.plural.toLowerCase()}; All includes unranked profiles. Covered means a saved bulk investigation resolved every supported platform ({platforms}) with a reference account, a verified identity match (likely alone does not count), or an explicit sourced first-party no-account statement. No result, incomplete and needs-review outcomes are not covered. This is documented platform resolution, not proof that every account on the internet was found. Only saved bulk evidence counts; historical single lookups not linked to stable catalog IDs are excluded.
+        Counts only active {m.plural.toLowerCase()}; All includes unranked profiles. Covered means saved evidence resolved every supported platform ({platforms}) with a reference account, a verified identity match (likely alone does not count), or an explicit sourced first-party no-account statement. The latest assessment for each platform counts across bulk runs and single investigations linked to one catalog profile by a trusted account URL or confirmed alias, never a display name. Repeated investigations count each profile once. Unlinked or ambiguous single lookups, no result, incomplete and needs-review outcomes are not covered. This is documented platform resolution, not proof that every account on the internet was found.
       </p>
     </section>
   );
