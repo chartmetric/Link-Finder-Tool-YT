@@ -4,6 +4,8 @@ import type {
 } from "@workspace/api-zod";
 import { clickHouseJson } from "./clickhouse-profiles";
 import { coverageReferenceKeySql } from "./coverage-reference-sql";
+import { createCoverageCache } from "./coverage-cache";
+import { logger } from "./logger";
 
 export const COVERAGE_PLATFORMS = ["Instagram", "TikTok", "YouTube"] as const;
 export const COVERAGE_STATES: BulkCoverageState[] = [
@@ -267,24 +269,14 @@ export async function listBulkCoverageProfiles(params: {
   return coverageProfilesResponse(rows.data, params.afterId, params.limit);
 }
 
-let cached: { expiresAt: number; value: BulkCoverage } | undefined;
-let inflight: Promise<BulkCoverage> | undefined;
-let revision = 0;
+const coverageCache = createCoverageCache(async () => {
+  const rows = await clickHouseJson<CoverageRow>(bulkCoverageSql, {}, 60_000);
+  return coverageResponse(rows.data);
+}, error => logger.warn({ err: error }, "Coverage calculation failed; retaining last successful snapshot when available"));
+
 export function invalidateBulkCoverage() {
-  revision++;
-  cached = undefined;
-  inflight = undefined;
+  coverageCache.invalidate();
 }
 export function getBulkCoverage(): Promise<BulkCoverage> {
-  if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.value);
-  if (!inflight) {
-    const currentRevision = revision;
-    const request = clickHouseJson<CoverageRow>(bulkCoverageSql, {}, 60_000).then(rows => {
-      const value = coverageResponse(rows.data);
-      if (revision === currentRevision) cached = { value, expiresAt: Date.now() + 5 * 60_000 };
-      return value;
-    }).finally(() => { if (inflight === request) inflight = undefined; });
-    inflight = request;
-  }
-  return inflight;
+  return coverageCache.get();
 }

@@ -1,6 +1,6 @@
 import { RotateCw } from 'lucide-react';
 import { useState } from 'react';
-import { getGetBulkCoverageQueryKey, useGetBulkCoverage, type BulkCoverageBucket } from '@workspace/api-client-react';
+import { getBulkCoverage, getGetBulkCoverageQueryKey, useGetBulkCoverage, type BulkCoverageBucket } from '@workspace/api-client-react';
 import { KIND_META, apiError, type ProfileKind } from '@/lib/bulk';
 import { CoverageBreakdown } from './coverage-breakdown';
 
@@ -43,22 +43,37 @@ function Donut({ label, bucket, id }: { label: string; bucket?: BulkCoverageBuck
 export function CoveragePanel({ kind }: { kind: ProfileKind }) {
   const [group, setGroup] = useState<BulkCoverageBucket['group']>('tiers_1_3');
   const m = KIND_META[kind];
-  const q = useGetBulkCoverage({ query: { queryKey: getGetBulkCoverageQueryKey(), staleTime: 60000, refetchInterval: 60000 } });
+  const q = useGetBulkCoverage({ query: {
+    queryKey: getGetBulkCoverageQueryKey(), staleTime: 60000, refetchInterval: 60000,
+    retry: false,
+    queryFn: ({ signal }) => getBulkCoverage({
+      signal: AbortSignal.any([signal, AbortSignal.timeout(65_000)]),
+    }),
+  } });
   const type = q.data?.types.find(t => t.profileType === kind);
   const platforms = q.data?.platforms?.length ? q.data.platforms.join(', ') : 'Instagram, TikTok, YouTube';
+  const isStale = q.data && Date.now() - Date.parse(q.data.generatedAt) > 5 * 60_000;
 
   return (
     <section className="blk-cov" aria-labelledby="blk-cov-title" data-testid="section-bulk-coverage">
       <div className="blk-cov-head">
         <div><div className="inv-kicker">Coverage / {m.plural.toLowerCase()}</div><h2 id="blk-cov-title">Documented platform resolution</h2></div>
-        {q.data && <span className="blk-cov-time inv-mono" data-testid="text-coverage-generated">Server computed {new Date(q.data.generatedAt).toLocaleString()} · may be cached up to 5 min</span>}
+        {q.data && <span className="blk-cov-time inv-mono" data-testid="text-coverage-generated">Server computed {new Date(q.data.generatedAt).toLocaleString()} · refreshes every 5 min</span>}
       </div>
 
+      {type && (q.isError || isStale) && <div role="status" data-testid="status-coverage-stale">
+        <p>Showing the last successful counts from {new Date(q.data!.generatedAt).toLocaleString()}. {q.isError ? 'The latest refresh failed.' : 'An update is being requested in the background.'}</p>
+        <button type="button" className="inv-retry" onClick={() => q.refetch()} disabled={q.isFetching}><RotateCw size={12} /> {q.isFetching ? 'Refreshing' : 'Check for updates'}</button>
+      </div>}
+
       {q.isLoading ? (
+        <>
+        <p role="status">Calculating coverage across saved investigations. The first load can take up to a minute.</p>
         <ul className="blk-cov-grid" aria-busy="true" aria-label="Loading coverage">
           {GROUPS.map(g => <li key={g.group} className="blk-cov-item blk-cov-skel"><span className="blk-cov-skel-ring" /><div><i /><i /></div></li>)}
         </ul>
-      ) : q.isError ? (
+        </>
+      ) : q.isError && !type ? (
         <div className="blk-cov-error" role="alert" data-testid="status-coverage-error">
           <p>Coverage could not be loaded. {apiError(q.error, '')} Figures are unavailable, not zero.</p>
           <button type="button" className="inv-retry" onClick={() => q.refetch()} disabled={q.isFetching} data-testid="button-retry-coverage"><RotateCw size={12} /> {q.isFetching ? 'Retrying' : 'Retry'}</button>

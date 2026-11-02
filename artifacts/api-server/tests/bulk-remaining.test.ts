@@ -110,11 +110,17 @@ test("page mount and navigation only restore state; paid starts occur only in ex
     "artifacts/musician-social-finder/src/pages/BulkBrands.tsx",
   ]) {
     const source = readFileSync(`${process.cwd().endsWith("api-server") ? "../../" : ""}${path}`, "utf8");
-    assert.match(source, /const \[ack, setAck\] = useState\(false\)/);
+    if (path.endsWith("auto-launcher.tsx")) {
+      // The user removed this checkbox; the explicit Start click is consent.
+      assert.doesNotMatch(source, /const \[ack, setAck\]/);
+      assert.match(source, /paidAcknowledged: true/);
+    } else {
+      assert.match(source, /const \[ack, setAck\] = useState\(false\)/);
+      assert.match(source, /paidAcknowledged: ack/);
+    }
     assert.match(source, /const submit = \(\) => \{/);
     assert.match(source, /onClick=\{submit\}/);
     assert.equal((source.match(/start\.mutate\(/g) ?? []).length, 1);
     assert.doesNotMatch(source, /useEffect\([^;]*start\.mutate/s);
-    assert.match(source, /paidAcknowledged: ack/);
   }
 });
