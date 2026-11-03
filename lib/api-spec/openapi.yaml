@@ -395,7 +395,7 @@ components:
         generatedAt: { type: string }
     BulkCoverageBucket:
       type: object
-      required: [group, total, covered, allPlatformsCoveredProfiles, investigated, uncoveredInvestigated, platformBreakdown]
+      required: [group, total, covered, allPlatformsCoveredProfiles, profilesWithActiveLinks, investigated, uncoveredInvestigated, platformBreakdown]
       properties:
         group: { $ref: "#/components/schemas/BulkCoverageGroup" }
         total: { type: number }
@@ -403,6 +403,9 @@ components:
         allPlatformsCoveredProfiles:
           type: number
           description: Unique profiles with a saved non-mismatch candidate link or explicit sourced first-party no-account statement for every supported platform.
+        profilesWithActiveLinks:
+          type: number
+          description: Unique active profiles with at least one current linked account that has an active account record and a non-empty URL.
         investigated: { type: number }
         uncoveredInvestigated: { type: number }
         platformBreakdown:

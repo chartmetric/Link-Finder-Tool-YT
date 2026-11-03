@@ -16,6 +16,7 @@ const groups: BulkCoverageGroup[] = ["tiers_1_3", "tiers_1_5", "all"];
 type CoverageRow = {
   profileType: BulkProfileType; group: BulkCoverageGroup; platform: typeof COVERAGE_PLATFORMS[number];
   total: number; covered: number; allPlatformsCoveredProfiles: number;
+  profilesWithActiveLinks: number;
   investigated: number; uncoveredInvestigated: number;
 } & Record<BulkCoverageState, number>;
 
@@ -156,6 +157,22 @@ WITH snapshots AS (
   SELECT id, argMax(tuple(deleted_at, profile_type, profile_types, name), updated_at) AS data
   FROM new_vertical.profile GROUP BY id
   HAVING tupleElement(data, 1) IS NULL
+), active_account_links AS (
+  SELECT tupleElement(r.link, 1) AS profileId,
+    uniqExact(tupleElement(r.link, 2)) AS activeLinkCount
+  FROM (
+    SELECT id, argMax(tuple(profile_id, account_id, disconnected_at), modified_at) AS link
+    FROM new_vertical.l_profile_account
+    GROUP BY id
+    HAVING tupleElement(link, 3) IS NULL
+  ) r
+  INNER JOIN (
+    SELECT id, argMax(tuple(ifNull(account_url, ''), is_active), modified_at) AS account
+    FROM new_vertical.account
+    GROUP BY id
+    HAVING tupleElement(account, 2) = 1 AND notEmpty(tupleElement(account, 1))
+  ) a ON a.id = tupleElement(r.link, 2)
+  GROUP BY profileId
 ), memberships AS (
   SELECT id, tupleElement(data, 4) AS profileName, arrayJoin(arrayDistinct(arrayFilter(
     x -> x IN ('brand', 'creator', 'musician'),
@@ -231,6 +248,12 @@ WITH snapshots AS (
     uniqExactIf(profileId, allPlatformsCovered) AS allPlatformsCoveredProfiles
   FROM coverage_profile_resolution
   GROUP BY profileType, \`group\`
+), catalog_link_counts AS (
+  SELECT s.profileType AS profileType, s.\`group\` AS \`group\`,
+    uniqExactIf(s.profileId, ifNull(a.activeLinkCount, 0) > 0) AS profilesWithActiveLinks
+  FROM scoped s
+  LEFT JOIN active_account_links a ON a.profileId = s.profileId
+  GROUP BY s.profileType, s.\`group\`
 )
 `;
 
@@ -238,12 +261,15 @@ export const bulkCoverageSql = `${coverageCtes}
 SELECT p.profileType AS profileType, p.\`group\` AS \`group\`, p.platform AS platform, count() AS total,
   countIf(p.resolved = 1) AS covered,
   any(q.allPlatformsCoveredProfiles) AS allPlatformsCoveredProfiles,
+  any(l.profilesWithActiveLinks) AS profilesWithActiveLinks,
   countIf(p.investigated = 1) AS investigated,
   countIf(p.investigated = 1 AND p.resolved = 0) AS uncoveredInvestigated,
   ${COVERAGE_STATES.map(state => `countIf(evidenceState = '${state}') AS ${state}`).join(",\n  ")}
 FROM platform_evidence p
 LEFT JOIN coverage_profile_counts q
   ON q.profileType = p.profileType AND q.\`group\` = p.\`group\`
+LEFT JOIN catalog_link_counts l
+  ON l.profileType = p.profileType AND l.\`group\` = p.\`group\`
 GROUP BY p.profileType, p.\`group\`, p.platform FORMAT JSON`;
 
 export function coverageResponse(rows: CoverageRow[], generatedAt = new Date().toISOString()): BulkCoverage {
@@ -257,6 +283,7 @@ export function coverageResponse(rows: CoverageRow[], generatedAt = new Date().t
         return {
           group, total: Number(row?.total ?? 0), covered: Number(row?.covered ?? 0),
           allPlatformsCoveredProfiles: Number(row?.allPlatformsCoveredProfiles ?? 0),
+          profilesWithActiveLinks: Number(row?.profilesWithActiveLinks ?? 0),
           investigated: Number(row?.investigated ?? 0),
           uncoveredInvestigated: Number(row?.uncoveredInvestigated ?? 0),
           platformBreakdown: COVERAGE_PLATFORMS.map(platform => ({

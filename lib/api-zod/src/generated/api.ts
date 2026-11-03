@@ -19,6 +19,7 @@ export const GetBulkCoverageResponse = zod.object({
   "total": zod.number(),
   "covered": zod.number().describe('Profiles with all supported platforms fully resolved.'),
   "allPlatformsCoveredProfiles": zod.number().describe('Unique profiles with a saved non-mismatch candidate link or explicit sourced first-party no-account statement for every supported platform.'),
+  "profilesWithActiveLinks": zod.number().describe('Unique active profiles with at least one current linked account that has an active account record and a non-empty URL.'),
   "investigated": zod.number(),
   "uncoveredInvestigated": zod.number(),
   "platformBreakdown": zod.array(zod.object({

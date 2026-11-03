@@ -13,4 +13,4 @@ For bulk donuts, count a unique active profile only when every supported platfor
 
 **Why:** The user confirmed that non-mismatch candidate links should count toward full-platform link coverage; strict identity-verification counts hide links found by bulk runs.
 
-**How to apply:** Use the latest assessment for Instagram, TikTok, and YouTube and count each active catalog profile once only when all three platforms satisfy the candidate-link-or-confirmed-absence rule. Label candidates as unverified coverage, not confirmed identity.
+**How to apply:** Use the latest assessment for Instagram, TikTok, and YouTube and count each active catalog profile once only when all three platforms satisfy the candidate-link-or-confirmed-absence rule. SQL fixtures must include a non-empty candidate URL; a verification verdict alone is not link coverage. Label candidates as unverified coverage, not confirmed identity.

@@ -19,8 +19,8 @@ test("coverage SQL counts and pages share active, latest, platform-specific evid
     status, platforms, startedAt, completedAt: status === "completed" ? startedAt : "",
     result: { profiles: candidates }, error: status === "failed" ? "Provider failed" : "",
   });
-  const verified = { platform: "TikTok", jevVerification: { verdict: "verified" } };
-  const likely = { platform: "TikTok", jevVerification: { verdict: "likely" } };
+  const verified = { platform: "TikTok", url: "https://tiktok.com/@verified", jevVerification: { verdict: "verified" } };
+  const likely = { platform: "TikTok", url: "https://tiktok.com/@likely", jevVerification: { verdict: "likely" } };
   const events = [
     { run_id: "old", version: 1, data_json: JSON.stringify({ items: [item(2, [ref, found, absent], [verified], "completed", "2026-10-26")] }) },
     { run_id: "root", version: 2, data_json: JSON.stringify({ items: [
@@ -53,13 +53,26 @@ test("coverage SQL counts and pages share active, latest, platform-specific evid
     { profile: 11, profile_type: "musician", tier: 1 },
     { profile: 11, profile_type: "creator", tier: 5 },
   ];
+  const activeLinkedProfileIds = [1, 2, 3, 4, 5, 8, 9, 11, 12];
+  const accountLinks = activeLinkedProfileIds.map((profileId, index) => ({
+    id: index + 1, profile_id: profileId, account_id: index + 1, modified_at: 1,
+  }));
+  const accounts = activeLinkedProfileIds.map((profileId, index) => ({
+    id: index + 1, account_url: `https://instagram.com/brand${profileId}`, is_active: true, modified_at: 1,
+  }));
   const fixtureSql = (sql: string) => sql
     .replaceAll("poc_new_verticals.profile_search_history", `(
       SELECT toUUID('00000000-0000-0000-0000-000000000000') AS id, '' AS known_profile_url,
         '{}' AS result_json, toDateTime64('2026-01-01', 3, 'UTC') AS searched_at WHERE 0)`)
     .replaceAll("new_vertical.l_profile_account", `(
-      SELECT toUInt64(0) AS profile_id, toUInt64(0) AS account_id, NULL AS disconnected_at WHERE 0)`)
-    .replaceAll("new_vertical.account", `(SELECT toUInt64(0) AS id, '' AS account_url WHERE 0)`)
+      SELECT JSONExtractUInt(row, 'id') AS id, JSONExtractUInt(row, 'profile_id') AS profile_id,
+        JSONExtractUInt(row, 'account_id') AS account_id, CAST(NULL AS Nullable(DateTime)) AS disconnected_at,
+        JSONExtractUInt(row, 'modified_at') AS modified_at
+      FROM (SELECT arrayJoin(JSONExtractArrayRaw({accountLinks:String})) AS row))`)
+    .replaceAll("new_vertical.account", `(
+      SELECT JSONExtractUInt(row, 'id') AS id, JSONExtractString(row, 'account_url') AS account_url,
+        JSONExtractBool(row, 'is_active') AS is_active, JSONExtractUInt(row, 'modified_at') AS modified_at
+      FROM (SELECT arrayJoin(JSONExtractArrayRaw({accounts:String})) AS row))`)
     .replaceAll("new_vertical.profile_links", `(SELECT toUInt64(0) AS profile_id, 'false' AS active, '' AS url WHERE 0)`)
     .replace("poc_new_verticals.profile_bulk_events", `(
       SELECT JSONExtractString(row, 'run_id') AS run_id, JSONExtractRaw(row, 'data_json') AS data_json,
@@ -79,6 +92,7 @@ test("coverage SQL counts and pages share active, latest, platform-specific evid
   const params = {
     events: JSON.stringify(events.map(event => ({ ...event, data_json: JSON.parse(event.data_json) }))),
     catalog: JSON.stringify(catalog), tiers: JSON.stringify(tiers),
+    accountLinks: JSON.stringify(accountLinks), accounts: JSON.stringify(accounts),
   };
   const counts = await clickHouseJson<Parameters<typeof coverageResponse>[0][number]>(fixtureSql(bulkCoverageSql), params, 60_000);
   const result = coverageResponse(counts.data);
@@ -86,10 +100,12 @@ test("coverage SQL counts and pages share active, latest, platform-specific evid
   const all = brand.buckets.find(b => b.group === "all")!;
   assert.equal(all.total, 9); // excludes deleted and reclassified IDs
   assert.equal(all.covered, 1);
-  assert.equal(all.allPlatformsCoveredProfiles, 2); // includes one likely link, excludes partial/no-match profiles
+  assert.equal(all.allPlatformsCoveredProfiles, 1); // only one profile has all platforms covered by a URL or sourced absence
+  assert.equal(all.profilesWithActiveLinks, 8); // active links are a catalog count, independent of search status
   assert.equal(all.investigated, 8);
   assert.equal(all.uncoveredInvestigated, 7);
   assert.equal(brand.buckets.find(b => b.group === "tiers_1_3")!.total, 6);
+  assert.equal(brand.buckets.find(b => b.group === "tiers_1_3")!.profilesWithActiveLinks, 6);
   assert.equal(brand.buckets.find(b => b.group === "tiers_1_5")!.total, 7);
   const count = (platform: string, state: string) => all.platformBreakdown
     .find(p => p.platform === platform)!.states.find(s => s.state === state)!.count;
@@ -102,6 +118,8 @@ test("coverage SQL counts and pages share active, latest, platform-specific evid
   assert.equal(count("YouTube", "needs_review"), 1); // unsourced absence excluded
   assert.equal(result.types.find(t => t.profileType === "artist")!.buckets[0].covered, 1);
   assert.equal(result.types.find(t => t.profileType === "creator")!.buckets[2].total, 2);
+  assert.equal(result.types.find(t => t.profileType === "creator")!.buckets[2].profilesWithActiveLinks, 1);
+  assert.equal(result.types.find(t => t.profileType === "artist")!.buckets[0].profilesWithActiveLinks, 1);
 
   // Exact membership from the drill-down agrees with every summary count, for
   // every type/tier group/platform/state, including zeroes and unranked records.

@@ -9,10 +9,13 @@ const GROUPS: { group: BulkCoverageBucket['group']; label: (plural: string) => s
   { group: 'tiers_1_5', label: () => 'Tiers 1–5' },
   { group: 'all', label: p => `All ${p.toLowerCase()}` },
 ];
+type CoverageMetric = 'all_platforms' | 'active_link';
 const R = 26, C = 2 * Math.PI * R;
 const fmt = (n: number) => n.toLocaleString();
 
-function Donut({ label, bucket, id }: { label: string; bucket?: BulkCoverageBucket; id: string }) {
+function Donut({ label, bucket, id, metric }: {
+  label: string; bucket?: BulkCoverageBucket; id: string; metric: CoverageMetric;
+}) {
   if (!bucket) {
     return (
       <li className="blk-cov-item" data-testid={`coverage-${id}`}>
@@ -21,12 +24,17 @@ function Donut({ label, bucket, id }: { label: string; bucket?: BulkCoverageBuck
       </li>
     );
   }
-  const { total, allPlatformsCoveredProfiles } = bucket;
-  const ratio = total > 0 ? Math.min(1, allPlatformsCoveredProfiles / total) : null;
+  const count = metric === 'all_platforms'
+    ? bucket.allPlatformsCoveredProfiles
+    : bucket.profilesWithActiveLinks;
+  const { total } = bucket;
+  const ratio = total > 0 ? Math.min(1, count / total) : null;
   const pct = ratio === null ? 'N/A' : `${(ratio * 100).toFixed(1)}%`;
   const aria = ratio === null
     ? `${label}: no profiles, coverage not applicable`
-    : `${label}: ${fmt(allPlatformsCoveredProfiles)} of ${fmt(total)} profiles have link coverage or confirmed absence on every platform, ${pct}`;
+    : metric === 'all_platforms'
+      ? `${label}: ${fmt(count)} of ${fmt(total)} profiles have link coverage or confirmed absence on every platform, ${pct}`
+      : `${label}: ${fmt(count)} of ${fmt(total)} profiles have at least one active linked account, ${pct}`;
   return (
     <li className="blk-cov-item" data-testid={`coverage-${id}`}>
       <svg viewBox="0 0 64 64" className="blk-cov-donut" role="img" aria-label={aria}>
@@ -36,7 +44,7 @@ function Donut({ label, bucket, id }: { label: string; bucket?: BulkCoverageBuck
       <div>
         <span className="blk-cov-label">{label}</span>
         <strong className="blk-cov-pct" data-testid={`text-coverage-pct-${id}`}>{pct}</strong>
-        <em className="inv-mono" data-testid={`text-coverage-count-${id}`}>{total > 0 ? `${fmt(allPlatformsCoveredProfiles)} / ${fmt(total)}` : '0 profiles'}</em>
+        <em className="inv-mono" data-testid={`text-coverage-count-${id}`}>{total > 0 ? `${fmt(count)} / ${fmt(total)}` : '0 profiles'}</em>
       </div>
     </li>
   );
@@ -44,6 +52,7 @@ function Donut({ label, bucket, id }: { label: string; bucket?: BulkCoverageBuck
 
 export function CoveragePanel({ kind }: { kind: ProfileKind }) {
   const [group, setGroup] = useState<BulkCoverageBucket['group']>('tiers_1_3');
+  const [metric, setMetric] = useState<CoverageMetric>('all_platforms');
   const m = KIND_META[kind];
   const q = useGetBulkCoverage({ query: {
     queryKey: getGetBulkCoverageQueryKey(), staleTime: 60000, refetchInterval: 60000,
@@ -59,7 +68,11 @@ export function CoveragePanel({ kind }: { kind: ProfileKind }) {
   return (
     <section className="blk-cov" aria-labelledby="blk-cov-title" data-testid="section-bulk-coverage">
       <div className="blk-cov-head">
-        <div><div className="inv-kicker">Coverage / {m.plural.toLowerCase()}</div><h2 id="blk-cov-title">Links found or absence confirmed on every platform</h2></div>
+        <div><div className="inv-kicker">Coverage / {m.plural.toLowerCase()}</div><h2 id="blk-cov-title">
+          {metric === 'all_platforms'
+            ? 'Links found or absence confirmed on every platform'
+            : 'Profiles with at least one active catalog link'}
+        </h2></div>
         {q.data && <span className="blk-cov-time inv-mono" data-testid="text-coverage-generated">Server computed {new Date(q.data.generatedAt).toLocaleString()} · refreshes every 5 min</span>}
       </div>
 
@@ -84,21 +97,35 @@ export function CoveragePanel({ kind }: { kind: ProfileKind }) {
         <p className="blk-cov-empty" data-testid="status-coverage-empty">No coverage data was returned for {m.plural.toLowerCase()}.</p>
       ) : (
         <>
-        <ul className="blk-cov-grid">
-          {GROUPS.map(g => <Donut key={g.group} id={g.group} label={g.label(m.plural)} bucket={type.buckets.find(b => b.group === g.group)} />)}
-        </ul>
-        <div className="blk-cov-breakdown-head">
-          <h3>What still lacks identity confirmation?</h3>
-          <label>Profile group <select value={group} onChange={e => setGroup(e.target.value as BulkCoverageBucket['group'])}>
-            {GROUPS.map(g => <option key={g.group} value={g.group}>{g.label(m.plural)}</option>)}
-          </select></label>
+        <div className="blk-cov-metric-toggle" role="group" aria-label="Coverage measure">
+          <button type="button" aria-pressed={metric === 'all_platforms'}
+            onClick={() => setMetric('all_platforms')} data-testid="button-coverage-all-platforms">
+            All platforms covered
+          </button>
+          <button type="button" aria-pressed={metric === 'active_link'}
+            onClick={() => setMetric('active_link')} data-testid="button-coverage-active-link">
+            1+ existing links
+          </button>
         </div>
-        {type.buckets.find(b => b.group === group) && <CoverageBreakdown key={`${kind}-${group}`} kind={kind} bucket={type.buckets.find(b => b.group === group)!} />}
+        <ul className="blk-cov-grid">
+          {GROUPS.map(g => <Donut key={g.group} id={g.group} label={g.label(m.plural)} bucket={type.buckets.find(b => b.group === g.group)} metric={metric} />)}
+        </ul>
+        {metric === 'all_platforms' && <>
+          <div className="blk-cov-breakdown-head">
+            <h3>What still lacks identity confirmation?</h3>
+            <label>Profile group <select value={group} onChange={e => setGroup(e.target.value as BulkCoverageBucket['group'])}>
+              {GROUPS.map(g => <option key={g.group} value={g.group}>{g.label(m.plural)}</option>)}
+            </select></label>
+          </div>
+          {type.buckets.find(b => b.group === group) && <CoverageBreakdown key={`${kind}-${group}`} kind={kind} bucket={type.buckets.find(b => b.group === group)!} />}
+        </>}
         </>
       )}
 
       <p className="blk-cov-foot" data-testid="text-coverage-footnote">
-        Donut counts each active {m.plural.toLowerCase()} once only when every supported platform ({platforms}) has a saved profile-link candidate not marked as a mismatch, or an explicit sourced first-party no-account confirmation. Candidate links, including likely or unverified matches, indicate link coverage and are not identity verification. Searches with no match, provider failures, and incomplete searches do not count. All includes unranked profiles. The latest assessment counts across bulk runs and single investigations linked to one catalog profile by a trusted account URL or confirmed alias, never a display name.
+        {metric === 'all_platforms'
+          ? `Counts each active ${m.plural.toLowerCase()} once only when every supported platform (${platforms}) has a saved profile-link candidate not marked as a mismatch, or an explicit sourced first-party no-account confirmation. Candidate links, including likely or unverified matches, indicate link coverage and are not identity verification. Searches with no match, provider failures, and incomplete searches do not count. All includes unranked profiles. The latest assessment counts across bulk runs and single investigations linked to one catalog profile by a trusted account URL or confirmed alias, never a display name.`
+          : `Counts active ${m.plural.toLowerCase()} with at least one current linked account whose account record is active and has a URL in the catalog. This measures existing catalog links, not links discovered by bulk searches or verified identity matches. The denominator includes all active ${m.plural.toLowerCase()}, including profiles with no linked account. All includes unranked profiles.`}
       </p>
     </section>
   );

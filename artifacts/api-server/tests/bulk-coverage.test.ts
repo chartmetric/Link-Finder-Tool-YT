@@ -20,15 +20,17 @@ test("coverage returns every cohort and bucket even for empty populations", () =
 });
 
 test("coverage preserves real counts without crossing cohorts or tier groups", () => {
-  const base = { investigated: 10, uncoveredInvestigated: 7, allPlatformsCoveredProfiles: 6, likely_only: 2,
+  const base = { investigated: 10, uncoveredInvestigated: 7, allPlatformsCoveredProfiles: 6, profilesWithActiveLinks: 8, likely_only: 2,
     needs_review: 1, no_match: 1, explicit_absence: 1, provider_failure: 1, unresolved: 1 };
   const result = coverageResponse([
     { ...base, profileType: "brand", group: "all", platform: "TikTok", total: 900, covered: 3 },
-    { ...base, profileType: "artist", group: "tiers_1_3", platform: "YouTube", total: 100, covered: 1, allPlatformsCoveredProfiles: 4 },
+    { ...base, profileType: "artist", group: "tiers_1_3", platform: "YouTube", total: 100, covered: 1, allPlatformsCoveredProfiles: 4, profilesWithActiveLinks: 3 },
   ]);
   assert.equal(result.types[0].buckets[2].total, 900);
   assert.equal(result.types[0].buckets[2].covered, 3);
   assert.equal(result.types[0].buckets[2].allPlatformsCoveredProfiles, 6);
+  assert.equal(result.types[0].buckets[2].profilesWithActiveLinks, 8);
+  assert.equal(result.types[2].buckets[0].profilesWithActiveLinks, 3);
   assert.equal(result.types[0].buckets[2].platformBreakdown[1].states[0].count, 2);
   assert.equal(result.types[0].buckets[2].platformBreakdown[0].states[0].count, 0);
   assert.equal(result.types[1].buckets[2].covered, 0);
