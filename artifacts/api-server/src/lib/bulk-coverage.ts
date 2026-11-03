@@ -13,6 +13,12 @@ export const COVERAGE_STATES: BulkCoverageState[] = [
 ];
 const kinds: BulkProfileType[] = ["brand", "creator", "artist"];
 const groups: BulkCoverageGroup[] = ["tiers_1_3", "tiers_1_5", "all"];
+export const coveragePlatformCoveredConditionSql = `itemStatus = 'completed' AND (
+      hasCandidateLink OR
+      outcomeStatus = 'not_found' OR
+      (outcomeStatus IN ('reference', 'explicit_unavailable') AND notEmpty(evidenceUrls))
+    )`;
+export const coverageAllPlatformsConditionSql = "countIf(platformCovered) = 3";
 type CoverageRow = {
   profileType: BulkProfileType; group: BulkCoverageGroup; platform: typeof COVERAGE_PLATFORMS[number];
   total: number; covered: number; allPlatformsCoveredProfiles: number;
@@ -233,15 +239,11 @@ WITH snapshots AS (
   LEFT JOIN assessments p ON p.profileId = s.profileId AND p.platform = platforms.requestedPlatform
 ), platform_coverage AS (
   SELECT *,
-    itemStatus = 'completed' AND (
-      hasCandidateLink OR
-      outcomeStatus = 'not_found' OR
-      (outcomeStatus IN ('reference', 'explicit_unavailable') AND notEmpty(evidenceUrls))
-    ) AS platformCovered
+    ${coveragePlatformCoveredConditionSql} AS platformCovered
   FROM platform_evidence
 ), coverage_profile_resolution AS (
   SELECT profileType, \`group\`, profileId,
-    countIf(platformCovered) = 3 AS allPlatformsCovered
+    ${coverageAllPlatformsConditionSql} AS allPlatformsCovered
   FROM platform_coverage
   GROUP BY profileType, \`group\`, profileId
 ), coverage_profile_counts AS (

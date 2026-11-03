@@ -3,8 +3,10 @@ import assert from "node:assert/strict";
 import { ListBulkCoverageProfilesParams } from "@workspace/api-zod";
 import {
   bulkCoverageSql, bulkCoverageProfilesSql, coverageResponse, coverageProfilesResponse,
-  COVERAGE_PLATFORMS, COVERAGE_STATES,
+  COVERAGE_PLATFORMS, COVERAGE_STATES, coveragePlatformCoveredConditionSql,
+  coverageAllPlatformsConditionSql,
 } from "../src/lib/bulk-coverage";
+import { clickHouseJson } from "../src/lib/clickhouse-profiles";
 
 test("coverage returns every cohort and bucket even for empty populations", () => {
   const result = coverageResponse([], "2026-10-27T00:00:00Z");
@@ -55,6 +57,62 @@ test("platform coverage is evidence-backed, latest-state and read-only", () => {
   assert.match(bulkCoverageProfilesSql, /investigated = 1 AND resolved = 0/);
   assert.match(bulkCoverageProfilesSql, /profileId > \{afterId:UInt64\}/);
   assert.match(bulkCoverageProfilesSql, /ORDER BY profileId ASC LIMIT \{pageSize:UInt32\}/);
+});
+
+test("ClickHouse counts isolated coverage fixtures once per qualifying profile", {
+  skip: process.env.RUN_CLICKHOUSE_COVERAGE_FIXTURE_TEST !== "1",
+}, async () => {
+  const query = `
+    WITH fixture AS (
+      SELECT * FROM values(
+        'profileId UInt64, platform String, outcomeStatus Nullable(String), itemStatus Nullable(String), evidenceUrls Array(String), candidateUrls Array(String), resolved Nullable(UInt8)',
+        (101, 'Instagram', 'found', 'completed', ['https://candidate.example'], ['https://candidate.example', 'https://candidate.example'], 0),
+        (101, 'TikTok', 'found', 'completed', ['https://candidate.example'], ['https://candidate.example'], 0),
+        (101, 'YouTube', 'found', 'completed', ['https://candidate.example'], ['https://candidate.example'], 0),
+        (202, 'Instagram', 'reference', 'completed', ['https://reference.example'], [], 1),
+        (202, 'TikTok', 'reference', 'completed', ['https://reference.example'], [], 1),
+        (202, 'YouTube', 'reference', 'completed', ['https://reference.example'], [], 1),
+        (303, 'Instagram', NULL, NULL, [], [], NULL),
+        (303, 'TikTok', NULL, NULL, [], [], NULL),
+        (303, 'YouTube', NULL, NULL, [], [], NULL),
+        (404, 'Instagram', 'found', 'failed', ['https://failed.example'], ['https://failed.example'], NULL),
+        (404, 'TikTok', 'found', 'failed', ['https://failed.example'], ['https://failed.example'], NULL),
+        (404, 'YouTube', 'found', 'failed', ['https://failed.example'], ['https://failed.example'], NULL),
+        (505, 'Instagram', 'found', 'completed', ['https://partial.example'], ['https://partial.example'], 0),
+        (505, 'TikTok', 'found', 'completed', ['https://partial.example'], ['https://partial.example'], 0),
+        (505, 'YouTube', NULL, NULL, [], [], NULL),
+        (606, 'Instagram', 'not_found', 'completed', [], [], 0),
+        (606, 'TikTok', 'not_found', 'completed', [], [], 0),
+        (606, 'YouTube', 'not_found', 'completed', [], [], 0)
+      )
+    ),
+    platform_coverage AS (
+      SELECT *,
+        arrayExists(url -> notEmpty(url), candidateUrls) AS hasCandidateLink,
+        ${coveragePlatformCoveredConditionSql} AS platformCovered
+      FROM fixture
+    ),
+    coverage_profile_resolution AS (
+      SELECT profileId, ${coverageAllPlatformsConditionSql} AS allPlatformsCovered
+      FROM platform_coverage
+      GROUP BY profileId
+    )
+    SELECT
+      (SELECT uniqExactIf(profileId, allPlatformsCovered) FROM coverage_profile_resolution) AS allPlatformsCoveredProfiles,
+      (SELECT uniqExactIf(profileId, ifNull(resolved = 1, 0)) FROM platform_coverage) AS fullyResolvedProfiles,
+      (SELECT uniqExactIf(profileId, hasCandidateLink AND itemStatus = 'completed') FROM platform_coverage) AS completedCandidateProfiles
+    FORMAT JSON
+  `;
+  const result = await clickHouseJson<{
+    allPlatformsCoveredProfiles: number;
+    fullyResolvedProfiles: number;
+    completedCandidateProfiles: number;
+  }>(query);
+  assert.deepEqual(result.data, [{
+    allPlatformsCoveredProfiles: 3,
+    fullyResolvedProfiles: 1,
+    completedCandidateProfiles: 2,
+  }]);
 });
 
 test("coverage counts links, completed no-matches, and confirmed absence on every platform", () => {
