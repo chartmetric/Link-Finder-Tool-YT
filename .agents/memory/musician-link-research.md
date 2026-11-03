@@ -26,3 +26,9 @@ Validate search-strategy changes against known existing accounts before scaling,
 **Why:** A broader name-only validation still missed a user-supplied existing account while returning unrelated same-name Instagram accounts for other artists. More queries alone did not establish reliable recovery or identity matching.
 
 **How to apply:** Keep supplied URLs out of blind discovery queries, retain unfiltered search evidence (including posts and topic pages) for diagnosis, and report raw-hit counts separately from plausible artist matches. Do not replace production outcomes with an unreviewed validation sample.
+
+A failed artist-name search does not establish that an Instagram account is unindexed.
+
+**Why:** Exact Instagram-path searches recovered a known account that multiple name-only searches missed; its indexed display name differed from its artist name.
+
+**How to apply:** Discover handle clues from identity-linked reference sources, then use exact-path Serper checks. Clearly distinguish recovery using a supplied handle from independent name-based discovery; do not guess handles and call them confirmed.
