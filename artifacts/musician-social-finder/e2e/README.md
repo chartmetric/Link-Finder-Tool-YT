@@ -35,5 +35,20 @@ layout, successful and failed profile counts, cumulative continuous progress,
 archives, scope navigation/reload, stale/initial errors and Retry, terminal
 polling, uncapped/scanning progress and reduced motion.
 
+`provider-credit-stop.spec.ts` also covers paid-runtime credit stops (not catalog
+preparation): running → stopping with an in-flight lookup → stopped with untouched
+queued work, including mixed-type continuous runs. The sanitized provider/billing
+reason must appear in compact progress, RunDetail inside the monitor modal, and
+the expanded launch widget, during draining and after reload. Cold saved stops
+must not say the user requested them. Closing/reopening the monitor (including
+its saved-state refresh) must send no writes: start, stop, and resume are all
+counted, and unexpected endpoints remain blocked.
+
+Run only the credit-stop cases with:
+
+```sh
+pnpm --filter @workspace/musician-social-finder exec playwright test e2e/provider-credit-stop.spec.ts
+```
+
 Screenshots, traces and the HTML report are written under the ignored
 `generated-artifacts/run-progress` directory at the workspace root.

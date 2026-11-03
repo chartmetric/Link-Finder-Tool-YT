@@ -62,6 +62,7 @@ export class ProgressApi {
     items: candidates.map(candidate => ({ candidate, status: 'completed', platforms: [] })),
   });
   starts: BulkBrandRunInput[] = [];
+  writes: string[] = [];
   reads: Record<string, number> = {};
   errors = false;
   holdStart = false;
@@ -77,6 +78,7 @@ export class ProgressApi {
       const url = new URL(req.url());
       const path = url.pathname;
       if (path.startsWith('/api/')) {
+        if (!['GET', 'HEAD'].includes(req.method())) this.writes.push(`${req.method()} ${path}`);
         const json = (body: unknown, status = 200) => route.fulfill({ status, json: body });
         if (path === '/api/bulk/coverage' && req.method() === 'GET')
           return json({ generatedAt: time, types: [], platforms: ['Instagram', 'TikTok', 'YouTube'] });

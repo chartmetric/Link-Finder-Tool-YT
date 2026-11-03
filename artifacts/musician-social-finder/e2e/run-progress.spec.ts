@@ -177,7 +177,7 @@ for (const status of ['stopped', 'interrupted'] as const) {
     await poll(page, api);
     await expect(page.getByTestId('status-rp')).toHaveText(status);
     await expect(page.getByTestId('text-rp-terminal')).toContainText(
-      status === 'stopped' ? 'Stopped by request' : 'Paused by server restart; needs resume');
+      status === 'stopped' ? 'Stopped; explicit resume required' : 'Paused by server restart; needs resume');
     const reads = api.reads[ROOT];
     await page.clock.fastForward(12_100);
     expect(api.reads[ROOT]).toBe(reads);
