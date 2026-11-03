@@ -62,6 +62,20 @@ paths:
                 $ref: "#/components/schemas/MusicianCoverage"
         "503":
           description: Coverage statistics unavailable
+  /profiles/musician-instagram-research-coverage:
+    get:
+      operationId: getMusicianInstagramResearchCoverage
+      tags: [profile-search]
+      summary: Count saved Tier 1-3 Instagram research results
+      responses:
+        "200":
+          description: Latest saved research result for each current Tier 1-3 musician
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MusicianInstagramResearchCoverage"
+        "503":
+          description: Instagram research statistics unavailable
   /profiles/investigations:
     get:
       operationId: listProfileInvestigations
@@ -459,6 +473,32 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MusicianCoverageTier"
+        generatedAt: { type: string, format: date-time }
+    MusicianInstagramResearchTier:
+      type: object
+      required: [tier, totalProfiles, processedProfiles, profilesWithInstagramUrls, completedNoCandidateProfiles, failedProfiles, pendingProfiles]
+      properties:
+        tier: { type: number }
+        totalProfiles: { type: number }
+        processedProfiles: { type: number }
+        profilesWithInstagramUrls: { type: number }
+        completedNoCandidateProfiles: { type: number }
+        failedProfiles: { type: number }
+        pendingProfiles: { type: number }
+    MusicianInstagramResearchCoverage:
+      type: object
+      required: [totalProfiles, processedProfiles, profilesWithInstagramUrls, completedNoCandidateProfiles, failedProfiles, pendingProfiles, tiers, generatedAt]
+      properties:
+        totalProfiles: { type: number }
+        processedProfiles: { type: number }
+        profilesWithInstagramUrls: { type: number }
+        completedNoCandidateProfiles: { type: number }
+        failedProfiles: { type: number }
+        pendingProfiles: { type: number }
+        tiers:
+          type: array
+          items:
+            $ref: "#/components/schemas/MusicianInstagramResearchTier"
         generatedAt: { type: string, format: date-time }
     ProfileInvestigation:
       type: object

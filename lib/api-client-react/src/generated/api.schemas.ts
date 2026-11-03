@@ -125,6 +125,27 @@ export interface MusicianCoverage {
   generatedAt: string;
 }
 
+export interface MusicianInstagramResearchTier {
+  tier: number;
+  totalProfiles: number;
+  processedProfiles: number;
+  profilesWithInstagramUrls: number;
+  completedNoCandidateProfiles: number;
+  failedProfiles: number;
+  pendingProfiles: number;
+}
+
+export interface MusicianInstagramResearchCoverage {
+  totalProfiles: number;
+  processedProfiles: number;
+  profilesWithInstagramUrls: number;
+  completedNoCandidateProfiles: number;
+  failedProfiles: number;
+  pendingProfiles: number;
+  tiers: MusicianInstagramResearchTier[];
+  generatedAt: string;
+}
+
 export interface IdentityMetadata {
   platform: string;
   handle: string;

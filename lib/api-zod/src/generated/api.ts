@@ -96,6 +96,29 @@ export const GetMusicianCoverageResponse = zod.object({
 
 
 /**
+ * @summary Count saved Tier 1-3 Instagram research results
+ */
+export const GetMusicianInstagramResearchCoverageResponse = zod.object({
+  "totalProfiles": zod.number(),
+  "processedProfiles": zod.number(),
+  "profilesWithInstagramUrls": zod.number(),
+  "completedNoCandidateProfiles": zod.number(),
+  "failedProfiles": zod.number(),
+  "pendingProfiles": zod.number(),
+  "tiers": zod.array(zod.object({
+  "tier": zod.number(),
+  "totalProfiles": zod.number(),
+  "processedProfiles": zod.number(),
+  "profilesWithInstagramUrls": zod.number(),
+  "completedNoCandidateProfiles": zod.number(),
+  "failedProfiles": zod.number(),
+  "pendingProfiles": zod.number()
+})),
+  "generatedAt": zod.coerce.date()
+})
+
+
+/**
  * @summary List saved single-profile investigations, newest first
  */
 export const listProfileInvestigationsQueryPageDefault = 1;

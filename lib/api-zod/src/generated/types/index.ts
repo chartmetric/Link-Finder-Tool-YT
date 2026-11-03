@@ -68,6 +68,8 @@ export * from './listExistingProfilesSortDirection';
 export * from './listProfileInvestigationsParams';
 export * from './musicianCoverage';
 export * from './musicianCoverageTier';
+export * from './musicianInstagramResearchCoverage';
+export * from './musicianInstagramResearchTier';
 export * from './profileInvestigation';
 export * from './profileInvestigationPage';
 export * from './profileMatch';

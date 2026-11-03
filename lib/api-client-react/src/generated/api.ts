@@ -40,6 +40,7 @@ import type {
   ListExistingProfilesParams,
   ListProfileInvestigationsParams,
   MusicianCoverage,
+  MusicianInstagramResearchCoverage,
   ProfileInvestigationPage,
   ProfileSearchInput,
   ProfileSearchResponse,
@@ -319,6 +320,83 @@ export function useGetMusicianCoverage<TData = Awaited<ReturnType<typeof getMusi
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetMusicianCoverageQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMusicianInstagramResearchCoverageUrl = () => {
+
+
+
+
+  return `/api/profiles/musician-instagram-research-coverage`
+}
+
+/**
+ * @summary Count saved Tier 1-3 Instagram research results
+ */
+export const getMusicianInstagramResearchCoverage = async ( options?: Parameters<typeof customFetch>[1]): Promise<MusicianInstagramResearchCoverage> => {
+
+  return customFetch<MusicianInstagramResearchCoverage>(getGetMusicianInstagramResearchCoverageUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMusicianInstagramResearchCoverageQueryKey = () => {
+    return [
+    `/api/profiles/musician-instagram-research-coverage`
+    ] as const;
+    }
+
+
+export const getGetMusicianInstagramResearchCoverageQueryOptions = <TData = Awaited<ReturnType<typeof getMusicianInstagramResearchCoverage>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMusicianInstagramResearchCoverage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMusicianInstagramResearchCoverageQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMusicianInstagramResearchCoverage>>> = ({ signal }) => getMusicianInstagramResearchCoverage({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMusicianInstagramResearchCoverage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMusicianInstagramResearchCoverageQueryResult = NonNullable<Awaited<ReturnType<typeof getMusicianInstagramResearchCoverage>>>
+export type GetMusicianInstagramResearchCoverageQueryError = ErrorType<void>
+
+
+/**
+ * @summary Count saved Tier 1-3 Instagram research results
+ */
+
+export function useGetMusicianInstagramResearchCoverage<TData = Awaited<ReturnType<typeof getMusicianInstagramResearchCoverage>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMusicianInstagramResearchCoverage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMusicianInstagramResearchCoverageQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

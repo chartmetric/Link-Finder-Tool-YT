@@ -10,6 +10,7 @@ import {
   ListProfileInvestigationsQueryParams,
   ListProfileInvestigationsResponse,
   GetMusicianCoverageResponse,
+  GetMusicianInstagramResearchCoverageResponse,
 } from "@workspace/api-zod";
 import { findProfiles, parseKnownProfileUrl, resolveKnownProfileIdentity } from "../lib/musician-search";
 import { StartingProfileLookupError } from "../lib/starting-profile-lookup";
@@ -19,6 +20,7 @@ import {
 } from "../lib/clickhouse-profiles";
 import { listProfileInvestigations, saveProfileInvestigation } from "../lib/profile-investigations";
 import { getMusicianCoverage, invalidateMusicianCoverage } from "../lib/musician-coverage";
+import { getMusicianInstagramResearchCoverage } from "../lib/musician-instagram-research-coverage";
 
 const router: IRouter = Router();
 
@@ -28,6 +30,15 @@ router.get("/profiles/musician-coverage", async (req, res): Promise<void> => {
   } catch (error) {
     req.log.error({ err: error }, "Musician coverage statistics failed");
     res.status(503).json({ error: "Musician coverage statistics are unavailable. Please retry." });
+  }
+});
+
+router.get("/profiles/musician-instagram-research-coverage", async (req, res): Promise<void> => {
+  try {
+    res.json(GetMusicianInstagramResearchCoverageResponse.parse(await getMusicianInstagramResearchCoverage()));
+  } catch (error) {
+    req.log.error({ err: error }, "Musician Instagram research coverage failed");
+    res.status(503).json({ error: "Instagram research statistics are unavailable. Please retry." });
   }
 });
 

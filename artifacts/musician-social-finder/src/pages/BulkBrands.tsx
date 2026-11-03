@@ -14,6 +14,7 @@ import { isActiveRun, KIND_META, LAST_RUN_KEY, PROFILE_KINDS, apiError, kindOf, 
 import '@/styles/bulk.css';
 import { bulkRequest, completeBulkRequest } from '@/lib/bulk-requests';
 import { BillingHealthNotice, useBulkBillingGate } from '@/components/bulk/billing-health';
+import { MusicianInstagramResearchProgress } from '@/components/bulk/musician-instagram-research-progress';
 
 type Selections = Record<ProfileKind, Map<number, BulkBrandCandidate>>;
 const load = (k: ProfileKind) => new Map(readStorage<BulkBrandCandidate[]>(selectionKey(k), []).filter(c => kindOf(c) === k).map(c => [c.profileId, c]));
@@ -142,6 +143,7 @@ export default function BulkBrands() {
             </p>
           )}
 
+          {kind === 'artist' && <MusicianInstagramResearchProgress />}
           <CoveragePanel kind={kind} />
 
           <CandidatePicker key={kind} kind={kind} selected={selected} onToggle={toggle} onSetMany={setMany} maxBatch={maxBatch} onMaxBatch={setMaxBatch} />
