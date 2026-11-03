@@ -42,13 +42,39 @@ test("strict resolution is evidence-backed, latest-state and read-only", () => {
   assert.match(bulkCoverageSql, /GROUP BY profileId/);
   assert.match(bulkCoverageSql, /outcomeStatus = 'found'/);
   assert.match(bulkCoverageSql, /profilesWithLinksOrFullyResolved/);
-  assert.match(bulkCoverageSql, /GROUP BY profileType, `group`, profileId/);
+  assert.match(bulkCoverageSql, /uniqExactIf\(profileId, ifNull\(/);
+  assert.match(bulkCoverageSql, /GROUP BY profileType, `group`/);
+  assert.doesNotMatch(bulkCoverageSql, /countIf\(hasLinks = 1 OR fullyResolved = 1\)/);
   for (const sql of [bulkCoverageSql, bulkCoverageProfilesSql]) {
     assert.doesNotMatch(sql, /\b(INSERT|UPDATE|DELETE|CREATE|ALTER)\b/);
   }
   assert.match(bulkCoverageProfilesSql, /investigated = 1 AND resolved = 0/);
   assert.match(bulkCoverageProfilesSql, /profileId > \{afterId:UInt64\}/);
   assert.match(bulkCoverageProfilesSql, /ORDER BY profileId ASC LIMIT \{pageSize:UInt32\}/);
+});
+
+test("coverage counts each qualifying profile once per type and tier group", () => {
+  const platforms = ["Instagram", "TikTok", "YouTube"] as const;
+  const groups = ["all", "tiers_1_3", "tiers_1_5"] as const;
+  const profileTypes = ["brand", "creator", "artist"] as const;
+  const evidence = profileTypes.flatMap(profileType => [
+    { id: `${profileType}-candidate`, groups: ["all", "tiers_1_3"], candidatePlatforms: ["Instagram", "YouTube"], fullyResolved: false },
+    { id: `${profileType}-resolved`, groups: ["all", "tiers_1_5"], candidatePlatforms: [], fullyResolved: true },
+    { id: `${profileType}-empty`, groups: ["all", "tiers_1_3", "tiers_1_5"], candidatePlatforms: [], fullyResolved: false },
+  ].flatMap(profile => platforms.map(platform => ({
+    profileType, groups: profile.groups, profileId: profile.id, platform,
+    hasCandidate: profile.candidatePlatforms.includes(platform), fullyResolved: profile.fullyResolved,
+  }))));
+  const uniqueCount = (profileType: typeof profileTypes[number], group: typeof groups[number]) =>
+    new Set(evidence.filter(row => row.profileType === profileType && row.groups.includes(group)
+      && (row.hasCandidate || row.fullyResolved)).map(row => row.profileId)).size;
+
+  for (const profileType of profileTypes) {
+    assert.equal(uniqueCount(profileType, "all"), 2);
+    assert.equal(uniqueCount(profileType, "tiers_1_3"), 1);
+    assert.equal(uniqueCount(profileType, "tiers_1_5"), 1);
+  }
+  assert.match(bulkCoverageSql, /uniqExactIf\(profileId, ifNull\(\s*\(outcomeStatus = 'found' AND itemStatus = 'completed' AND notEmpty\(evidenceUrls\)\)\s*OR resolved = 1, 0\)\)/);
 });
 
 test("coverage bucket validation bounds IDs and page sizes and validates every filter", () => {

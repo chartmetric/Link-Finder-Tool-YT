@@ -210,15 +210,10 @@ WITH snapshots AS (
   LEFT JOIN assessments p ON p.profileId = s.profileId AND p.platform = platforms.requestedPlatform
 ), coverage_profile_counts AS (
   SELECT profileType, \`group\`,
-    countIf(hasLinks = 1 OR fullyResolved = 1) AS profilesWithLinksOrFullyResolved
-  FROM (
-    SELECT profileType, \`group\`, profileId,
-      max(toUInt8(ifNull(outcomeStatus = 'found' AND itemStatus = 'completed'
-        AND notEmpty(evidenceUrls), 0))) AS hasLinks,
-      max(toUInt8(ifNull(resolved = 1, 0))) AS fullyResolved
-    FROM platform_evidence
-    GROUP BY profileType, \`group\`, profileId
-  )
+    uniqExactIf(profileId, ifNull(
+      (outcomeStatus = 'found' AND itemStatus = 'completed' AND notEmpty(evidenceUrls))
+        OR resolved = 1, 0)) AS profilesWithLinksOrFullyResolved
+  FROM platform_evidence
   GROUP BY profileType, \`group\`
 )
 `;
