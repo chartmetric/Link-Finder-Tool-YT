@@ -73,7 +73,7 @@ export function CoverageBreakdown({ kind, bucket }: { kind: ProfileKind; bucket:
   const [selection, setSelection] = useState<Selection>();
   return (
     <div className="blk-cov-breakdown">
-      <p><strong>{bucket.uncoveredInvestigated.toLocaleString()} investigated profiles not fully covered</strong> · {bucket.investigated.toLocaleString()} investigated / {bucket.total.toLocaleString()} active profiles</p>
+      <p><strong>{bucket.uncoveredInvestigated.toLocaleString()} investigated profiles not fully resolved</strong> · {bucket.investigated.toLocaleString()} investigated / {bucket.total.toLocaleString()} active profiles</p>
       <p>Counts below include only investigated profiles that are not fully covered. A profile can appear under multiple platforms. Select a count to view saved evidence across all runs.</p>
       <div className="blk-cov-table-scroll">
         <table className="blk-cov-table">

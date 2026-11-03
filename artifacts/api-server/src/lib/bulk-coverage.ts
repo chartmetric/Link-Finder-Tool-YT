@@ -15,7 +15,8 @@ const kinds: BulkProfileType[] = ["brand", "creator", "artist"];
 const groups: BulkCoverageGroup[] = ["tiers_1_3", "tiers_1_5", "all"];
 type CoverageRow = {
   profileType: BulkProfileType; group: BulkCoverageGroup; platform: typeof COVERAGE_PLATFORMS[number];
-  total: number; covered: number; investigated: number; uncoveredInvestigated: number;
+  total: number; covered: number; profilesWithLinksOrFullyResolved: number;
+  investigated: number; uncoveredInvestigated: number;
 } & Record<BulkCoverageState, number>;
 
 /** Counts and drill-down use the same latest assessment per profile/platform.
@@ -207,15 +208,32 @@ WITH snapshots AS (
   FROM scoped s
   CROSS JOIN (SELECT arrayJoin(['Instagram', 'TikTok', 'YouTube']) AS requestedPlatform) platforms
   LEFT JOIN assessments p ON p.profileId = s.profileId AND p.platform = platforms.requestedPlatform
+), coverage_profile_counts AS (
+  SELECT profileType, \`group\`,
+    countIf(hasLinks = 1 OR fullyResolved = 1) AS profilesWithLinksOrFullyResolved
+  FROM (
+    SELECT profileType, \`group\`, profileId,
+      max(toUInt8(ifNull(outcomeStatus = 'found' AND itemStatus = 'completed'
+        AND notEmpty(evidenceUrls), 0))) AS hasLinks,
+      max(toUInt8(ifNull(resolved = 1, 0))) AS fullyResolved
+    FROM platform_evidence
+    GROUP BY profileType, \`group\`, profileId
+  )
+  GROUP BY profileType, \`group\`
 )
 `;
 
 export const bulkCoverageSql = `${coverageCtes}
-SELECT profileType, \`group\`, platform, count() AS total,
-  countIf(p.resolved = 1) AS covered, countIf(p.investigated = 1) AS investigated,
+SELECT p.profileType AS profileType, p.\`group\` AS \`group\`, p.platform AS platform, count() AS total,
+  countIf(p.resolved = 1) AS covered,
+  any(q.profilesWithLinksOrFullyResolved) AS profilesWithLinksOrFullyResolved,
+  countIf(p.investigated = 1) AS investigated,
   countIf(p.investigated = 1 AND p.resolved = 0) AS uncoveredInvestigated,
   ${COVERAGE_STATES.map(state => `countIf(evidenceState = '${state}') AS ${state}`).join(",\n  ")}
-FROM platform_evidence p GROUP BY profileType, \`group\`, platform FORMAT JSON`;
+FROM platform_evidence p
+LEFT JOIN coverage_profile_counts q
+  ON q.profileType = p.profileType AND q.\`group\` = p.\`group\`
+GROUP BY p.profileType, p.\`group\`, p.platform FORMAT JSON`;
 
 export function coverageResponse(rows: CoverageRow[], generatedAt = new Date().toISOString()): BulkCoverage {
   return {
@@ -227,6 +245,7 @@ export function coverageResponse(rows: CoverageRow[], generatedAt = new Date().t
         const row = matching[0];
         return {
           group, total: Number(row?.total ?? 0), covered: Number(row?.covered ?? 0),
+          profilesWithLinksOrFullyResolved: Number(row?.profilesWithLinksOrFullyResolved ?? 0),
           investigated: Number(row?.investigated ?? 0),
           uncoveredInvestigated: Number(row?.uncoveredInvestigated ?? 0),
           platformBreakdown: COVERAGE_PLATFORMS.map(platform => ({

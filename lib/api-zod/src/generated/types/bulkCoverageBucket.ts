@@ -11,7 +11,10 @@ import type { BulkCoveragePlatform } from './bulkCoveragePlatform';
 export interface BulkCoverageBucket {
   group: BulkCoverageGroup;
   total: number;
+  /** Profiles with all supported platforms fully resolved. */
   covered: number;
+  /** Unique profiles with at least one saved link candidate or all supported platforms fully resolved. */
+  profilesWithLinksOrFullyResolved: number;
   investigated: number;
   uncoveredInvestigated: number;
   /** Counts among uncovered investigated active profiles only. Platforms overlap; sourced explicit absence resolves that platform, not the whole profile. */

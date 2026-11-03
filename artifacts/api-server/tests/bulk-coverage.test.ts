@@ -13,20 +13,22 @@ test("coverage returns every cohort and bucket even for empty populations", () =
     assert.equal(type.buckets.length, 3);
     assert.ok(type.buckets.every(bucket => bucket.total === 0 && bucket.covered === 0
       && bucket.investigated === 0 && bucket.uncoveredInvestigated === 0
+      && bucket.profilesWithLinksOrFullyResolved === 0
       && bucket.platformBreakdown.length === 3
       && bucket.platformBreakdown.every(p => p.states.length === 6 && p.states.every(s => s.count === 0))));
   }
 });
 
 test("coverage preserves real counts without crossing cohorts or tier groups", () => {
-  const base = { investigated: 10, uncoveredInvestigated: 7, likely_only: 2,
+  const base = { investigated: 10, uncoveredInvestigated: 7, profilesWithLinksOrFullyResolved: 6, likely_only: 2,
     needs_review: 1, no_match: 1, explicit_absence: 1, provider_failure: 1, unresolved: 1 };
   const result = coverageResponse([
     { ...base, profileType: "brand", group: "all", platform: "TikTok", total: 900, covered: 3 },
-    { ...base, profileType: "artist", group: "tiers_1_3", platform: "YouTube", total: 100, covered: 1 },
+    { ...base, profileType: "artist", group: "tiers_1_3", platform: "YouTube", total: 100, covered: 1, profilesWithLinksOrFullyResolved: 4 },
   ]);
   assert.equal(result.types[0].buckets[2].total, 900);
   assert.equal(result.types[0].buckets[2].covered, 3);
+  assert.equal(result.types[0].buckets[2].profilesWithLinksOrFullyResolved, 6);
   assert.equal(result.types[0].buckets[2].platformBreakdown[1].states[0].count, 2);
   assert.equal(result.types[0].buckets[2].platformBreakdown[0].states[0].count, 0);
   assert.equal(result.types[1].buckets[2].covered, 0);
@@ -38,6 +40,9 @@ test("strict resolution is evidence-backed, latest-state and read-only", () => {
   assert.match(bulkCoverageSql, /'reference', 'explicit_unavailable'/);
   assert.match(bulkCoverageSql, /argMax\(tuple\(deleted_at, profile_type, profile_types, name\)/);
   assert.match(bulkCoverageSql, /GROUP BY profileId/);
+  assert.match(bulkCoverageSql, /outcomeStatus = 'found'/);
+  assert.match(bulkCoverageSql, /profilesWithLinksOrFullyResolved/);
+  assert.match(bulkCoverageSql, /GROUP BY profileType, `group`, profileId/);
   for (const sql of [bulkCoverageSql, bulkCoverageProfilesSql]) {
     assert.doesNotMatch(sql, /\b(INSERT|UPDATE|DELETE|CREATE|ALTER)\b/);
   }
