@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validatePlayers, candidateUrls, processQueue, initialState, researchTiers, selectionForTiers, researchWorkers, admittedProfileIds } from './musician-instagram-research.mjs';
+import { validatePlayers, candidateUrls, processQueue, initialState, researchTiers, selectionForTiers, researchWorkers, admittedProfileIds, rerunNoCandidateProfiles } from './musician-instagram-research.mjs';
 import { readFileSync } from 'node:fs';
 
 const player = { profile_id: '9007199254740993', cm_artist: '123', account_ids: ['456'], artist: 'Example Artist' };
@@ -87,6 +87,27 @@ test('old unfinished, failed, different-identity or missing-Serper work is held 
   }
   assert.equal(initialState(player, { latest: ['candidates_found', [], JSON.stringify(success), '', 'old', 'date', 'different'] }).status, 'needs_review');
   assert.equal(initialState(player, { latest: ['candidates_found', [], '{}', '', 'old', 'date', player.cm_artist] }).status, 'needs_review');
+});
+test('focused reruns select only matching completed Serper no-candidate profiles', () => {
+  const players = [
+    player,
+    { ...player, profile_id: '2' },
+    { ...player, profile_id: '3' },
+    { ...player, profile_id: '4' },
+    { ...player, profile_id: '5' },
+    { ...player, profile_id: '6' },
+  ];
+  const prior = (status, urls = [], cmArtist = player.cm_artist, result = success) =>
+    ({ latest: [status, urls, JSON.stringify(result), '', 'old-run', 'date', cmArtist] });
+  const previous = new Map([
+    ['9007199254740993', prior('no_candidates')],
+    ['2', prior('candidates_found')],
+    ['3', prior('no_candidates', ['https://www.instagram.com/existing/'])],
+    ['4', prior('no_candidates', [], 'different-artist')],
+    ['5', prior('no_candidates', [], player.cm_artist, { methodsUsed: [{ method: 'gemini', status: 'used' }] })],
+  ]);
+
+  assert.deepEqual(rerunNoCandidateProfiles(players, previous).map(item => item.profile_id), ['9007199254740993']);
 });
 test('only completed Serper searches and actual Instagram profile URLs can be saved as candidates', () => {
   assert.deepEqual(candidateUrls(success), ['https://www.instagram.com/example.artist/']);

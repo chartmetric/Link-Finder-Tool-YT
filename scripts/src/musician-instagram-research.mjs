@@ -29,7 +29,20 @@ export function admittedProfileIds(records) {
   return admitted;
 }
 const tiers = researchTiers(process.argv.slice(3));
-const directory = `generated-artifacts/musician-instagram-tier${tiers.join('-')}-all`;
+const cliArgs = process.argv.slice(3);
+const rerunNoCandidates = cliArgs.includes('--rerun-no-candidates');
+const requestedRunId = cliArgs.find(arg => arg.startsWith('--run-id='))?.slice('--run-id='.length);
+function rerunDirectory(runId) {
+  if (!/^[0-9a-f-]{36}$/i.test(runId)) throw new Error('A valid --run-id is required for this rerun.');
+  return `generated-artifacts/musician-instagram-rerun-no-candidates-${runId}`;
+}
+if (requestedRunId && !rerunNoCandidates) throw new Error('--run-id is only valid with --rerun-no-candidates.');
+if (rerunNoCandidates && ['run', 'status'].includes(process.argv[2]) && !requestedRunId) {
+  throw new Error('--run-id from the prepare output is required for this rerun.');
+}
+let directory = rerunNoCandidates
+  ? (requestedRunId ? rerunDirectory(requestedRunId) : '')
+  : `generated-artifacts/musician-instagram-tier${tiers.join('-')}-all`;
 const events = 'poc_new_verticals.musician_instagram_discovery_events';
 const runs = 'poc_new_verticals.musician_instagram_discovery_runs';
 const lookup = 'poc_new_verticals.musician_instagram_lookup';
@@ -105,6 +118,20 @@ export function initialState(player, previous) {
   return { status: 'needs_review', result: { ...result, previousRunId: sourceRunId }, urls: [],
     error: error || 'Previous work needs review before another paid search; not automatically replayed.' };
 }
+export function rerunNoCandidateProfiles(players, previousByProfile) {
+  return players.filter(player => {
+    const previous = previousByProfile.get(player.profile_id);
+    if (!previous) return false;
+    const [status, urls, resultJson, , , , cmArtist] = previous.latest;
+    if (status !== 'no_candidates' || !Array.isArray(urls) || urls.length || String(cmArtist) !== player.cm_artist) return false;
+    try {
+      const result = JSON.parse(resultJson);
+      return result.methodsUsed?.some(method => method.method === 'serper' && method.status === 'used') === true;
+    } catch {
+      return false;
+    }
+  });
+}
 export function candidateUrls(result) {
   if (!result.methodsUsed?.some(method => method.method === 'serper' && method.status === 'used')) {
     throw new Error('Required Serper search did not complete; stopped without fallback or automatic retry.');
@@ -134,9 +161,20 @@ async function metadata(id, status, data) {
 async function prepare() {
   const selectionSql = selectionForTiers(
     await fs.readFile(new URL('./musician-instagram-cohort.sql', import.meta.url), 'utf8'), tiers);
-  const players = await select(selectionSql);
+  let players = await select(selectionSql);
   validatePlayers(players);
-  const links = [], previous = new Map();
+  const previous = new Map();
+  for (let start = 0; start < players.length; start += 1000) {
+    const ids = players.slice(start, start + 1000).map(player => player.profile_id).join(',');
+    for (const row of await select(`SELECT toString(e.profile_id) AS profile_id,
+      argMax(tuple(status,instagram_urls,result_json,error,run_id,updated_at,cm_artist),updated_at) AS latest
+      FROM ${events} AS e WHERE e.profile_id IN (${ids}) GROUP BY e.profile_id`)) previous.set(row.profile_id, row);
+  }
+  if (rerunNoCandidates) {
+    players = rerunNoCandidateProfiles(players, previous);
+    if (!players.length) throw new Error('No eligible completed Serper no-candidate profiles remain; no paid work started.');
+  }
+  const links = [];
   for (let start = 0; start < players.length; start += 1000) {
     const ids = players.slice(start, start + 1000).map(player => player.profile_id).join(',');
     links.push(...await select(`SELECT toString(l.profile_id) AS profile_id, toString(l.account_id) AS account_id,
@@ -144,9 +182,6 @@ async function prepare() {
       FROM new_vertical.l_profile_account AS l FINAL
       INNER JOIN (SELECT id, platform, handle, account_url FROM new_vertical.account FINAL) AS a ON a.id = l.account_id
       WHERE l.profile_id IN (${ids})`));
-    for (const row of await select(`SELECT toString(e.profile_id) AS profile_id,
-      argMax(tuple(status,instagram_urls,result_json,error,run_id,updated_at,cm_artist),updated_at) AS latest
-      FROM ${events} AS e WHERE e.profile_id IN (${ids}) GROUP BY e.profile_id`)) previous.set(row.profile_id, row);
   }
   const linksByProfile = new Map();
   for (const link of links) {
@@ -160,16 +195,23 @@ async function prepare() {
     if (player.accounts.some(account => account.platform === 'instagram')) throw new Error('Cohort changed: an Instagram account is already linked. Reselect before paying.');
   }
   validatePlayers(players);
-  const runId = randomUUID();
-  const states = players.map(player => initialState(player, previous.get(player.profile_id)));
+  const runId = rerunNoCandidates ? (requestedRunId ?? randomUUID()) : randomUUID();
+  if (rerunNoCandidates) directory = rerunDirectory(runId);
+  const workers = researchWorkers(cliArgs, rerunNoCandidates ? 5 : 4);
+  const states = players.map(player => rerunNoCandidates
+    ? { status: 'queued', result: {}, urls: [], error: '' }
+    : initialState(player, previous.get(player.profile_id)));
   const reusedCount = states.filter(state => state.result.reusedFromRunId).length;
   const reviewCount = states.filter(state => state.status === 'needs_review').length;
   const newSearches = states.filter(state => state.status === 'queued').length;
   const accepted = { runId, count: players.length, selectedAt: new Date().toISOString(),
-    scope: `ALL current Tier ${tiers.join(', ')} musicians without any linked Instagram account`,
+    scope: rerunNoCandidates
+      ? `Focused Serper rerun of completed no-candidate Tier ${tiers.join(', ')} musicians without a linked Instagram account`
+      : `ALL current Tier ${tiers.join(', ')} musicians without any linked Instagram account`,
     tiers, tierCounts: Object.fromEntries(tiers.map(tier => [tier, players.filter(player => player.tier === tier).length])),
     reusedCount, reviewCount, maximumNewPaidSearches: newSearches,
-    methods: ['serper'], platform: 'instagram', workers: 4, selectionSql, players,
+    methods: ['serper'], platform: 'instagram', workers, selectionSql, players,
+    rerunNoCandidates,
     automaticPaidRetries: false, verification: 'Unverified indexed search candidates, not account approval.' };
   await fs.mkdir(directory, { recursive: true });
   const file = await fs.open(`${directory}/accepted.json`, 'wx');
@@ -292,5 +334,5 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   if (command === 'prepare') await prepare();
   else if (command === 'run') await run();
   else if (command === 'status') await report(JSON.parse(await fs.readFile(`${directory}/accepted.json`, 'utf8')));
-  else throw new Error('Usage: musician-instagram-research.mjs prepare | run | status [--tiers=1,2] [--workers=5]');
+  else throw new Error('Usage: musician-instagram-research.mjs prepare | run | status [--tiers=1,2] [--workers=5] [--rerun-no-candidates] [--run-id=UUID]');
 }
