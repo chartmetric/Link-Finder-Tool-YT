@@ -102,6 +102,9 @@ test("coverage SQL counts and pages share active, latest, platform-specific evid
   assert.equal(all.covered, 1);
   assert.equal(all.allPlatformsCoveredProfiles, 2); // adds ID 2, whose YouTube search completed with no supported match
   assert.equal(all.profilesWithActiveLinks, 8); // active links are a catalog count, independent of search status
+  assert.equal(all.profilesWithLinkCandidates, 4);
+  assert.equal(all.fullyResolvedProfiles, 1);
+  assert.equal(all.profilesWithLinksOrFullyResolved, 4); // ID 1 is both a candidate and fully resolved
   assert.equal(all.investigated, 8);
   assert.equal(all.uncoveredInvestigated, 7);
   assert.equal(brand.buckets.find(b => b.group === "tiers_1_3")!.total, 6);
@@ -116,11 +119,15 @@ test("coverage SQL counts and pages share active, latest, platform-specific evid
   assert.equal(count("YouTube", "no_match"), 2);
   assert.equal(count("YouTube", "explicit_absence"), 1); // fully covered ID 1 excluded
   assert.equal(count("YouTube", "needs_review"), 1); // unsourced absence excluded
-  assert.equal(result.types.find(t => t.profileType === "artist")!.buckets[0].covered, 1);
+  const artistTopTier = result.types.find(t => t.profileType === "artist")!.buckets[0];
   const artist = result.types.find(t => t.profileType === "artist")!;
   assert.equal(artist.buckets.find(b => b.group === "all")!.total, 1); // shared ID 11 appears once as artist
   assert.equal(artist.buckets.find(b => b.group === "tiers_1_3")!.total, 1); // musician-specific tier 1
   assert.equal(artist.buckets.find(b => b.group === "tiers_1_5")!.total, 1);
+  assert.equal(artistTopTier.covered, 1);
+  assert.equal(artistTopTier.profilesWithLinkCandidates, 1);
+  assert.equal(artistTopTier.fullyResolvedProfiles, 1);
+  assert.equal(artistTopTier.profilesWithLinksOrFullyResolved, 1);
   assert.equal(result.types.find(t => t.profileType === "creator")!.buckets[2].total, 2);
   assert.equal(result.types.find(t => t.profileType === "creator")!.buckets[2].profilesWithActiveLinks, 1);
   assert.equal(result.types.find(t => t.profileType === "artist")!.buckets[0].profilesWithActiveLinks, 1);

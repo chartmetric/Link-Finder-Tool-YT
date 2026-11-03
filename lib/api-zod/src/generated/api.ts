@@ -20,6 +20,9 @@ export const GetBulkCoverageResponse = zod.object({
   "covered": zod.number().describe('Profiles with all supported platforms fully resolved.'),
   "allPlatformsCoveredProfiles": zod.number().describe('Unique profiles where each supported platform has a saved non-mismatch candidate URL, a completed search with no supported match, or an explicit sourced first-party no-account statement. Provider failures and incomplete searches do not count.'),
   "profilesWithActiveLinks": zod.number().describe('Unique active profiles with at least one current linked account that has an active account record and a non-empty URL.'),
+  "profilesWithLinkCandidates": zod.number().describe('Unique profiles with at least one saved supported-platform link candidate; candidates are not verified identities.'),
+  "fullyResolvedProfiles": zod.number().describe('Unique profiles with all supported platforms fully resolved.'),
+  "profilesWithLinksOrFullyResolved": zod.number().describe('Unique profiles with at least one saved link candidate or all supported platforms fully resolved; profiles meeting both conditions count once.'),
   "investigated": zod.number(),
   "uncoveredInvestigated": zod.number(),
   "platformBreakdown": zod.array(zod.object({

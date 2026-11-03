@@ -23,6 +23,8 @@ type CoverageRow = {
   profileType: BulkProfileType; group: BulkCoverageGroup; platform: typeof COVERAGE_PLATFORMS[number];
   total: number; covered: number; allPlatformsCoveredProfiles: number;
   profilesWithActiveLinks: number;
+  profilesWithLinkCandidates: number; fullyResolvedProfiles: number;
+  profilesWithLinksOrFullyResolved: number;
   investigated: number; uncoveredInvestigated: number;
 } & Record<BulkCoverageState, number>;
 
@@ -248,8 +250,24 @@ WITH snapshots AS (
   GROUP BY profileType, \`group\`, profileId
 ), coverage_profile_counts AS (
   SELECT profileType, \`group\`,
-    uniqExactIf(profileId, allPlatformsCovered) AS allPlatformsCoveredProfiles
-  FROM coverage_profile_resolution
+    uniqExactIf(profileId, allPlatformsCovered) AS allPlatformsCoveredProfiles,
+    countIf(hasLinks = 1) AS profilesWithLinkCandidates,
+    countIf(fullyResolved = 1) AS fullyResolvedProfiles,
+    countIf(hasLinks = 1 OR fullyResolved = 1) AS profilesWithLinksOrFullyResolved
+  FROM (
+    SELECT r.profileType AS profileType, r.\`group\` AS \`group\`, r.profileId AS profileId,
+      r.allPlatformsCovered AS allPlatformsCovered,
+      c.hasLinks AS hasLinks, c.fullyResolved AS fullyResolved
+    FROM coverage_profile_resolution r
+    INNER JOIN (
+      SELECT profileType, \`group\`, profileId,
+        max(toUInt8(ifNull(outcomeStatus IN ('found', 'needs_review') AND itemStatus = 'completed'
+          AND notEmpty(evidenceUrls), 0))) AS hasLinks,
+        max(toUInt8(ifNull(resolved = 1, 0))) AS fullyResolved
+      FROM platform_evidence
+      GROUP BY profileType, \`group\`, profileId
+    ) c ON r.profileType = c.profileType AND r.\`group\` = c.\`group\` AND r.profileId = c.profileId
+  ) profile_counts
   GROUP BY profileType, \`group\`
 ), catalog_link_counts AS (
   SELECT s.profileType AS profileType, s.\`group\` AS \`group\`,
@@ -265,6 +283,9 @@ SELECT p.profileType AS profileType, p.\`group\` AS \`group\`, p.platform AS pla
   countIf(p.resolved = 1) AS covered,
   any(q.allPlatformsCoveredProfiles) AS allPlatformsCoveredProfiles,
   any(l.profilesWithActiveLinks) AS profilesWithActiveLinks,
+  any(q.profilesWithLinkCandidates) AS profilesWithLinkCandidates,
+  any(q.fullyResolvedProfiles) AS fullyResolvedProfiles,
+  any(q.profilesWithLinksOrFullyResolved) AS profilesWithLinksOrFullyResolved,
   countIf(p.investigated = 1) AS investigated,
   countIf(p.investigated = 1 AND p.resolved = 0) AS uncoveredInvestigated,
   ${COVERAGE_STATES.map(state => `countIf(evidenceState = '${state}') AS ${state}`).join(",\n  ")}
@@ -287,6 +308,9 @@ export function coverageResponse(rows: CoverageRow[], generatedAt = new Date().t
           group, total: Number(row?.total ?? 0), covered: Number(row?.covered ?? 0),
           allPlatformsCoveredProfiles: Number(row?.allPlatformsCoveredProfiles ?? 0),
           profilesWithActiveLinks: Number(row?.profilesWithActiveLinks ?? 0),
+          profilesWithLinkCandidates: Number(row?.profilesWithLinkCandidates ?? 0),
+          fullyResolvedProfiles: Number(row?.fullyResolvedProfiles ?? 0),
+          profilesWithLinksOrFullyResolved: Number(row?.profilesWithLinksOrFullyResolved ?? 0),
           investigated: Number(row?.investigated ?? 0),
           uncoveredInvestigated: Number(row?.uncoveredInvestigated ?? 0),
           platformBreakdown: COVERAGE_PLATFORMS.map(platform => ({
