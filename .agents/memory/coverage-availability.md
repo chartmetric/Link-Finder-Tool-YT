@@ -11,6 +11,6 @@ Keep the last successful coverage counts visible while refreshing, and clearly s
 
 For bulk donuts, count a unique active profile only when every supported platform has a saved candidate account URL not marked as a mismatch, or an explicit sourced first-party no-account statement. Likely and unverified candidates count as link coverage, not identity verification; no-match searches and provider failures do not count.
 
-**Why:** The user wants the chart to show full-platform link coverage or confirmed absence, and noted that strict identity-verification counts hide candidate links found by bulk runs.
+**Why:** The user confirmed that non-mismatch candidate links should count toward full-platform link coverage; strict identity-verification counts hide links found by bulk runs.
 
 **How to apply:** Use the latest assessment for Instagram, TikTok, and YouTube and count each active catalog profile once only when all three platforms satisfy the candidate-link-or-confirmed-absence rule. Label candidates as unverified coverage, not confirmed identity.
