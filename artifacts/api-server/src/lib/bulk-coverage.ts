@@ -235,6 +235,7 @@ WITH snapshots AS (
   SELECT *,
     itemStatus = 'completed' AND (
       hasCandidateLink OR
+      outcomeStatus = 'not_found' OR
       (outcomeStatus IN ('reference', 'explicit_unavailable') AND notEmpty(evidenceUrls))
     ) AS platformCovered
   FROM platform_evidence

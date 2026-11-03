@@ -14,4 +14,4 @@
 - [Provider test observations](provider-test-observations.md) — assert captured mock-call observations after discovery returns; provider error handlers can swallow assertions inside fetch stubs.
 - [Bulk paid-work safety](bulk-paid-work-safety.md) — uncertain provider calls are not replayable; transactional coordination supplements rather than replaces ClickHouse.
 - [ClickHouse string parameters](clickhouse-string-parameters.md) — typed String parameters interpret escapes; nested JSON-in-string fixtures can silently become invalid JSON.
-- [Coverage availability](coverage-availability.md) — keep successful counts visible; count each profile only when every platform has a link candidate or confirmed absence.
+- [Coverage availability](coverage-availability.md) — full-platform coverage includes links, completed no-matches, or sourced absence, but not failed or incomplete searches.

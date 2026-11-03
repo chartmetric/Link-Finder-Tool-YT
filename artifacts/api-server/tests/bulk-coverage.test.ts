@@ -37,7 +37,7 @@ test("coverage preserves real counts without crossing cohorts or tier groups", (
   assert.equal(result.types[2].buckets[0].covered, 1);
 });
 
-test("strict resolution is evidence-backed, latest-state and read-only", () => {
+test("platform coverage is evidence-backed, latest-state and read-only", () => {
   assert.match(bulkCoverageSql, /'verdict'\) = 'verified'/);
   assert.match(bulkCoverageSql, /'reference', 'explicit_unavailable'/);
   assert.match(bulkCoverageSql, /argMax\(tuple\(deleted_at, profile_type, profile_types, name\)/);
@@ -45,6 +45,7 @@ test("strict resolution is evidence-backed, latest-state and read-only", () => {
   assert.match(bulkCoverageSql, /outcomeStatus = 'found'/);
   assert.match(bulkCoverageSql, /allPlatformsCoveredProfiles/);
   assert.match(bulkCoverageSql, /countIf\(platformCovered\) = 3 AS allPlatformsCovered/);
+  assert.match(bulkCoverageSql, /outcomeStatus = 'not_found' OR/);
   assert.match(bulkCoverageSql, /uniqExactIf\(profileId, allPlatformsCovered\) AS allPlatformsCoveredProfiles/);
   assert.match(bulkCoverageSql, /GROUP BY profileType, `group`/);
   assert.doesNotMatch(bulkCoverageSql, /countIf\(hasLinks = 1 OR fullyResolved = 1\)/);
@@ -56,7 +57,7 @@ test("strict resolution is evidence-backed, latest-state and read-only", () => {
   assert.match(bulkCoverageProfilesSql, /ORDER BY profileId ASC LIMIT \{pageSize:UInt32\}/);
 });
 
-test("coverage counts profiles with a link or confirmed absence on every platform", () => {
+test("coverage counts links, completed no-matches, and confirmed absence on every platform", () => {
   const platforms = ["Instagram", "TikTok", "YouTube"] as const;
   const groups = ["all", "tiers_1_3", "tiers_1_5"] as const;
   const profileTypes = ["brand", "creator", "artist"] as const;
@@ -84,6 +85,7 @@ test("coverage counts profiles with a link or confirmed absence on every platfor
     assert.equal(uniqueCount(profileType, "tiers_1_5"), 1);
   }
   assert.match(bulkCoverageSql, /hasCandidateLink/);
+  assert.match(bulkCoverageSql, /outcomeStatus = 'not_found' AND itemStatus = 'completed', 'no_match'/);
   assert.match(bulkCoverageSql, /outcomeStatus IN \('reference', 'explicit_unavailable'\)/);
 });
 

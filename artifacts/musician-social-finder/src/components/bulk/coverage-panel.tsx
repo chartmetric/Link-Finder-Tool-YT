@@ -33,7 +33,7 @@ function Donut({ label, bucket, id, metric }: {
   const aria = ratio === null
     ? `${label}: no profiles, coverage not applicable`
     : metric === 'all_platforms'
-      ? `${label}: ${fmt(count)} of ${fmt(total)} profiles have link coverage or confirmed absence on every platform, ${pct}`
+      ? `${label}: ${fmt(count)} of ${fmt(total)} profiles have a supported link, completed no-match, or confirmed absence on every platform, ${pct}`
       : `${label}: ${fmt(count)} of ${fmt(total)} profiles have at least one active linked account, ${pct}`;
   return (
     <li className="blk-cov-item" data-testid={`coverage-${id}`}>
@@ -70,7 +70,7 @@ export function CoveragePanel({ kind }: { kind: ProfileKind }) {
       <div className="blk-cov-head">
         <div><div className="inv-kicker">Coverage / {m.plural.toLowerCase()}</div><h2 id="blk-cov-title">
           {metric === 'all_platforms'
-            ? 'Links found or absence confirmed on every platform'
+            ? 'A link, completed no-match, or confirmed absence on every platform'
             : 'Profiles with at least one active catalog link'}
         </h2></div>
         {q.data && <span className="blk-cov-time inv-mono" data-testid="text-coverage-generated">Server computed {new Date(q.data.generatedAt).toLocaleString()} · refreshes every 5 min</span>}
@@ -124,7 +124,7 @@ export function CoveragePanel({ kind }: { kind: ProfileKind }) {
 
       <p className="blk-cov-foot" data-testid="text-coverage-footnote">
         {metric === 'all_platforms'
-          ? `Counts each active ${m.plural.toLowerCase()} once only when every supported platform (${platforms}) has a saved profile-link candidate not marked as a mismatch, or an explicit sourced first-party no-account confirmation. Candidate links, including likely or unverified matches, indicate link coverage and are not identity verification. Searches with no match, provider failures, and incomplete searches do not count. All includes unranked profiles. The latest assessment counts across bulk runs and single investigations linked to one catalog profile by a trusted account URL or confirmed alias, never a display name.`
+          ? `Counts each active ${m.plural.toLowerCase()} once only when every supported platform (${platforms}) has a saved profile-link candidate not marked as a mismatch, a completed search with no supported match, or an explicit sourced first-party no-account confirmation. A completed no-match counts as a practical search assessment, not proof that no account exists. Candidate links, including likely or unverified matches, count as link coverage, not identity verification. Provider failures and incomplete searches do not count. All includes unranked profiles. The latest assessment counts across bulk runs and single investigations linked to one catalog profile by a trusted account URL or confirmed alias, never a display name.`
           : `Counts active ${m.plural.toLowerCase()} with at least one current linked account whose account record is active and has a URL in the catalog. This measures existing catalog links, not links discovered by bulk searches or verified identity matches. The denominator includes all active ${m.plural.toLowerCase()}, including profiles with no linked account. All includes unranked profiles.`}
       </p>
     </section>

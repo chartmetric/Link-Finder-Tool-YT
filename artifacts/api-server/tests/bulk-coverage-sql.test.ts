@@ -100,7 +100,7 @@ test("coverage SQL counts and pages share active, latest, platform-specific evid
   const all = brand.buckets.find(b => b.group === "all")!;
   assert.equal(all.total, 9); // excludes deleted and reclassified IDs
   assert.equal(all.covered, 1);
-  assert.equal(all.allPlatformsCoveredProfiles, 1); // only one profile has all platforms covered by a URL or sourced absence
+  assert.equal(all.allPlatformsCoveredProfiles, 2); // adds ID 2, whose YouTube search completed with no supported match
   assert.equal(all.profilesWithActiveLinks, 8); // active links are a catalog count, independent of search status
   assert.equal(all.investigated, 8);
   assert.equal(all.uncoveredInvestigated, 7);

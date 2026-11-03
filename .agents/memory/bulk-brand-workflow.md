@@ -33,11 +33,11 @@ Allow explicitly authorized continuous searching through all remaining eligible 
 
 **How to apply:** Preserve the distinction between an explicitly approved continuous run and automatic work triggered by navigation or recovery. A chunk boundary is not a new paid authorization. Follow the current operational constraints in `replit.md`; do not treat a distinct-profile cap as a guarantee about provider charges.
 
-Preserve the distinction between finding no account and establishing that an official account is unavailable.
+Preserve the distinction between a completed no-match and proof that an official account is unavailable.
 
-**Why:** The user wants platform-level unavailability, but a public search cannot prove universal nonexistence. Treating failed or empty searches as confirmed absence would misrepresent the evidence.
+**Why:** A public search cannot prove universal nonexistence. The user accepts a completed no-match as an operational resolution, but it must not be represented as proof of absence.
 
-**How to apply:** Keep incomplete searches separate from completed no-match searches and require a sourced first-party statement for an explicit no-account claim.
+**How to apply:** Keep incomplete searches separate from completed no-matches. A completed no-match means required search providers finished without a supported URL; it counts toward coverage but not as a sourced explicit no-account claim.
 
 Profile-type pages must show processed, successful, failed, running and queued counts for the selected type, not a globally remembered run's combined totals.
 
@@ -45,11 +45,11 @@ Profile-type pages must show processed, successful, failed, running and queued c
 
 **How to apply:** Keep per-type summaries distinct from the run-wide monitor and floating multi-type launcher. Include archived continuous chunks in per-type totals; a shared run cap must not be presented as each type's individual denominator.
 
-Coverage donuts count full-platform link coverage, not strict identity verification: each supported platform needs a saved non-mismatch link candidate or a sourced explicit no-account statement.
+Coverage donuts count full-platform search coverage, not strict identity verification: each platform needs a saved non-mismatch link candidate, a completed no-match, or a sourced explicit no-account statement.
 
-**Why:** The user confirmed non-mismatch link candidates should count, even when likely or unverified, while no-match searches and provider failures must not be presented as confirmed absence.
+**Why:** The user confirmed non-mismatch link candidates count even when likely or unverified, and then explicitly chose to count completed no-matches as resolved coverage. Neither result is proof of identity or universal absence.
 
-**How to apply:** Use the latest assessment for Instagram, TikTok, and YouTube, count a profile only when all three platforms meet the candidate-link-or-confirmed-absence rule, and label this separately from JEV identity verification. Never claim exhaustive internet-wide discovery from public search evidence.
+**How to apply:** Use the latest assessment for Instagram, TikTok, and YouTube; count a profile only when all three platforms meet the candidate-link, completed-no-match, or sourced-absence rule. Keep provider failures and incomplete searches uncovered. Label this separately from JEV identity verification and never claim exhaustive internet-wide discovery.
 
 A finished processing job must not be presented as a successfully resolved profile when platform searches failed or remain unknown.
 

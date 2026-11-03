@@ -94,7 +94,7 @@ export function CoverageBreakdown({ kind, bucket }: { kind: ProfileKind; bucket:
           ))}</tbody>
         </table>
       </div>
-      <p>Likely matches need verification. Completed no-match means no supported match was found, <strong>not confirmed absence</strong>. Explicit absence records a sourced first-party statement: that platform is resolved, but another platform (or an unfinished investigation) still prevents full coverage. Provider failure means the search failed or a required provider was unavailable. Unresolved includes running or missing platform evidence.</p>
+      <p>Likely matches need verification. Completed no-match means the required search finished and found no supported URL. It counts toward full-platform search coverage as a practical assessment, <strong>not proof that no account exists</strong>. Explicit absence is a sourced first-party statement. Provider failure means a search failed or a required provider was unavailable, so the account remains unknown. Unresolved includes running or missing platform evidence.</p>
       {selection && <CoverageProfiles key={`${selection.platform}-${selection.state}`} kind={kind} group={bucket.group} selection={selection} onClose={() => setSelection(undefined)} />}
     </div>
   );
