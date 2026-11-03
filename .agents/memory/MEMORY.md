@@ -1,5 +1,6 @@
 - [Cricket catalog identity](cricket-catalog-identity.md) — cricket uses separate Sportmonks records and provider player IDs, not the general profile catalog.
 - [Musician catalog ranking](musician-catalog-ranking.md) — use precomputed tier rank for interactive ordering; fetch Instagram followers only for the visible page.
+- [Musician link research](musician-link-research.md) — all eligible Tier 1–3 musicians, not a sample; retain profile, account, and cm_artist lookup identities.
 - [Partial enrichment results](partial-enrichment-results.md) — never let one slow discovery or verification provider discard completed provider results.
 - [OpenAPI URL formats](openapi-url-formats.md) — avoid URI format annotations until generated Zod output matches the workspace's installed Zod API.
 - [OpenAPI parameter exports](openapi-parameter-exports.md) — combined path/query parameters can collide across generated exports; saved-batch cursors use path parameters.

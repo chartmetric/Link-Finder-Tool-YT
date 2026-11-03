@@ -44,3 +44,9 @@ Provider credit exhaustion must stop the shared run, not merely mark individual 
 **Why:** The user approved automatic stops after a provider credit failure allowed a batch to continue calling other paid providers.
 
 **How to apply:** Close every lane's dispatch gate, persist a generation-checked stop and a sanitized provider-specific reason, and preserve existing results. Already-dispatched requests may still charge; do not replay them. Never automatically resume after funding or a server restart, and never expose raw provider error bodies or credentials. Ordinary rate limiting without credit-exhaustion evidence is not the same condition.
+
+A graceful drain can cancel an admission before dispatch; that cancellation needs its own durable proof.
+
+**Why:** Changing research-worker concurrency exposed claims saved immediately before a stop. They were safely returned to queued without a network call, but an unreconciled local admission journal then blocked legitimate continuation as uncertain paid work.
+
+**How to apply:** Record explicit pre-dispatch cancellation only after saving the untouched queued state. A later admission must reinstate protection. Never clear an admission merely because a replica returns queued, and never infer cancellation once a provider request might have started.

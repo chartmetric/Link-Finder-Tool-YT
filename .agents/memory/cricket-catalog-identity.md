@@ -32,3 +32,9 @@ Famous retired-player names can match younger Sportmonks namesakes even when the
 **Why:** Comparing ICC Hall of Fame careers against catalog birth years exposed incompatible matches during the historical-player audit.
 
 **How to apply:** Do not join historical lists by name and country alone. Check career-era compatibility or another independent biographical identifier; hold ambiguous identities for review rather than spending on the wrong athlete.
+
+Always use Serper for cricketer link searches. Rerun the earlier Gemini-only searches rather than treating those suggestions as verified links.
+
+**Why:** The user explicitly said, “i want you to re-run those and always use serper,” after questioning the quality of the Gemini-only cricket batches.
+
+**How to apply:** Serper must complete for a cricket search to count as successful; never silently fall back to Gemini-only. Preserve earlier evidence and provider-qualified identities in a separate rerun. Serper results are indexed discovery evidence, not automatic identity approval, and no result does not establish account absence.
