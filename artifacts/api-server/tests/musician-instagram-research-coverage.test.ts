@@ -31,13 +31,14 @@ test("research coverage returns URL and resolved counts for all three tiers", ()
   ]);
 });
 
-test("research coverage SQL includes active catalog Instagram URLs and latest research outcomes", () => {
+test("research coverage SQL uses the saved no-link cohort and latest research outcomes", () => {
   assert.match(musicianInstagramResearchCoverageSql, /computed_at >= toStartOfDay\(now\(\)\)/);
   assert.match(musicianInstagramResearchCoverageSql, /HAVING assigned_tier IN \(1, 2, 3\)/);
   assert.match(musicianInstagramResearchCoverageSql, /argMax\(tuple\(status, instagram_urls\), updated_at\)/);
-  assert.match(musicianInstagramResearchCoverageSql, /a\.platform = 'instagram'/);
-  assert.match(musicianInstagramResearchCoverageSql, /l\.disconnected_at IS NULL/);
+  assert.match(musicianInstagramResearchCoverageSql, /research_status = ''/);
+  assert.match(musicianInstagramResearchCoverageSql, /research_status = 'candidates_found' AND notEmpty\(instagram_urls\)/);
   assert.match(musicianInstagramResearchCoverageSql, /countIf\(has_instagram_url\)/);
-  assert.match(musicianInstagramResearchCoverageSql, /status = 'no_candidates'/);
+  assert.match(musicianInstagramResearchCoverageSql, /research_status = 'no_candidates'/);
   assert.match(musicianInstagramResearchCoverageSql, /countIf\(has_instagram_url OR no_supported_match\)/);
+  assert.doesNotMatch(musicianInstagramResearchCoverageSql, /new_vertical\.l_profile_account|new_vertical\.account FINAL/);
 });

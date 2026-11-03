@@ -70,3 +70,17 @@ mtime_ms = 1793645920724
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/d0ed0924-ef5c-4e4c-8645-bbd7288d8b9a/825b4622-0359-4c67-bcff-3338aee78a1f"
 storage_version_token = "1793645927752446"
 content_type = "text/csv"
+
+[[outputs]]
+id = "1ytHNP1MpOalCUkcFfEN0"
+uri = "file://exports/tier-1-3-artists-without-instagram-urls.csv"
+type = "table"
+title = "Tier 1–3 artists without Instagram URLs"
+description = "CSV export of 436 artists whose latest saved search completed with no Instagram URL candidate. Includes profile and Chartmetric IDs, Chartmetric URL, monthly listeners, and search timestamp."
+logical_id = "f592bf9f-673a-4937-adc0-230fcd60c8c4"
+content_hash = "sha256:830d393440456a306fa11160b7a44e2a2405bafc15923d79245d019d81c9f3d1"
+size = 60554
+mtime_ms = 1793744442586
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/f592bf9f-673a-4937-adc0-230fcd60c8c4/e38e95b0-53b8-4f58-9be6-d08b465307d5"
+storage_version_token = "1793744443448811"
+content_type = "text/csv"

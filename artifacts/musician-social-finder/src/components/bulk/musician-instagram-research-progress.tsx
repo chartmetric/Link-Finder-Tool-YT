@@ -93,7 +93,7 @@ export function MusicianInstagramResearchProgress() {
           </div>
           <p className="blk-ig-view-description">
             {view === 'urls'
-              ? 'Profiles with an active catalog Instagram link or a saved Instagram URL.'
+              ? 'Profiles with an existing catalog Instagram URL or a saved research URL candidate.'
               : 'Profiles with an Instagram URL or a completed search that found no supported match.'}
           </p>
 
@@ -105,7 +105,7 @@ export function MusicianInstagramResearchProgress() {
             {data.tiers.map(tier => <TierCard key={tier.tier} tier={tier} view={view} />)}
           </div>
           <p className="blk-ig-foot" data-testid="text-instagram-research-definition">
-            Each profile is counted once using its current-day Tier 1–3 assignment. URL coverage includes active catalog Instagram links and saved non-empty research URLs; saved research URLs are candidates, not approved catalog links. The second view also counts completed searches with no candidate as a practical “no supported match,” not proof that no account exists. Failed and incomplete searches do not count.
+            Each profile is counted once using its current-day Tier 1–3 assignment. The saved research cohort targeted profiles without an Instagram catalog link, so profiles outside that cohort count as already linked. URL coverage also includes saved non-empty research URLs, which are candidates, not approved catalog links. The second view counts completed searches with no candidate as a practical “no supported match,” not proof that no account exists. Failed and incomplete searches do not count.
           </p>
         </>
       )}

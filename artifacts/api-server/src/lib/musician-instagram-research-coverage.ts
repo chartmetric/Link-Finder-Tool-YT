@@ -39,38 +39,23 @@ export const musicianInstagramResearchCoverageSql = `
     FROM poc_new_verticals.musician_instagram_discovery_events
     GROUP BY profile_id
   ),
-  catalog_instagram_profiles AS (
-    SELECT DISTINCT l.profile_id, toUInt8(1) AS has_url
-    FROM (
-      SELECT profile_id, account_id, disconnected_at
-      FROM new_vertical.l_profile_account FINAL
-    ) AS l
-    INNER JOIN (
-      SELECT id, platform, account_url
-      FROM new_vertical.account FINAL
-    ) AS a ON a.id = l.account_id
-    WHERE l.disconnected_at IS NULL
-      AND a.platform = 'instagram'
-      AND notEmpty(trim(ifNull(a.account_url, '')))
-  ),
+  -- The saved Tier 1-3 discovery cohort was selected from profiles without an Instagram catalog link.
+  -- Therefore, a tier profile with no saved research row has a catalog Instagram URL.
   tier_results AS (
     SELECT
       t.profile,
       t.assigned_tier AS tier,
-      c.has_url AS catalog_has_url,
-      tupleElement(l.outcome, 1) AS status,
+      tupleElement(l.outcome, 1) AS research_status,
       tupleElement(l.outcome, 2) AS instagram_urls
     FROM tier_assignments AS t
-    LEFT JOIN catalog_instagram_profiles AS c ON toUInt64(t.profile) = c.profile_id
     LEFT JOIN latest_lookup AS l ON toUInt64(t.profile) = l.profile_id
   ),
   profile_coverage AS (
     SELECT
       tier,
-      catalog_has_url = 1 OR (status = 'candidates_found' AND notEmpty(instagram_urls)) AS has_instagram_url,
-      status = 'no_candidates'
-        AND catalog_has_url != 1
-        AND NOT (status = 'candidates_found' AND notEmpty(instagram_urls)) AS no_supported_match
+      research_status = ''
+        OR (research_status = 'candidates_found' AND notEmpty(instagram_urls)) AS has_instagram_url,
+      research_status = 'no_candidates' AS no_supported_match
     FROM tier_results
   )
   SELECT
