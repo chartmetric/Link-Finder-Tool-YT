@@ -329,44 +329,43 @@
 .dark .blk-cov-empty { color: hsl(var(--muted-foreground)); background: hsl(var(--card)); border-color: hsl(var(--border)); }
 .blk-ig-head-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .blk-ig-head-actions .inv-retry { margin: 0; }
-.blk-ig-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 12px; border: 1px solid #e1e9ed; border-radius: 9px; overflow: hidden; }
-.blk-ig-summary > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 10px 12px; border-left: 1px solid #e1e9ed; }
-.blk-ig-summary > div:first-child { border-left: 0; }
-.blk-ig-summary span, .blk-ig-tier-stats dt { color: var(--subtle); font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
-.blk-ig-summary strong { color: var(--ink); font: 700 20px var(--app-font-mono); letter-spacing: -.04em; }
-.blk-ig-summary small { color: #4a6177; font-size: 10px; line-height: 1.4; }
+.blk-ig-toggle { display: inline-flex; flex-wrap: wrap; gap: 3px; margin-top: 12px; padding: 3px; border: 1px solid #d3e0e4; border-radius: 9px; background: #f2f7f7; }
+.blk-ig-toggle button { min-height: 32px; padding: 6px 11px; border: 0; border-radius: 6px; background: transparent; color: #4a6177; font: 700 11px var(--app-font); cursor: pointer; }
+.blk-ig-toggle button[aria-pressed="true"] { background: #176b62; color: #fff; }
+.blk-ig-toggle button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.blk-ig-view-description { margin-top: 7px; color: #4a6177; font-size: 11px; line-height: 1.45; }
 .blk-ig-legend { display: flex; flex-wrap: wrap; gap: 7px 14px; margin-top: 12px; color: #4a6177; font-size: 10px; }
 .blk-ig-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .blk-ig-legend i { width: 9px; height: 9px; border-radius: 2px; background: #d7e1e7; }
 .blk-ig-legend i.url, .blk-ig-segment.url { background: #176b62; }
 .blk-ig-legend i.no-candidate, .blk-ig-segment.no-candidate { background: #c9a643; }
-.blk-ig-legend i.failed, .blk-ig-segment.failed { background: #c65b61; }
-.blk-ig-legend i.pending, .blk-ig-segment.pending { background: #73859a; }
 .blk-ig-tier-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
 .blk-ig-tier { min-width: 0; padding: 11px 12px; border: 1px solid #e1e9ed; border-radius: 9px; background: #f4faf8; }
 .blk-ig-tier-head { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 4px 8px; }
 .blk-ig-tier-head h3 { font-size: 12px; font-weight: 800; }
-.blk-ig-tier-head strong { color: var(--ink); font: 700 12px var(--app-font-mono); text-align: right; }
-.blk-ig-tier-head strong span { color: #4a6177; font: 500 10px var(--app-font); }
-.blk-ig-tier-head em { grid-column: 1 / -1; color: #4a6177; font-size: 10px; font-style: normal; }
+.blk-ig-tier-head strong { color: var(--ink); font: 700 20px var(--app-font-mono); letter-spacing: -.04em; text-align: right; }
+.blk-ig-tier-head span { grid-column: 1 / -1; color: #4a6177; font-size: 10px; }
 .blk-ig-track { display: flex; height: 8px; margin-top: 9px; overflow: hidden; border-radius: 6px; background: #d7e1e7; }
 .blk-ig-segment { display: block; height: 100%; min-width: 0; transition: width .4s ease; }
-.blk-ig-tier-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 9px; }
+.blk-ig-tier-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 9px; }
 .blk-ig-tier-stats > div { min-width: 0; }
+.blk-ig-tier-stats dt { color: var(--subtle); font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 .blk-ig-tier-stats dd { margin-top: 2px; color: var(--ink); font: 700 13px var(--app-font-mono); }
 .blk-ig-foot, .blk-ig-message, .blk-ig-stale { margin-top: 10px; color: #4a6177; font-size: 10px; line-height: 1.55; }
 .blk-ig-stale { color: #85601a; font-weight: 700; }
-.dark .blk-ig-summary, .dark .blk-ig-summary > div, .dark .blk-ig-tier { border-color: hsl(var(--border)); }
+.dark .blk-ig-toggle { border-color: hsl(var(--border)); background: hsl(var(--background)); }
+.dark .blk-ig-toggle button { color: hsl(var(--muted-foreground)); }
+.dark .blk-ig-toggle button[aria-pressed="true"] { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+.dark .blk-ig-toggle button:focus-visible { outline-color: hsl(var(--ring)); }
+.dark .blk-ig-tier { border-color: hsl(var(--border)); }
 .dark .blk-ig-tier { background: hsl(var(--background)); }
-.dark .blk-ig-summary span, .dark .blk-ig-tier-stats dt { color: hsl(var(--muted-foreground)); }
-.dark .blk-ig-summary strong, .dark .blk-ig-tier-head strong, .dark .blk-ig-tier-stats dd { color: hsl(var(--foreground)); }
-.dark .blk-ig-summary small, .dark .blk-ig-tier-head strong span, .dark .blk-ig-tier-head em,
-.dark .blk-ig-legend, .dark .blk-ig-foot, .dark .blk-ig-message { color: hsl(var(--muted-foreground)); }
+.dark .blk-ig-tier-stats dt { color: hsl(var(--muted-foreground)); }
+.dark .blk-ig-tier-head strong, .dark .blk-ig-tier-stats dd { color: hsl(var(--foreground)); }
+.dark .blk-ig-tier-head span, .dark .blk-ig-legend, .dark .blk-ig-view-description,
+.dark .blk-ig-foot, .dark .blk-ig-message { color: hsl(var(--muted-foreground)); }
 .dark .blk-ig-track { background: hsl(var(--muted)); }
 .dark .blk-ig-legend i.url, .dark .blk-ig-segment.url { background: hsl(var(--primary)); }
 .dark .blk-ig-legend i.no-candidate, .dark .blk-ig-segment.no-candidate { background: #a3a537; }
-.dark .blk-ig-legend i.failed, .dark .blk-ig-segment.failed { background: hsl(var(--destructive)); }
-.dark .blk-ig-legend i.pending, .dark .blk-ig-segment.pending { background: hsl(var(--muted-foreground)); }
 .dark .blk-ig-stale { color: #e7c56c; }
 @media (max-width: 767px) {
   .blk-cov-grid { grid-template-columns: 1fr; }
@@ -377,10 +376,8 @@
   .blk-ig-tier-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 600px) {
-  .blk-ig-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .blk-ig-summary > div:nth-child(odd) { border-left: 0; }
-  .blk-ig-summary > div:nth-child(n + 3) { border-top: 1px solid #e1e9ed; }
-  .dark .blk-ig-summary > div:nth-child(n + 3) { border-top-color: hsl(var(--border)); }
+  .blk-ig-toggle { display: flex; width: 100%; }
+  .blk-ig-toggle button { flex: 1 1 0; padding-inline: 6px; font-size: 10px; }
 }
 
 /* Compact run progress */

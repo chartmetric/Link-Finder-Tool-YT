@@ -5,21 +5,17 @@ import { logger } from "./logger";
 type ResearchRow = {
   tier: number | string;
   total_profiles: number | string;
-  processed_profiles: number | string;
   profiles_with_instagram_urls: number | string;
-  completed_no_candidate_profiles: number | string;
-  failed_profiles: number | string;
-  pending_profiles: number | string;
+  profiles_with_no_supported_match: number | string;
+  profiles_with_url_or_no_supported_match: number | string;
 };
 
 export type MusicianInstagramResearchTier = {
   tier: number;
   totalProfiles: number;
-  processedProfiles: number;
   profilesWithInstagramUrls: number;
-  completedNoCandidateProfiles: number;
-  failedProfiles: number;
-  pendingProfiles: number;
+  profilesWithNoSupportedMatch: number;
+  profilesWithUrlOrNoSupportedMatch: number;
 };
 
 const tiers = [1, 2, 3] as const;
@@ -43,24 +39,47 @@ export const musicianInstagramResearchCoverageSql = `
     FROM poc_new_verticals.musician_instagram_discovery_events
     GROUP BY profile_id
   ),
+  catalog_instagram_profiles AS (
+    SELECT DISTINCT l.profile_id, toUInt8(1) AS has_url
+    FROM (
+      SELECT profile_id, account_id, disconnected_at
+      FROM new_vertical.l_profile_account FINAL
+    ) AS l
+    INNER JOIN (
+      SELECT id, platform, account_url
+      FROM new_vertical.account FINAL
+    ) AS a ON a.id = l.account_id
+    WHERE l.disconnected_at IS NULL
+      AND a.platform = 'instagram'
+      AND notEmpty(trim(ifNull(a.account_url, '')))
+  ),
   tier_results AS (
     SELECT
       t.profile,
       t.assigned_tier AS tier,
+      c.has_url AS catalog_has_url,
       tupleElement(l.outcome, 1) AS status,
       tupleElement(l.outcome, 2) AS instagram_urls
     FROM tier_assignments AS t
+    LEFT JOIN catalog_instagram_profiles AS c ON toUInt64(t.profile) = c.profile_id
     LEFT JOIN latest_lookup AS l ON toUInt64(t.profile) = l.profile_id
+  ),
+  profile_coverage AS (
+    SELECT
+      tier,
+      catalog_has_url = 1 OR (status = 'candidates_found' AND notEmpty(instagram_urls)) AS has_instagram_url,
+      status = 'no_candidates'
+        AND catalog_has_url != 1
+        AND NOT (status = 'candidates_found' AND notEmpty(instagram_urls)) AS no_supported_match
+    FROM tier_results
   )
   SELECT
     tier,
     count() AS total_profiles,
-    countIf(status IN ('candidates_found', 'no_candidates')) AS processed_profiles,
-    countIf(status = 'candidates_found' AND notEmpty(instagram_urls)) AS profiles_with_instagram_urls,
-    countIf(status = 'no_candidates') AS completed_no_candidate_profiles,
-    countIf(status = 'failed') AS failed_profiles,
-    countIf(status IN ('queued', 'running')) AS pending_profiles
-  FROM tier_results
+    countIf(has_instagram_url) AS profiles_with_instagram_urls,
+    countIf(no_supported_match) AS profiles_with_no_supported_match,
+    countIf(has_instagram_url OR no_supported_match) AS profiles_with_url_or_no_supported_match
+  FROM profile_coverage
   GROUP BY tier
   ORDER BY tier
   FORMAT JSON
@@ -80,23 +99,13 @@ export function musicianInstagramResearchCoverageResponse(
     return {
       tier,
       totalProfiles: asCount(row?.total_profiles),
-      processedProfiles: asCount(row?.processed_profiles),
       profilesWithInstagramUrls: asCount(row?.profiles_with_instagram_urls),
-      completedNoCandidateProfiles: asCount(row?.completed_no_candidate_profiles),
-      failedProfiles: asCount(row?.failed_profiles),
-      pendingProfiles: asCount(row?.pending_profiles),
+      profilesWithNoSupportedMatch: asCount(row?.profiles_with_no_supported_match),
+      profilesWithUrlOrNoSupportedMatch: asCount(row?.profiles_with_url_or_no_supported_match),
     };
   });
-  const sum = (key: keyof Omit<MusicianInstagramResearchTier, "tier">) =>
-    tierRows.reduce((total, row) => total + row[key], 0);
 
   return {
-    totalProfiles: sum("totalProfiles"),
-    processedProfiles: sum("processedProfiles"),
-    profilesWithInstagramUrls: sum("profilesWithInstagramUrls"),
-    completedNoCandidateProfiles: sum("completedNoCandidateProfiles"),
-    failedProfiles: sum("failedProfiles"),
-    pendingProfiles: sum("pendingProfiles"),
     tiers: tierRows,
     generatedAt: generatedAt.toISOString(),
   };

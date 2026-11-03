@@ -5,39 +5,39 @@ import {
   musicianInstagramResearchCoverageSql,
 } from "../src/lib/musician-instagram-research-coverage";
 
-test("research coverage returns all three tiers and sums their profile counts", () => {
+test("research coverage returns URL and resolved counts for all three tiers", () => {
   const result = musicianInstagramResearchCoverageResponse([
     {
-      tier: 1, total_profiles: "1113", processed_profiles: "11",
-      profiles_with_instagram_urls: "11", completed_no_candidate_profiles: "0",
-      failed_profiles: "0", pending_profiles: "0",
+      tier: 1, total_profiles: "100", profiles_with_instagram_urls: "90",
+      profiles_with_no_supported_match: "5", profiles_with_url_or_no_supported_match: "95",
     },
     {
-      tier: 2, total_profiles: "8933", processed_profiles: "2999",
-      profiles_with_instagram_urls: "2884", completed_no_candidate_profiles: "115",
-      failed_profiles: "0", pending_profiles: "0",
+      tier: 2, total_profiles: "200", profiles_with_instagram_urls: "150",
+      profiles_with_no_supported_match: "20", profiles_with_url_or_no_supported_match: "170",
     },
     {
-      tier: 3, total_profiles: "17596", processed_profiles: "10331",
-      profiles_with_instagram_urls: "10010", completed_no_candidate_profiles: "321",
-      failed_profiles: "0", pending_profiles: "0",
+      tier: 3, total_profiles: "300", profiles_with_instagram_urls: "240",
+      profiles_with_no_supported_match: "30", profiles_with_url_or_no_supported_match: "270",
     },
   ], new Date("2026-11-03T20:00:00.000Z"));
 
-  assert.equal(result.totalProfiles, 27642);
-  assert.equal(result.processedProfiles, 13341);
-  assert.equal(result.profilesWithInstagramUrls, 12905);
-  assert.equal(result.completedNoCandidateProfiles, 436);
+  assert.equal(result.tiers.reduce((sum, row) => sum + row.totalProfiles, 0), 600);
+  assert.equal(result.tiers.reduce((sum, row) => sum + row.profilesWithInstagramUrls, 0), 480);
+  assert.equal(result.tiers.reduce((sum, row) => sum + row.profilesWithNoSupportedMatch, 0), 55);
+  assert.equal(result.tiers.reduce((sum, row) => sum + row.profilesWithUrlOrNoSupportedMatch, 0), 535);
   assert.equal(result.generatedAt, "2026-11-03T20:00:00.000Z");
-  assert.deepEqual(result.tiers.map(row => [row.tier, row.processedProfiles, row.profilesWithInstagramUrls]), [
-    [1, 11, 11], [2, 2999, 2884], [3, 10331, 10010],
+  assert.deepEqual(result.tiers.map(row => [row.tier, row.totalProfiles, row.profilesWithUrlOrNoSupportedMatch]), [
+    [1, 100, 95], [2, 200, 170], [3, 300, 270],
   ]);
 });
 
-test("research coverage SQL uses fresh Tier 1–3 assignments and each profile's latest result", () => {
+test("research coverage SQL includes active catalog Instagram URLs and latest research outcomes", () => {
   assert.match(musicianInstagramResearchCoverageSql, /computed_at >= toStartOfDay\(now\(\)\)/);
   assert.match(musicianInstagramResearchCoverageSql, /HAVING assigned_tier IN \(1, 2, 3\)/);
   assert.match(musicianInstagramResearchCoverageSql, /argMax\(tuple\(status, instagram_urls\), updated_at\)/);
-  assert.match(musicianInstagramResearchCoverageSql, /status IN \('candidates_found', 'no_candidates'\)/);
+  assert.match(musicianInstagramResearchCoverageSql, /a\.platform = 'instagram'/);
+  assert.match(musicianInstagramResearchCoverageSql, /l\.disconnected_at IS NULL/);
+  assert.match(musicianInstagramResearchCoverageSql, /countIf\(has_instagram_url\)/);
   assert.match(musicianInstagramResearchCoverageSql, /status = 'no_candidates'/);
+  assert.match(musicianInstagramResearchCoverageSql, /countIf\(has_instagram_url OR no_supported_match\)/);
 });

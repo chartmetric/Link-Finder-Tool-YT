@@ -128,20 +128,12 @@ export interface MusicianCoverage {
 export interface MusicianInstagramResearchTier {
   tier: number;
   totalProfiles: number;
-  processedProfiles: number;
   profilesWithInstagramUrls: number;
-  completedNoCandidateProfiles: number;
-  failedProfiles: number;
-  pendingProfiles: number;
+  profilesWithNoSupportedMatch: number;
+  profilesWithUrlOrNoSupportedMatch: number;
 }
 
 export interface MusicianInstagramResearchCoverage {
-  totalProfiles: number;
-  processedProfiles: number;
-  profilesWithInstagramUrls: number;
-  completedNoCandidateProfiles: number;
-  failedProfiles: number;
-  pendingProfiles: number;
   tiers: MusicianInstagramResearchTier[];
   generatedAt: string;
 }

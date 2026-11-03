@@ -8,12 +8,6 @@
 import type { MusicianInstagramResearchTier } from './musicianInstagramResearchTier';
 
 export interface MusicianInstagramResearchCoverage {
-  totalProfiles: number;
-  processedProfiles: number;
-  profilesWithInstagramUrls: number;
-  completedNoCandidateProfiles: number;
-  failedProfiles: number;
-  pendingProfiles: number;
   tiers: MusicianInstagramResearchTier[];
   generatedAt: Date;
 }

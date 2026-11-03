@@ -476,25 +476,17 @@ components:
         generatedAt: { type: string, format: date-time }
     MusicianInstagramResearchTier:
       type: object
-      required: [tier, totalProfiles, processedProfiles, profilesWithInstagramUrls, completedNoCandidateProfiles, failedProfiles, pendingProfiles]
+      required: [tier, totalProfiles, profilesWithInstagramUrls, profilesWithNoSupportedMatch, profilesWithUrlOrNoSupportedMatch]
       properties:
         tier: { type: number }
         totalProfiles: { type: number }
-        processedProfiles: { type: number }
         profilesWithInstagramUrls: { type: number }
-        completedNoCandidateProfiles: { type: number }
-        failedProfiles: { type: number }
-        pendingProfiles: { type: number }
+        profilesWithNoSupportedMatch: { type: number }
+        profilesWithUrlOrNoSupportedMatch: { type: number }
     MusicianInstagramResearchCoverage:
       type: object
-      required: [totalProfiles, processedProfiles, profilesWithInstagramUrls, completedNoCandidateProfiles, failedProfiles, pendingProfiles, tiers, generatedAt]
+      required: [tiers, generatedAt]
       properties:
-        totalProfiles: { type: number }
-        processedProfiles: { type: number }
-        profilesWithInstagramUrls: { type: number }
-        completedNoCandidateProfiles: { type: number }
-        failedProfiles: { type: number }
-        pendingProfiles: { type: number }
         tiers:
           type: array
           items:
