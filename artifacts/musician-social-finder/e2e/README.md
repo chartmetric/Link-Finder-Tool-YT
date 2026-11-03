@@ -50,5 +50,18 @@ Run only the credit-stop cases with:
 pnpm --filter @workspace/musician-social-finder exec playwright test e2e/provider-credit-stop.spec.ts
 ```
 
+`run-preparation.spec.ts` covers the detailed run-monitor modal with zero
+selected profiles: initial preparation, stage changes and successive catalog
+page checks, a stopped/incomplete preparation, and a completed empty selection.
+All three profile-type rows are checked. Closing with Close or Escape, restoring
+focus, continued polling while closed, and reopening must not issue any API
+mutation (including Start, Stop, Resume or paid investigation calls). These cases
+enable the fixture harness's read-only guard, which records and aborts all writes.
+Run just this coverage with:
+
+```sh
+pnpm --filter @workspace/musician-social-finder exec playwright test e2e/run-preparation.spec.ts
+```
+
 Screenshots, traces and the HTML report are written under the ignored
 `generated-artifacts/run-progress` directory at the workspace root.

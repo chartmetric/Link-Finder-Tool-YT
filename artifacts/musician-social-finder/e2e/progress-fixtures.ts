@@ -62,6 +62,9 @@ export class ProgressApi {
     items: candidates.map(candidate => ({ candidate, status: 'completed', platforms: [] })),
   });
   starts: BulkBrandRunInput[] = [];
+  readOnly = false;
+  mutations: string[] = [];
+  saved = false;
   writes: string[] = [];
   reads: Record<string, number> = {};
   errors = false;
@@ -79,13 +82,21 @@ export class ProgressApi {
       const path = url.pathname;
       if (path.startsWith('/api/')) {
         if (!['GET', 'HEAD'].includes(req.method())) this.writes.push(`${req.method()} ${path}`);
+        if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method())) {
+          const mutation = `${req.method()} ${path}`;
+          this.mutations.push(mutation);
+          if (this.readOnly) {
+            this.unexpected.push(mutation);
+            return route.abort('blockedbyclient');
+          }
+        }
         const json = (body: unknown, status = 200) => route.fulfill({ status, json: body });
         if (path === '/api/bulk/coverage' && req.method() === 'GET')
           return json({ generatedAt: time, types: [], platforms: ['Instagram', 'TikTok', 'YouTube'] });
         if (path === '/api/bulk/brands/candidates' && req.method() === 'GET')
           return json({ profiles: candidates, hasMore: false, nextAfterId: 4, maxBatchSize: 25 });
         if (path === '/api/bulk/brands/runs' && req.method() === 'GET')
-          return json({ runs: this.starts.length ? [this.root] : [] });
+          return json({ runs: this.starts.length || this.saved ? [this.root] : [] });
         if (path === '/api/bulk/brands/runs' && req.method() === 'POST') {
           this.starts.push(req.postDataJSON());
           if (this.holdStart) await new Promise<void>(resolve => { this.releaseStart = resolve; });
