@@ -45,11 +45,11 @@ Profile-type pages must show processed, successful, failed, running and queued c
 
 **How to apply:** Keep per-type summaries distinct from the run-wide monitor and floating multi-type launcher. Include archived continuous chunks in per-type totals; a shared run cap must not be presented as each type's individual denominator.
 
-Coverage donuts must measure fully resolved platform evidence, not completed investigations or profiles with any known link.
+Coverage donuts count full-platform link coverage, not strict identity verification: each supported platform needs a saved non-mismatch link candidate or a sourced explicit no-account statement.
 
-**Why:** The user defined coverage as “we've gathered all available links out there and have confirmed any platforms where that profile genuinely does not have a link.”
+**Why:** The user confirmed non-mismatch link candidates should count, even when likely or unverified, while no-match searches and provider failures must not be presented as confirmed absence.
 
-**How to apply:** Scope the metric explicitly to supported platforms; unresolved, failed and no-match searches cannot count as confirmed absence. Never claim exhaustive internet-wide discovery from public search evidence.
+**How to apply:** Use the latest assessment for Instagram, TikTok, and YouTube, count a profile only when all three platforms meet the candidate-link-or-confirmed-absence rule, and label this separately from JEV identity verification. Never claim exhaustive internet-wide discovery from public search evidence.
 
 A finished processing job must not be presented as a successfully resolved profile when platform searches failed or remain unknown.
 
