@@ -56,3 +56,9 @@ Billing recovery is an explicit funding attestation, not proof of a funded provi
 **Why:** A fresh run or resume must not spend an initial parallel cohort merely to rediscover a known credit outage. Provider probes can themselves charge, and a restart does not change the provider's billing state.
 
 **How to apply:** Keep unresolved billing evidence shared and durable. Clear only the currently observed incident after deliberate confirmation, without an active queue; do not probe providers, restart runs, or reset uncertain admissions as part of clearing. Explain that the next paid launch still requires its own explicit action.
+
+High concurrency can saturate the globally serialized bulk coordinator and exceed its PostgreSQL row-lock timeout.
+
+**Why:** A 20-worker brand run safely stopped when a coordinator transaction hit the five-second lock timeout; provider billing health was clear.
+
+**How to apply:** Treat this as coordinator contention, not provider-credit exhaustion. Before increasing workers or resuming, check queued and uncertain admissions; load-test coordinator contention and never replay work whose paid outcome is unknown.
