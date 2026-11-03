@@ -18,6 +18,12 @@ export type RunRecord = {
   uncertain: number[];
 };
 export type QueueState = { fence: number; owner?: Lease; billing?: Partial<Record<BillingProvider, BillingOutage>> };
+export type OwnershipTransactionOptions = {
+  /** Shared checks/writes can overlap; queue ownership changes require an exclusive lock. */
+  queueLock?: "shared" | "exclusive";
+  /** Lock the run row when updating its record under a shared queue lock. */
+  recordLock?: "update" | "none";
+};
 const billingKey = "00000000-0000-4000-8000-000000000000";
 function assertBilling(queue: QueueState) {
   const outage = Object.values(queue.billing ?? {}).find(outage => outage && !outage.clearedAt);
@@ -25,7 +31,7 @@ function assertBilling(queue: QueueState) {
 }
 export type Transaction = { queue: QueueState; record?: RunRecord; now: number; attempts?: number[] };
 export interface OwnershipStore {
-  transact<T>(id: string, work: (tx: Transaction) => T): Promise<T>;
+  transact<T>(id: string, work: (tx: Transaction) => T, options?: OwnershipTransactionOptions): Promise<T>;
   read(id?: string | string[]): Promise<{ queue: QueueState; records: RunRecord[]; now: number }>;
   attempted?(ids: number[]): Promise<number[]>;
 }
@@ -180,7 +186,7 @@ export class BulkOwnership {
     });
   }
   async guard(lease: Lease) {
-    await this.store.transact(lease.runId, tx => { this.owned(tx, lease); });
+    await this.store.transact(lease.runId, tx => { this.owned(tx, lease); }, { queueLock: "shared" });
   }
   /** Restore an old request without ever replaying its paid admissions. */
   async restoreArchived(lease: Lease, archived: BulkBrandRun) {
@@ -213,7 +219,7 @@ export class BulkOwnership {
       item.status = "running";
       item.startedAt = new Date(tx.now).toISOString();
       return true;
-    });
+    }, { queueLock: "shared", recordLock: "update" });
   }
   /** Only after the deterministic archive is durable may indices be reused. */
   async clearChunk(lease: Lease, run: BulkBrandRun) {
@@ -228,7 +234,7 @@ export class BulkOwnership {
       record.run = saved;
       record.uncertain = [];
       return structuredClone(saved);
-    });
+    }, { queueLock: "shared", recordLock: "update" });
   }
   async save(lease: Lease, run: BulkBrandRun, acknowledgedIndex?: number, release = false) {
     return this.store.transact(lease.runId, tx => {
@@ -241,7 +247,7 @@ export class BulkOwnership {
       if (acknowledgedIndex !== undefined) record.uncertain = record.uncertain.filter(i => i !== acknowledgedIndex);
       if (release) delete tx.queue.owner;
       return structuredClone(saved);
-    });
+    }, { queueLock: release ? "exclusive" : "shared", recordLock: "update" });
   }
   async stop(id: string, expected: number) {
     const run = await this.store.transact(id, tx => {
@@ -252,7 +258,7 @@ export class BulkOwnership {
         tx.record.run.status = "stopping";
       }
       return runView(tx.record, tx.queue, tx.now);
-    });
+    }, { queueLock: "shared", recordLock: "update" });
     // Notify only after the durable, generation-checked transaction commits.
     if (run.stopRequested) for (const notify of this.stopListeners.get(`${id}:${expected}`) ?? []) notify();
     return run;

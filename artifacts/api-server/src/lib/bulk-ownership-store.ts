@@ -1,4 +1,7 @@
-import { BulkOwnership, type OwnershipStore, type QueueState, type RunRecord, type Transaction } from "./bulk-ownership";
+import {
+  BulkOwnership, type OwnershipStore, type OwnershipTransactionOptions,
+  type QueueState, type RunRecord, type Transaction,
+} from "./bulk-ownership";
 
 // Lazy import: a missing coordinator fails bulk operations closed, not ordinary searches.
 async function connect() {
@@ -40,23 +43,38 @@ async function ensureStore() {
   await initializing;
 }
 return {
-  async transact<T>(id: string, work: (tx: Transaction) => T): Promise<T> {
+  async transact<T>(id: string, work: (tx: Transaction) => T, options: OwnershipTransactionOptions = {}): Promise<T> {
     await ensureStore();
     const client = await (await getPool()).connect();
+    const queueLock = options.queueLock ?? "exclusive";
+    const recordLock = options.recordLock ?? "none";
     try {
       await client.query("BEGIN");
       await client.query("SET LOCAL lock_timeout = '5s'");
       await client.query("SET LOCAL statement_timeout = '10s'");
-      const locked = await client.query<{ state: QueueState }>(`SELECT state FROM ${queueTable} WHERE id = 1 FOR UPDATE`);
+      const locked = await client.query<{ state: QueueState }>(
+        `SELECT state FROM ${queueTable} WHERE id = 1 FOR ${queueLock === "shared" ? "SHARE" : "UPDATE"}`,
+      );
+      const originalQueue = JSON.stringify(locked.rows[0].state);
       // Read the database clock AFTER obtaining the lock, never the worker's clock.
       const clock = await client.query<{ now: string }>("SELECT (extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now");
-      const rows = await client.query<{ record: RunRecord }>(`SELECT record FROM ${claimsTable} WHERE id = $1`, [id]);
+      const rows = await client.query<{ record: RunRecord }>(
+        `SELECT record FROM ${claimsTable} WHERE id = $1${recordLock === "update" ? " FOR UPDATE" : ""}`,
+        [id],
+      );
+      const originalRecord = JSON.stringify(rows.rows[0]?.record);
       const tx: Transaction = { queue: locked.rows[0].state, record: rows.rows[0]?.record, now: Number(clock.rows[0].now) };
       const result = work(tx);
+      const queueChanged = JSON.stringify(tx.queue) !== originalQueue;
+      const recordChanged = JSON.stringify(tx.record) !== originalRecord;
+      if (queueLock === "shared" && queueChanged) throw new Error("A shared coordinator transaction cannot change queue state.");
+      if (queueLock === "shared" && recordLock !== "update" && recordChanged) {
+        throw new Error("A shared coordinator transaction must lock a run record before changing it.");
+      }
       if (tx.attempts?.length) await client.query(`INSERT INTO ${attemptsTable} (profile_id)
         SELECT unnest($1::bigint[]) ON CONFLICT DO NOTHING`, [tx.attempts]);
-      await client.query(`UPDATE ${queueTable} SET state = $1 WHERE id = 1`, [JSON.stringify(tx.queue)]);
-      if (tx.record) await client.query(`INSERT INTO ${claimsTable} (id, record) VALUES ($1, $2)
+      if (queueChanged) await client.query(`UPDATE ${queueTable} SET state = $1 WHERE id = 1`, [JSON.stringify(tx.queue)]);
+      if (recordChanged && tx.record) await client.query(`INSERT INTO ${claimsTable} (id, record) VALUES ($1, $2)
         ON CONFLICT (id) DO UPDATE SET record = excluded.record, updated_at = clock_timestamp()`, [id, JSON.stringify(tx.record)]);
       await client.query("COMMIT");
       return result;

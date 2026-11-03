@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { GetBulkBrandRunResponse, SearchProfilesResponse, type BulkBrandRun } from "@workspace/api-zod";
-import { BulkOwnership, LEASE_MS, selectionFingerprint, type Transaction } from "../src/lib/bulk-ownership";
+import {
+  BulkOwnership, LEASE_MS, selectionFingerprint,
+  type OwnershipTransactionOptions, type Transaction,
+} from "../src/lib/bulk-ownership";
 import { MemoryStore } from "./helpers/bulk-memory-store";
 import { executeBulkRun, type WorkerDependencies } from "../src/lib/bulk-worker";
 import { providerFetch, withPaidRequestGuard } from "../src/lib/paid-request-guard";
@@ -45,6 +48,30 @@ function deferred() {
   const promise = new Promise<void>(r => { resolve = r; });
   return { promise, resolve };
 }
+class RecordingStore extends MemoryStore {
+  readonly transactionOptions: OwnershipTransactionOptions[] = [];
+  override async transact<T>(id: string, work: (tx: Transaction) => T, options: OwnershipTransactionOptions = {}) {
+    this.transactionOptions.push(options);
+    return super.transact(id, work);
+  }
+}
+
+test("worker guards and run writes use shared queue locks with per-run write locks", async () => {
+  const store = new RecordingStore(), owner = new BulkOwnership(store);
+  const first = await claim(owner);
+  store.transactionOptions.length = 0;
+
+  await owner.guard(first.lease!);
+  assert.deepEqual(store.transactionOptions.at(-1), { queueLock: "shared" });
+
+  await owner.admit(first.lease!, 0);
+  assert.deepEqual(store.transactionOptions.at(-1), { queueLock: "shared", recordLock: "update" });
+
+  const saved = structuredClone(first.run);
+  saved.items[0].status = "completed";
+  await owner.save(first.lease!, saved, 0);
+  assert.deepEqual(store.transactionOptions.at(-1), { queueLock: "shared", recordLock: "update" });
+});
 
 test("two workers race for one global queue: only one claim launches", async () => {
   const store = new MemoryStore();
@@ -422,7 +449,24 @@ test("real PostgreSQL connections serialize claims and persist fencing across ad
     assert.equal(same.filter(result => result.launched).length, 1);
     const first = same.find(result => result.launched)!;
     await assert.rejects(claim(b, fixture(2), "worker-b"), /queue is active/);
-    await a.admit(first.lease!, 0);
+    const blocker = await pool.connect();
+    try {
+      await blocker.query("BEGIN");
+      await blocker.query(`SELECT state FROM ${prefix}_queue WHERE id = 1 FOR SHARE`);
+      const operations = Promise.all([
+        ...Array.from({ length: 20 }, () => a.guard(first.lease!)),
+        a.admit(first.lease!, 0),
+      ]);
+      const completedWithoutExclusiveLock = await Promise.race([
+        operations.then(() => true),
+        new Promise<boolean>(resolve => setTimeout(() => resolve(false), 1_000)),
+      ]);
+      assert.equal(completedWithoutExclusiveLock, true, "worker operations should not wait for an exclusive global queue lock");
+      await operations;
+    } finally {
+      await blocker.query("ROLLBACK").catch(() => {});
+      blocker.release();
+    }
     assert.deepEqual([...(await b.attempted([1, 99]))], [1]);
     // Deterministic crash simulation: expire only this test's lease, without sleeping.
     await pool.query(`UPDATE ${prefix}_queue SET state = jsonb_set(state, '{owner,until}', '0')`);
