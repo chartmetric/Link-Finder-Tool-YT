@@ -395,14 +395,14 @@ components:
         generatedAt: { type: string }
     BulkCoverageBucket:
       type: object
-      required: [group, total, covered, fullyResolvedProfiles, investigated, uncoveredInvestigated, platformBreakdown]
+      required: [group, total, covered, allPlatformsCoveredProfiles, investigated, uncoveredInvestigated, platformBreakdown]
       properties:
         group: { $ref: "#/components/schemas/BulkCoverageGroup" }
         total: { type: number }
         covered: { type: number, description: Profiles with all supported platforms fully resolved. }
-        fullyResolvedProfiles:
+        allPlatformsCoveredProfiles:
           type: number
-          description: Unique profiles with every supported platform fully resolved by an identity-resolved link or explicit sourced first-party no-account statement.
+          description: Unique profiles with a saved non-mismatch candidate link or explicit sourced first-party no-account statement for every supported platform.
         investigated: { type: number }
         uncoveredInvestigated: { type: number }
         platformBreakdown:

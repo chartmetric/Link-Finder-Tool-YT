@@ -13,22 +13,22 @@ test("coverage returns every cohort and bucket even for empty populations", () =
     assert.equal(type.buckets.length, 3);
     assert.ok(type.buckets.every(bucket => bucket.total === 0 && bucket.covered === 0
       && bucket.investigated === 0 && bucket.uncoveredInvestigated === 0
-      && bucket.fullyResolvedProfiles === 0
+      && bucket.allPlatformsCoveredProfiles === 0
       && bucket.platformBreakdown.length === 3
       && bucket.platformBreakdown.every(p => p.states.length === 6 && p.states.every(s => s.count === 0))));
   }
 });
 
 test("coverage preserves real counts without crossing cohorts or tier groups", () => {
-  const base = { investigated: 10, uncoveredInvestigated: 7, fullyResolvedProfiles: 6, likely_only: 2,
+  const base = { investigated: 10, uncoveredInvestigated: 7, allPlatformsCoveredProfiles: 6, likely_only: 2,
     needs_review: 1, no_match: 1, explicit_absence: 1, provider_failure: 1, unresolved: 1 };
   const result = coverageResponse([
     { ...base, profileType: "brand", group: "all", platform: "TikTok", total: 900, covered: 3 },
-    { ...base, profileType: "artist", group: "tiers_1_3", platform: "YouTube", total: 100, covered: 1, fullyResolvedProfiles: 4 },
+    { ...base, profileType: "artist", group: "tiers_1_3", platform: "YouTube", total: 100, covered: 1, allPlatformsCoveredProfiles: 4 },
   ]);
   assert.equal(result.types[0].buckets[2].total, 900);
   assert.equal(result.types[0].buckets[2].covered, 3);
-  assert.equal(result.types[0].buckets[2].fullyResolvedProfiles, 6);
+  assert.equal(result.types[0].buckets[2].allPlatformsCoveredProfiles, 6);
   assert.equal(result.types[0].buckets[2].platformBreakdown[1].states[0].count, 2);
   assert.equal(result.types[0].buckets[2].platformBreakdown[0].states[0].count, 0);
   assert.equal(result.types[1].buckets[2].covered, 0);
@@ -41,8 +41,9 @@ test("strict resolution is evidence-backed, latest-state and read-only", () => {
   assert.match(bulkCoverageSql, /argMax\(tuple\(deleted_at, profile_type, profile_types, name\)/);
   assert.match(bulkCoverageSql, /GROUP BY profileId/);
   assert.match(bulkCoverageSql, /outcomeStatus = 'found'/);
-  assert.match(bulkCoverageSql, /fullyResolvedProfiles/);
-  assert.match(bulkCoverageSql, /uniqExactIf\(profileId, ifNull\(resolved = 1, 0\)\) AS fullyResolvedProfiles/);
+  assert.match(bulkCoverageSql, /allPlatformsCoveredProfiles/);
+  assert.match(bulkCoverageSql, /countIf\(platformCovered\) = 3 AS allPlatformsCovered/);
+  assert.match(bulkCoverageSql, /uniqExactIf\(profileId, allPlatformsCovered\) AS allPlatformsCoveredProfiles/);
   assert.match(bulkCoverageSql, /GROUP BY profileType, `group`/);
   assert.doesNotMatch(bulkCoverageSql, /countIf\(hasLinks = 1 OR fullyResolved = 1\)/);
   for (const sql of [bulkCoverageSql, bulkCoverageProfilesSql]) {
@@ -53,28 +54,35 @@ test("strict resolution is evidence-backed, latest-state and read-only", () => {
   assert.match(bulkCoverageProfilesSql, /ORDER BY profileId ASC LIMIT \{pageSize:UInt32\}/);
 });
 
-test("coverage counts only profiles resolved on every supported platform", () => {
+test("coverage counts profiles with a link or confirmed absence on every platform", () => {
   const platforms = ["Instagram", "TikTok", "YouTube"] as const;
   const groups = ["all", "tiers_1_3", "tiers_1_5"] as const;
   const profileTypes = ["brand", "creator", "artist"] as const;
   const evidence = profileTypes.flatMap(profileType => [
-    { id: `${profileType}-partial`, groups: ["all", "tiers_1_3"], fullyResolved: false },
-    { id: `${profileType}-resolved`, groups: ["all", "tiers_1_5"], fullyResolved: true },
-    { id: `${profileType}-empty`, groups: ["all", "tiers_1_3", "tiers_1_5"], fullyResolved: false },
+    { id: `${profileType}-candidate-links`, groups: ["all", "tiers_1_3"], coveredPlatforms: [...platforms] },
+    { id: `${profileType}-links-and-absence`, groups: ["all", "tiers_1_5"], coveredPlatforms: [...platforms] },
+    { id: `${profileType}-partial`, groups: ["all", "tiers_1_3", "tiers_1_5"], coveredPlatforms: ["Instagram", "TikTok"] },
   ].flatMap(profile => platforms.map(platform => ({
     profileType, groups: profile.groups, profileId: profile.id, platform,
-    fullyResolved: profile.fullyResolved,
+    platformCovered: profile.coveredPlatforms.includes(platform),
   }))));
-  const uniqueCount = (profileType: typeof profileTypes[number], group: typeof groups[number]) =>
-    new Set(evidence.filter(row => row.profileType === profileType && row.groups.includes(group)
-      && row.fullyResolved).map(row => row.profileId)).size;
+  const uniqueCount = (profileType: typeof profileTypes[number], group: typeof groups[number]) => {
+    const platformsByProfile = new Map<string, Set<string>>();
+    for (const row of evidence.filter(row => row.profileType === profileType && row.groups.includes(group) && row.platformCovered)) {
+      const seen = platformsByProfile.get(row.profileId) ?? new Set<string>();
+      seen.add(row.platform);
+      platformsByProfile.set(row.profileId, seen);
+    }
+    return [...platformsByProfile.values()].filter(seen => seen.size === platforms.length).length;
+  };
 
   for (const profileType of profileTypes) {
-    assert.equal(uniqueCount(profileType, "all"), 1);
-    assert.equal(uniqueCount(profileType, "tiers_1_3"), 0);
+    assert.equal(uniqueCount(profileType, "all"), 2);
+    assert.equal(uniqueCount(profileType, "tiers_1_3"), 1);
     assert.equal(uniqueCount(profileType, "tiers_1_5"), 1);
   }
-  assert.match(bulkCoverageSql, /uniqExactIf\(profileId, ifNull\(resolved = 1, 0\)\) AS fullyResolvedProfiles/);
+  assert.match(bulkCoverageSql, /hasCandidateLink/);
+  assert.match(bulkCoverageSql, /outcomeStatus IN \('reference', 'explicit_unavailable'\)/);
 });
 
 test("coverage bucket validation bounds IDs and page sizes and validates every filter", () => {

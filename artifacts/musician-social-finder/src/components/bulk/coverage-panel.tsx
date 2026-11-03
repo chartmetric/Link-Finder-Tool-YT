@@ -21,12 +21,12 @@ function Donut({ label, bucket, id }: { label: string; bucket?: BulkCoverageBuck
       </li>
     );
   }
-  const { total, fullyResolvedProfiles } = bucket;
-  const ratio = total > 0 ? Math.min(1, fullyResolvedProfiles / total) : null;
+  const { total, allPlatformsCoveredProfiles } = bucket;
+  const ratio = total > 0 ? Math.min(1, allPlatformsCoveredProfiles / total) : null;
   const pct = ratio === null ? 'N/A' : `${(ratio * 100).toFixed(1)}%`;
   const aria = ratio === null
     ? `${label}: no profiles, coverage not applicable`
-    : `${label}: ${fmt(fullyResolvedProfiles)} of ${fmt(total)} profiles have all supported platforms fully resolved, ${pct}`;
+    : `${label}: ${fmt(allPlatformsCoveredProfiles)} of ${fmt(total)} profiles have link coverage or confirmed absence on every platform, ${pct}`;
   return (
     <li className="blk-cov-item" data-testid={`coverage-${id}`}>
       <svg viewBox="0 0 64 64" className="blk-cov-donut" role="img" aria-label={aria}>
@@ -36,7 +36,7 @@ function Donut({ label, bucket, id }: { label: string; bucket?: BulkCoverageBuck
       <div>
         <span className="blk-cov-label">{label}</span>
         <strong className="blk-cov-pct" data-testid={`text-coverage-pct-${id}`}>{pct}</strong>
-        <em className="inv-mono" data-testid={`text-coverage-count-${id}`}>{total > 0 ? `${fmt(fullyResolvedProfiles)} / ${fmt(total)}` : '0 profiles'}</em>
+        <em className="inv-mono" data-testid={`text-coverage-count-${id}`}>{total > 0 ? `${fmt(allPlatformsCoveredProfiles)} / ${fmt(total)}` : '0 profiles'}</em>
       </div>
     </li>
   );
@@ -59,7 +59,7 @@ export function CoveragePanel({ kind }: { kind: ProfileKind }) {
   return (
     <section className="blk-cov" aria-labelledby="blk-cov-title" data-testid="section-bulk-coverage">
       <div className="blk-cov-head">
-        <div><div className="inv-kicker">Coverage / {m.plural.toLowerCase()}</div><h2 id="blk-cov-title">All supported platforms resolved</h2></div>
+        <div><div className="inv-kicker">Coverage / {m.plural.toLowerCase()}</div><h2 id="blk-cov-title">Links found or absence confirmed on every platform</h2></div>
         {q.data && <span className="blk-cov-time inv-mono" data-testid="text-coverage-generated">Server computed {new Date(q.data.generatedAt).toLocaleString()} · refreshes every 5 min</span>}
       </div>
 
@@ -88,7 +88,7 @@ export function CoveragePanel({ kind }: { kind: ProfileKind }) {
           {GROUPS.map(g => <Donut key={g.group} id={g.group} label={g.label(m.plural)} bucket={type.buckets.find(b => b.group === g.group)} />)}
         </ul>
         <div className="blk-cov-breakdown-head">
-          <h3>What prevents full coverage?</h3>
+          <h3>What still lacks identity confirmation?</h3>
           <label>Profile group <select value={group} onChange={e => setGroup(e.target.value as BulkCoverageBucket['group'])}>
             {GROUPS.map(g => <option key={g.group} value={g.group}>{g.label(m.plural)}</option>)}
           </select></label>
@@ -98,7 +98,7 @@ export function CoveragePanel({ kind }: { kind: ProfileKind }) {
       )}
 
       <p className="blk-cov-foot" data-testid="text-coverage-footnote">
-        Donut counts active {m.plural.toLowerCase()} only when every supported platform ({platforms}) has a reference account, an identity-verified link, or an explicit sourced first-party no-account confirmation. Likely candidates, provider failures, and completed searches with no match do not count as resolved. Each profile is counted once. All includes unranked profiles. The latest assessment counts across bulk runs and single investigations linked to one catalog profile by a trusted account URL or confirmed alias, never a display name. This is documented evidence, not proof that every account on the internet was found.
+        Donut counts each active {m.plural.toLowerCase()} once only when every supported platform ({platforms}) has a saved profile-link candidate not marked as a mismatch, or an explicit sourced first-party no-account confirmation. Candidate links, including likely or unverified matches, indicate link coverage and are not identity verification. Searches with no match, provider failures, and incomplete searches do not count. All includes unranked profiles. The latest assessment counts across bulk runs and single investigations linked to one catalog profile by a trusted account URL or confirmed alias, never a display name.
       </p>
     </section>
   );

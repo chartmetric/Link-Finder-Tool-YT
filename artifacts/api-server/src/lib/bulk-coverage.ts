@@ -15,7 +15,7 @@ const kinds: BulkProfileType[] = ["brand", "creator", "artist"];
 const groups: BulkCoverageGroup[] = ["tiers_1_3", "tiers_1_5", "all"];
 type CoverageRow = {
   profileType: BulkProfileType; group: BulkCoverageGroup; platform: typeof COVERAGE_PLATFORMS[number];
-  total: number; covered: number; fullyResolvedProfiles: number;
+  total: number; covered: number; allPlatformsCoveredProfiles: number;
   investigated: number; uncoveredInvestigated: number;
 } & Record<BulkCoverageState, number>;
 
@@ -195,6 +195,12 @@ WITH snapshots AS (
       lower(JSONExtractString(candidate, 'platform')) = lower(p.platform)
       AND JSONExtractString(candidate, 'jevVerification', 'verdict') = 'verified',
       JSONExtractArrayRaw(resultJson, 'profiles')) AS hasVerified,
+    arrayExists(candidate ->
+      lower(JSONExtractString(candidate, 'platform')) = lower(p.platform)
+      AND notEmpty(JSONExtractString(candidate, 'url'))
+      AND JSONExtractString(candidate, 'jevVerification', 'verdict') != 'mismatch'
+      AND JSONExtractString(candidate, 'identityComparison', 'status') != 'mismatch',
+      JSONExtractArrayRaw(resultJson, 'profiles')) AS hasCandidateLink,
     multiIf(
       investigated = 0 OR p.resolved = 1, '',
       outcomeCount > 1, 'needs_review',
@@ -208,10 +214,22 @@ WITH snapshots AS (
   FROM scoped s
   CROSS JOIN (SELECT arrayJoin(['Instagram', 'TikTok', 'YouTube']) AS requestedPlatform) platforms
   LEFT JOIN assessments p ON p.profileId = s.profileId AND p.platform = platforms.requestedPlatform
+), platform_coverage AS (
+  SELECT *,
+    itemStatus = 'completed' AND (
+      hasCandidateLink OR
+      (outcomeStatus IN ('reference', 'explicit_unavailable') AND notEmpty(evidenceUrls))
+    ) AS platformCovered
+  FROM platform_evidence
+), coverage_profile_resolution AS (
+  SELECT profileType, \`group\`, profileId,
+    countIf(platformCovered) = 3 AS allPlatformsCovered
+  FROM platform_coverage
+  GROUP BY profileType, \`group\`, profileId
 ), coverage_profile_counts AS (
   SELECT profileType, \`group\`,
-    uniqExactIf(profileId, ifNull(resolved = 1, 0)) AS fullyResolvedProfiles
-  FROM platform_evidence
+    uniqExactIf(profileId, allPlatformsCovered) AS allPlatformsCoveredProfiles
+  FROM coverage_profile_resolution
   GROUP BY profileType, \`group\`
 )
 `;
@@ -219,7 +237,7 @@ WITH snapshots AS (
 export const bulkCoverageSql = `${coverageCtes}
 SELECT p.profileType AS profileType, p.\`group\` AS \`group\`, p.platform AS platform, count() AS total,
   countIf(p.resolved = 1) AS covered,
-  any(q.fullyResolvedProfiles) AS fullyResolvedProfiles,
+  any(q.allPlatformsCoveredProfiles) AS allPlatformsCoveredProfiles,
   countIf(p.investigated = 1) AS investigated,
   countIf(p.investigated = 1 AND p.resolved = 0) AS uncoveredInvestigated,
   ${COVERAGE_STATES.map(state => `countIf(evidenceState = '${state}') AS ${state}`).join(",\n  ")}
@@ -238,7 +256,7 @@ export function coverageResponse(rows: CoverageRow[], generatedAt = new Date().t
         const row = matching[0];
         return {
           group, total: Number(row?.total ?? 0), covered: Number(row?.covered ?? 0),
-          fullyResolvedProfiles: Number(row?.fullyResolvedProfiles ?? 0),
+          allPlatformsCoveredProfiles: Number(row?.allPlatformsCoveredProfiles ?? 0),
           investigated: Number(row?.investigated ?? 0),
           uncoveredInvestigated: Number(row?.uncoveredInvestigated ?? 0),
           platformBreakdown: COVERAGE_PLATFORMS.map(platform => ({

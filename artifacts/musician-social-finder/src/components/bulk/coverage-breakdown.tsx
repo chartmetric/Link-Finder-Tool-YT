@@ -73,11 +73,11 @@ export function CoverageBreakdown({ kind, bucket }: { kind: ProfileKind; bucket:
   const [selection, setSelection] = useState<Selection>();
   return (
     <div className="blk-cov-breakdown">
-      <p><strong>{bucket.uncoveredInvestigated.toLocaleString()} investigated profiles not fully resolved</strong> · {bucket.investigated.toLocaleString()} investigated / {bucket.total.toLocaleString()} active profiles</p>
-      <p>Counts below include only investigated profiles that are not fully covered. A profile can appear under multiple platforms. Select a count to view saved evidence across all runs.</p>
+      <p><strong>{bucket.uncoveredInvestigated.toLocaleString()} investigated profiles lack identity confirmation on at least one platform</strong> · {bucket.investigated.toLocaleString()} investigated / {bucket.total.toLocaleString()} active profiles</p>
+      <p>This is stricter than the donuts above: saved candidate links count toward link coverage even when identity is unverified. Counts below show platform outcomes for profiles that do not have identity confirmation or sourced absence on every platform. A profile can appear under multiple platforms. Select a count to view saved evidence across all runs.</p>
       <div className="blk-cov-table-scroll">
         <table className="blk-cov-table">
-          <caption className="sr-only">Platform evidence for uncovered investigated profiles</caption>
+          <caption className="sr-only">Platform outcomes for investigated profiles without identity confirmation on every platform</caption>
           <thead><tr><th scope="col">Platform</th>{STATES.map(s => <th key={s.state} scope="col">{s.label}</th>)}</tr></thead>
           <tbody>{bucket.platformBreakdown.map(p => (
             <tr key={p.platform}>
