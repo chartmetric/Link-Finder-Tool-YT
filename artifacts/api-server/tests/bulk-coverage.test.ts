@@ -89,6 +89,44 @@ test("coverage counts links, completed no-matches, and confirmed absence on ever
   assert.match(bulkCoverageSql, /outcomeStatus IN \('reference', 'explicit_unavailable'\)/);
 });
 
+test("multi-classified profiles appear once in each type-specific tier bucket", () => {
+  const profiles = [
+    { id: 42, profileType: "musician", profileTypes: ["musician", "creator"] },
+    { id: 99, profileType: "brand", profileTypes: [] },
+  ];
+  const tiers = [
+    { profile: 42, profileType: "musician", tier: 2 },
+    { profile: 42, profileType: "creator", tier: 5 },
+    { profile: 99, profileType: "brand", tier: 6 },
+  ];
+  const validTypes = new Set(["brand", "creator", "musician"]);
+  const scoped = profiles.flatMap(profile => [...new Set([profile.profileType, ...profile.profileTypes])]
+    .filter(sourceType => validTypes.has(sourceType))
+    .flatMap(sourceType => {
+      const tier = tiers.find(row => row.profile === profile.id && row.profileType === sourceType)?.tier;
+      const profileType = sourceType === "musician" ? "artist" : sourceType;
+      return ["all", ...(tier !== undefined && tier <= 3 ? ["tiers_1_3"] : []),
+        ...(tier !== undefined && tier <= 5 ? ["tiers_1_5"] : [])]
+        .map(group => ({ profileId: profile.id, profileType, group }));
+    }));
+  const ids = (profileType: string, group: string) => scoped
+    .filter(row => row.profileType === profileType && row.group === group)
+    .map(row => row.profileId);
+
+  assert.deepEqual(ids("artist", "all"), [42]);
+  assert.deepEqual(ids("artist", "tiers_1_3"), [42]);
+  assert.deepEqual(ids("artist", "tiers_1_5"), [42]);
+  assert.deepEqual(ids("creator", "all"), [42]);
+  assert.deepEqual(ids("creator", "tiers_1_3"), []);
+  assert.deepEqual(ids("creator", "tiers_1_5"), [42]);
+  assert.deepEqual(ids("brand", "all"), [99]);
+  assert.deepEqual(ids("brand", "tiers_1_3"), []);
+  assert.deepEqual(ids("brand", "tiers_1_5"), []);
+
+  assert.match(bulkCoverageSql, /arrayJoin\(arrayDistinct\(arrayFilter\([\s\S]*arrayConcat\(\[tupleElement\(data, 2\)\], tupleElement\(data, 3\)\)/);
+  assert.match(bulkCoverageSql, /LEFT JOIN tiers t ON t\.profile = m\.id AND t\.profile_type = m\.sourceType/);
+});
+
 test("coverage bucket validation bounds IDs and page sizes and validates every filter", () => {
   const params = { profileType: "brand", group: "all", platform: "TikTok", state: "no_match", afterId: "0", limit: "25" };
   assert.equal(ListBulkCoverageProfilesParams.parse(params).limit, 25);
