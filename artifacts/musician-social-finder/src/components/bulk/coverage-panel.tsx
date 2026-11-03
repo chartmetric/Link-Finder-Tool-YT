@@ -21,12 +21,12 @@ function Donut({ label, bucket, id }: { label: string; bucket?: BulkCoverageBuck
       </li>
     );
   }
-  const { total, profilesWithLinksOrFullyResolved } = bucket;
-  const ratio = total > 0 ? Math.min(1, profilesWithLinksOrFullyResolved / total) : null;
+  const { total, fullyResolvedProfiles } = bucket;
+  const ratio = total > 0 ? Math.min(1, fullyResolvedProfiles / total) : null;
   const pct = ratio === null ? 'N/A' : `${(ratio * 100).toFixed(1)}%`;
   const aria = ratio === null
     ? `${label}: no profiles, coverage not applicable`
-    : `${label}: ${fmt(profilesWithLinksOrFullyResolved)} of ${fmt(total)} profiles have a link found or all platforms fully resolved, ${pct}`;
+    : `${label}: ${fmt(fullyResolvedProfiles)} of ${fmt(total)} profiles have all supported platforms fully resolved, ${pct}`;
   return (
     <li className="blk-cov-item" data-testid={`coverage-${id}`}>
       <svg viewBox="0 0 64 64" className="blk-cov-donut" role="img" aria-label={aria}>
@@ -36,7 +36,7 @@ function Donut({ label, bucket, id }: { label: string; bucket?: BulkCoverageBuck
       <div>
         <span className="blk-cov-label">{label}</span>
         <strong className="blk-cov-pct" data-testid={`text-coverage-pct-${id}`}>{pct}</strong>
-        <em className="inv-mono" data-testid={`text-coverage-count-${id}`}>{total > 0 ? `${fmt(profilesWithLinksOrFullyResolved)} / ${fmt(total)}` : '0 profiles'}</em>
+        <em className="inv-mono" data-testid={`text-coverage-count-${id}`}>{total > 0 ? `${fmt(fullyResolvedProfiles)} / ${fmt(total)}` : '0 profiles'}</em>
       </div>
     </li>
   );
@@ -59,7 +59,7 @@ export function CoveragePanel({ kind }: { kind: ProfileKind }) {
   return (
     <section className="blk-cov" aria-labelledby="blk-cov-title" data-testid="section-bulk-coverage">
       <div className="blk-cov-head">
-        <div><div className="inv-kicker">Coverage / {m.plural.toLowerCase()}</div><h2 id="blk-cov-title">Links found or platforms confirmed</h2></div>
+        <div><div className="inv-kicker">Coverage / {m.plural.toLowerCase()}</div><h2 id="blk-cov-title">All supported platforms resolved</h2></div>
         {q.data && <span className="blk-cov-time inv-mono" data-testid="text-coverage-generated">Server computed {new Date(q.data.generatedAt).toLocaleString()} · refreshes every 5 min</span>}
       </div>
 
@@ -98,7 +98,7 @@ export function CoveragePanel({ kind }: { kind: ProfileKind }) {
       )}
 
       <p className="blk-cov-foot" data-testid="text-coverage-footnote">
-        Donut counts each active {m.plural.toLowerCase()} once if any supported platform has a saved link candidate, including likely matches, or if all supported platforms ({platforms}) are fully resolved. Full resolution requires a reference account, a verified identity match, or an explicit sourced first-party no-account statement on each platform; likely alone does not confirm a platform. All includes unranked profiles. The latest assessment counts across bulk runs and single investigations linked to one catalog profile by a trusted account URL or confirmed alias, never a display name. The breakdown below still shows why investigated profiles are not fully resolved. This is documented evidence, not proof that every account on the internet was found.
+        Donut counts active {m.plural.toLowerCase()} only when every supported platform ({platforms}) has a reference account, an identity-verified link, or an explicit sourced first-party no-account confirmation. Likely candidates, provider failures, and completed searches with no match do not count as resolved. Each profile is counted once. All includes unranked profiles. The latest assessment counts across bulk runs and single investigations linked to one catalog profile by a trusted account URL or confirmed alias, never a display name. This is documented evidence, not proof that every account on the internet was found.
       </p>
     </section>
   );

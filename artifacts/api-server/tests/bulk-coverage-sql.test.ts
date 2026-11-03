@@ -86,6 +86,7 @@ test("coverage SQL counts and pages share active, latest, platform-specific evid
   const all = brand.buckets.find(b => b.group === "all")!;
   assert.equal(all.total, 9); // excludes deleted and reclassified IDs
   assert.equal(all.covered, 1);
+  assert.equal(all.fullyResolvedProfiles, 1); // partial candidates and no-match outcomes do not count
   assert.equal(all.investigated, 8);
   assert.equal(all.uncoveredInvestigated, 7);
   assert.equal(brand.buckets.find(b => b.group === "tiers_1_3")!.total, 6);

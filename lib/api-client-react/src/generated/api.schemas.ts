@@ -74,8 +74,8 @@ export interface BulkCoverageBucket {
   total: number;
   /** Profiles with all supported platforms fully resolved. */
   covered: number;
-  /** Unique profiles with at least one saved link candidate or all supported platforms fully resolved. */
-  profilesWithLinksOrFullyResolved: number;
+  /** Unique profiles with every supported platform fully resolved by an identity-resolved link or explicit sourced first-party no-account statement. */
+  fullyResolvedProfiles: number;
   investigated: number;
   uncoveredInvestigated: number;
   /** Counts among uncovered investigated active profiles only. Platforms overlap; sourced explicit absence resolves that platform, not the whole profile. */

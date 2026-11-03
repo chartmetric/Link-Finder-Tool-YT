@@ -15,7 +15,7 @@ const kinds: BulkProfileType[] = ["brand", "creator", "artist"];
 const groups: BulkCoverageGroup[] = ["tiers_1_3", "tiers_1_5", "all"];
 type CoverageRow = {
   profileType: BulkProfileType; group: BulkCoverageGroup; platform: typeof COVERAGE_PLATFORMS[number];
-  total: number; covered: number; profilesWithLinksOrFullyResolved: number;
+  total: number; covered: number; fullyResolvedProfiles: number;
   investigated: number; uncoveredInvestigated: number;
 } & Record<BulkCoverageState, number>;
 
@@ -210,9 +210,7 @@ WITH snapshots AS (
   LEFT JOIN assessments p ON p.profileId = s.profileId AND p.platform = platforms.requestedPlatform
 ), coverage_profile_counts AS (
   SELECT profileType, \`group\`,
-    uniqExactIf(profileId, ifNull(
-      (outcomeStatus = 'found' AND itemStatus = 'completed' AND notEmpty(evidenceUrls))
-        OR resolved = 1, 0)) AS profilesWithLinksOrFullyResolved
+    uniqExactIf(profileId, ifNull(resolved = 1, 0)) AS fullyResolvedProfiles
   FROM platform_evidence
   GROUP BY profileType, \`group\`
 )
@@ -221,7 +219,7 @@ WITH snapshots AS (
 export const bulkCoverageSql = `${coverageCtes}
 SELECT p.profileType AS profileType, p.\`group\` AS \`group\`, p.platform AS platform, count() AS total,
   countIf(p.resolved = 1) AS covered,
-  any(q.profilesWithLinksOrFullyResolved) AS profilesWithLinksOrFullyResolved,
+  any(q.fullyResolvedProfiles) AS fullyResolvedProfiles,
   countIf(p.investigated = 1) AS investigated,
   countIf(p.investigated = 1 AND p.resolved = 0) AS uncoveredInvestigated,
   ${COVERAGE_STATES.map(state => `countIf(evidenceState = '${state}') AS ${state}`).join(",\n  ")}
@@ -240,7 +238,7 @@ export function coverageResponse(rows: CoverageRow[], generatedAt = new Date().t
         const row = matching[0];
         return {
           group, total: Number(row?.total ?? 0), covered: Number(row?.covered ?? 0),
-          profilesWithLinksOrFullyResolved: Number(row?.profilesWithLinksOrFullyResolved ?? 0),
+          fullyResolvedProfiles: Number(row?.fullyResolvedProfiles ?? 0),
           investigated: Number(row?.investigated ?? 0),
           uncoveredInvestigated: Number(row?.uncoveredInvestigated ?? 0),
           platformBreakdown: COVERAGE_PLATFORMS.map(platform => ({

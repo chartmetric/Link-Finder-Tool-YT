@@ -18,7 +18,7 @@ export const GetBulkCoverageResponse = zod.object({
   "group": zod.enum(['tiers_1_3', 'tiers_1_5', 'all']),
   "total": zod.number(),
   "covered": zod.number().describe('Profiles with all supported platforms fully resolved.'),
-  "profilesWithLinksOrFullyResolved": zod.number().describe('Unique profiles with at least one saved link candidate or all supported platforms fully resolved.'),
+  "fullyResolvedProfiles": zod.number().describe('Unique profiles with every supported platform fully resolved by an identity-resolved link or explicit sourced first-party no-account statement.'),
   "investigated": zod.number(),
   "uncoveredInvestigated": zod.number(),
   "platformBreakdown": zod.array(zod.object({
