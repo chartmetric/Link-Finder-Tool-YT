@@ -98,3 +98,17 @@ mtime_ms = 1793746122669
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/1f1eb7f5-bfee-459c-9778-81073364ae53/32056f81-72b9-4486-adf2-e090125ad23a"
 storage_version_token = "1793746172509401"
 content_type = "text/csv"
+
+[[outputs]]
+id = "B9nZu_7VXwfiou1XTMCla"
+uri = "file://generated-artifacts/musician-instagram-validation-52f907e4-99c5-4384-b72a-cb1fee2ade83/validation-report.csv"
+type = "table"
+title = "Instagram search validation — 10 artists"
+description = "Thirty Serper queries: five artists with direct profile hits, two plausible musician matches, and the supplied Shenge account still missed. Includes candidate URLs and per-artist assessments; no production lookup changes."
+logical_id = "955211d7-68f7-4485-87f5-a55ab5452865"
+content_hash = "sha256:617fe58e8b4780aa86c735460b19c9a409c1dc5abd69150e5770f36f69d2be6d"
+size = 2100
+mtime_ms = 1793747335473
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/955211d7-68f7-4485-87f5-a55ab5452865/e0e7aa35-1478-4094-b472-b97683b12f75"
+storage_version_token = "1793747336208033"
+content_type = "text/csv"

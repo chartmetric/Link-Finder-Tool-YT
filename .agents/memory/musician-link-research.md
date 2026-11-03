@@ -20,3 +20,9 @@ Research results must be retrievable using the catalog profile ID, `cm_artist`, 
 **Why:** The user explicitly requested these three lookup options.
 
 **How to apply:** Preserve the distinct identifier namespaces and all associated account IDs. An artist without any linked account still supports profile-ID and `cm_artist` lookup. Keep discovered candidates separate from approved catalog links, and do not treat no candidates as proof of account absence.
+
+Validate search-strategy changes against known existing accounts before scaling, and distinguish raw search hits from identity-supported artist candidates.
+
+**Why:** A broader name-only validation still missed a user-supplied existing account while returning unrelated same-name Instagram accounts for other artists. More queries alone did not establish reliable recovery or identity matching.
+
+**How to apply:** Keep supplied URLs out of blind discovery queries, retain unfiltered search evidence (including posts and topic pages) for diagnosis, and report raw-hit counts separately from plausible artist matches. Do not replace production outcomes with an unreviewed validation sample.
