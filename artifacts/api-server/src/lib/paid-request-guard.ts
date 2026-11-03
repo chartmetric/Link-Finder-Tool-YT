@@ -6,7 +6,9 @@ const guards = new AsyncLocalStorage<Guard>();
 export function withPaidRequestGuard<T>(guard: () => Promise<void>, work: () => Promise<T>, onCreditFailure?: Guard["onCreditFailure"]) {
   return guards.run({ guard, onCreditFailure }, work);
 }
-/** Bulk calls are fenced at every network dispatch, including nested/parallel discovery. */
+/** Bulk calls are fenced at every network dispatch, including shared billing
+ * health in the scoped guard and nested/parallel discovery. A credit callback
+ * must durably record sanitized evidence before the failure is propagated. */
 export async function providerFetch(...args: Parameters<typeof fetch>): Promise<Response> {
   const scope = guards.getStore();
   await scope?.guard();

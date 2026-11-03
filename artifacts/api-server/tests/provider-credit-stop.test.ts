@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { GetBulkBrandRunResponse, type BulkBrandRun } from "@workspace/api-zod";
-import { providerCreditError } from "../src/lib/provider-credit-error";
+import { providerCreditError, ProviderCreditError } from "../src/lib/provider-credit-error";
 import { providerFetch, withPaidRequestGuard } from "../src/lib/paid-request-guard";
 import { executeBulkRun, type WorkerDependencies } from "../src/lib/bulk-worker";
 import { BulkOwnership } from "../src/lib/bulk-ownership";
 import { MemoryStore } from "./helpers/bulk-memory-store";
+import { createPostgresOwnershipStore } from "../src/lib/bulk-ownership-store";
 
 const serper = "https://google.serper.dev/search";
 const openrouter = "https://openrouter.ai/api/v1/chat/completions";
@@ -97,8 +98,13 @@ test("swallowed provider errors still stop the queue, retain partial outcomes, a
     assert.ok(saves > 0);
     assert.equal(store.queue.owner, undefined);
 
-    // An explicit new generation resets only the run-local gate. A saved
-    // completed/incomplete investigation is not silently charged again.
+    // A new worker must not rediscover the outage with another paid cohort.
+    await assert.rejects(owner.claim(saved, "worker-next", "fixture", saved.resumeVersion), /billing block|billing limit/);
+    const health = await new BulkOwnership(store).billingHealth();
+    assert.equal(health.outages[0].provider, "Serper");
+    assert.equal(network, 1);
+    await owner.clearBillingOutage("Serper", health.outages[0].incidentId);
+    assert.equal(network, 1, "clearing is not a paid probe or automatic resume");
     globalThis.fetch = async () => { network++; return Response.json({ organic: [] }); };
     const resumed = await owner.claim(saved, "worker-next", "fixture", saved.resumeVersion);
     await executeBulkRun(resumed.run, resumed.lease!, dependencies(owner, async item => {
@@ -111,6 +117,94 @@ test("swallowed provider errors still stop the queue, retain partial outcomes, a
     assert.equal(done.error, undefined);
     assert.equal(done.items[0].platforms[0].status, "incomplete");
   } finally { globalThis.fetch = original; }
+});
+
+test("billing state survives worker replacement, blocks claims/admissions, and preserves idempotent launches", async () => {
+  const store = new MemoryStore(), owner = new BulkOwnership(store);
+  const active = await owner.claim(fixture(), "worker", "billing");
+  await owner.admit(active.lease!, 0); // Uncertain paid work must stay uncertain.
+  await owner.reportCreditFailure(new ProviderCreditError("OpenRouter", 402));
+  const replica = new BulkOwnership(store);
+  await assert.rejects(replica.assertBillingAvailable(), /OpenRouter/);
+  await assert.rejects(replica.admit(active.lease!, 1), /OpenRouter/);
+  const retried = await replica.claim(fixture(), "worker-new", "billing");
+  assert.equal(retried.launched, false);
+  assert.equal(retried.run.resumeVersion, active.run.resumeVersion);
+  const other = fixture(); other.id = "00000000-0000-4000-8000-000000009101";
+  await assert.rejects(replica.claim(other, "worker-new", "other"), /OpenRouter/);
+  const outage = (await replica.billingHealth()).outages[0];
+  await assert.rejects(replica.clearBillingOutage(outage.provider, outage.incidentId), /active queue/);
+  store.now += 150_001;
+  await replica.clearBillingOutage(outage.provider, outage.incidentId);
+  await replica.clearBillingOutage(outage.provider, outage.incidentId); // Retry is safe.
+  assert.equal((await replica.billingHealth()).outages.length, 0);
+  assert.deepEqual(store.records.get(active.run.id)!.uncertain, [0]);
+  const resumed = await replica.claim(active.run, "recovery", "billing", active.run.resumeVersion);
+  assert.equal(resumed.run.items[0].retryBlocked, true);
+  assert.equal(resumed.run.items[0].status, "failed");
+  await assert.rejects(owner.guard(active.lease!), /lease lost/);
+});
+
+test("recovery uses incident comparison, retains other outages, and stores only sanitized evidence", async () => {
+  const store = new MemoryStore(), owner = new BulkOwnership(store);
+  const error = new ProviderCreditError("Serper", 400);
+  Object.assign(error, { secret: "SECRET", body: "PRIVATE BODY" });
+  await owner.reportCreditFailure(error);
+  const old = (await owner.billingHealth()).outages[0];
+  await owner.reportCreditFailure(new ProviderCreditError("Serper", 403));
+  await owner.reportCreditFailure(new ProviderCreditError("ScrapeCreators", 402));
+  await assert.rejects(owner.clearBillingOutage("Serper", old.incidentId), /evidence changed/);
+  const current = (await owner.billingHealth()).outages.find(outage => outage.provider === "Serper")!;
+  await owner.clearBillingOutage("Serper", current.incidentId);
+  assert.deepEqual((await owner.billingHealth()).outages.map(outage => outage.provider), ["ScrapeCreators"]);
+  assert.doesNotMatch(JSON.stringify(store.queue), /SECRET|PRIVATE BODY/);
+  store.unavailable = true;
+  await assert.rejects(owner.assertBillingAvailable(), /unavailable/);
+  await assert.rejects(owner.clearBillingOutage("Serper", current.incidentId), /unavailable/);
+});
+
+test("a credit outage learned on another replica closes an admitted worker's network gate", async () => {
+  const original = globalThis.fetch;
+  const store = new MemoryStore(), owner = new BulkOwnership(store);
+  const active = await owner.claim(fixture(1), "worker", "external-outage");
+  let network = 0;
+  globalThis.fetch = async () => { network++; return Response.json({}); };
+  try {
+    await executeBulkRun(active.run, active.lease!, dependencies(owner, async () => {
+      await new BulkOwnership(store).reportCreditFailure(new ProviderCreditError("Serper", 400));
+      await providerFetch(openrouter);
+    }));
+    assert.equal(network, 0);
+    const saved = (await owner.read(active.run.id))[0];
+    assert.equal(saved.status, "stopped");
+    assert.match(saved.error!, /Serper/);
+  } finally { globalThis.fetch = original; }
+});
+
+test("real PostgreSQL billing blocks persist across adapters and recovery is incident-fenced", {
+  skip: process.env.BULK_COORDINATION_DB_TEST !== "1",
+}, async () => {
+  const { pool } = await import("@workspace/db");
+  const prefix = `billing_test_${process.pid}_${Date.now()}`;
+  const create = () => new BulkOwnership(createPostgresOwnershipStore(async () => pool, prefix));
+  try {
+    const a = create(), b = create();
+    await a.reportCreditFailure(new ProviderCreditError("Serper", 400));
+    const first = (await b.billingHealth()).outages[0];
+    assert.equal(first.provider, "Serper");
+    await assert.rejects(create().claim(fixture(), "replacement", "outage"), /Serper/);
+    await b.reportCreditFailure(new ProviderCreditError("Serper", 402));
+    await assert.rejects(a.clearBillingOutage("Serper", first.incidentId), /evidence changed/);
+    const current = (await create().billingHealth()).outages[0];
+    await a.clearBillingOutage("Serper", current.incidentId);
+    assert.equal((await create().billingHealth()).outages.length, 0);
+    assert.equal((await b.read()).length, 0, "clearing must not create or resume runs");
+    await b.reportCreditFailure(new ProviderCreditError("OpenRouter", 402));
+    await assert.rejects(create().claim(fixture(), "replacement", "outage"), /OpenRouter/);
+  } finally {
+    await pool.query(`DROP TABLE IF EXISTS ${prefix}_claims; DROP TABLE IF EXISTS ${prefix}_queue; DROP TABLE IF EXISTS ${prefix}_attempts`);
+    await pool.end();
+  }
 });
 
 test("parallel in-flight results drain and save, but no subsequent profile or provider request starts", { timeout: 4000 }, async () => {

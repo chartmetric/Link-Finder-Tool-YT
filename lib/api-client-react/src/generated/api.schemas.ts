@@ -446,6 +446,48 @@ export interface BulkBrandRunInput {
   scopes?: BulkProfileScopeInput[];
 }
 
+export type BillingOutageProvider = typeof BillingOutageProvider[keyof typeof BillingOutageProvider];
+
+
+export const BillingOutageProvider = {
+  Serper: 'Serper',
+  OpenRouter: 'OpenRouter',
+  ScrapeCreators: 'ScrapeCreators',
+  SocialCrawl: 'SocialCrawl',
+} as const;
+
+export interface BillingOutage {
+  provider: BillingOutageProvider;
+  /**
+     * @minimum 100
+     * @maximum 599
+     */
+  httpStatus: number;
+  incidentId: string;
+  observedAt: string;
+}
+
+export interface BulkBillingHealth {
+  outages: BillingOutage[];
+}
+
+export type BillingRecoveryInputProvider = typeof BillingRecoveryInputProvider[keyof typeof BillingRecoveryInputProvider];
+
+
+export const BillingRecoveryInputProvider = {
+  Serper: 'Serper',
+  OpenRouter: 'OpenRouter',
+  ScrapeCreators: 'ScrapeCreators',
+  SocialCrawl: 'SocialCrawl',
+} as const;
+
+export interface BillingRecoveryInput {
+  provider: BillingRecoveryInputProvider;
+  /** @minLength 1 */
+  incidentId: string;
+  fundingRestored: true;
+}
+
 export interface BulkRunResumeInput {
   /** @pattern ^[0-9a-fA-F-]{36}$ */
   requestId: string;

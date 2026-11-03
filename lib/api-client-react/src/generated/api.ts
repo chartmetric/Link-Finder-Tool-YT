@@ -20,7 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  BillingRecoveryInput,
   BulkBatchArchives,
+  BulkBillingHealth,
   BulkBrandCandidates,
   BulkBrandRun,
   BulkBrandRunInput,
@@ -561,6 +563,142 @@ export const useSearchProfiles = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getSearchProfilesMutationOptions(options));
+    }
+
+export const getGetBulkBillingHealthUrl = () => {
+
+
+
+
+  return `/api/bulk/billing-health`
+}
+
+export const getBulkBillingHealth = async ( options?: Parameters<typeof customFetch>[1]): Promise<BulkBillingHealth> => {
+
+  return customFetch<BulkBillingHealth>(getGetBulkBillingHealthUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBulkBillingHealthQueryKey = () => {
+    return [
+    `/api/bulk/billing-health`
+    ] as const;
+    }
+
+
+export const getGetBulkBillingHealthQueryOptions = <TData = Awaited<ReturnType<typeof getBulkBillingHealth>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBulkBillingHealth>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBulkBillingHealthQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBulkBillingHealth>>> = ({ signal }) => getBulkBillingHealth({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBulkBillingHealth>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBulkBillingHealthQueryResult = NonNullable<Awaited<ReturnType<typeof getBulkBillingHealth>>>
+export type GetBulkBillingHealthQueryError = ErrorType<unknown>
+
+
+
+export function useGetBulkBillingHealth<TData = Awaited<ReturnType<typeof getBulkBillingHealth>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBulkBillingHealth>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBulkBillingHealthQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getClearBulkBillingOutageUrl = () => {
+
+
+
+
+  return `/api/bulk/billing-health/clear`
+}
+
+export const clearBulkBillingOutage = async (billingRecoveryInput: BillingRecoveryInput, options?: Parameters<typeof customFetch>[1]): Promise<BulkBillingHealth> => {
+
+  return customFetch<BulkBillingHealth>(getClearBulkBillingOutageUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(billingRecoveryInput)
+  }
+);}
+
+
+
+
+
+export const getClearBulkBillingOutageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clearBulkBillingOutage>>, TError,{data: BodyType<BillingRecoveryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof clearBulkBillingOutage>>, TError,{data: BodyType<BillingRecoveryInput>}, TContext> => {
+
+const mutationKey = ['clearBulkBillingOutage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof clearBulkBillingOutage>>, {data: BodyType<BillingRecoveryInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  clearBulkBillingOutage(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClearBulkBillingOutageMutationResult = NonNullable<Awaited<ReturnType<typeof clearBulkBillingOutage>>>
+    export type ClearBulkBillingOutageMutationBody = BodyType<BillingRecoveryInput>
+    export type ClearBulkBillingOutageMutationError = ErrorType<void>
+
+    export const useClearBulkBillingOutage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clearBulkBillingOutage>>, TError,{data: BodyType<BillingRecoveryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof clearBulkBillingOutage>>,
+        TError,
+        {data: BodyType<BillingRecoveryInput>},
+        TContext
+      > => {
+      return useMutation(getClearBulkBillingOutageMutationOptions(options));
     }
 
 export const getListBulkBrandCandidatesUrl = (params?: ListBulkBrandCandidatesParams,) => {

@@ -2,6 +2,8 @@ import type { BulkBrandRun, BulkRunResumeInput } from "@workspace/api-zod";
 import { acceptedBulkRequest, withBulkLaunch } from "./bulk-launch-history";
 import { clearItemStage } from "./bulk-item-progress";
 import { MAX_BULK_CHUNK } from "./bulk-profile-scopes";
+import { randomUUID } from "node:crypto";
+import { billingProviders, ProviderCreditError, type BillingOutage, type BillingProvider } from "./provider-credit-error";
 
 export const LEASE_MS = 150_000;
 export class BulkError extends Error {
@@ -15,7 +17,12 @@ export type RunRecord = {
   /** Admitted but unacknowledged jobs are never automatically replayed. */
   uncertain: number[];
 };
-export type QueueState = { fence: number; owner?: Lease };
+export type QueueState = { fence: number; owner?: Lease; billing?: Partial<Record<BillingProvider, BillingOutage>> };
+const billingKey = "00000000-0000-4000-8000-000000000000";
+function assertBilling(queue: QueueState) {
+  const outage = Object.values(queue.billing ?? {}).find(outage => outage && !outage.clearedAt);
+  if (outage) throw new BulkError(new ProviderCreditError(outage.provider, outage.httpStatus).message);
+}
 export type Transaction = { queue: QueueState; record?: RunRecord; now: number; attempts?: number[] };
 export interface OwnershipStore {
   transact<T>(id: string, work: (tx: Transaction) => T): Promise<T>;
@@ -44,6 +51,35 @@ export class BulkOwnership {
     };
   }
   constructor(private store: OwnershipStore) {}
+  async billingHealth() {
+    const { queue } = await this.store.read([]);
+    return { outages: Object.values(queue.billing ?? {}).filter((outage): outage is BillingOutage => !!outage && !outage.clearedAt) };
+  }
+  async assertBillingAvailable() {
+    const { queue } = await this.store.read([]);
+    assertBilling(queue);
+  }
+  async reportCreditFailure(error: ProviderCreditError) {
+    // This is evidence from a dispatched request, not a run mutation. Persist
+    // even when its worker has lost ownership; never store the provider body.
+    if (!billingProviders.includes(error.provider) || !Number.isInteger(error.httpStatus)) throw new BulkError("Invalid billing evidence.", 400);
+    await this.store.transact(billingKey, tx => {
+      (tx.queue.billing ??= {})[error.provider] = {
+        provider: error.provider, httpStatus: error.httpStatus,
+        incidentId: randomUUID(), observedAt: new Date(tx.now).toISOString(),
+      };
+    });
+  }
+  async clearBillingOutage(provider: BillingProvider, incidentId: string) {
+    await this.store.transact(billingKey, tx => {
+      const outage = tx.queue.billing?.[provider];
+      if (!outage || outage.incidentId !== incidentId) throw new BulkError("Billing evidence changed. Refresh before clearing the block.");
+      if (outage.clearedAt) return; // An identical confirmation is idempotent.
+      if (tx.queue.owner && tx.queue.owner.until > tx.now) throw new BulkError("Stop the active queue and wait for it to finish before clearing billing blocks.");
+      outage.clearedAt = new Date(tx.now).toISOString();
+    });
+    return this.billingHealth();
+  }
   async importLegacy(run: BulkBrandRun) {
     await this.store.transact(run.id, tx => {
       if (!tx.record) tx.record = {
@@ -74,6 +110,7 @@ export class BulkOwnership {
         if (existing.run.resumeVersion !== expected) throw new BulkError("This run changed. Refresh before resuming.");
         run = launch ? withBulkLaunch(structuredClone(existing.run), "resume", launch.requestId, launch.launchSource) : structuredClone(existing.run);
       }
+      assertBilling(tx.queue);
       if (tx.queue.owner && tx.queue.owner.until > tx.now) throw new BulkError("Another bulk queue is active. Stop it or wait before starting another.");
       if (expected !== undefined) {
         // An old worker may still be awaiting the provider. Its admission is durable.
@@ -167,6 +204,7 @@ export class BulkOwnership {
     return this.store.transact(lease.runId, tx => {
       const record = this.owned(tx, lease);
       if (record.run.stopRequested) return false;
+      assertBilling(tx.queue);
       if (record.run.preparation?.status === "selecting") throw new BulkError("Profile selection is not complete. Paid work is blocked.");
       const item = record.run.items[index];
       if (!item || item.status !== "queued" || record.uncertain.includes(index)) throw new BulkError("Brand already admitted; refusing duplicate paid work.");

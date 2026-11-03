@@ -370,6 +370,45 @@ export const SearchProfilesResponse = zod.object({
 })
 
 
+export const getBulkBillingHealthResponseOutagesItemHttpStatusMin = 100;
+export const getBulkBillingHealthResponseOutagesItemHttpStatusMax = 599;
+
+
+
+export const GetBulkBillingHealthResponse = zod.object({
+  "outages": zod.array(zod.object({
+  "provider": zod.enum(['Serper', 'OpenRouter', 'ScrapeCreators', 'SocialCrawl']),
+  "httpStatus": zod.number().min(getBulkBillingHealthResponseOutagesItemHttpStatusMin).max(getBulkBillingHealthResponseOutagesItemHttpStatusMax),
+  "incidentId": zod.string(),
+  "observedAt": zod.string()
+}))
+})
+
+
+
+
+
+export const ClearBulkBillingOutageBody = zod.object({
+  "provider": zod.enum(['Serper', 'OpenRouter', 'ScrapeCreators', 'SocialCrawl']),
+  "incidentId": zod.string().min(1),
+  "fundingRestored": zod.literal(true)
+})
+
+export const clearBulkBillingOutageResponseOutagesItemHttpStatusMin = 100;
+export const clearBulkBillingOutageResponseOutagesItemHttpStatusMax = 599;
+
+
+
+export const ClearBulkBillingOutageResponse = zod.object({
+  "outages": zod.array(zod.object({
+  "provider": zod.enum(['Serper', 'OpenRouter', 'ScrapeCreators', 'SocialCrawl']),
+  "httpStatus": zod.number().min(clearBulkBillingOutageResponseOutagesItemHttpStatusMin).max(clearBulkBillingOutageResponseOutagesItemHttpStatusMax),
+  "incidentId": zod.string(),
+  "observedAt": zod.string()
+}))
+})
+
+
 export const listBulkBrandCandidatesQueryLimitDefault = 10;
 export const listBulkBrandCandidatesQueryLimitMax = 25;
 

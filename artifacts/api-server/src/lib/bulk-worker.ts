@@ -25,6 +25,7 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
   let preparingPhase = false;
   let writes = Promise.resolve();
   let creditFailure: ProviderCreditError | undefined;
+  let billingBlocked = false;
   let creditStop: Promise<void> | undefined;
   const preparationAbort = new AbortController();
   const stopPreparation = () => preparationAbort.abort(new Error(
@@ -67,6 +68,9 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
     return writes;
   };
   const stopForCredit = (error: ProviderCreditError) => {
+    // Start persistence for every provider response, even when another lane
+    // already closed the local gate.
+    const reported = deps.ownership.reportCreditFailure(error);
     if (!creditFailure) {
       // Close the local dispatch gate synchronously, then commit the Stop under
       // this generation. Existing admissions/results remain fenced and saved.
@@ -74,15 +78,25 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
       run.error = error.message;
       run.stopRequested = true;
       run.status = "stopping";
-      creditStop = deps.ownership.stop(run.id, lease.token).then(() => persist()).catch(error => {
+      creditStop = reported.then(() => deps.ownership.stop(run.id, lease.token)).then(() => persist()).catch(error => {
         failure = error;
         throw error;
       });
     }
-    return creditStop!;
+    return Promise.all([reported, creditStop!]).then(() => {});
   };
   const paidGuard = async () => {
     await guard();
+    if (creditFailure) throw creditFailure;
+    try { await deps.ownership.assertBillingAvailable(); }
+    catch (error) {
+      billingBlocked = true;
+      run.stopRequested = true;
+      run.error = error instanceof Error ? error.message : "Shared billing health unavailable. Paid requests blocked.";
+      await deps.ownership.stop(run.id, lease.token);
+      await persist();
+      throw error;
+    }
     if (creditFailure) throw creditFailure;
   };
   try {
@@ -188,7 +202,7 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
     clearInterval(timer);
     if (heartbeat) await heartbeat;
     await guard();
-    run.status = !!creditFailure || (run.stopRequested && run.preparation?.status === "selecting") || run.items.some(item => item.status === "queued")
+    run.status = billingBlocked || !!creditFailure || (run.stopRequested && run.preparation?.status === "selecting") || run.items.some(item => item.status === "queued")
       || (run.continuous && (run.stopRequested || (!continuousLimitReached(run.continuous) && !run.continuous.cursors.every(cursor => cursor.exhausted))))
       ? "stopped" : "completed";
     await persist(undefined, true);

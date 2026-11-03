@@ -7,9 +7,11 @@ import { KIND_META, apiError, canResume, isActiveRun, kindCounts, overallCounts,
 import { bulkRequest, completeBulkRequest } from '@/lib/bulk-requests';
 import { LaunchHistory } from './launch-history';
 import { downloadBulkRunCsv } from '@/lib/bulk-csv';
+import { BillingHealthNotice, useBulkBillingGate } from './billing-health';
 
 export function RunDetail({ runId, onClose, onOpenRun, modal = false }: { runId: string; onClose: () => void; onOpenRun?: (id: string) => void; modal?: boolean }) {
   const qc = useQueryClient();
+  const billing = useBulkBillingGate();
   const q = useGetBulkBrandRun(runId, {
     query: {
       queryKey: getGetBulkBrandRunQueryKey(runId),
@@ -50,17 +52,18 @@ export function RunDetail({ runId, onClose, onOpenRun, modal = false }: { runId:
         <strong>{isActiveRun(run) ? 'Preparing profile selection' : 'Profile preparation paused'}: {run.preparation.selected} / up to {run.preparation.requested} selected.</strong>
         <p>{run.preparation.message} Paid lookups will not start until preparation is complete.</p>
       </div>}
-      {run && <RunBody run={run} onOpenRun={onOpenRun} stopping={stop.isPending} resuming={resume.isPending}
+      <BillingHealthNotice />
+      {run && <RunBody run={run} onOpenRun={onOpenRun} stopping={stop.isPending} resuming={resume.isPending} resumeBlocked={billing.blocked}
         onStop={() => stop.mutate({ runId: run.id, data: { resumeVersion: run.resumeVersion } })}
-        onResume={() => { if (window.confirm(`${resumeConfirm(run)} Interrupted requests with unknown outcomes are not repeated.`)) resume.mutate({ runId: run.id, data: { ...bulkRequest(`resume:${run.id}`, 'run_monitor'), resumeVersion: run.resumeVersion } }); }}
+        onResume={() => { if (!billing.blocked && window.confirm(`${resumeConfirm(run)} Interrupted requests with unknown outcomes are not repeated.`)) resume.mutate({ runId: run.id, data: { ...bulkRequest(`resume:${run.id}`, 'run_monitor'), resumeVersion: run.resumeVersion } }); }}
         error={stop.error ? apiError(stop.error, 'Stop failed.') : resume.error ? apiError(resume.error, 'Resume failed.') : ''} />}
     </section>
   );
 }
 
-function RunBody({ run, onStop, onResume, stopping, resuming, error, onOpenRun }: { run: BulkBrandRun; onOpenRun?: (id: string) => void; onStop: () => void; onResume: () => void; stopping: boolean; resuming: boolean; error: string }) {
+function RunBody({ run, onStop, onResume, stopping, resuming, resumeBlocked, error, onOpenRun }: { run: BulkBrandRun; onOpenRun?: (id: string) => void; onStop: () => void; onResume: () => void; stopping: boolean; resuming: boolean; resumeBlocked: boolean; error: string }) {
   const active = isActiveRun(run);
-  if (run.continuous) return <ContinuousBody run={run} onStop={onStop} onResume={onResume} stopping={stopping} resuming={resuming} error={error} onOpenRun={onOpenRun} />;
+  if (run.continuous) return <ContinuousBody run={run} onStop={onStop} onResume={onResume} stopping={stopping} resuming={resuming} resumeBlocked={resumeBlocked} error={error} onOpenRun={onOpenRun} />;
   const c = runCounts(run);
   const total = run.items.length || 1;
   return (
@@ -86,7 +89,7 @@ function RunBody({ run, onStop, onResume, stopping, resuming, error, onOpenRun }
         <div>
           <button type="button" className="inv-retry" style={{ marginTop: 0 }} onClick={() => downloadBulkRunCsv(run)} title="Download this saved snapshot only. No new searches or approvals." data-testid="button-export-bulk-csv"><Download size={14} /> Download CSV</button>
           {active && <button type="button" className="inv-retry" style={{ marginTop: 0 }} disabled={stopping || run.stopRequested} onClick={onStop} data-testid="button-stop-run"><Pause size={14} /> {run.stopRequested ? 'Stopping after current' : 'Stop after current profiles'}</button>}
-          {canResume(run) && <button type="button" className="inv-submit blk-small" disabled={resuming} onClick={onResume} data-testid="button-resume-run">{resuming ? <RefreshCw size={14} className="inv-spin" /> : <Play size={14} />} Resume unfinished</button>}
+          {canResume(run) && <button type="button" className="inv-submit blk-small" disabled={resuming || resumeBlocked} onClick={onResume} data-testid="button-resume-run">{resuming ? <RefreshCw size={14} className="inv-spin" /> : <Play size={14} />} Resume unfinished</button>}
         </div>
       </div>
       <p className="blk-quiet">CSV exports this saved snapshot only, including unfinished and failed items. Net confidence is an evidence score, not a calibrated probability; “not found” does not confirm absence.</p>
@@ -97,7 +100,7 @@ function RunBody({ run, onStop, onResume, stopping, resuming, error, onOpenRun }
   );
 }
 
-function ContinuousBody({ run, onStop, onResume, stopping, resuming, error, onOpenRun }: { run: BulkBrandRun; onOpenRun?: (id: string) => void; onStop: () => void; onResume: () => void; stopping: boolean; resuming: boolean; error: string }) {
+function ContinuousBody({ run, onStop, onResume, stopping, resuming, resumeBlocked, error, onOpenRun }: { run: BulkBrandRun; onOpenRun?: (id: string) => void; onStop: () => void; onResume: () => void; stopping: boolean; resuming: boolean; resumeBlocked: boolean; error: string }) {
   const cont = run.continuous!;
   const o = overallCounts(run);
   const cur = runCounts(run);
@@ -134,7 +137,7 @@ function ContinuousBody({ run, onStop, onResume, stopping, resuming, error, onOp
         <div>
           <button type="button" className="inv-retry" style={{ marginTop: 0 }} onClick={() => downloadBulkRunCsv(run)} title="Download only the current saved chunk. Open an earlier chunk to export its saved results. No new searches or approvals." data-testid="button-export-bulk-csv"><Download size={14} /> Download current chunk CSV</button>
           {active && <button type="button" className="inv-retry" style={{ marginTop: 0 }} disabled={stopping || run.stopRequested} onClick={onStop} data-testid="button-stop-run"><Pause size={14} /> {run.stopRequested ? 'Stopping' : 'Stop continuous run'}</button>}
-          {canResume(run) && <button type="button" className="inv-submit blk-small" disabled={resuming} onClick={onResume} data-testid="button-resume-run">{resuming ? <RefreshCw size={14} className="inv-spin" /> : <Play size={14} />} Resume continuous run</button>}
+          {canResume(run) && <button type="button" className="inv-submit blk-small" disabled={resuming || resumeBlocked} onClick={onResume} data-testid="button-resume-run">{resuming ? <RefreshCw size={14} className="inv-spin" /> : <Play size={14} />} Resume continuous run</button>}
         </div>
       </div>
       <p className="blk-quiet">CSV exports the current saved chunk only, including unfinished and failed items. Open earlier saved chunks below to export them separately. Net confidence is an evidence score, not a calibrated probability; “not found” does not confirm absence.</p>

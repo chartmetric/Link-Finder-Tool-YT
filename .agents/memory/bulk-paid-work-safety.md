@@ -50,3 +50,9 @@ A graceful drain can cancel an admission before dispatch; that cancellation need
 **Why:** Changing research-worker concurrency exposed claims saved immediately before a stop. They were safely returned to queued without a network call, but an unreconciled local admission journal then blocked legitimate continuation as uncertain paid work.
 
 **How to apply:** Record explicit pre-dispatch cancellation only after saving the untouched queued state. A later admission must reinstate protection. Never clear an admission merely because a replica returns queued, and never infer cancellation once a provider request might have started.
+
+Billing recovery is an explicit funding attestation, not proof of a funded provider balance.
+
+**Why:** A fresh run or resume must not spend an initial parallel cohort merely to rediscover a known credit outage. Provider probes can themselves charge, and a restart does not change the provider's billing state.
+
+**How to apply:** Keep unresolved billing evidence shared and durable. Clear only the currently observed incident after deliberate confirmation, without an active queue; do not probe providers, restart runs, or reset uncertain admissions as part of clearing. Explain that the next paid launch still requires its own explicit action.

@@ -4,14 +4,33 @@ import {
   ListBulkBrandRunsResponse, StartBulkBrandRunBody, ResumeBulkBrandRunBody, StopBulkBrandRunBody,
   GetBulkBrandRunResponse, ListBulkRunBatchesResponse,
   ListBulkCoverageProfilesParams, ListBulkCoverageProfilesResponse,
+  ClearBulkBillingOutageBody, GetBulkBillingHealthResponse,
 } from "@workspace/api-zod";
 import { listEligibleBrands } from "../lib/bulk-brand-candidates";
 import { readBulkBatchArchives, readBulkRuns } from "../lib/bulk-run-store";
 import { BulkError, getBulkRun, resumeBulkRun, startBulkRun, stopBulkRun } from "../lib/bulk-brand-runner";
 import { validateBulkSelection } from "../lib/bulk-profile-scopes";
 import { getBulkCoverage, listBulkCoverageProfiles } from "../lib/bulk-coverage";
+import { bulkOwnership } from "../lib/bulk-ownership-store";
 
 const router: IRouter = Router();
+router.get("/bulk/billing-health", async (req, res) => {
+  try { res.json(GetBulkBillingHealthResponse.parse(await bulkOwnership.billingHealth())); }
+  catch { res.status(503).json({ error: "Shared billing health is unavailable. Paid bulk launches remain blocked." }); }
+});
+router.post("/bulk/billing-health/clear", async (req, res) => {
+  const body = ClearBulkBillingOutageBody.safeParse(req.body);
+  if (!body.success || body.data.fundingRestored !== true) {
+    res.status(400).json({ error: "Confirm funding has been restored for the current billing incident." }); return;
+  }
+  try {
+    res.json(GetBulkBillingHealthResponse.parse(await bulkOwnership.clearBillingOutage(body.data.provider, body.data.incidentId)));
+  } catch (error) {
+    res.status(error instanceof BulkError ? error.status : 503).json({
+      error: error instanceof BulkError ? error.message : "Shared billing health is unavailable. The block was not cleared.",
+    });
+  }
+});
 router.get("/bulk/coverage", async (req, res) => {
   try { res.json(await getBulkCoverage()); }
   catch (error) { respondError(req, res, error); }

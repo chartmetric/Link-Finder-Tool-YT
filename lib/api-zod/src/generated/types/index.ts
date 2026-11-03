@@ -6,8 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './billingOutage';
+export * from './billingOutageProvider';
+export * from './billingRecoveryInput';
+export * from './billingRecoveryInputProvider';
 export * from './bulkAcceptedSettings';
 export * from './bulkBatchArchives';
+export * from './bulkBillingHealth';
 export * from './bulkBrandCandidate';
 export * from './bulkBrandCandidateAccountsItem';
 export * from './bulkBrandCandidates';

@@ -1,4 +1,7 @@
-const providers: Record<string, string> = {
+export const billingProviders = ["Serper", "OpenRouter", "ScrapeCreators", "SocialCrawl"] as const;
+export type BillingProvider = typeof billingProviders[number];
+export type BillingOutage = { provider: BillingProvider; httpStatus: number; incidentId: string; observedAt: string; clearedAt?: string };
+const providers: Record<string, BillingProvider> = {
   "google.serper.dev": "Serper",
   "openrouter.ai": "OpenRouter",
   "api.scrapecreators.com": "ScrapeCreators",
@@ -7,9 +10,9 @@ const providers: Record<string, string> = {
 };
 
 export class ProviderCreditError extends Error {
-  constructor(public readonly provider: string, public readonly httpStatus: number) {
+  constructor(public readonly provider: BillingProvider, public readonly httpStatus: number) {
     super(`Automatic stop: ${provider} reported exhausted credits or a billing limit (HTTP ${httpStatus}). `
-      + "No further paid requests will be started for this run. Replenish provider credits, then resume explicitly. "
+      + "Paid bulk launches are blocked until funding is restored and the shared billing block is explicitly cleared. Then start or resume explicitly. "
       + "Requests already dispatched may still incur charges.");
     this.name = "ProviderCreditError";
   }
@@ -19,7 +22,7 @@ export class ProviderCreditError extends Error {
  * request headers, or credentials reflected in an error response. */
 export async function providerCreditError(input: Parameters<typeof fetch>[0], response: Response) {
   if (response.ok) return;
-  let provider: string | undefined;
+  let provider: BillingProvider | undefined;
   try {
     const url = new URL(typeof input === "string" || input instanceof URL ? String(input) : input.url);
     provider = providers[url.hostname];

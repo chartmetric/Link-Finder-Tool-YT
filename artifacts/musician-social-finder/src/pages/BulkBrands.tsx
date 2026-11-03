@@ -13,12 +13,14 @@ import { RunProgress } from '@/components/bulk/run-progress';
 import { isActiveRun, KIND_META, LAST_RUN_KEY, PROFILE_KINDS, apiError, kindOf, readStorage, selectionKey, writeStorage, summaryRunForKind, type ProfileKind } from '@/lib/bulk';
 import '@/styles/bulk.css';
 import { bulkRequest, completeBulkRequest } from '@/lib/bulk-requests';
+import { BillingHealthNotice, useBulkBillingGate } from '@/components/bulk/billing-health';
 
 type Selections = Record<ProfileKind, Map<number, BulkBrandCandidate>>;
 const load = (k: ProfileKind) => new Map(readStorage<BulkBrandCandidate[]>(selectionKey(k), []).filter(c => kindOf(c) === k).map(c => [c.profileId, c]));
 
 export default function BulkBrands() {
   const qc = useQueryClient();
+  const billing = useBulkBillingGate();
   const [location] = useLocation();
   const kind: ProfileKind = location.endsWith('/creators') ? 'creator' : location.endsWith('/artists') ? 'artist' : 'brand';
   const m = KIND_META[kind];
@@ -44,7 +46,7 @@ export default function BulkBrands() {
     queryKey: getGetBulkBrandRunQueryKey(summaryId ?? ''), enabled: !!summaryId,
     refetchInterval: query => isActiveRun(query.state.data) ? 3000 : false,
   } });
-  const startBlocked = busy || isActiveRun(currentRun.data) || (!!runId && currentRun.isLoading) || isActiveRun(rootRun.data) || (!!rootId && rootRun.isLoading);
+  const startBlocked = billing.blocked || busy || isActiveRun(currentRun.data) || (!!runId && currentRun.isLoading) || isActiveRun(rootRun.data) || (!!rootId && rootRun.isLoading);
 
   const summaryRef = useRef<HTMLElement>(null);
   const [monitorOpen, setMonitorOpen] = useState(false);
@@ -131,6 +133,7 @@ export default function BulkBrands() {
             <p className="inv-section-note">Results are suggestions for human review. No approvals or catalog writes happen here.</p>
           </div>
 
+          <BillingHealthNotice />
           <AutoLauncher kind={kind} blocked={!!startBlocked} onRun={showRun} />
 
           {summaryId ? <RunProgress ref={summaryRef} kind={kind} runId={summaryId} run={summary.data} loading={summary.isLoading} fetching={summary.isFetching} isError={summary.isError} error={summary.error} onRetry={() => summary.refetch()} onOpenDetail={openDetail} /> : (

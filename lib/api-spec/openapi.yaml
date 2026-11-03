@@ -121,6 +121,31 @@ paths:
           description: Invalid person, creator, team, or brand name
         "503":
           description: Serper API key is not configured
+  /bulk/billing-health:
+    get:
+      operationId: getBulkBillingHealth
+      responses:
+        "200":
+          description: Known unresolved provider credit outages. This does not probe providers.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BulkBillingHealth" }
+  /bulk/billing-health/clear:
+    post:
+      operationId: clearBulkBillingOutage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BillingRecoveryInput" }
+      responses:
+        "200":
+          description: Explicit funding confirmation recorded. No provider requests or run resumes occurred.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BulkBillingHealth" }
+        "409":
+          description: Evidence changed or a queue is still active.
   /bulk/brands/candidates:
     get:
       operationId: listBulkBrandCandidates
@@ -571,6 +596,28 @@ components:
       type: string
       enum: [automatic_launcher, manual_selection, multi_type_widget, run_monitor, unknown]
       description: Client-described UI source only; not identity or authorization. Omission is recorded as unknown.
+    BillingOutage:
+      type: object
+      required: [provider, httpStatus, incidentId, observedAt]
+      properties:
+        provider: { type: string, enum: [Serper, OpenRouter, ScrapeCreators, SocialCrawl] }
+        httpStatus: { type: number, minimum: 100, maximum: 599 }
+        incidentId: { type: string }
+        observedAt: { type: string }
+    BulkBillingHealth:
+      type: object
+      required: [outages]
+      properties:
+        outages:
+          type: array
+          items: { $ref: "#/components/schemas/BillingOutage" }
+    BillingRecoveryInput:
+      type: object
+      required: [provider, incidentId, fundingRestored]
+      properties:
+        provider: { type: string, enum: [Serper, OpenRouter, ScrapeCreators, SocialCrawl] }
+        incidentId: { type: string, minLength: 1 }
+        fundingRestored: { type: boolean, enum: [true] }
     BulkRunResumeInput:
       type: object
       required: [requestId, resumeVersion]

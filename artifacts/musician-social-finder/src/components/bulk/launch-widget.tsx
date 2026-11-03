@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, CircleAlert, Layers, Pause, Play, RefreshCw, Za
 import { getGetBulkBrandRunQueryKey, getListBulkBrandRunsQueryKey, useGetBulkBrandRun, useResumeBulkBrandRun, useStartBulkBrandRun, useStopBulkBrandRun, type BulkBrandRun } from '@workspace/api-client-react';
 import { continuousConfirm, parseCap, KIND_META, PROFILE_KINDS, WIDGET_KEY, apiError, canResume, isActiveRun, overallCounts, overallKindCounts, readStorage, resumeConfirm, runKinds, writeStorage, type ProfileKind } from '@/lib/bulk';
 import { bulkRequest, completeBulkRequest } from '@/lib/bulk-requests';
+import { BillingHealthNotice, useBulkBillingGate } from './billing-health';
 
 const MAX_TOTAL = 1000;
 const DEFAULT_COUNT = 5;
@@ -12,6 +13,7 @@ const initial: WidgetState = { open: false, on: { brand: true, creator: false, a
 
 export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (id: string) => void }) {
   const qc = useQueryClient();
+  const billing = useBulkBillingGate();
   const [st, setSt] = useState<WidgetState>(() => ({ ...initial, ...readStorage<Partial<WidgetState>>(WIDGET_KEY, {}) }));
   const [ack, setAck] = useState(false);
   const [continuous, setContinuous] = useState(false);
@@ -45,7 +47,7 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
   const total = scopes.reduce((n, s) => n + s.limit, 0);
   const over = total > MAX_TOTAL;
   const validWorkers = Number.isSafeInteger(workers) && workers >= 1 && workers <= 20;
-  const canStart = validWorkers && !(continuous && cap === undefined) && scopes.length > 0 && !over && ack && !busy && !active && !(runId && q.isLoading) && !(rootId && rq.isLoading);
+  const canStart = !billing.blocked && validWorkers && !(continuous && cap === undefined) && scopes.length > 0 && !over && ack && !busy && !active && !(runId && q.isLoading) && !(rootId && rq.isLoading);
 
   const setCount = (k: ProfileKind, v: number) => setSt(s => ({ ...s, counts: { ...s.counts, [k]: Math.max(1, Math.min(MAX_TOTAL, Math.round(v) || 1)) } }));
   const submit = () => {
@@ -90,7 +92,7 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
                   {!run.continuous && <i className="blk-mini"><b style={{ transform: `scaleX(${kc.total ? (kc.completed + kc.failed) / kc.total : 0})` }} /></i>}</li>); })}</ul>
               <div className="blk-widget-ctl">
                 {active && <button type="button" className="inv-retry" style={{ marginTop: 0 }} disabled={stop.isPending || run.stopRequested} onClick={() => stop.mutate({ runId: run.id, data: { resumeVersion: run.resumeVersion } })} data-testid="button-widget-stop"><Pause size={13} /> {run.stopRequested ? 'Stopping' : 'Stop all'}</button>}
-                {canResume(run) && <button type="button" className="inv-retry" style={{ marginTop: 0 }} disabled={resume.isPending} onClick={() => { if (window.confirm(`${resumeConfirm(run)} Interrupted requests with unknown outcomes are not repeated.`)) resume.mutate({ runId: run.id, data: { ...bulkRequest(`resume:${run.id}`, 'multi_type_widget'), resumeVersion: run.resumeVersion } }); }} data-testid="button-widget-resume">{resume.isPending ? <RefreshCw size={13} className="inv-spin" /> : <Play size={13} />} Resume unfinished</button>}
+                {canResume(run) && <button type="button" className="inv-retry" style={{ marginTop: 0 }} disabled={resume.isPending || billing.blocked} onClick={() => { if (!billing.blocked && window.confirm(`${resumeConfirm(run)} Interrupted requests with unknown outcomes are not repeated.`)) resume.mutate({ runId: run.id, data: { ...bulkRequest(`resume:${run.id}`, 'multi_type_widget'), resumeVersion: run.resumeVersion } }); }} data-testid="button-widget-resume">{resume.isPending ? <RefreshCw size={13} className="inv-spin" /> : <Play size={13} />} Resume unfinished</button>}
               </div>
               {(stop.error || resume.error) && <p className="inv-form-error" role="alert">{stop.error ? apiError(stop.error, 'Stop failed.') : apiError(resume.error, 'Resume failed.')}</p>}
             </div>
@@ -124,6 +126,7 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
             ? 'Skips completed, failed and previously started profiles across saved runs. Untouched queued profiles remain eligible. Review or resume uncertain attempts separately.'
             : 'Warning: starts again from the first eligible profiles, including completed or uncertain paid lookups. You may pay for the same work again.'}</p>
           <label className="blk-ack"><input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} data-testid="checkbox-widget-ack" /> {mode === 'rerun' ? 'I explicitly agree to pay again for previously investigated profiles.' : 'I understand this run makes paid requests.'}</label>
+          <BillingHealthNotice />
           <button type="button" className="inv-submit blk-small" disabled={!canStart} onClick={submit} data-testid="button-widget-start">
             <Zap size={14} /> {start.isPending ? 'Starting run' : continuous ? `Run all remaining · ${scopes.length} ${scopes.length === 1 ? 'type' : 'types'}` : `Start ${total} across ${scopes.length} ${scopes.length === 1 ? 'type' : 'types'}`}
           </button>

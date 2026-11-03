@@ -43,6 +43,7 @@ export async function startBulkRun(requestId: string, input: Omit<BulkBrandRunIn
     return (await bulkOwnership.claim(existing, bulkWorkerId, fingerprint)).run;
   }
   assertProviders();
+  await bulkOwnership.assertBillingAvailable();
   const scopes = selection.scopes ?? [{ profileType: selection.profileTypes?.[0] ?? "brand", limit: selection.profileIds!.length }];
   const now = new Date().toISOString();
   const initial: BulkBrandRun = {
@@ -81,6 +82,7 @@ export async function resumeBulkRun(id: string, input: BulkRunResumeInput) {
   if (!run) throw new BulkError("Bulk run not found.", 404);
   if (acceptedBulkRequest(run, input.requestId)) return run;
   assertProviders();
+  await bulkOwnership.assertBillingAvailable();
   await bulkOwnership.importLegacy(run);
   const claimed = await bulkOwnership.claim(run, bulkWorkerId, "", input.resumeVersion, input);
   if (claimed.launched && claimed.lease) launch(claimed.run, claimed.lease);
