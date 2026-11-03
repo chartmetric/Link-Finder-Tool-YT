@@ -72,16 +72,19 @@ function RunBody({ run, onStop, onResume, stopping, resuming, resumeBlocked, err
         <div className="blk-run-stat lead"><span>Status</span><strong className={`blk-pill r-${run.status}`} data-testid="status-run">{run.preparation?.status === 'selecting' && active ? 'preparing' : run.status}</strong>{run.stopRequested && active && <em>Stop requested: finishing current step</em>}</div>
         <div className="blk-run-stat" title="Jobs finished without a job-level error; not a count of fully resolved profiles."><span>Jobs finished</span><strong data-testid="text-run-completed">{c.completed}/{run.items.length}</strong></div>
         <div className="blk-run-stat"><span>Failed</span><strong>{c.failed}</strong></div>
+        <div className="blk-run-stat"><span>Skipped</span><strong data-testid="text-run-skipped">{c.skipped}</strong></div>
         <div className="blk-run-stat"><span>Running / queued</span><strong>{c.running} / {c.queued}</strong></div>
         <div className="blk-run-stat"><span>Est. cost</span><strong data-testid="text-run-cost">${run.estimatedCostUsd.toFixed(4)}</strong></div>
       </div>
-      <div className="blk-progress" role="progressbar" aria-valuemin={0} aria-valuemax={run.items.length} aria-valuenow={c.completed + c.failed} aria-label="Run progress">
+      <div className="blk-progress" role="progressbar" aria-valuemin={0} aria-valuemax={run.items.length} aria-valuenow={c.completed + c.failed + c.skipped} aria-label="Run progress">
         <i className="done" style={{ transform: `scaleX(${c.completed / total})` }} />
+        <i className="skip" style={{ transform: `scaleX(${(c.completed + c.failed + c.skipped) / total})` }} />
         <i className="fail" style={{ transform: `scaleX(${(c.completed + c.failed) / total})` }} />
       </div>
       <ul className="blk-kind-rows" data-testid="list-run-kinds">{runKinds(run).map(k => { const kc = kindCounts(run, k); return (
         <li key={k} data-testid={`row-run-kind-${k}`}><span className={`blk-kind k-${k}`}>{KIND_META[k].plural}</span><span className="inv-mono">{run.preparation?.status === 'selecting' ? active ? 'Preparing selection — eligibility is still being checked' : 'Preparation stopped — selection is incomplete' : kc.total === 0 ? 'No eligible profiles' : `${kc.completed}/${kc.total} done`}{kc.failed ? ` · ${kc.failed} failed` : ''}{kc.running ? ` · ${kc.running} running` : ''}</span>
-          <i className="blk-mini"><b style={{ transform: `scaleX(${kc.total ? (kc.completed + kc.failed) / kc.total : 0})` }} /></i></li>); })}</ul>
+          {kc.skipped > 0 && <span>{kc.skipped} skipped</span>}
+          <i className="blk-mini"><b style={{ transform: `scaleX(${kc.total ? (kc.completed + kc.failed + kc.skipped) / kc.total : 0})` }} /></i></li>); })}</ul>
       <div className="blk-run-actions">
         <span className="inv-mono" title={`Heartbeat ${new Date(run.heartbeatAt).toLocaleTimeString()} · resume version ${run.resumeVersion}`}>
           Updated {new Date(run.updatedAt).toLocaleTimeString()} · Est. cost excludes provider credits and failed calls
@@ -106,7 +109,7 @@ function ContinuousBody({ run, onStop, onResume, stopping, resuming, resumeBlock
   const cur = runCounts(run);
   const active = isActiveRun(run);
   const cap = cont.profileLimit;
-  const processed = o.completed + o.failed;
+  const processed = o.completed + o.failed + o.skipped;
   const capReached = !!cap && processed >= cap;
   return (
     <>
@@ -114,24 +117,26 @@ function ContinuousBody({ run, onStop, onResume, stopping, resuming, resumeBlock
         <div className="blk-run-stat lead"><span>Status</span><strong className={`blk-pill r-${run.status}`} data-testid="status-run">{run.status}</strong>{run.stopRequested && active && <em>Stop requested: finishing in-flight profiles, no new work</em>}</div>
         <div className="blk-run-stat"><span>Processed</span><strong data-testid="text-run-completed">{cap ? `${processed}/${cap}` : processed}</strong></div>
         <div className="blk-run-stat"><span>Failed</span><strong>{o.failed}</strong></div>
+        <div className="blk-run-stat"><span>Skipped</span><strong data-testid="text-run-skipped">{o.skipped}</strong></div>
         <div className="blk-run-stat"><span>Saved chunks</span><strong data-testid="text-run-batches">{cont.batches}</strong></div>
         <div className="blk-run-stat"><span>Est. cost</span><strong data-testid="text-run-cost">${run.estimatedCostUsd.toFixed(4)}</strong></div>
       </div>
       <div className="blk-progress" role="progressbar" aria-label={cap ? "Continuous run progress toward profile cap" : "Current chunk progress"}
         aria-valuemin={0} aria-valuemax={cap ?? (run.items.length || 1)}
-        aria-valuenow={Math.min(cap ?? (run.items.length || 1), cap ? processed : cur.completed + cur.failed)}
-        aria-valuetext={cap ? `${processed} of ${cap} profiles processed` : run.items.length ? `${cur.completed + cur.failed} of ${run.items.length} profiles processed in current chunk; overall total unknown` : active ? "Scanning for the next chunk; overall total unknown" : "No current chunk"}>
+        aria-valuenow={Math.min(cap ?? (run.items.length || 1), cap ? processed : cur.completed + cur.failed + cur.skipped)}
+        aria-valuetext={cap ? `${processed} of ${cap} profiles processed` : run.items.length ? `${cur.completed + cur.failed + cur.skipped} of ${run.items.length} profiles processed in current chunk; overall total unknown` : active ? "Scanning for the next chunk; overall total unknown" : "No current chunk"}>
         <i className="done" style={{ transform: `scaleX(${cap ? Math.min(1, o.completed / cap) : cur.completed / (run.items.length || 1)})` }} />
-        <i className="fail" style={{ transform: `scaleX(${cap ? Math.min(1, processed / cap) : (cur.completed + cur.failed) / (run.items.length || 1)})` }} />
+        <i className="skip" style={{ transform: `scaleX(${cap ? Math.min(1, processed / cap) : (cur.completed + cur.failed + cur.skipped) / (run.items.length || 1)})` }} />
+        <i className="fail" style={{ transform: `scaleX(${cap ? Math.min(1, (o.completed + o.failed) / cap) : (cur.completed + cur.failed) / (run.items.length || 1)})` }} />
       </div>
       <div className="blk-cont-strip" data-testid="text-continuous-summary">
         {capReached ? <span data-testid="text-cap-reached"><b>Profile cap reached</b> ({processed} of {cap} profiles)</span> : cap ? <span><b>{processed} of {cap}</b> capped profiles processed</span> : <span><b>Total unknown</b> while the catalog still has remaining profiles</span>}
-        <span>Current chunk: <b>{cur.completed + cur.failed}/{run.items.length}</b>{run.items.length === 0 ? (active ? ' (scanning)' : '') : ''}</span>
+        <span>Current chunk: <b>{cur.completed + cur.failed + cur.skipped}/{run.items.length}</b>{run.items.length === 0 ? (active ? ' (scanning)' : '') : ''}</span>
         <span><b>{cur.running}</b> running · <b>{cur.queued}</b> queued in current chunk</span>
         <span>All earlier results are saved</span>
       </div>
       <ul className="blk-kind-rows" data-testid="list-run-kinds">{runKinds(run).map(k => { const kc = overallKindCounts(run, k); return (
-        <li key={k} data-testid={`row-run-kind-${k}`}><span className={`blk-kind k-${k}`}>{KIND_META[k].plural}</span><span className="inv-mono">{kc.completed} done{kc.failed ? ` · ${kc.failed} failed` : ''}{kc.running ? ` · ${kc.running} running` : ''} · {kc.exhausted ? 'none remaining' : capReached ? 'stopped at cap' : 'more remaining'}</span></li>); })}</ul>
+        <li key={k} data-testid={`row-run-kind-${k}`}><span className={`blk-kind k-${k}`}>{KIND_META[k].plural}</span><span className="inv-mono">{kc.completed} done{kc.failed ? ` · ${kc.failed} failed` : ''}{kc.skipped ? ` · ${kc.skipped} skipped` : ''}{kc.running ? ` · ${kc.running} running` : ''} · {kc.exhausted ? 'none remaining' : capReached ? 'stopped at cap' : 'more remaining'}</span></li>); })}</ul>
       <div className="blk-run-actions">
         <span className="inv-mono">Updated {new Date(run.updatedAt).toLocaleTimeString()} · {cap ? `Total cap ${cap} profiles` : 'No total cap'} · Est. cost is cumulative and excludes provider credits and failed calls</span>
         <div>

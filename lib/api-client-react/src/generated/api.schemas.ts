@@ -74,7 +74,7 @@ export interface BulkCoverageBucket {
   total: number;
   /** Profiles with all supported platforms fully resolved. */
   covered: number;
-  /** Unique profiles with a saved non-mismatch candidate link or explicit sourced first-party no-account statement for every supported platform. */
+  /** Unique profiles where each supported platform has a saved non-mismatch candidate URL, a completed search with no supported match, or an explicit sourced first-party no-account statement. Provider failures and incomplete searches do not count. */
   allPlatformsCoveredProfiles: number;
   /** Unique active profiles with at least one current linked account that has an active account record and a non-empty URL. */
   profilesWithActiveLinks: number;
@@ -560,6 +560,9 @@ export interface BulkPlatformOutcome {
   checkedAt: string;
 }
 
+/**
+ * Skipped means a confirmed restricted reference profile; no downstream searches or automatic retry.
+ */
 export type BulkBrandItemStatus = typeof BulkBrandItemStatus[keyof typeof BulkBrandItemStatus];
 
 
@@ -568,6 +571,7 @@ export const BulkBrandItemStatus = {
   running: 'running',
   completed: 'completed',
   failed: 'failed',
+  skipped: 'skipped',
 } as const;
 
 /**
@@ -584,6 +588,7 @@ export const BulkBrandItemStage = {
 
 export interface BulkBrandItem {
   candidate: BulkBrandCandidate;
+  /** Skipped means a confirmed restricted reference profile; no downstream searches or automatic retry. */
   status: BulkBrandItemStatus;
   /** Current coarse lookup stage for running items. Optional for older saved runs; cleared on completion, failure or resume. */
   stage?: BulkBrandItemStage;
@@ -594,7 +599,7 @@ export interface BulkBrandItem {
   error?: string;
   startedAt?: string;
   completedAt?: string;
-  /** An interrupted paid request has an unknown outcome and must not be replayed by Resume */
+  /** This item must not be replayed by Resume, including uncertain paid work and confirmed restricted profiles. */
   retryBlocked?: boolean;
 }
 
@@ -657,6 +662,7 @@ export type BulkContinuousProgressCursorsItem = {
   exhausted: boolean;
   completed: number;
   failed: number;
+  skipped?: number;
 };
 
 export interface BulkContinuousProgress {
@@ -665,6 +671,8 @@ export interface BulkContinuousProgress {
   batches: number;
   completed: number;
   failed: number;
+  /** Confirmed restricted profiles skipped in archived chunks. Missing on legacy runs means zero. */
+  skipped?: number;
   completedCostUsd: number;
   cursors: BulkContinuousProgressCursorsItem[];
 }

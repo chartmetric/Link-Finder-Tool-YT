@@ -16,11 +16,11 @@ export function canResume(run?: BulkBrandRun) {
   if (!run || isActiveRun(run)) return false;
   if (run.preparation?.status === 'selecting' && (run.status === 'stopped' || run.status === 'interrupted')) return true;
   if (run.continuous && !run.archiveOf && (run.status === 'stopped' || run.status === 'interrupted')) return true;
-  return run.items.some(item => item.status !== 'completed' && !item.retryBlocked);
+  return run.items.some(item => item.status !== 'completed' && item.status !== 'skipped' && !item.retryBlocked);
 }
 
 export function runCounts(run: BulkBrandRun) {
-  const c = { queued: 0, running: 0, completed: 0, failed: 0 };
+  const c = { queued: 0, running: 0, completed: 0, failed: 0, skipped: 0 };
   for (const item of run.items) c[item.status]++;
   return c;
 }
@@ -93,7 +93,7 @@ export function runKinds(run: BulkBrandRun): ProfileKind[] {
   return PROFILE_KINDS.filter(k => s.has(k));
 }
 export function kindCounts(run: BulkBrandRun, kind: ProfileKind) {
-  const c = { queued: 0, running: 0, completed: 0, failed: 0, total: 0 };
+  const c = { queued: 0, running: 0, completed: 0, failed: 0, skipped: 0, total: 0 };
   for (const item of run.items) if (kindOf(item.candidate) === kind) { c[item.status]++; c.total++; }
   return c;
 }
@@ -102,12 +102,12 @@ export function kindCounts(run: BulkBrandRun, kind: ProfileKind) {
 export function overallCounts(run: BulkBrandRun) {
   const c = runCounts(run);
   const a = run.continuous;
-  return { ...c, completed: c.completed + (a?.completed ?? 0), failed: c.failed + (a?.failed ?? 0) };
+  return { ...c, completed: c.completed + (a?.completed ?? 0), failed: c.failed + (a?.failed ?? 0), skipped: c.skipped + (a?.skipped ?? 0) };
 }
 export function overallKindCounts(run: BulkBrandRun, kind: ProfileKind) {
   const c = kindCounts(run, kind);
   const cur = run.continuous?.cursors.find(x => kindOf(x) === kind);
-  return { ...c, completed: c.completed + (cur?.completed ?? 0), failed: c.failed + (cur?.failed ?? 0), exhausted: cur?.exhausted ?? false };
+  return { ...c, completed: c.completed + (cur?.completed ?? 0), failed: c.failed + (cur?.failed ?? 0), skipped: c.skipped + (cur?.skipped ?? 0), exhausted: cur?.exhausted ?? false };
 }
 /** Page summaries must never fall back to another profile type's run. Archive
  * cards belong to their continuous root; the detailed monitor remains run-wide. */
@@ -126,7 +126,7 @@ export function scopedRunProgress(run: BulkBrandRun, kind: ProfileKind) {
   // A multi-type continuous cap is shared: it is not a denominator for each type.
   const sharedCap = run.continuous?.profileLimit;
   const cap = runKinds(run).length === 1 ? sharedCap : undefined;
-  return { current, overall, cap, sharedCap, processed: overall.completed + overall.failed };
+  return { current, overall, cap, sharedCap, processed: overall.completed + overall.failed + overall.skipped };
 }
 export const MAX_PROFILE_CAP = 4294967295;
 /** Parses the optional total cap input. '' -> null (no cap); invalid -> undefined. */
@@ -142,7 +142,7 @@ export function continuousConfirm(cap: number | null) {
     : `Run continuously for up to ${cap} distinct profile${cap === 1 ? '' : 's'} across all chunks and selected types (failed profiles count toward the cap). Each profile calls paid providers and provider cost may vary. Explicitly resuming failed or interrupted profiles can incur additional charges. It keeps running after you close the browser. If the server restarts, the run pauses until someone explicitly resumes it. Start continuous run?`;
 }
 export const CONTINUOUS_CONFIRM = 'Run continuously processes ALL remaining eligible profiles of the selected types in saved chunks until the catalog is exhausted or you press Stop. There is NO total spending cap: across a large catalog this can mean potentially millions of profiles and paid provider requests. It keeps running after you close the browser. If the server restarts, the run pauses until someone explicitly resumes it. Start continuous run?';
-export const RESUME_CONFIRM = 'Resume retries queued, failed and interrupted profiles (not completed ones) and may incur more paid provider requests. Continue?';
+export const RESUME_CONFIRM = 'Resume retries queued, failed and interrupted profiles (not completed or restricted/skipped ones) and may incur more paid provider requests. Continue?';
 export const RESUME_CONTINUOUS_CONFIRM = 'Resume this continuous run? It will keep processing all remaining eligible profiles with no total spending cap until exhausted or stopped, including after the browser closes. Continue?';
 export const resumeConfirm = (run: BulkBrandRun) => {
   const cap = run.continuous?.profileLimit;

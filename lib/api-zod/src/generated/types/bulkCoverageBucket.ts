@@ -13,7 +13,7 @@ export interface BulkCoverageBucket {
   total: number;
   /** Profiles with all supported platforms fully resolved. */
   covered: number;
-  /** Unique profiles with a saved non-mismatch candidate link or explicit sourced first-party no-account statement for every supported platform. */
+  /** Unique profiles where each supported platform has a saved non-mismatch candidate URL, a completed search with no supported match, or an explicit sourced first-party no-account statement. Provider failures and incomplete searches do not count. */
   allPlatformsCoveredProfiles: number;
   /** Unique active profiles with at least one current linked account that has an active account record and a non-empty URL. */
   profilesWithActiveLinks: number;

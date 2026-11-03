@@ -16,7 +16,7 @@ export function BatchArchive({ rootId, total, onOpenRun }: { rootId: string; tot
       {q.isError && <div className="inv-history-warn" role="alert"><CircleAlert size={14} /> {apiError(q.error, 'Saved chunks could not be loaded.')}<button type="button" onClick={() => q.refetch()}>Retry</button></div>}
       {q.data && (
         <ul>{q.data.runs.map(r => { const c = runCounts(r); return (
-          <li key={r.id}><button type="button" onClick={() => onOpenRun(r.id)} data-testid={`button-open-chunk-${r.id}`}>Chunk {r.batchNumber ?? '?'} · {c.completed}/{r.items.length}{c.failed ? ` · ${c.failed} failed` : ''}</button></li>); })}</ul>
+          <li key={r.id}><button type="button" onClick={() => onOpenRun(r.id)} data-testid={`button-open-chunk-${r.id}`}>Chunk {r.batchNumber ?? '?'} · {c.completed}/{r.items.length}{c.failed ? ` · ${c.failed} failed` : ''}{c.skipped ? ` · ${c.skipped} skipped` : ''}</button></li>); })}</ul>
       )}
       <div className="blk-archive-more">
         {cursors.length > 1 && <button type="button" className="inv-retry" style={{ marginTop: 0 }} onClick={() => setCursors(cs => cs.slice(0, -1))} data-testid="button-chunks-prev">Earlier page</button>}

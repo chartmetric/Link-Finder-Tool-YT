@@ -122,7 +122,7 @@ export class BulkOwnership {
         // An old worker may still be awaiting the provider. Its admission is durable.
         for (const index of existing!.uncertain) {
           const item = run.items[index];
-          if (item.status !== "completed") {
+          if (item.status !== "completed" && item.status !== "skipped") {
             item.status = "failed";
             item.retryBlocked = true;
             item.error = "Outcome unknown after worker interruption. Not retried to avoid duplicate charges; start a new run only after reviewing provider activity.";
@@ -132,9 +132,9 @@ export class BulkOwnership {
             }));
           }
         }
-        const retry = run.items.filter((item, i) => item.status !== "completed" && !existing!.uncertain.includes(i));
+        const retry = run.items.filter((item, i) => item.status !== "completed" && item.status !== "skipped" && !item.retryBlocked && !existing!.uncertain.includes(i));
         if (!retry.length && !run.continuous && run.preparation?.status !== "selecting") {
-          if (!existing!.uncertain.length) throw new BulkError("All brands in this run are already completed.");
+          if (!existing!.uncertain.length) throw new BulkError("No retryable profiles remain; all profiles are completed, skipped, or blocked from retry.");
           run.status = "stopped";
           run.error = "No safely retryable brands remain. Completed results are saved; uncertain paid work cannot be replayed.";
           tx.record!.run = run;

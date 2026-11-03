@@ -13,6 +13,8 @@ export interface BulkContinuousProgress {
   batches: number;
   completed: number;
   failed: number;
+  /** Confirmed restricted profiles skipped in archived chunks. Missing on legacy runs means zero. */
+  skipped?: number;
   completedCostUsd: number;
   cursors: BulkContinuousProgressCursorsItem[];
 }

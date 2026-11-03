@@ -13,4 +13,5 @@ export type BulkContinuousProgressCursorsItem = {
   exhausted: boolean;
   completed: number;
   failed: number;
+  skipped?: number;
 };

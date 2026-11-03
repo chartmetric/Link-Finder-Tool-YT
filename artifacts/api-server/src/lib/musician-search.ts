@@ -2,6 +2,7 @@ import { groupYouTubeAliases, youtubeAliases } from "./youtube-aliases";
 import { providerFetch as fetch } from "./paid-request-guard";
 import { parsePublicReference, resolvePublicReference } from "./public-reference";
 import { lookupStartingProfile } from "./starting-profile-lookup";
+import { isRestrictedInstagramProfile, RestrictedProfileError } from "./restricted-profile";
 
 type SerperOrganicResult = {
   title?: string;
@@ -526,13 +527,16 @@ async function fetchIdentityMetadata(input: {
       signal: AbortSignal.timeout(input.timeoutMs ?? 12_000),
     },
   );
-  if (!response.ok) {
-    const failure = await response.json().catch(() => undefined) as {
-      error?: { message?: string };
-    } | undefined;
-    throw new Error(failure?.error?.message ?? `Metadata lookup failed (${response.status})`);
+  const payload = await response.json().catch(error => {
+    if (response.ok || (error instanceof Error && ["TimeoutError", "AbortError"].includes(error.name))) throw error;
+    return undefined;
+  }) as any;
+  if (platform === "instagram" && isRestrictedInstagramProfile(response.status, payload)) {
+    throw new RestrictedProfileError();
   }
-  const payload = (await response.json()) as any;
+  if (!response.ok) {
+    throw new Error(payload?.error?.message ?? `Metadata lookup failed (${response.status})`);
+  }
   if (platform === "instagram") {
     const user = payload.data?.user;
     if (!user) return undefined;

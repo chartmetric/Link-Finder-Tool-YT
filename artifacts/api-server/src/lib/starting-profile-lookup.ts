@@ -1,3 +1,5 @@
+import { RestrictedProfileError } from "./restricted-profile";
+
 export const STARTING_PROFILE_TIMEOUT_MS = 30_000;
 export const STARTING_PROFILE_MAX_ATTEMPTS = 2;
 
@@ -29,6 +31,7 @@ export async function lookupStartingProfile<T>(
     try {
       return await lookup(STARTING_PROFILE_TIMEOUT_MS);
     } catch (error) {
+      if (error instanceof RestrictedProfileError) throw error;
       const timedOut = error instanceof Error && ["TimeoutError", "AbortError"].includes(error.name);
       if (!timedOut || attempt === STARTING_PROFILE_MAX_ATTEMPTS) {
         throw new StartingProfileLookupError(platform, timedOut, attempt, error);

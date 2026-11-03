@@ -15,3 +15,4 @@
 - [Bulk paid-work safety](bulk-paid-work-safety.md) — uncertain provider calls are not replayable; transactional coordination supplements rather than replaces ClickHouse.
 - [ClickHouse string parameters](clickhouse-string-parameters.md) — typed String parameters interpret escapes; nested JSON-in-string fixtures can silently become invalid JSON.
 - [Coverage availability](coverage-availability.md) — full-platform coverage includes links, completed no-matches, or sourced absence, but not failed or incomplete searches.
+- [ScrapeCreators access states](scrapecreators-access-states.md) — Instagram 403/404 can be confirmed restricted-resource states; inspect the body, not just HTTP status.

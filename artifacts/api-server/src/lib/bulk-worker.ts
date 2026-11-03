@@ -6,6 +6,7 @@ import { advanceItemStage, clearItemStage } from "./bulk-item-progress";
 import { commitContinuousArchive, continuousArchive, continuousLimitReached, nextContinuousChunk } from "./bulk-continuous";
 import { observePreparationRead, PreparationReadError, withPreparationDiagnostics } from "./bulk-preparation-diagnostics";
 import type { ProviderCreditError } from "./provider-credit-error";
+import { RestrictedProfileError } from "./restricted-profile";
 
 export type WorkerDependencies = {
   ownership: BulkOwnership;
@@ -159,12 +160,14 @@ export async function executeBulkRun(run: BulkBrandRun, lease: Lease, deps: Work
         } catch (error) {
           // A lost lease must leave its admission uncertain, never acknowledged.
           await guard();
-          item.status = "failed";
+          const restricted = error instanceof RestrictedProfileError;
+          item.status = restricted ? "skipped" : "failed";
+          if (restricted) item.retryBlocked = true;
           item.error = error instanceof Error ? error.message : "Profile lookup failed.";
           item.completedAt = new Date().toISOString();
           item.platforms = (["Instagram", "TikTok", "YouTube"] as const).map(platform => ({
             platform, status: "incomplete", checkedAt: item.completedAt!, evidenceUrls: [],
-            reason: `The investigation failed: ${item.error} Availability was not established.`,
+            reason: `${restricted ? "Profile skipped" : "The investigation failed"}: ${item.error} Availability was not established.`,
           }));
         }
         await guard();

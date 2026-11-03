@@ -35,7 +35,7 @@ async function selectContinuousChunk(
 ) {
   const cursors = progress.cursors.map(cursor => ({ ...cursor }));
   const selected: BulkBrandCandidate[] = [];
-  const remaining = progress.profileLimit === undefined ? Infinity : Math.max(0, progress.profileLimit - progress.completed - progress.failed);
+  const remaining = progress.profileLimit === undefined ? Infinity : Math.max(0, progress.profileLimit - progress.completed - progress.failed - (progress.skipped ?? 0));
   const seen = new Set<number>();
   const accounts = new Set<string>();
   for (const scope of scopes) {
@@ -76,7 +76,7 @@ async function selectContinuousChunk(
 }
 
 export function continuousLimitReached(progress: ContinuousProgress) {
-  return progress.profileLimit !== undefined && progress.completed + progress.failed >= progress.profileLimit;
+  return progress.profileLimit !== undefined && progress.completed + progress.failed + (progress.skipped ?? 0) >= progress.profileLimit;
 }
 
 /** A repeat after a crash writes the same archive ID, not a second paid batch. */
@@ -101,6 +101,10 @@ export function commitContinuousArchive(run: BulkBrandRun) {
     const cursor = state.cursors.find(row => row.profileType === (item.candidate.profileType ?? "brand"))!;
     if (item.status === "completed") { state.completed++; cursor.completed++; }
     if (item.status === "failed") { state.failed++; cursor.failed++; }
+    if (item.status === "skipped") {
+      state.skipped = (state.skipped ?? 0) + 1;
+      cursor.skipped = (cursor.skipped ?? 0) + 1;
+    }
     state.completedCostUsd += item.result?.estimatedCostUsd ?? 0;
   }
   state.batches++;

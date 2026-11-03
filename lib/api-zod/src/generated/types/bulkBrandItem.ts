@@ -13,6 +13,7 @@ import type { ProfileSearchResponse } from './profileSearchResponse';
 
 export interface BulkBrandItem {
   candidate: BulkBrandCandidate;
+  /** Skipped means a confirmed restricted reference profile; no downstream searches or automatic retry. */
   status: BulkBrandItemStatus;
   /** Current coarse lookup stage for running items. Optional for older saved runs; cleared on completion, failure or resume. */
   stage?: BulkBrandItemStage;
@@ -23,6 +24,6 @@ export interface BulkBrandItem {
   error?: string;
   startedAt?: string;
   completedAt?: string;
-  /** An interrupted paid request has an unknown outcome and must not be replayed by Resume */
+  /** This item must not be replayed by Resume, including uncertain paid work and confirmed restricted profiles. */
   retryBlocked?: boolean;
 }

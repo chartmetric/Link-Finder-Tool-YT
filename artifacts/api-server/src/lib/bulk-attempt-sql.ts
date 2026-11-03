@@ -10,7 +10,7 @@ export const allPaidProfilesSql = `
     ))) AS account_ids
   FROM poc_new_verticals.profile_bulk_events
   ARRAY JOIN arrayFilter(entry ->
-    (entry.status IN ('completed', 'failed', 'running') OR notEmpty(entry.startedAt)),
+    (entry.status IN ('completed', 'failed', 'running', 'skipped') OR notEmpty(entry.startedAt)),
     JSONExtract(data_json, 'items',
       'Array(Tuple(candidate Tuple(profileId UInt64, accountId String, accounts Array(Tuple(accountId String))), status String, startedAt String))')
   ) AS attemptedItem

@@ -75,7 +75,7 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
       <button type="button" className="blk-widget-bar" aria-expanded={st.open} onClick={() => setSt(s => ({ ...s, open: !s.open }))} data-testid="button-toggle-widget">
         <Layers size={15} />
         <span className="blk-widget-title">Multi-type run</span>
-        {run && c ? <span className={`blk-pill r-${run.status}`} data-testid="status-widget-run">{run.preparation?.status === 'selecting' && active ? `preparing · ${run.preparation.selected}/${run.preparation.requested} selected` : <>{run.status} · {run.continuous ? `${c.completed + c.failed} processed` : `${c.completed + c.failed}/${run.items.length}`}</>}</span>
+        {run && c ? <span className={`blk-pill r-${run.status}`} data-testid="status-widget-run">{run.preparation?.status === 'selecting' && active ? `preparing · ${run.preparation.selected}/${run.preparation.requested} selected` : <>{run.status} · {run.continuous ? `${c.completed + c.failed + c.skipped} processed` : `${c.completed + c.failed + c.skipped}/${run.items.length}`}{c.skipped > 0 && ` · ${c.skipped} skipped`}</>}</span>
           : <span className="inv-mono blk-widget-sum">{scopes.length} {scopes.length === 1 ? 'type' : 'types'} · {total}</span>}
         {st.open ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
       </button>
@@ -89,7 +89,8 @@ export function LaunchWidget({ runId, onRun }: { runId: string | null; onRun: (i
               {run.error && <p className="inv-form-error" role="alert" data-testid="text-widget-run-error">{run.error}</p>}
               <ul className="blk-kind-rows">{runKinds(run).map(k => { const kc = overallKindCounts(run, k); return (
                 <li key={k} data-testid={`widget-kind-${k}`}><span className={`blk-kind k-${k}`}>{KIND_META[k].plural}</span><span className="inv-mono">{run.preparation?.status === 'selecting' ? 'Preparing selection' : run.continuous ? `${kc.completed} done${kc.exhausted ? ' · none left' : ''}` : kc.total === 0 ? 'No eligible profiles' : `${kc.completed}/${kc.total}`}{kc.failed ? ` · ${kc.failed} failed` : ''}{kc.running ? ` · ${kc.running} live` : ''}</span>
-                  {!run.continuous && <i className="blk-mini"><b style={{ transform: `scaleX(${kc.total ? (kc.completed + kc.failed) / kc.total : 0})` }} /></i>}</li>); })}</ul>
+                  {kc.skipped > 0 && <span>{kc.skipped} skipped</span>}
+                  {!run.continuous && <i className="blk-mini"><b style={{ transform: `scaleX(${kc.total ? (kc.completed + kc.failed + kc.skipped) / kc.total : 0})` }} /></i>}</li>); })}</ul>
               <div className="blk-widget-ctl">
                 {active && <button type="button" className="inv-retry" style={{ marginTop: 0 }} disabled={stop.isPending || run.stopRequested} onClick={() => stop.mutate({ runId: run.id, data: { resumeVersion: run.resumeVersion } })} data-testid="button-widget-stop"><Pause size={13} /> {run.stopRequested ? 'Stopping' : 'Stop all'}</button>}
                 {canResume(run) && <button type="button" className="inv-retry" style={{ marginTop: 0 }} disabled={resume.isPending || billing.blocked} onClick={() => { if (!billing.blocked && window.confirm(`${resumeConfirm(run)} Interrupted requests with unknown outcomes are not repeated.`)) resume.mutate({ runId: run.id, data: { ...bulkRequest(`resume:${run.id}`, 'multi_type_widget'), resumeVersion: run.resumeVersion } }); }} data-testid="button-widget-resume">{resume.isPending ? <RefreshCw size={13} className="inv-spin" /> : <Play size={13} />} Resume unfinished</button>}

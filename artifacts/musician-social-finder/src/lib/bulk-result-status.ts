@@ -40,6 +40,7 @@ export function platformSearchStatus(outcome: BulkPlatformOutcome): Presentation
 export function profileSearchStatus(item: Pick<BulkBrandItem, 'status' | 'platforms'>): Presentation {
   if (item.status === 'queued') return { label: 'Queued', tone: 'queued', description: 'Waiting in the server queue.' };
   if (item.status === 'running') return { label: 'Searching', tone: 'running', description: 'Searches are still in progress.' };
+  if (item.status === 'skipped') return { label: 'Skipped · restricted', tone: 'skipped', description: 'The starting Instagram profile is restricted. No retry or downstream search was made; account availability remains unknown.' };
   if (item.status === 'failed') return { label: 'Job failed', tone: 'failed', description: 'Processing failed. Search results may be incomplete; see the error details.' };
 
   const missing = supportedPlatforms.filter(platform => !item.platforms.some(o => o.platform.toLowerCase() === platform));

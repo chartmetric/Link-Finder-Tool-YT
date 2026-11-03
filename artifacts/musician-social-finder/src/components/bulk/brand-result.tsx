@@ -30,7 +30,7 @@ export function BrandResult({ item, index }: { item: BulkBrandItem; index: numbe
       </header>
       {item.status === 'completed' && <p className="blk-result-explanation" data-testid={`explanation-item-${c.profileId}`}>{status.description}</p>}
 
-      {item.error && <div className="inv-save-warn blk-item-err" role="alert"><CircleAlert size={15} /><span><b>Failed:</b> {item.error}</span></div>}
+      {item.error && <div className={`inv-save-warn blk-item-err${item.status === 'skipped' ? ' blk-restricted-note' : ''}`} role={item.status === 'skipped' ? 'status' : 'alert'}><CircleAlert size={15} /><span><b>{item.status === 'skipped' ? 'Skipped:' : 'Failed:'}</b> {item.error}</span></div>}
 
       {item.platforms.length > 0 && (
         <ul className="blk-outcomes">
@@ -38,8 +38,8 @@ export function BrandResult({ item, index }: { item: BulkBrandItem; index: numbe
             const platformStatus = platformSearchStatus(o);
             return (
             <li key={o.platform} className={`blk-outcome o-${o.status}`} data-testid={`outcome-${c.profileId}-${o.platform.toLowerCase()}`}>
-              <div className="blk-outcome-top"><PlatformIcon platform={o.platform} size={14} /><b>{o.platform}</b><span className={`blk-pill o-${platformStatus.tone}`}>{platformStatus.label}</span></div>
-              {['incomplete', 'not_found', 'explicit_unavailable'].includes(o.status) && <p className="blk-outcome-explanation">{platformStatus.description}</p>}
+              <div className="blk-outcome-top"><PlatformIcon platform={o.platform} size={14} /><b>{o.platform}</b><span className={`blk-pill o-${platformStatus.tone}`}>{item.status === 'skipped' ? 'Not searched' : platformStatus.label}</span></div>
+              {['incomplete', 'not_found', 'explicit_unavailable'].includes(o.status) && <p className="blk-outcome-explanation">{item.status === 'skipped' ? 'Skipped because the starting profile is restricted. Availability is unknown.' : platformStatus.description}</p>}
               <details className="blk-outcome-details">
                 <summary aria-label={`${o.platform} evidence and details`} data-testid={`details-${c.profileId}-${o.platform.toLowerCase()}`}>
                   <span>Evidence &amp; details{o.evidenceUrls.length > 0 ? ` · ${new Set(o.evidenceUrls).size} ${new Set(o.evidenceUrls).size === 1 ? 'link' : 'links'}` : ''}</span>

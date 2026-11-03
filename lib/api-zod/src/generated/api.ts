@@ -18,7 +18,7 @@ export const GetBulkCoverageResponse = zod.object({
   "group": zod.enum(['tiers_1_3', 'tiers_1_5', 'all']),
   "total": zod.number(),
   "covered": zod.number().describe('Profiles with all supported platforms fully resolved.'),
-  "allPlatformsCoveredProfiles": zod.number().describe('Unique profiles with a saved non-mismatch candidate link or explicit sourced first-party no-account statement for every supported platform.'),
+  "allPlatformsCoveredProfiles": zod.number().describe('Unique profiles where each supported platform has a saved non-mismatch candidate URL, a completed search with no supported match, or an explicit sourced first-party no-account statement. Provider failures and incomplete searches do not count.'),
   "profilesWithActiveLinks": zod.number().describe('Unique active profiles with at least one current linked account that has an active account record and a non-empty URL.'),
   "investigated": zod.number(),
   "uncoveredInvestigated": zod.number(),
@@ -516,7 +516,7 @@ export const ListBulkBrandRunsResponse = zod.object({
 })).optional(),
   "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
-  "status": zod.enum(['queued', 'running', 'completed', 'failed']),
+  "status": zod.enum(['queued', 'running', 'completed', 'failed', 'skipped']).describe('Skipped means a confirmed restricted reference profile; no downstream searches or automatic retry.'),
   "stage": zod.enum(['reading_reference', 'searching_platforms', 'verifying_candidates']).optional().describe('Current coarse lookup stage for running items. Optional for older saved runs; cleared on completion, failure or resume.'),
   "stageStartedAt": zod.string().optional().describe('Time the current stage began; unchanged by heartbeats.'),
   "platforms": zod.array(zod.object({
@@ -618,7 +618,7 @@ export const ListBulkBrandRunsResponse = zod.object({
   "error": zod.string().optional(),
   "startedAt": zod.string().optional(),
   "completedAt": zod.string().optional(),
-  "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
+  "retryBlocked": zod.boolean().optional().describe('This item must not be replayed by Resume, including uncertain paid work and confirmed restricted profiles.')
 })),
   "preparation": zod.object({
   "status": zod.enum(['selecting', 'ready']),
@@ -642,13 +642,15 @@ export const ListBulkBrandRunsResponse = zod.object({
   "batches": zod.number(),
   "completed": zod.number(),
   "failed": zod.number(),
+  "skipped": zod.number().optional().describe('Confirmed restricted profiles skipped in archived chunks. Missing on legacy runs means zero.'),
   "completedCostUsd": zod.number(),
   "cursors": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
   "afterId": zod.number(),
   "exhausted": zod.boolean(),
   "completed": zod.number(),
-  "failed": zod.number()
+  "failed": zod.number(),
+  "skipped": zod.number().optional()
 }))
 }).optional(),
   "archiveOf": zod.string().optional(),
@@ -765,7 +767,7 @@ export const StartBulkBrandRunResponse = zod.object({
 })).optional(),
   "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
-  "status": zod.enum(['queued', 'running', 'completed', 'failed']),
+  "status": zod.enum(['queued', 'running', 'completed', 'failed', 'skipped']).describe('Skipped means a confirmed restricted reference profile; no downstream searches or automatic retry.'),
   "stage": zod.enum(['reading_reference', 'searching_platforms', 'verifying_candidates']).optional().describe('Current coarse lookup stage for running items. Optional for older saved runs; cleared on completion, failure or resume.'),
   "stageStartedAt": zod.string().optional().describe('Time the current stage began; unchanged by heartbeats.'),
   "platforms": zod.array(zod.object({
@@ -867,7 +869,7 @@ export const StartBulkBrandRunResponse = zod.object({
   "error": zod.string().optional(),
   "startedAt": zod.string().optional(),
   "completedAt": zod.string().optional(),
-  "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
+  "retryBlocked": zod.boolean().optional().describe('This item must not be replayed by Resume, including uncertain paid work and confirmed restricted profiles.')
 })),
   "preparation": zod.object({
   "status": zod.enum(['selecting', 'ready']),
@@ -891,13 +893,15 @@ export const StartBulkBrandRunResponse = zod.object({
   "batches": zod.number(),
   "completed": zod.number(),
   "failed": zod.number(),
+  "skipped": zod.number().optional().describe('Confirmed restricted profiles skipped in archived chunks. Missing on legacy runs means zero.'),
   "completedCostUsd": zod.number(),
   "cursors": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
   "afterId": zod.number(),
   "exhausted": zod.boolean(),
   "completed": zod.number(),
-  "failed": zod.number()
+  "failed": zod.number(),
+  "skipped": zod.number().optional()
 }))
 }).optional(),
   "archiveOf": zod.string().optional(),
@@ -984,7 +988,7 @@ export const GetBulkBrandRunResponse = zod.object({
 })).optional(),
   "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
-  "status": zod.enum(['queued', 'running', 'completed', 'failed']),
+  "status": zod.enum(['queued', 'running', 'completed', 'failed', 'skipped']).describe('Skipped means a confirmed restricted reference profile; no downstream searches or automatic retry.'),
   "stage": zod.enum(['reading_reference', 'searching_platforms', 'verifying_candidates']).optional().describe('Current coarse lookup stage for running items. Optional for older saved runs; cleared on completion, failure or resume.'),
   "stageStartedAt": zod.string().optional().describe('Time the current stage began; unchanged by heartbeats.'),
   "platforms": zod.array(zod.object({
@@ -1086,7 +1090,7 @@ export const GetBulkBrandRunResponse = zod.object({
   "error": zod.string().optional(),
   "startedAt": zod.string().optional(),
   "completedAt": zod.string().optional(),
-  "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
+  "retryBlocked": zod.boolean().optional().describe('This item must not be replayed by Resume, including uncertain paid work and confirmed restricted profiles.')
 })),
   "preparation": zod.object({
   "status": zod.enum(['selecting', 'ready']),
@@ -1110,13 +1114,15 @@ export const GetBulkBrandRunResponse = zod.object({
   "batches": zod.number(),
   "completed": zod.number(),
   "failed": zod.number(),
+  "skipped": zod.number().optional().describe('Confirmed restricted profiles skipped in archived chunks. Missing on legacy runs means zero.'),
   "completedCostUsd": zod.number(),
   "cursors": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
   "afterId": zod.number(),
   "exhausted": zod.boolean(),
   "completed": zod.number(),
-  "failed": zod.number()
+  "failed": zod.number(),
+  "skipped": zod.number().optional()
 }))
 }).optional(),
   "archiveOf": zod.string().optional(),
@@ -1209,7 +1215,7 @@ export const ListBulkRunBatchesResponse = zod.object({
 })).optional(),
   "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
-  "status": zod.enum(['queued', 'running', 'completed', 'failed']),
+  "status": zod.enum(['queued', 'running', 'completed', 'failed', 'skipped']).describe('Skipped means a confirmed restricted reference profile; no downstream searches or automatic retry.'),
   "stage": zod.enum(['reading_reference', 'searching_platforms', 'verifying_candidates']).optional().describe('Current coarse lookup stage for running items. Optional for older saved runs; cleared on completion, failure or resume.'),
   "stageStartedAt": zod.string().optional().describe('Time the current stage began; unchanged by heartbeats.'),
   "platforms": zod.array(zod.object({
@@ -1311,7 +1317,7 @@ export const ListBulkRunBatchesResponse = zod.object({
   "error": zod.string().optional(),
   "startedAt": zod.string().optional(),
   "completedAt": zod.string().optional(),
-  "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
+  "retryBlocked": zod.boolean().optional().describe('This item must not be replayed by Resume, including uncertain paid work and confirmed restricted profiles.')
 })),
   "preparation": zod.object({
   "status": zod.enum(['selecting', 'ready']),
@@ -1335,13 +1341,15 @@ export const ListBulkRunBatchesResponse = zod.object({
   "batches": zod.number(),
   "completed": zod.number(),
   "failed": zod.number(),
+  "skipped": zod.number().optional().describe('Confirmed restricted profiles skipped in archived chunks. Missing on legacy runs means zero.'),
   "completedCostUsd": zod.number(),
   "cursors": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
   "afterId": zod.number(),
   "exhausted": zod.boolean(),
   "completed": zod.number(),
-  "failed": zod.number()
+  "failed": zod.number(),
+  "skipped": zod.number().optional()
 }))
 }).optional(),
   "archiveOf": zod.string().optional(),
@@ -1439,7 +1447,7 @@ export const StopBulkBrandRunResponse = zod.object({
 })).optional(),
   "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
-  "status": zod.enum(['queued', 'running', 'completed', 'failed']),
+  "status": zod.enum(['queued', 'running', 'completed', 'failed', 'skipped']).describe('Skipped means a confirmed restricted reference profile; no downstream searches or automatic retry.'),
   "stage": zod.enum(['reading_reference', 'searching_platforms', 'verifying_candidates']).optional().describe('Current coarse lookup stage for running items. Optional for older saved runs; cleared on completion, failure or resume.'),
   "stageStartedAt": zod.string().optional().describe('Time the current stage began; unchanged by heartbeats.'),
   "platforms": zod.array(zod.object({
@@ -1541,7 +1549,7 @@ export const StopBulkBrandRunResponse = zod.object({
   "error": zod.string().optional(),
   "startedAt": zod.string().optional(),
   "completedAt": zod.string().optional(),
-  "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
+  "retryBlocked": zod.boolean().optional().describe('This item must not be replayed by Resume, including uncertain paid work and confirmed restricted profiles.')
 })),
   "preparation": zod.object({
   "status": zod.enum(['selecting', 'ready']),
@@ -1565,13 +1573,15 @@ export const StopBulkBrandRunResponse = zod.object({
   "batches": zod.number(),
   "completed": zod.number(),
   "failed": zod.number(),
+  "skipped": zod.number().optional().describe('Confirmed restricted profiles skipped in archived chunks. Missing on legacy runs means zero.'),
   "completedCostUsd": zod.number(),
   "cursors": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
   "afterId": zod.number(),
   "exhausted": zod.boolean(),
   "completed": zod.number(),
-  "failed": zod.number()
+  "failed": zod.number(),
+  "skipped": zod.number().optional()
 }))
 }).optional(),
   "archiveOf": zod.string().optional(),
@@ -1669,7 +1679,7 @@ export const ResumeBulkBrandRunResponse = zod.object({
 })).optional(),
   "profileType": zod.enum(['brand', 'creator', 'artist']).optional().describe('Legacy saved candidates without this field are brands')
 }),
-  "status": zod.enum(['queued', 'running', 'completed', 'failed']),
+  "status": zod.enum(['queued', 'running', 'completed', 'failed', 'skipped']).describe('Skipped means a confirmed restricted reference profile; no downstream searches or automatic retry.'),
   "stage": zod.enum(['reading_reference', 'searching_platforms', 'verifying_candidates']).optional().describe('Current coarse lookup stage for running items. Optional for older saved runs; cleared on completion, failure or resume.'),
   "stageStartedAt": zod.string().optional().describe('Time the current stage began; unchanged by heartbeats.'),
   "platforms": zod.array(zod.object({
@@ -1771,7 +1781,7 @@ export const ResumeBulkBrandRunResponse = zod.object({
   "error": zod.string().optional(),
   "startedAt": zod.string().optional(),
   "completedAt": zod.string().optional(),
-  "retryBlocked": zod.boolean().optional().describe('An interrupted paid request has an unknown outcome and must not be replayed by Resume')
+  "retryBlocked": zod.boolean().optional().describe('This item must not be replayed by Resume, including uncertain paid work and confirmed restricted profiles.')
 })),
   "preparation": zod.object({
   "status": zod.enum(['selecting', 'ready']),
@@ -1795,13 +1805,15 @@ export const ResumeBulkBrandRunResponse = zod.object({
   "batches": zod.number(),
   "completed": zod.number(),
   "failed": zod.number(),
+  "skipped": zod.number().optional().describe('Confirmed restricted profiles skipped in archived chunks. Missing on legacy runs means zero.'),
   "completedCostUsd": zod.number(),
   "cursors": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
   "afterId": zod.number(),
   "exhausted": zod.boolean(),
   "completed": zod.number(),
-  "failed": zod.number()
+  "failed": zod.number(),
+  "skipped": zod.number().optional()
 }))
 }).optional(),
   "archiveOf": zod.string().optional(),

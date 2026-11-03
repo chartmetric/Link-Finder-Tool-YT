@@ -665,7 +665,7 @@ components:
       required: [candidate, status, platforms]
       properties:
         candidate: { $ref: "#/components/schemas/BulkBrandCandidate" }
-        status: { type: string, enum: [queued, running, completed, failed] }
+        status: { type: string, enum: [queued, running, completed, failed, skipped], description: Skipped means a confirmed restricted reference profile; no downstream searches or automatic retry. }
         stage:
           type: string
           enum: [reading_reference, searching_platforms, verifying_candidates]
@@ -680,7 +680,7 @@ components:
         completedAt: { type: string }
         retryBlocked:
           type: boolean
-          description: An interrupted paid request has an unknown outcome and must not be replayed by Resume
+          description: This item must not be replayed by Resume, including uncertain paid work and confirmed restricted profiles.
     BulkRunControl:
       type: object
       required: [resumeVersion]
@@ -738,6 +738,7 @@ components:
         batches: { type: number }
         completed: { type: number }
         failed: { type: number }
+        skipped: { type: number, description: Confirmed restricted profiles skipped in archived chunks. Missing on legacy runs means zero. }
         completedCostUsd: { type: number }
         cursors:
           type: array
@@ -750,6 +751,7 @@ components:
               exhausted: { type: boolean }
               completed: { type: number }
               failed: { type: number }
+              skipped: { type: number }
     BulkBatchArchives:
       type: object
       required: [runs, hasMore, nextBatch]

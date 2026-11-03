@@ -52,7 +52,7 @@ test("multi-type current and archived counts remain separate; shared cap is not 
   } as BulkBrandRun;
   const brands = scopedRunProgress(mixed, "brand");
   const artists = scopedRunProgress(mixed, "artist");
-  assert.deepEqual(brands.current, { completed: 1, failed: 1, running: 1, queued: 0, total: 3 });
+  assert.deepEqual(brands.current, { completed: 1, failed: 1, skipped: 0, running: 1, queued: 0, total: 3 });
   assert.equal(brands.processed, 112);
   assert.equal(brands.overall.completed, 101);
   assert.equal(artists.processed, 24);

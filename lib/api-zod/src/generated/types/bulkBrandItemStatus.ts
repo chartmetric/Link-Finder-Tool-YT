@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Skipped means a confirmed restricted reference profile; no downstream searches or automatic retry.
+ */
 export type BulkBrandItemStatus = typeof BulkBrandItemStatus[keyof typeof BulkBrandItemStatus];
 
 
@@ -14,4 +17,5 @@ export const BulkBrandItemStatus = {
   running: 'running',
   completed: 'completed',
   failed: 'failed',
+  skipped: 'skipped',
 } as const;
