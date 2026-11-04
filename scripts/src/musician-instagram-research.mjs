@@ -7,7 +7,7 @@ export function researchTiers(args = []) {
   const option = args.find(arg => arg.startsWith('--tiers='));
   if (!option) return [3];
   const value = option.slice('--tiers='.length);
-  if (!/^[1234](,[1234])*$/.test(value)) throw new Error('Choose tiers 1–4 explicitly.');
+  if (!/^[12345](,[12345])*$/.test(value)) throw new Error('Choose tiers 1–5 explicitly.');
   return [...new Set(value.split(',').map(Number))].sort((a, b) => a - b);
 }
 export function selectionForTiers(query, tiers) {
@@ -98,18 +98,20 @@ async function setup() {
     GROUP BY source.profile_id`);
 }
 
-export function validatePlayers(players) {
+export function validatePlayers(players, { allowMissingArtist = false } = {}) {
   if (!players.length) throw new Error('No artists match the requested tier selection; no paid work started.');
   const seen = new Set();
   for (const player of players) {
     for (const id of [player.profile_id, player.cm_artist, ...(player.account_ids ?? [])]) {
       if (!/^[0-9]+$/.test(String(id)) || BigInt(id) > 18446744073709551615n) throw new Error('Invalid lookup identity.');
     }
-    if (!player.artist?.trim() || seen.has(player.profile_id)) throw new Error('Missing artist or duplicate profile; no paid work started.');
+    if ((!allowMissingArtist && !player.artist?.trim()) || seen.has(player.profile_id)) throw new Error('Missing artist or duplicate profile; no paid work started.');
     seen.add(player.profile_id);
   }
 }
 export function initialState(player, previous) {
+  if (!player.artist?.trim()) return { status: 'needs_review', result: {}, urls: [],
+    error: 'Missing artist name in source catalog; no paid search dispatched.' };
   if (!previous) return { status: 'queued', result: {}, urls: [], error: '' };
   const [status, urls, json, error, sourceRunId, , cmArtist] = previous.latest;
   const result = JSON.parse(json);
@@ -178,7 +180,7 @@ async function prepare() {
     selectionSql = selectionAtSnapshot(selectionSql, snapshotAt);
   }
   let players = await select(selectionSql);
-  validatePlayers(players);
+  validatePlayers(players, { allowMissingArtist: true });
   const previous = new Map();
   for (let start = 0; start < players.length; start += 1000) {
     const ids = players.slice(start, start + 1000).map(player => player.profile_id).join(',');
@@ -210,7 +212,7 @@ async function prepare() {
     player.account_ids = [...new Set(player.accounts.map(link => link.account_id))];
     if (player.accounts.some(account => account.platform === 'instagram')) throw new Error('Cohort changed: an Instagram account is already linked. Reselect before paying.');
   }
-  validatePlayers(players);
+  validatePlayers(players, { allowMissingArtist: true });
   const runId = rerunNoCandidates ? (requestedRunId ?? randomUUID()) : randomUUID();
   if (rerunNoCandidates) directory = rerunDirectory(runId);
   const workers = researchWorkers(cliArgs, rerunNoCandidates ? 5 : 4);
@@ -250,6 +252,15 @@ export async function processQueue({ players, save, search, workers = 4, shouldS
   async function worker() {
     while (!stopped && !shouldStop() && cursor < players.length) {
       const player = players[cursor++];
+      const subject = `${player.artist}, musician`;
+      if (!player.artist?.trim() || subject.length > 120) {
+        const error = 'Artist name is missing or exceeds the search API subject limit; no paid search dispatched.';
+        await save(player, 'needs_review', {}, [], error);
+        finished++;
+        progress({ finished, profileId: player.profile_id, artist: player.artist,
+          status: 'needs_review', candidates: 0, error });
+        continue;
+      }
       // Durable admission precedes the paid request. A save failure aborts;
       // a lost request remains running/uncertain and is never auto-replayed.
       await save(player, 'running', {}, [], '');
@@ -350,5 +361,5 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   if (command === 'prepare') await prepare();
   else if (command === 'run') await run();
   else if (command === 'status') await report(JSON.parse(await fs.readFile(`${directory}/accepted.json`, 'utf8')));
-  else throw new Error('Usage: musician-instagram-research.mjs prepare | run | status [--tiers=1,2,3,4] [--latest-snapshot] [--workers=5] [--rerun-no-candidates] [--run-id=UUID]');
+  else throw new Error('Usage: musician-instagram-research.mjs prepare | run | status [--tiers=1,2,3,4,5] [--latest-snapshot] [--workers=5] [--rerun-no-candidates] [--run-id=UUID]');
 }

@@ -5,6 +5,17 @@ import { readFileSync } from 'node:fs';
 
 const player = { profile_id: '9007199254740993', cm_artist: '123', account_ids: ['456'], artist: 'Example Artist' };
 const success = { methodsUsed: [{ method: 'serper', status: 'used' }], profiles: [{ url: 'https://www.instagram.com/example.artist/' }] };
+test('overlong artist subjects are blocked before admission without stopping other artists', async () => {
+  const invalid = { ...player, profile_id: '1234', artist: 'x'.repeat(111) };
+  const saved = [], searched = [];
+  await processQueue({ players: [invalid, player], workers: 1,
+    save: async (p, status) => saved.push([p.profile_id, status]),
+    search: async p => { searched.push(p.profile_id); return success; } });
+  assert.deepEqual(searched, [player.profile_id]);
+  assert.deepEqual(saved[0], [invalid.profile_id, 'needs_review']);
+  assert.ok(!saved.some(([id, status]) => id === invalid.profile_id && status === 'running'));
+  assert.ok(saved.some(([id, status]) => id === player.profile_id && status === 'candidates_found'));
+});
 test('only explicit pre-dispatch cancellations clear an admission, and readmission remains protected', () => {
   assert.deepEqual([...admittedProfileIds([{ profileId: '1' }, { profileId: '2' },
     { profileId: '1', phase: 'cancelled_before_dispatch' }])], ['2']);
@@ -45,7 +56,7 @@ test('five requested workers run five searches concurrently without repeating a 
 test('Tier 1 and 2 cohorts have separate canonical scope and do not silently include Tier 3', () => {
   assert.deepEqual(researchTiers(), [3]);
   assert.deepEqual(researchTiers(['--tiers=2,1,2']), [1, 2]);
-  for (const input of ['--tiers=', '--tiers=5', '--tiers=all', '--tiers=1;DROP']) {
+  for (const input of ['--tiers=', '--tiers=6', '--tiers=all', '--tiers=1;DROP']) {
     assert.throws(() => researchTiers([input]), /Choose tiers/);
   }
   const query = readFileSync(new URL('./musician-instagram-cohort.sql', import.meta.url), 'utf8');
@@ -70,12 +81,31 @@ test('Tier 4 uses its own cohort and can explicitly pin the latest completed sna
   assert.doesNotMatch(pinned, /\bLIMIT\b/i);
   assert.throws(() => selectionAtSnapshot(tier4, "today'; DROP"), /Invalid tier snapshot/);
 });
+test('Tier 5 selects all eligible Tier 5 profiles without including other tiers', () => {
+  assert.deepEqual(researchTiers(['--tiers=5']), [5]);
+  const query = readFileSync(new URL('./musician-instagram-cohort.sql', import.meta.url), 'utf8');
+  const selected = selectionForTiers(query, [5]);
+  assert.match(selected, /AND tier IN \(5\)/);
+  assert.doesNotMatch(selected, /AND tier = 3/);
+  assert.match(selected, /a.platform = 'instagram'/);
+  assert.doesNotMatch(selected, /\bLIMIT\b/i);
+});
 test('profile, cm_artist and account lookup identities retain full UInt64 precision', () => {
   validatePlayers([player]);
   assert.throws(() => validatePlayers([{ ...player, cm_artist: 'invalid' }]), /identity/);
   assert.throws(() => validatePlayers([{ ...player, account_ids: ['18446744073709551616'] }]), /identity/);
   assert.throws(() => validatePlayers([player, player]), /duplicate/);
   assert.throws(() => validatePlayers([]), /No artists/);
+});
+test('missing artist names are explicitly blocked without queuing a paid search', () => {
+  const unnamed = { ...player, artist: ' ' };
+  assert.throws(() => validatePlayers([unnamed]), /Missing artist/);
+  validatePlayers([unnamed], { allowMissingArtist: true });
+  const state = initialState(unnamed);
+  assert.equal(state.status, 'needs_review');
+  assert.deepEqual(state.urls, []);
+  assert.match(state.error, /no paid search dispatched/);
+  assert.throws(() => validatePlayers([unnamed, unnamed], { allowMissingArtist: true }), /duplicate/);
 });
 test('the Tier 3 cohort has no 100-profile limit and retains freshness and no-Instagram filters', () => {
   const query = readFileSync(new URL('./musician-instagram-cohort.sql', import.meta.url), 'utf8');

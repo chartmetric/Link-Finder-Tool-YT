@@ -3,9 +3,9 @@ name: Musician Instagram research
 description: All eligible selected-tier musicians, snapshot freshness, and lookup identity requirements.
 ---
 
-The musician Instagram research covers ALL musicians matching the user's selected tiers, including Tier 4, not a 100-profile sample.
+The musician Instagram research covers ALL musicians matching the user's selected tiers, including Tiers 4 and 5, not a 100-profile sample.
 
-**Why:** The user corrected the initial sample: “i don't need 100 - i need ALL tier 3 artists/musicians man,” then requested the same research for Tiers 1, 2, and 4.
+**Why:** The user corrected the initial sample: “i don't need 100 - i need ALL tier 3 artists/musicians man,” then requested the same research for Tiers 1, 2, 4, and 5.
 
 **How to apply:** Retain the supplied current-day tier freshness filter, exclusion of any already-linked Instagram account, and monthly-listener prioritization, but do not add a total profile limit. Reuse completed Serper searches instead of charging again. This explicit name-based research cohort can include profiles without linked accounts; it does not change the general bulk tool's linked-account eligibility rule.
 
