@@ -1,11 +1,11 @@
 ---
 name: Musician Instagram research
-description: All eligible Tier 1–3 musicians and lookup identity requirements.
+description: All eligible selected-tier musicians, snapshot freshness, and lookup identity requirements.
 ---
 
-The musician Instagram research covers ALL musicians matching the user's Tier 1, Tier 2 and Tier 3 selections, not a 100-profile sample.
+The musician Instagram research covers ALL musicians matching the user's selected tiers, including Tier 4, not a 100-profile sample.
 
-**Why:** The user corrected the initial sample: “i don't need 100 - i need ALL tier 3 artists/musicians man,” then explicitly requested the same research for Tier 1 and Tier 2.
+**Why:** The user corrected the initial sample: “i don't need 100 - i need ALL tier 3 artists/musicians man,” then requested the same research for Tiers 1, 2, and 4.
 
 **How to apply:** Retain the supplied current-day tier freshness filter, exclusion of any already-linked Instagram account, and monthly-listener prioritization, but do not add a total profile limit. Reuse completed Serper searches instead of charging again. This explicit name-based research cohort can include profiles without linked accounts; it does not change the general bulk tool's linked-account eligibility rule.
 
@@ -32,3 +32,15 @@ A failed artist-name search does not establish that an Instagram account is unin
 **Why:** Exact Instagram-path searches recovered a known account that multiple name-only searches missed; its indexed display name differed from its artist name.
 
 **How to apply:** Discover handle clues from identity-linked reference sources, then use exact-path Serper checks. Clearly distinguish recovery using a supplied handle from independent name-based discovery; do not guess handles and call them confirmed.
+
+Treat an empty current-day tier selection immediately after UTC midnight as a possible snapshot-refresh gap, not proof that the tier has no artists.
+
+**Why:** The database day advanced before the next tier computation arrived; the latest completed musician snapshot still contained the expected population.
+
+**How to apply:** Inspect snapshot timestamps before reporting an empty cohort. For an explicitly requested run, disclose and pin a recent completed snapshot, rejecting one older than 36 hours rather than silently selecting stale historical assignments. Keep ordinary current-day selection unchanged unless this alternative is explicitly chosen.
+
+Reconcile a final saved-status snapshot before treating a completed worker's profile as unfinished.
+
+**Why:** Multiple completed research batches initially reported one profile as still running even though all worker completions were logged; a fresh read then showed the final saved result without another provider call. The visibility delay's exact cause has not been established.
+
+**How to apply:** Refresh the read-only status/report once after workers finish. Never repeat a paid search solely because the immediate aggregate still says running; investigate persistence if the discrepancy remains.

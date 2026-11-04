@@ -112,3 +112,17 @@ mtime_ms = 1793747335473
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/955211d7-68f7-4485-87f5-a55ab5452865/e0e7aa35-1478-4094-b472-b97683b12f75"
 storage_version_token = "1793747336208033"
 content_type = "text/csv"
+
+[[outputs]]
+id = "Li6tChQ-7oBEolmftPyB4"
+uri = "file://generated-artifacts/musician-instagram-tier4-all/17713635-ba96-4ea6-80a0-0887c92789ad.csv"
+type = "table"
+title = "Tier 4 artist Instagram search results"
+description = "All 7,271 profiles: 7,151 with unverified Instagram URL candidates, 120 with no candidate, and no failed or unfinished searches. Includes profile ID, cm_artist, linked account IDs, candidate URLs, and research outcome. No-candidate results do not prove account absence."
+logical_id = "132fd1f5-c28c-4e18-b358-51ca9801e65a"
+content_hash = "sha256:2f65291cd7c72369621bcc6f0fe25f0e60773ef83f47e26518756e986ab89d23"
+size = 2298382
+mtime_ms = 1793752664275
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/132fd1f5-c28c-4e18-b358-51ca9801e65a/24ffb5d1-29c1-4c93-973f-4a283a359b62"
+storage_version_token = "1793752687554498"
+content_type = "text/csv"

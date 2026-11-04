@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validatePlayers, candidateUrls, processQueue, initialState, researchTiers, selectionForTiers, researchWorkers, admittedProfileIds, rerunNoCandidateProfiles } from './musician-instagram-research.mjs';
+import { validatePlayers, candidateUrls, processQueue, initialState, researchTiers, selectionForTiers, selectionAtSnapshot, researchWorkers, admittedProfileIds, rerunNoCandidateProfiles } from './musician-instagram-research.mjs';
 import { readFileSync } from 'node:fs';
 
 const player = { profile_id: '9007199254740993', cm_artist: '123', account_ids: ['456'], artist: 'Example Artist' };
@@ -45,7 +45,7 @@ test('five requested workers run five searches concurrently without repeating a 
 test('Tier 1 and 2 cohorts have separate canonical scope and do not silently include Tier 3', () => {
   assert.deepEqual(researchTiers(), [3]);
   assert.deepEqual(researchTiers(['--tiers=2,1,2']), [1, 2]);
-  for (const input of ['--tiers=', '--tiers=4', '--tiers=all', '--tiers=1;DROP']) {
+  for (const input of ['--tiers=', '--tiers=5', '--tiers=all', '--tiers=1;DROP']) {
     assert.throws(() => researchTiers([input]), /Choose tiers/);
   }
   const query = readFileSync(new URL('./musician-instagram-cohort.sql', import.meta.url), 'utf8');
@@ -56,6 +56,19 @@ test('Tier 1 and 2 cohorts have separate canonical scope and do not silently inc
   assert.match(selected, /computed_at >= toStartOfDay\(now\(\)\)/);
   assert.match(selected, /a.platform = 'instagram'/);
   assert.equal(selectionForTiers(query, [3]), query);
+});
+test('Tier 4 uses its own cohort and can explicitly pin the latest completed snapshot', () => {
+  assert.deepEqual(researchTiers(['--tiers=4']), [4]);
+  const query = readFileSync(new URL('./musician-instagram-cohort.sql', import.meta.url), 'utf8');
+  const tier4 = selectionForTiers(query, [4]);
+  assert.match(tier4, /AND tier IN \(4\)/);
+  assert.match(tier4, /computed_at >= toStartOfDay\(now\(\)\)/);
+  const pinned = selectionAtSnapshot(tier4, '2026-11-03 01:30:00');
+  assert.match(pinned, /computed_at = toDateTime\('2026-11-03 01:30:00', 'UTC'\)/);
+  assert.doesNotMatch(pinned, /toStartOfDay/);
+  assert.match(pinned, /a.platform = 'instagram'/);
+  assert.doesNotMatch(pinned, /\bLIMIT\b/i);
+  assert.throws(() => selectionAtSnapshot(tier4, "today'; DROP"), /Invalid tier snapshot/);
 });
 test('profile, cm_artist and account lookup identities retain full UInt64 precision', () => {
   validatePlayers([player]);

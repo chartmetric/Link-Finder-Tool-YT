@@ -7,12 +7,17 @@ export function researchTiers(args = []) {
   const option = args.find(arg => arg.startsWith('--tiers='));
   if (!option) return [3];
   const value = option.slice('--tiers='.length);
-  if (!/^[123](,[123])*$/.test(value)) throw new Error('Choose tiers 1, 2 and/or 3 explicitly.');
+  if (!/^[1234](,[1234])*$/.test(value)) throw new Error('Choose tiers 1–4 explicitly.');
   return [...new Set(value.split(',').map(Number))].sort((a, b) => a - b);
 }
 export function selectionForTiers(query, tiers) {
   if (tiers.length === 1 && tiers[0] === 3) return query;
   return query.replace('AND tier = 3', `AND tier IN (${tiers.join(',')})`);
+}
+export function selectionAtSnapshot(query, snapshotAt) {
+  if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(snapshotAt)) throw new Error('Invalid tier snapshot timestamp.');
+  return query.replace('computed_at >= toStartOfDay(now())',
+    `computed_at = toDateTime('${snapshotAt}', 'UTC')`);
 }
 export function researchWorkers(args = [], fallback = 4) {
   const option = args.find(arg => arg.startsWith('--workers='));
@@ -159,8 +164,19 @@ async function metadata(id, status, data) {
   await insert(runs, [{ run_id: id, updated_at: stamp(), status, metadata_json: JSON.stringify(data) }]);
 }
 async function prepare() {
-  const selectionSql = selectionForTiers(
+  let selectionSql = selectionForTiers(
     await fs.readFile(new URL('./musician-instagram-cohort.sql', import.meta.url), 'utf8'), tiers);
+  let snapshotAt;
+  if (cliArgs.includes('--latest-snapshot')) {
+    const [snapshot] = await select(`SELECT toString(max(computed_at)) AS snapshot_at,
+      dateDiff('second',max(computed_at),now()) AS age_seconds
+      FROM new_vertical.l_profile_tier FINAL WHERE profile_type='musician'`);
+    if (!snapshot || Number(snapshot.age_seconds) < 0 || Number(snapshot.age_seconds) > 36 * 3600) {
+      throw new Error('Latest musician tier snapshot is missing or older than 36 hours; no paid work started.');
+    }
+    snapshotAt = snapshot.snapshot_at;
+    selectionSql = selectionAtSnapshot(selectionSql, snapshotAt);
+  }
   let players = await select(selectionSql);
   validatePlayers(players);
   const previous = new Map();
@@ -208,7 +224,7 @@ async function prepare() {
     scope: rerunNoCandidates
       ? `Focused Serper rerun of completed no-candidate Tier ${tiers.join(', ')} musicians without a linked Instagram account`
       : `ALL current Tier ${tiers.join(', ')} musicians without any linked Instagram account`,
-    tiers, tierCounts: Object.fromEntries(tiers.map(tier => [tier, players.filter(player => player.tier === tier).length])),
+    tiers, snapshotAt, tierCounts: Object.fromEntries(tiers.map(tier => [tier, players.filter(player => player.tier === tier).length])),
     reusedCount, reviewCount, maximumNewPaidSearches: newSearches,
     methods: ['serper'], platform: 'instagram', workers, selectionSql, players,
     rerunNoCandidates,
@@ -224,7 +240,7 @@ async function prepare() {
     }));
   }
   await metadata(runId, 'prepared', { ...accepted, players: undefined });
-  console.log(JSON.stringify({ runId, count: players.length, tierCounts: accepted.tierCounts, reusedCount, reviewCount, newSearches,
+  console.log(JSON.stringify({ runId, count: players.length, snapshotAt, tierCounts: accepted.tierCounts, reusedCount, reviewCount, newSearches,
     withAccountIds: players.filter(p => p.account_ids.length).length }));
 }
 
@@ -334,5 +350,5 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   if (command === 'prepare') await prepare();
   else if (command === 'run') await run();
   else if (command === 'status') await report(JSON.parse(await fs.readFile(`${directory}/accepted.json`, 'utf8')));
-  else throw new Error('Usage: musician-instagram-research.mjs prepare | run | status [--tiers=1,2] [--workers=5] [--rerun-no-candidates] [--run-id=UUID]');
+  else throw new Error('Usage: musician-instagram-research.mjs prepare | run | status [--tiers=1,2,3,4] [--latest-snapshot] [--workers=5] [--rerun-no-candidates] [--run-id=UUID]');
 }
