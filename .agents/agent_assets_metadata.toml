@@ -126,3 +126,17 @@ mtime_ms = 1793752664275
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/132fd1f5-c28c-4e18-b358-51ca9801e65a/24ffb5d1-29c1-4c93-973f-4a283a359b62"
 storage_version_token = "1793752687554498"
 content_type = "text/csv"
+
+[[outputs]]
+id = "g_jxeqV-p17UNiWp7iJ1w"
+uri = "file://generated-artifacts/musician-instagram-tier4-all/tier-4-artists-no-instagram-candidate.csv"
+type = "table"
+title = "120 Tier 4 artists — no Instagram candidate"
+description = "Full list with artist name, profile ID, cm_artist, account IDs and search outcome. No candidate means the search found no profile URL, not confirmed absence of an Instagram account."
+logical_id = "a6a9ee49-7f81-4bc4-baf9-a3e19fa635d5"
+content_hash = "sha256:e2e9d66429af2b1966ad5e7ea3c31a525301126e1ab7ebba05c7a309a98b5d1b"
+size = 16443
+mtime_ms = 1793754831065
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/a6a9ee49-7f81-4bc4-baf9-a3e19fa635d5/131cce47-2362-4fec-915f-d0e2ce8b09fd"
+storage_version_token = "1793754836654976"
+content_type = "text/csv"
