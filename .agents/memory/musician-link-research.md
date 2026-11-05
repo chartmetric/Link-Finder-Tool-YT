@@ -65,6 +65,6 @@ Reconcile a final saved-status snapshot before treating a completed worker's pro
 
 A configured identity verifier does not establish that a separate research pipeline actually used it.
 
-**Why:** The historical musician research saved Serper candidates without metadata comparisons or JEV decisions, even though the interactive application supported those checks. Discovery coverage therefore overstated evidence of correct artist ownership.
+**Why:** The historical musician research saved Serper candidates without metadata comparisons or JEV decisions, even though the interactive application supported those checks. Discovery coverage therefore overstated evidence of correct artist ownership. Pilot preflight also found missing or unrecognized reference accounts, so abstention can reflect input gaps rather than an incorrect Instagram identity.
 
-**How to apply:** Inspect persisted per-candidate identity evidence and catalog-reference binding for each execution path before calling its URLs verified or import-ready. Report missing evidence separately from proven wrong accounts; name-overlap and shared-handle flags are not measured false-positive rates.
+**How to apply:** Inspect persisted per-candidate identity evidence and catalog-reference binding for each execution path before calling its URLs verified or import-ready. Before paid checks, measure reference readiness and verify that external bio-link targets reach the identity evidence. Report missing evidence separately from proven wrong accounts; name-overlap and shared-handle flags are not measured false-positive rates.

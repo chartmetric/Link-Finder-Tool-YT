@@ -168,3 +168,31 @@ mtime_ms = 1793903352991
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/dc50ae04-53f6-4dea-991c-4c90e6a42303/de1d17d6-6c41-4611-82b2-f88df3826e9e"
 storage_version_token = "1793903354539832"
 content_type = "text/csv"
+
+[[outputs]]
+id = "eBI-HzWVbmfaS1hVOBNbc"
+uri = "file://generated-artifacts/musician-instagram-verification-pilot-2026-11-05/50-artist-pilot-sample-NOT-FOR-IMPORT.csv"
+type = "table"
+title = "50-artist verification pilot sample"
+description = "Selected cases across Tiers 1–5, risk groups and reference readiness. Plan only; not an Instagram import file."
+logical_id = "428623b1-7561-4500-a300-42fcca705216"
+content_hash = "sha256:965b7fdd9cb56b24bf277dee048ee4e8e3dceadbb3e552a6f6058c6dbabd2ad1"
+size = 9933
+mtime_ms = 1793903815391
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/428623b1-7561-4500-a300-42fcca705216/b68656f9-2e4f-4aaa-984a-946603eb2607"
+storage_version_token = "1793903921040072"
+content_type = "text/csv"
+
+[[outputs]]
+id = "eWDMrJ9kLm_MU6BUuTgy1"
+uri = "file://generated-artifacts/musician-instagram-verification-pilot-2026-11-05/pilot-plan.md"
+type = "text"
+title = "Instagram verification pilot plan"
+description = "Evidence rules, prerequisite fixes, stop conditions and a proposed cap of 205 paid requests for the 34 currently reference-eligible artists. Execution has not started."
+logical_id = "61ef90fb-d46d-4d3f-a316-5f9b81d46f3d"
+content_hash = "sha256:41240ca69b4cb159251fb3a7ed8939fa03d9f857b4df32ca6d251964e545145a"
+size = 10834
+mtime_ms = 1793903890387
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/61ef90fb-d46d-4d3f-a316-5f9b81d46f3d/bf6b36ab-3648-49b0-8c0c-4f5cedd1d128"
+storage_version_token = "1793903921664940"
+content_type = "text/markdown"
