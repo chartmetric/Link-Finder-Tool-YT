@@ -224,3 +224,31 @@ mtime_ms = 1793909046207
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/1e1544ca-f7cd-4c5d-893b-2f45b673ea77/c1c4c288-3879-47d2-aa0e-42f9210a89b4"
 storage_version_token = "1793909118269397"
 content_type = "text/csv"
+
+[[outputs]]
+id = "pLatE5EurC0SkASVJNihb"
+uri = "file://generated-artifacts/musician-instagram-comprehensive-audit-2026-11-05/tier-summary.csv"
+type = "table"
+title = "Tier 1–5 Instagram audit summary"
+description = "Counts by current global tier. Discovery candidates are separate from existing catalog URLs and are not verified ownership."
+logical_id = "c919aed1-c03b-4af2-a3fe-269332204710"
+content_hash = "sha256:e7647f4016fb5f001ac1d60125a8417443ba915375667e6e8f9438f47cf04973"
+size = 720
+mtime_ms = 1793923143121
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/c919aed1-c03b-4af2-a3fe-269332204710/6f2da7a6-d378-4e94-b88a-c7987ea735da"
+storage_version_token = "1793923168695167"
+content_type = "text/csv"
+
+[[outputs]]
+id = "OZBYikvwLJZhqDYMUs3wV"
+uri = "file://generated-artifacts/musician-instagram-comprehensive-audit-2026-11-05/worklist-NOT-FOR-IMPORT.csv"
+type = "table"
+title = "Per-artist audit and follow-up worklist"
+description = "Profile IDs, cm_artist IDs, candidate URLs, shared-handle and evidence flags, and recommended next action. NOT FOR IMPORT. No paid searches or database changes were made."
+logical_id = "da712d66-62a3-4804-9434-067a59ef3a26"
+content_hash = "sha256:a11adb8e6ce5334dd758b2ebf279412329efa296f180025398d2ec9b89843a03"
+size = 24682333
+mtime_ms = 1793923144365
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/da712d66-62a3-4804-9434-067a59ef3a26/fea0667d-9aef-4d2d-a4a6-50a721850b97"
+storage_version_token = "1793923169815584"
+content_type = "text/csv"
