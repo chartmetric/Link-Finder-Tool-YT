@@ -9,17 +9,23 @@ The musician Instagram research covers ALL musicians matching the user's selecte
 
 **How to apply:** Retain the supplied current-day tier freshness filter, exclusion of any already-linked Instagram account, and monthly-listener prioritization, but do not add a total profile limit. Reuse completed Serper searches instead of charging again. This explicit name-based research cohort can include profiles without linked accounts; it does not change the general bulk tool's linked-account eligibility rule.
 
-The saved Tier 1–3 Instagram research cohort contains profiles selected after excluding profiles with an existing Instagram catalog link. For coverage of this cohort, a current-tier profile with no saved research event is counted as already catalog-linked.
+Do not infer an existing Instagram catalog link merely because a profile has no saved research event.
 
-**Why:** Joining the full account catalog made the coverage query too expensive, while this cohort's selection rule already records which profiles had existing links.
+**Why:** That shortcut depended on an earlier no-link cohort selection and ceased being a reliable coverage rule as tier populations and research scopes changed.
 
-**How to apply:** Use this complement only for this explicitly filtered Tier 1–3 research cohort. Do not infer a catalog link from missing research events in other workflows or cohorts.
+**How to apply:** Require actual catalog-link evidence, and distinguish raw search candidates from identity-supported artist URLs when explaining coverage.
 
 Research results must be retrievable using the catalog profile ID, `cm_artist`, or an existing linked catalog account ID.
 
 **Why:** The user explicitly requested these three lookup options.
 
 **How to apply:** Preserve the distinct identifier namespaces and all associated account IDs. An artist without any linked account still supports profile-ID and `cm_artist` lookup. Keep discovered candidates separate from approved catalog links, and do not treat no candidates as proof of account absence.
+
+Live Instagram ingestion must use link claims through `account_links/claims.record` and the normal resolver, never direct live account or profile-link table writes.
+
+**Why:** The user explicitly requires claim resolution before live links are created; reported false positives show that a successful search is not sufficient identity evidence.
+
+**How to apply:** Preserve discovery provenance and unresolved status in engineer handoffs. Identity-supported research candidates still need claim resolution and are not approved catalog links.
 
 Validate search-strategy changes against known existing accounts before scaling, and distinguish raw search hits from identity-supported artist candidates.
 

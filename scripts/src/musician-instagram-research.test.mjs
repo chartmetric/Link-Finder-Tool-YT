@@ -3,8 +3,15 @@ import assert from 'node:assert/strict';
 import { validatePlayers, candidateUrls, processQueue, initialState, researchTiers, selectionForTiers, selectionAtSnapshot, researchWorkers, admittedProfileIds, rerunNoCandidateProfiles } from './musician-instagram-research.mjs';
 import { readFileSync } from 'node:fs';
 
-const player = { profile_id: '9007199254740993', cm_artist: '123', account_ids: ['456'], artist: 'Example Artist' };
-const success = { methodsUsed: [{ method: 'serper', status: 'used' }], profiles: [{ url: 'https://www.instagram.com/example.artist/' }] };
+const referenceUrl = 'https://open.spotify.com/artist/0123456789ABCDEFGHIJKL';
+const player = { profile_id: '9007199254740993', cm_artist: '123', account_ids: ['456'], artist: 'Example Artist',
+  accounts: [{ account_id: '456', platform: 'spotify', account_url: referenceUrl }] };
+const success = { methodsUsed: [{ method: 'serper', status: 'used' }], profiles: [{
+  title: 'Example Artist', url: 'https://www.instagram.com/example.artist/',
+  identityComparison: { status: 'likely', reference: { url: referenceUrl, bio: 'https://www.instagram.com/example.artist/' },
+    candidate: { url: 'https://www.instagram.com/example.artist/', displayName: 'Example Artist' } },
+  jevVerification: { verdict: 'verified', sameIdentityProbability: 0.99 },
+}] };
 test('overlong artist subjects are blocked before admission without stopping other artists', async () => {
   const invalid = { ...player, profile_id: '1234', artist: 'x'.repeat(111) };
   const saved = [], searched = [];
@@ -117,7 +124,8 @@ test('the Tier 3 cohort has no 100-profile limit and retains freshness and no-In
 });
 test('successful prior Serper searches are reused without another charge, including no-candidate results', () => {
   for (const status of ['candidates_found', 'no_candidates']) {
-    const state = initialState(player, { latest: [status, [], JSON.stringify({ ...success, estimatedCostUsd: 0.001 }), '', 'original-run', 'date', player.cm_artist] });
+    const result = { ...success, ...(status === 'no_candidates' ? { profiles: [] } : {}), estimatedCostUsd: 0.001 };
+    const state = initialState(player, { latest: [status, [], JSON.stringify(result), '', 'original-run', 'date', player.cm_artist] });
     assert.equal(state.status, status);
     assert.equal(state.result.reusedFromRunId, 'original-run');
     assert.equal(state.result.estimatedCostUsd, 0);
@@ -152,8 +160,9 @@ test('focused reruns select only matching completed Serper no-candidate profiles
 
   assert.deepEqual(rerunNoCandidateProfiles(players, previous).map(item => item.profile_id), ['9007199254740993']);
 });
-test('only completed Serper searches and actual Instagram profile URLs can be saved as candidates', () => {
-  assert.deepEqual(candidateUrls(success), ['https://www.instagram.com/example.artist/']);
+test('only completed Serper searches and identity-supported Instagram profile URLs can be saved as candidates', () => {
+  assert.deepEqual(candidateUrls(success, player), ['https://www.instagram.com/example.artist/']);
+  assert.deepEqual(candidateUrls(success), [], 'missing catalog identity must fail closed');
   assert.deepEqual(candidateUrls({ ...success, profiles: [] }), []);
   for (const status of ['failed', 'unavailable']) assert.throws(() =>
     candidateUrls({ ...success, methodsUsed: [{ method: 'serper', status }] }), /Serper/);
@@ -180,7 +189,7 @@ test('paid work follows durable admission and saves per-artist results', async (
   });
   assert.equal(outcome.finished, 1);
   assert.deepEqual(operations.map(o => o.status), ['running', 'candidates_found']);
-  assert.deepEqual(operations[1].urls, candidateUrls(success));
+  assert.deepEqual(operations[1].urls, candidateUrls(success, player));
 });
 test('a missing required provider closes all lanes and leaves later profiles untouched', async () => {
   let dispatched = 0;

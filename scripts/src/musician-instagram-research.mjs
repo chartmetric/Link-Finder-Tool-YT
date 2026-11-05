@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assessInstagramCandidates, instagramSearchRequest, MATCHING_POLICY } from './musician-instagram-matching.mjs';
 
 export function researchTiers(args = []) {
   const option = args.find(arg => arg.startsWith('--tiers='));
@@ -113,12 +114,19 @@ export function initialState(player, previous) {
   if (!player.artist?.trim()) return { status: 'needs_review', result: {}, urls: [],
     error: 'Missing artist name in source catalog; no paid search dispatched.' };
   if (!previous) return { status: 'queued', result: {}, urls: [], error: '' };
-  const [status, urls, json, error, sourceRunId, , cmArtist] = previous.latest;
-  const result = JSON.parse(json);
+  const [status, , json, error, sourceRunId, , cmArtist] = previous.latest;
+  let result;
+  try { result = JSON.parse(json); } catch {
+    return { status: 'needs_review', result: {}, urls: [], error: 'Saved research is unreadable; no automatic paid replay.' };
+  }
   if (['candidates_found', 'no_candidates'].includes(status)
     && String(cmArtist) === player.cm_artist
     && result.methodsUsed?.some(method => method.method === 'serper' && method.status === 'used')) {
-    return { status, urls, error: '', result: { ...result, reusedFromRunId: sourceRunId,
+    let matching;
+    try { matching = assessInstagramCandidates(result, player); } catch (failure) {
+      return { status: 'needs_review', result, urls: [], error: failure.message };
+    }
+    return { status: matching.status, urls: matching.urls, error: '', result: { ...result, candidateMatching: matching, reusedFromRunId: sourceRunId,
       reusedOriginalEstimatedCostUsd: result.estimatedCostUsd, estimatedCostUsd: 0 } };
   }
   // Never race an older queued job or replay a failed/uncertain admission.
@@ -139,20 +147,8 @@ export function rerunNoCandidateProfiles(players, previousByProfile) {
     }
   });
 }
-export function candidateUrls(result) {
-  if (!result.methodsUsed?.some(method => method.method === 'serper' && method.status === 'used')) {
-    throw new Error('Required Serper search did not complete; stopped without fallback or automatic retry.');
-  }
-  return [...new Set((result.profiles ?? []).flatMap(profile => {
-    let url;
-    try { url = new URL(profile.url); } catch { return []; }
-    const path = url.pathname.split('/').filter(Boolean);
-    if (!['instagram.com', 'www.instagram.com'].includes(url.hostname) || url.protocol !== 'https:'
-      || path.length !== 1 || ['p', 'reel', 'reels', 'stories', 'explore', 'accounts'].includes(path[0].toLowerCase())) {
-      return [];
-    }
-    return [url.href];
-  }))];
+export function candidateUrls(result, player) {
+  return assessInstagramCandidates(result, player).urls;
 }
 
 function event(id, player, status, result = {}, urls = [], error = '') {
@@ -199,7 +195,7 @@ async function prepare() {
       a.platform, a.handle, a.account_url
       FROM new_vertical.l_profile_account AS l FINAL
       INNER JOIN (SELECT id, platform, handle, account_url FROM new_vertical.account FINAL) AS a ON a.id = l.account_id
-      WHERE l.profile_id IN (${ids})`));
+      WHERE l.profile_id IN (${ids}) AND l.disconnected_at IS NULL`));
   }
   const linksByProfile = new Map();
   for (const link of links) {
@@ -230,7 +226,8 @@ async function prepare() {
     reusedCount, reviewCount, maximumNewPaidSearches: newSearches,
     methods: ['serper'], platform: 'instagram', workers, selectionSql, players,
     rerunNoCandidates,
-    automaticPaidRetries: false, verification: 'Unverified indexed search candidates, not account approval.' };
+    automaticPaidRetries: false, matchingPolicy: MATCHING_POLICY,
+    verification: 'Catalog-reference cross-link and verified identity required; not claim resolution or account approval.' };
   await fs.mkdir(directory, { recursive: true });
   const file = await fs.open(`${directory}/accepted.json`, 'wx');
   try { await file.writeFile(JSON.stringify(accepted, null, 2)); } finally { await file.close(); }
@@ -268,8 +265,10 @@ export async function processQueue({ players, save, search, workers = 4, shouldS
       let result = {}, urls = [], status = 'failed', error = '';
       try {
         result = await search(player);
-        urls = candidateUrls(result);
-        status = urls.length ? 'candidates_found' : 'no_candidates';
+        const matching = assessInstagramCandidates(result, player);
+        result = { ...result, candidateMatching: matching };
+        urls = matching.urls;
+        status = matching.status;
       } catch (failure) { stopped = true; error = failure.message; }
       await save(player, status, result, urls, error);
       finished++;
@@ -330,7 +329,7 @@ async function run() {
       search: async player => {
         const response = await fetch(`https://${process.env.REPLIT_DEV_DOMAIN}/api/profiles/search`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subject: `${player.artist}, musician`, targetPlatforms: ['instagram'], methods: ['serper'] }),
+          body: JSON.stringify(instagramSearchRequest(player)),
           signal: AbortSignal.timeout(65000),
         });
         if (!response.ok) throw new Error(`Search HTTP ${response.status}; stopped without automatic retry.`);
@@ -341,20 +340,44 @@ async function run() {
     await report(accepted);
   } finally { await lock.close(); await fs.unlink(`${directory}/${runId}.lock`); }
 }
+export function researchExportRows(rows, players) {
+  const playersById = new Map(players.map(player => [String(player.profile_id), player]));
+  const csv = [['profile_id', 'cm_artist', 'account_ids', 'artist', 'status', 'instagram_urls',
+    'identity_status', 'error', 'saved_status', 'matching_policy', 'requires_claim_resolution']];
+  for (const row of rows) {
+    const [cmArtist, accountIds, artist, savedStatus, , error, json] = row.latest;
+    const player = playersById.get(String(row.profile_id));
+    let matching, matchingError;
+    if (['candidates_found', 'no_candidates', 'needs_review'].includes(savedStatus)) {
+      try {
+        if (!player || String(player.cm_artist) !== String(cmArtist)) throw new Error('Saved result cannot be bound to this catalog profile.');
+        matching = assessInstagramCandidates(JSON.parse(json), player);
+      } catch (failure) { matchingError = failure.message; }
+    }
+    const status = matching?.status ?? (['queued', 'running', 'failed'].includes(savedStatus) ? savedStatus : 'needs_review');
+    const urls = matching?.urls ?? [];
+    csv.push([row.profile_id, cmArtist, accountIds.join(' | '), artist, status, urls.join(' | '),
+      urls.length ? 'identity_supported_candidates_not_claim_resolved' : 'no_identity_supported_url',
+      error || matchingError || '', savedStatus, matching?.policy ?? '', true]);
+  }
+  return csv;
+}
+
 async function report(accepted) {
   const rows = await select(`SELECT toString(profile_id) AS profile_id,
-    argMax(tuple(cm_artist,account_ids,artist,status,instagram_urls,error),updated_at) AS latest
+    argMax(tuple(cm_artist,account_ids,artist,status,instagram_urls,error,result_json),updated_at) AS latest
     FROM ${events} WHERE run_id=${quote(accepted.runId)} GROUP BY profile_id ORDER BY profile_id`);
   const counts = {};
   for (const row of rows) counts[row.latest[3]] = (counts[row.latest[3]] ?? 0) + 1;
-  const csv = [['profile_id','cm_artist','account_ids','artist','status','instagram_urls','identity_status','error']];
-  for (const row of rows) csv.push([row.profile_id, row.latest[0], row.latest[1].join(' | '), row.latest[2],
-    row.latest[3], row.latest[4].join(' | '), 'Unverified candidates; no result does not prove absence', row.latest[5]]);
+  const csv = researchExportRows(rows, accepted.players);
+  const exportCounts = {};
+  for (const row of csv.slice(1)) exportCounts[row[4]] = (exportCounts[row[4]] ?? 0) + 1;
   await fs.writeFile(`${directory}/${accepted.runId}.csv`, csv.map(row => row.map(value =>
     `"${String(value ?? '').replaceAll('"', '""')}"`).join(',')).join('\n') + '\n');
-  const status = counts.failed || counts.running || counts.queued || counts.needs_review ? 'needs_review' : 'completed';
-  await metadata(accepted.runId, status, { counts, methods: ['serper'], verification: 'Unverified candidates' });
-  console.log(JSON.stringify({ runId: accepted.runId, final: true, status, counts, lookupView: lookup }));
+  const status = counts.failed || counts.running || counts.queued || exportCounts.needs_review ? 'needs_review' : 'completed';
+  await metadata(accepted.runId, status, { counts, exportCounts, methods: ['serper'], matchingPolicy: MATCHING_POLICY,
+    verification: 'Identity-supported research candidates only; live ingestion still requires claim resolution.' });
+  console.log(JSON.stringify({ runId: accepted.runId, final: true, status, counts, exportCounts, lookupView: lookup }));
 }
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   const command = process.argv[2];
