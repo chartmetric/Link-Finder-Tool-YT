@@ -85,6 +85,10 @@ The payload now expresses ownership as `unassessed`, retains source/target links
 
 Offline checks against the real saved Frankelly evidence confirm both edges reach the outgoing request, which is 5,564 bytes and remains below the same 6,000-byte ceiling. The old result is still unresolved. No paid call or import was performed for this audit. The effect on JEV's score remains unmeasured until a separately approved controlled live validation; do not call the false-negative issue fixed solely because the payload is corrected.
 
+The user subsequently approved a two-call comparison capped at four cents of new reservation. Both arms used the same saved Frankelly metadata, music evidence and two unrelated-account controls; the old serializer was loaded from history and checked against its 4,735-byte reconstruction. Both calls resolved to the same model release. The old input returned `likely` / 0.39, while the corrected input returned `verified` / 0.81. Both controls remained mismatches in both arms. The unchanged 0.9-plus-verified application gate still held the positive case, so neither arm produced an accepted URL.
+
+This single paired case supports further evaluation of the evidence repair, not a population-level accuracy claim or threshold reduction. No other artists, searches, claims or imports ran. The comparison's reported provider charge was $0.000158172; conservative reservations were four cents, bringing the cumulative reserved ceiling to $0.43 of $10. The original decisions remain intact; separate evidence is under `capped-jev-comparison-04c`.
+
 Run the runner/guard checks without network access:
 
 ```sh
