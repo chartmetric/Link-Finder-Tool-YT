@@ -62,3 +62,9 @@ Reconcile a final saved-status snapshot before treating a completed worker's pro
 **Why:** Multiple completed research batches initially reported one profile as still running even though all worker completions were logged; a fresh read then showed the final saved result without another provider call. The visibility delay's exact cause has not been established.
 
 **How to apply:** Refresh the read-only status/report once after workers finish. Never repeat a paid search solely because the immediate aggregate still says running; investigate persistence if the discrepancy remains.
+
+A configured identity verifier does not establish that a separate research pipeline actually used it.
+
+**Why:** The historical musician research saved Serper candidates without metadata comparisons or JEV decisions, even though the interactive application supported those checks. Discovery coverage therefore overstated evidence of correct artist ownership.
+
+**How to apply:** Inspect persisted per-candidate identity evidence and catalog-reference binding for each execution path before calling its URLs verified or import-ready. Report missing evidence separately from proven wrong accounts; name-overlap and shared-handle flags are not measured false-positive rates.

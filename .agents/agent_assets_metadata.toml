@@ -140,3 +140,31 @@ mtime_ms = 1793754831065
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/a6a9ee49-7f81-4bc4-baf9-a3e19fa635d5/131cce47-2362-4fec-915f-d0e2ce8b09fd"
 storage_version_token = "1793754836654976"
 content_type = "text/csv"
+
+[[outputs]]
+id = "jV5FdwSBWAmfQ2d6spj2b"
+uri = "file://generated-artifacts/musician-instagram-quality-audit-2026-11-05/audit-summary.csv"
+type = "table"
+title = "Instagram research quality audit"
+description = "Read-only audit of 58,842 researched profiles, verification-evidence counts, risk flags and import limitations. No paid calls or stored-data changes."
+logical_id = "0902be82-fe3c-4b2f-8add-82b5af5e40db"
+content_hash = "sha256:ce15bf36a382d1df19084b437ccf67f3c92d0d8b5d0f20033c2aace5fcb5cd04"
+size = 3000
+mtime_ms = 1793903352859
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/0902be82-fe3c-4b2f-8add-82b5af5e40db/6d9f8b88-18fd-4046-b119-7b3790d9be0e"
+storage_version_token = "1793903353873798"
+content_type = "text/csv"
+
+[[outputs]]
+id = "m4a1j7Br0KhgyuQ4iXwak"
+uri = "file://generated-artifacts/musician-instagram-quality-audit-2026-11-05/shared-handle-examples-NOT-FOR-IMPORT.csv"
+type = "table"
+title = "Largest shared-handle candidate groups"
+description = "Examples from the 20 most widely reused candidate handles. This is an audit sample—not a full list, a confirmed-error list, or an import file."
+logical_id = "dc50ae04-53f6-4dea-991c-4c90e6a42303"
+content_hash = "sha256:7e724ec0675a15f3121786304abf28b7734cd564a6f925ebd90a8d85b52a5f62"
+size = 23314
+mtime_ms = 1793903352991
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/dc50ae04-53f6-4dea-991c-4c90e6a42303/de1d17d6-6c41-4611-82b2-f88df3826e9e"
+storage_version_token = "1793903354539832"
+content_type = "text/csv"
