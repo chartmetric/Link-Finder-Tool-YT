@@ -14,7 +14,7 @@ export function instagramProfileUrl(value) {
   } catch { return null; }
 }
 
-function referenceUrl(value, platform) {
+export function referenceUrl(value, platform) {
   try {
     const url = new URL(value);
     if (url.protocol !== 'https:' || url.username || url.password || url.port) return null;
@@ -22,7 +22,7 @@ function referenceUrl(value, platform) {
     if (platform === 'spotify' && url.hostname === 'open.spotify.com' && /^\/artist\/[A-Za-z0-9]{22}$/.test(path)) {
       return `https://open.spotify.com${path}`;
     }
-    if (platform === 'youtube' && ['youtube.com', 'www.youtube.com'].includes(url.hostname)
+    if (platform === 'youtube' && ['youtube.com', 'www.youtube.com', 'music.youtube.com'].includes(url.hostname)
       && /^\/(@[A-Za-z0-9._-]+|channel\/[A-Za-z0-9_-]+)$/.test(path)) {
       return `https://www.youtube.com${path.startsWith('/@') ? path.toLowerCase() : path}`;
     }
@@ -67,11 +67,13 @@ function metadataMatches(metadata, url, normalize) {
   return [metadata?.url, ...(metadata?.urlAliases ?? [])].some(value => normalize(value) === url);
 }
 
-function crossLinked(reference, candidate, url, catalog) {
+export function hasCatalogCrossLink(reference, candidate, url, catalog) {
   // Compare parsed URL identities, never partial handles or substrings of IDs.
   const urls = text => String(text ?? '').match(/https:\/\/[^\s<>"']+/g) ?? [];
-  return urls(reference.bio).some(value => instagramProfileUrl(value.replace(/[),;]+$/, '')) === url)
-    || urls(candidate.bio).some(value => referenceUrl(value.replace(/[),;]+$/, ''), catalog.platform) === catalog.url);
+  return [...urls(reference.bio), ...(reference.externalUrls ?? [])]
+    .some(value => instagramProfileUrl(value.replace(/[),;]+$/, '')) === url)
+    || [...urls(candidate.bio), ...(candidate.externalUrls ?? [])]
+      .some(value => referenceUrl(value.replace(/[),;]+$/, ''), catalog.platform) === catalog.url);
 }
 
 function assess(profile, player, references) {
@@ -90,7 +92,7 @@ function assess(profile, player, references) {
   const relatedEntity = /\b(festival|record label|fan ?page|fan account|tribute)\b/i.test(
     `${text} ${comparison?.candidate?.bio ?? ''}`);
   if (relatedEntity) return { url, status: 'needs_review', reason: 'Possible label, festival, fan or related account; artist ownership is not established.' };
-  const linked = catalog && candidateBound && crossLinked(comparison.reference, comparison.candidate, url, catalog);
+  const linked = catalog && candidateBound && hasCatalogCrossLink(comparison.reference, comparison.candidate, url, catalog);
   if (!fullNamePresent(player.artist, text) && !linked) {
     return { url, status: 'rejected', reason: 'The account name does not identify this artist and no catalog-bound cross-link supports it.' };
   }

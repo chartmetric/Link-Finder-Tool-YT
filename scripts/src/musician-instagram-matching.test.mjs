@@ -62,6 +62,24 @@ test('only a verified, catalog-bound comparison with an exact cross-link support
   assert.equal(assessment.approvedCatalogLinks, false);
 });
 
+test('external bio links support exact artist IDs, not merely similar account names', () => {
+  const profile = supported();
+  profile.identityComparison.reference.bio = '';
+  profile.identityComparison.candidate.bio = 'Producer';
+  profile.identityComparison.candidate.externalUrls = [spotify];
+  assert.deepEqual(assessInstagramCandidates(result([profile]), player).urls, [url]);
+  profile.identityComparison.candidate.externalUrls = [`${spotify}X`];
+  assert.deepEqual(assessInstagramCandidates(result([profile]), player).urls, []);
+});
+
+test('catalog YouTube Music channel URLs normalize without changing channel identity', () => {
+  const channel = 'UCvU9MbC4e-3A8myju8Q_o-g';
+  const other = { ...player, accounts: [{ ...player.accounts[0], platform: 'youtube',
+    account_url: `https://music.youtube.com/channel/${channel}?feature=share` }] };
+  assert.equal(catalogReferences(other)[0].url, `https://www.youtube.com/channel/${channel}`);
+  assert.equal(instagramSearchRequest(other).knownProfileUrl, `https://www.youtube.com/channel/${channel}`);
+});
+
 test('wrong reference, wrong candidate metadata, missing cross-link and inconclusive verification fail closed', () => {
   for (const change of [
     p => { p.identityComparison.reference.url = `${spotify}X`; },

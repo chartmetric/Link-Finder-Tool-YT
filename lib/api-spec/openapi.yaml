@@ -953,6 +953,10 @@ components:
         handle: { type: string }
         displayName: { type: string }
         bio: { type: string }
+        externalUrls:
+          type: array
+          description: Public HTTPS profile link destinations returned by the metadata provider; not independently verified ownership claims.
+          items: { type: string }
         imageUrl: { type: string }
         url: { type: string }
         followers: { type: number }

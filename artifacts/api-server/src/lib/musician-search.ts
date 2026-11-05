@@ -3,6 +3,7 @@ import { providerFetch as fetch } from "./paid-request-guard";
 import { parsePublicReference, resolvePublicReference } from "./public-reference";
 import { lookupStartingProfile } from "./starting-profile-lookup";
 import { isRestrictedInstagramProfile, RestrictedProfileError } from "./restricted-profile";
+import { externalProfileUrls, hasExactIdentityCrossLink } from "./identity-links";
 
 type SerperOrganicResult = {
   title?: string;
@@ -68,6 +69,7 @@ type IdentityMetadata = {
   handle: string;
   displayName?: string;
   bio?: string;
+  externalUrls?: string[];
   imageUrl?: string;
   url: string;
   followers?: number;
@@ -425,7 +427,7 @@ export function parseKnownProfileUrl(value: string): {
       ? "instagram"
       : host === "tiktok.com"
         ? "tiktok"
-        : host === "youtube.com"
+        : host === "youtube.com" || host === "music.youtube.com"
           ? "youtube"
           : host === "open.spotify.com"
             ? "spotify"
@@ -444,6 +446,7 @@ export function parseKnownProfileUrl(value: string): {
           : parts.length === 1 ? parts[0] : "";
     if (!handle || !/^[\w.-]{2,120}$/.test(handle)) return undefined;
     if (platform === "instagram" && ["explore", "reels", "reel", "p", "stories", "direct", "accounts"].includes(handle.toLowerCase())) return undefined;
+    if (platform === "youtube" && host === "music.youtube.com") url.hostname = "www.youtube.com";
     url.search = "";
     url.hash = "";
     return { platform, handle, url: url.toString(), ...(channelId ? { channelId } : {}) };
@@ -491,7 +494,7 @@ function validFollowerCount(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
 
-async function fetchIdentityMetadata(input: {
+export async function fetchIdentityMetadata(input: {
   platform: string;
   url: string;
   apiKey: string;
@@ -545,6 +548,7 @@ async function fetchIdentityMetadata(input: {
       handle: user.username ?? expectedHandle,
       ...(user.full_name ? { displayName: user.full_name } : {}),
       ...(user.biography ? { bio: user.biography } : {}),
+      externalUrls: externalProfileUrls(user),
       ...(user.profile_pic_url_hd || user.profile_pic_url
         ? { imageUrl: user.profile_pic_url_hd ?? user.profile_pic_url }
         : {}),
@@ -583,7 +587,7 @@ async function fetchIdentityMetadata(input: {
   };
 }
 
-function compareIdentity(reference: IdentityMetadata, candidate: IdentityMetadata, evidence: string[] = []) {
+export function compareIdentity(reference: IdentityMetadata, candidate: IdentityMetadata, _evidence: string[] = []) {
   const clean = (value?: string) => (value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
   const referenceName = clean(reference.displayName);
   const candidateName = clean(candidate.displayName);
@@ -595,9 +599,9 @@ function compareIdentity(reference: IdentityMetadata, candidate: IdentityMetadat
   const reasons: string[] = [];
   let score = 0;
 
-  if (evidence.some((signal) => signal.toLowerCase().includes("link in bio"))) {
+  if (hasExactIdentityCrossLink(reference, candidate)) {
     score += 60;
-    reasons.push("Direct link from the known profile");
+    reasons.push("Exact account cross-link in profile metadata");
   }
   if (referenceName && candidateName && (referenceName.includes(candidateName) || candidateName.includes(referenceName))) {
     score += 35;
@@ -1151,7 +1155,7 @@ export async function findProfiles(input: {
       const questions = Object.fromEntries(jevCandidates.flatMap((profile, index) => [
         [`candidate_${index}_same_identity`, {
           type: "noul",
-          instructions: `Evaluate only candidates[${index}] (${profile.url}). Does it belong to the same person, creator, brand, or entity as knownProfileUrl?`,
+          instructions: `Evaluate only candidates[${index}] (${profile.url}). Does it belong to the same person, creator, brand, or entity as knownProfileUrl? A label, festival, collaborator, fan page or cast member is not the artist's own account merely through association. Check exact music-platform IDs in externalUrls and biography links; similar names and verified badges alone are insufficient.`,
           criteria: {
             true: "The supplied metadata and evidence support the same identity",
             false: "The evidence supports different identities or is too weak",

@@ -11,6 +11,8 @@ export interface IdentityMetadata {
   handle: string;
   displayName?: string;
   bio?: string;
+  /** Public HTTPS profile link destinations returned by the metadata provider; not independently verified ownership claims. */
+  externalUrls?: string[];
   imageUrl?: string;
   url: string;
   followers?: number;
