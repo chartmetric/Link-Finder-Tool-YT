@@ -68,3 +68,9 @@ A configured identity verifier does not establish that a separate research pipel
 **Why:** The historical musician research saved Serper candidates without metadata comparisons or JEV decisions, even though the interactive application supported those checks. Discovery coverage therefore overstated evidence of correct artist ownership. Pilot preflight also found missing or unrecognized reference accounts, so abstention can reflect input gaps rather than an incorrect Instagram identity.
 
 **How to apply:** Inspect persisted per-candidate identity evidence and catalog-reference binding for each execution path before calling its URLs verified or import-ready. Before paid checks, measure reference readiness and verify that external bio-link targets reach the identity evidence. Report missing evidence separately from proven wrong accounts; name-overlap and shared-handle flags are not measured false-positive rates.
+
+Strict abstention must be evaluated alongside independent recovery of known correct accounts; rejecting every candidate does not make a rerun ready.
+
+**Why:** A live regression pilot independently recovered a user-confirmed account but could not establish its exact music identity through a music landing-page link. Another known account was missed when searches returned posts and topic pages instead of a direct profile URL. Neither outcome proves a wrong identity or account absence.
+
+**How to apply:** Keep known-answer handles separate from discovery inputs, test both false-positive prevention and known-positive recovery before expanding, and distinguish missing discovery/link-path evidence from an actual mismatch. Do not weaken identity thresholds merely to increase acceptance.

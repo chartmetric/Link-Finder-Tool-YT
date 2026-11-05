@@ -2,10 +2,21 @@ import fs from 'node:fs/promises';
 
 export const paidKinds = new Set(['serper', 'scrapecreators_candidate', 'scrapecreators_reference', 'jev']);
 
-/** Fixture-only until live transport, provider prices and execution are approved.
- * An exclusive, fsynced journal makes any previous admission non-replayable. */
+// Conservative prepaid-credit valuations, not purchases or promised invoice costs:
+// Serper $1/1k; SC $47/25k credits, allowing TEN credits per profile;
+// JEV $0.042/M input, $0 output, reserving more than its whole 262144-token context.
+export const pilotReservationsCents = Object.freeze({
+  serper: 1, scrapecreators_candidate: 2, scrapecreators_reference: 2, jev: 2,
+  spotify_oembed: 0, public_page: 0,
+});
+
+/** An exclusive, fsynced journal makes any previous admission non-replayable. */
 export async function createPilotBudget({ manifest, journalPath, transport, mode }) {
-  if (mode !== 'fixture' || transport?.fixture !== true || typeof transport.dispatch !== 'function') {
+  const live = mode === 'live' && transport?.live === true && transport.fixture !== true
+    && manifest.authorization?.approved === true && manifest.run_allowed === true
+    && Number.isInteger(manifest.authorization.maxSpendCents)
+    && manifest.authorization.maxSpendCents > 0 && manifest.authorization.maxSpendCents <= 1000;
+  if ((!live && (mode !== 'fixture' || transport?.fixture !== true)) || typeof transport?.dispatch !== 'function') {
     throw new Error('Live execution is disabled. Only an explicitly injected fixture transport is permitted.');
   }
   const limits = manifest.proposed_limits;
@@ -33,7 +44,8 @@ export async function createPilotBudget({ manifest, journalPath, transport, mode
   const allowed = new Set(manifest.artists.filter(a => a.reference_preflight?.readiness === 'reference_usable'
     && a.source_identity_matches).map(a => String(a.profile_id)));
   const journal = await fs.open(journalPath, 'wx'); // Never resume/replay a previous journal.
-  const counts = { paid: 0, scrapecreators: 0, byKind: {}, byArtist: {} };
+  const counts = { paid: 0, scrapecreators: 0, byKind: {}, byArtist: {},
+    reservedSpendCents: 0, maxSpendCents: live ? manifest.authorization.maxSpendCents : null };
   const keys = new Set(), waiters = [];
   let active = 0, stopped, closed = false, serial = Promise.resolve();
   const append = async row => {
@@ -60,13 +72,19 @@ export async function createPilotBudget({ manifest, journalPath, transport, mode
         if (closed || stopped) throw new Error(stopped ?? 'Pilot budget is closed.');
         if (Date.now() >= deadlineAt) throw new Error('Pilot time budget exceeded before dispatch.');
         if (keys.has(key)) throw new Error('Admission already used; automatic replay is forbidden.');
+        const reserveCents = live ? pilotReservationsCents[kind] : 0;
+        if (live && counts.reservedSpendCents + reserveCents > counts.maxSpendCents) {
+          stopped = 'Approved dollar ceiling reached; new admissions stopped.';
+          throw new Error(stopped);
+        }
         const artist = counts.byArtist[profileId] ?? {};
         if ((counts.byKind[kind] ?? 0) >= cap[kind] || (artist[kind] ?? 0) >= perArtist[kind]
           || (paidKinds.has(kind) && counts.paid >= limits.paid_http_requests_total)
           || (kind.startsWith('scrapecreators_') && counts.scrapecreators >= limits.scrapecreators_requests_total)) {
           throw new Error('Pilot request cap reached; no dispatch.');
         }
-        await append({ phase: 'admitted', profileId, kind, key, at: new Date().toISOString() });
+        await append({ phase: 'admitted', profileId, kind, key, reserveCents, at: new Date().toISOString() });
+        counts.reservedSpendCents += reserveCents;
         keys.add(key);
         counts.byKind[kind] = (counts.byKind[kind] ?? 0) + 1;
         artist[kind] = (artist[kind] ?? 0) + 1;

@@ -27,21 +27,30 @@ export function pilotPreflight(manifest) {
   return { dryRun: true, networkCalls: 0, claimsSubmitted: 0, databaseWrites: 0, artists };
 }
 
-/** No live adapter is provided. All stages go through the same budget/journal.
- * Tests inject fixture responses; the CLI below supports preflight only. */
-export async function runFixturePilot({ manifest, journalPath, transport, evaluateRegressions }) {
+/** All stages use the same budget/journal. CLI here remains zero-network.
+ * Live execution is exclusively exposed by the separately authorized live CLI. */
+export async function runPilot({ manifest, journalPath, transport, evaluateRegressions, onResult, mode = 'fixture' }) {
   const preflight = pilotPreflight(manifest);
   const eligible = new Map(preflight.artists.filter(a => a.eligible).map(a => [a.profileId, a]));
   const scopeManifest = { ...manifest, artists: manifest.artists.filter(a => eligible.has(String(a.profile_id))) };
-  const budget = await createPilotBudget({ manifest: scopeManifest, journalPath, transport, mode: 'fixture' });
+  const budget = await createPilotBudget({ manifest: scopeManifest, journalPath, transport, mode });
   const results = [];
+  const record = async result => {
+    result.fixtureOnly = mode === 'fixture';
+    result.cmArtist = String(manifest.artists.find(a => String(a.profile_id) === result.profileId)?.cm_artist ?? '');
+    results.push(result);
+    if (onResult) {
+      try { await onResult(result); }
+      catch (error) { budget.stop('Result persistence failed.'); throw error; }
+    }
+  };
   let cursor = 0, stage = [];
   const deadline = Date.now() + manifest.proposed_limits.job_wall_time_minutes * 60000;
   async function worker() {
     while (cursor < stage.length) {
       const artist = stage[cursor++];
       const id = String(artist.profile_id), scope = eligible.get(id);
-      if (!scope) { results.push({ profileId: id, status: 'needs_review', reason: preflight.artists.find(a => a.profileId === id).reason }); continue; }
+      if (!scope) { await record({ profileId: id, status: 'needs_review', reason: preflight.artists.find(a => a.profileId === id).reason }); continue; }
       const started = Date.now();
       const evidence = { reference: undefined, discoveryAttempts: [], profiles: [] };
       let sequence = 0;
@@ -78,6 +87,16 @@ export async function runFixturePilot({ manifest, journalPath, transport, evalua
         const profiles = evidence.profiles;
         for (const p of selected) {
           const candidate = await call('scrapecreators_candidate', { url: p.url });
+          if (mode === 'live' && candidate.externalUrls?.some(url => /^https:\/\/linktr\.ee\/[^/?#]+\/?$/i.test(url))
+            && !evidence.linkHubAttempted) {
+            evidence.linkHubAttempted = true;
+            const hubUrl = candidate.externalUrls.find(url => /^https:\/\/linktr\.ee\/[^/?#]+\/?$/i.test(url));
+            try {
+              const hub = await call('public_page', { url: hubUrl });
+              candidate.externalLinkEvidence = hub;
+              candidate.externalUrls = [...new Set([...candidate.externalUrls, ...hub.externalUrls])];
+            } catch (error) { candidate.linkHubError = error.message; }
+          }
           const linked = hasCatalogCrossLink(reference, candidate, p.url, scope.reference);
           profiles.push({ ...p, identityComparison: { reference, candidate, status: linked ? 'likely' : 'uncertain',
             score: linked ? 60 : 0, reasons: linked ? ['Exact catalog account cross-link'] : ['No exact cross-link'] } });
@@ -89,9 +108,9 @@ export async function runFixturePilot({ manifest, journalPath, transport, evalua
         const assessment = assessInstagramCandidates({ ...discovery, profiles }, artist);
         // Invalid or truncated candidates cannot turn into a completed absence.
         if (!profiles.length && discovery.profiles.length) assessment.status = 'needs_review';
-        results.push({ profileId: id, ...assessment, uninspectedCandidates: Math.max(0, unique.length - selected.length),
+        await record({ profileId: id, ...assessment, uninspectedCandidates: Math.max(0, unique.length - selected.length),
           rawResult: { ...discovery, profiles }, discoveryAttempts, fixtureOnly: true, approvedCatalogLinks: false });
-      } catch (error) { results.push({ profileId: id, status: 'needs_review', reason: error.message,
+      } catch (error) { await record({ profileId: id, status: 'needs_review', reason: error.message,
         partialEvidence: evidence, fixtureOnly: true }); }
     }
   }
@@ -103,7 +122,7 @@ export async function runFixturePilot({ manifest, journalPath, transport, evalua
       if (!work.length) continue;
       if (work === remaining && !regressionStagePassed) {
         budget.stop('Regression-stage approval missing or failed.');
-        for (const a of remaining) results.push({ profileId: String(a.profile_id), status: 'needs_review',
+        for (const a of remaining) await record({ profileId: String(a.profile_id), status: 'needs_review',
           reason: 'Regression-stage approval missing or failed; no requests dispatched.', fixtureOnly: true });
         break;
       }
@@ -114,8 +133,12 @@ export async function runFixturePilot({ manifest, journalPath, transport, evalua
         regressionStagePassed = !!evaluateRegressions && await evaluateRegressions(structuredClone(results)) === true;
       }
     }
-    return { fixtureOnly: true, results, regressionStagePassed, budget: budget.snapshot(), claimsSubmitted: 0, databaseWrites: 0 };
+    return { fixtureOnly: mode === 'fixture', results, regressionStagePassed, budget: budget.snapshot(), claimsSubmitted: 0, databaseWrites: 0 };
   } finally { await budget.close(); }
+}
+
+export function runFixturePilot(options) {
+  return runPilot({ ...options, mode: 'fixture' });
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

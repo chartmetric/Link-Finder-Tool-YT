@@ -41,7 +41,7 @@ Saved regression excerpts cover Frankelly Bello, Gula Mın 76 and Rooby Jeantal.
 
 ## Pilot prerequisites
 
-The pilot CLI supports **zero-network preflight only**:
+The preflight CLI supports **zero-network preflight only**:
 
 ```sh
 node scripts/src/instagram-pilot-runner.mjs --dry-run generated-artifacts/musician-instagram-verification-pilot-2026-11-05/manifest.json
@@ -51,10 +51,22 @@ node scripts/src/instagram-pilot-runner.mjs --dry-run generated-artifacts/musici
 
 Repairing a reference format does not silently expand the frozen paid scope: the previously blocked YouTube Music reference is recognized, but remains excluded until scope and budget are explicitly revised. Missing references remain unresolved.
 
-Public link-hub fetching, actual live-provider adapters, enforceable provider/token billing limits and a dollar ceiling are still prerequisites for **paid execution**, not enabled by this fixture runner. In particular, the JEV input check conservatively caps serialized fixture evidence by byte count; a live adapter must also account for prompt/token overhead. No HTTP request cap should be presented as a dollar budget.
+The separate `instagram-pilot-live.mjs` entry point now supports the explicitly approved, frozen 50-case pilot with a $10 maximum, 34 paid-eligible cases, and the same request caps. It creates a new exclusive run directory, never replays a journal, stores raw response packets and fsynced per-artist results, and reads known-answer holdouts only after blind regression discovery. No database, claims or import adapter exists here. The ordinary preflight command never launches paid work.
+
+Live requests reserve conservative whole cents before dispatch: Serper 1 cent, ScrapeCreators 2 cents (allowing up to ten credits), and JEV 2 cents. Reservations are never refunded automatically, including timeouts and calls blocked after admission. Those reservations are upper valuations, not reported invoice charges. Provider-returned ScrapeCreators credits and JEV usage/cost are retained separately; missing or excessive billing evidence stops admissions. JEV checks the whole serialized request (including questions) against a conservative 6,000-byte input bound. Its typed output has a bounded question/choice structure rather than a generated-text token stream.
+
+Price sources checked 2026-11-05: Serper Starter $1/1k at https://serper.dev; ScrapeCreators $47/25k credits at https://scrapecreators.com, profile/channel endpoints list one credit in https://docs.scrapecreators.com/v1/instagram/profile and https://docs.scrapecreators.com/v1/youtube/channel; pinned `typesafe/jev-1.13` is $0.042/M input and $0 output at https://openrouter.ai/typesafe/jev-1.13. The JEV reservation exceeds the price of its full 262,144-token context at those rates. Recheck pricing before separately approving another run.
+
+One candidate-sourced `linktr.ee` page can be read per artist, with fixed HTTPS domain/path checks, no redirects or credentials, and a bounded response. Arbitrary official-site crawling and other music landing-page hosts are not enabled. The first authorized live regression stage did not pass: Frankelly's correct URL was independently found but had no exact Spotify cross-link in accessible metadata; Shenge's results contained posts/topic pages but no direct profile. Remaining cases were not dispatched. This is not a successful full-sample verification or a corrected production dataset.
 
 Run the runner/guard checks without network access:
 
 ```sh
 node --test scripts/src/instagram-pilot-runner.test.mjs
+```
+
+Check live adapters and dollar reservations using mocked HTTP only:
+
+```sh
+node --test scripts/src/instagram-pilot-live.test.mjs
 ```
