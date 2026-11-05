@@ -91,7 +91,12 @@ export async function runPilot({ manifest, journalPath, transport, evaluateRegre
         const selected = unique.slice(0, manifest.proposed_limits.instagram_candidate_metadata_per_artist);
         const profiles = evidence.profiles;
         for (const p of selected) {
-          const candidate = await call('scrapecreators_candidate', { url: p.url });
+          let candidate;
+          try { candidate = await call('scrapecreators_candidate', { url: p.url }); }
+          catch (error) {
+            profiles.push({...p,metadataLookupError:error.message});
+            continue; // A restricted/unreadable neighbour must not discard readable candidates.
+          }
           if (instagramProfileUrl(candidate.url)===p.url && candidate.externalUrls?.some(isMusicLandingUrl)
             && !evidence.linkHubAttempted) {
             evidence.linkHubAttempted = true;
@@ -104,8 +109,10 @@ export async function runPilot({ manifest, journalPath, transport, evaluateRegre
           profiles.push({ ...p, identityComparison: { reference, candidate, status: linked ? 'likely' : 'uncertain',
             score: linked ? 60 : 0, reasons: linked ? ['Exact catalog account cross-link'] : ['No exact cross-link'] } });
         }
-        if (profiles.length) {
-          const decisions = await call('jev', { artist: artist.artist, catalogReference: scope.reference, profiles });
+        const readableProfiles=profiles.filter(p=>p.identityComparison);
+        if (profiles.length && !readableProfiles.length) throw new Error('No candidate had readable identity metadata; evidence retained.');
+        if (readableProfiles.length) {
+          const decisions = await call('jev', { artist: artist.artist, catalogReference: scope.reference, profiles:readableProfiles });
           for (const p of profiles) p.jevVerification = decisions.find(d => instagramProfileUrl(d.url) === p.url)?.jevVerification;
         }
         const assessment = assessInstagramCandidates({ ...discovery, profiles }, artist);

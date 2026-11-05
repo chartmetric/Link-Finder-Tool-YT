@@ -210,3 +210,17 @@ mtime_ms = 1793906095152
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/a0b8032a-e3bd-4397-8ada-cfaf7519c3ee/d8ddf869-03f0-4916-9d82-660b9a1be193"
 storage_version_token = "1793906144864502"
 content_type = "text/csv"
+
+[[outputs]]
+id = "MMHQu7RcegDK-2s5bBMxy"
+uri = "file://generated-artifacts/musician-instagram-verification-pilot-2026-11-05/live-updated-remaining-989/pilot-outcomes-NOT-FOR-IMPORT.csv"
+type = "table"
+title = "Updated Instagram pilot outcomes — not for import"
+description = "Known-case outcomes with recovered handles, music-ID evidence and JEV scores. No claims or catalog changes."
+logical_id = "1e1544ca-f7cd-4c5d-893b-2f45b673ea77"
+content_hash = "sha256:3868dac42b91a56eec5c84285b9e39ddd55d2cfd71b9a76eeae4664273498770"
+size = 987
+mtime_ms = 1793909046207
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/1e1544ca-f7cd-4c5d-893b-2f45b673ea77/c1c4c288-3879-47d2-aa0e-42f9210a89b4"
+storage_version_token = "1793909118269397"
+content_type = "text/csv"

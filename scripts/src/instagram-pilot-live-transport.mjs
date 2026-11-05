@@ -5,11 +5,34 @@ import { musicPageUrl, parsePublicMusicPage } from './public-music-links.mjs';
 import { safeMusicFetch } from './safe-music-fetch.mjs';
 
 const MODEL = 'typesafe/jev-1.13';
+export const serperQuery = payload => payload.queryIndex === 0
+  ? `"${payload.artist}" musician Instagram site:instagram.com` : `"${payload.artist}" Instagram`;
+
+export function cachedPacketFor(packets,request,now=Date.now()) {
+  if (!['serper','spotify_oembed','scrapecreators_candidate'].includes(request.kind)) return undefined;
+  let url;
+  if (request.kind==='serper') url='https://google.serper.dev/search';
+  if (request.kind==='spotify_oembed') url=`https://open.spotify.com/oembed?${new URLSearchParams({url:request.payload.url})}`;
+  if (request.kind==='scrapecreators_candidate') {
+    const canonical=instagramProfileUrl(request.payload.url);
+    if (!canonical) return undefined;
+    url=`https://api.scrapecreators.com/v1/instagram/profile?${new URLSearchParams({handle:new URL(canonical).pathname.split('/')[1]})}`;
+  }
+  return packets.find(p=>p.completedAdmission===true && p.status===200
+    && p.profileId===request.profileId && p.kind===request.kind && p.url===url
+    && Number.isFinite(Date.parse(p.at)) && now-Date.parse(p.at)>=0 && now-Date.parse(p.at)<24*60*60*1000
+    && !p.data.error && p.data.success!==false
+    && (request.kind!=='serper' || (p.data.searchParameters?.q===serperQuery(request.payload) && Array.isArray(p.data.organic))));
+}
 const externalUrls = user => [...new Set([user.external_url, ...(user.bio_links ?? []).map(b => b.url)]
   .filter(value => { try { const u = new URL(value); return u.protocol === 'https:' && !u.username && !u.password && !u.port; } catch { return false; } }))];
 
 // Never preserve credentials, cookies, tracking tokens or headers in response files.
-const redact = (key, value) => /token|password|secret|api.?key|cookie|authorization/i.test(key) ? '[redacted]' : value;
+const redact = (key, value) => {
+  if (['input_tokens','output_tokens','prompt_tokens','completion_tokens','total_tokens'].includes(key)
+    && Number.isFinite(value)) return value;
+  return /token|password|secret|api.?key|cookie|authorization/i.test(key) ? '[redacted]' : value;
+};
 
 export function jevRequest(payload) {
   const questions = Object.fromEntries(payload.profiles.flatMap((p, i) => [
@@ -34,13 +57,18 @@ export function jevRequest(payload) {
       candidate: meta(p.identityComparison.candidate) })) }, questions };
 }
 
-export function createLiveTransport({ keys, responseDir, fetchImpl = fetch, publicFetchImpl = safeMusicFetch }) {
+export function createLiveTransport({ keys, responseDir, fetchImpl = fetch, publicFetchImpl = safeMusicFetch, cachedPackets=[] }) {
   for (const name of ['SERPERDEV_API_KEY', 'SCRAPECREATORS_API_KEY', 'OPENROUTER_API_KEY']) {
     if (!keys[name]) throw new Error(`Required secret is missing: ${name}`);
   }
   async function http(request, url, options = {}) {
     const isPublic = request.kind === 'public_page';
-    const response = await (isPublic ? publicFetchImpl : fetchImpl)(url, {
+    const cached = request.cachedReceipt ? cachedPacketFor(cachedPackets,request) : undefined;
+    if (request.cachedReceipt && (!cached || cached.sourceFile!==request.cachedReceipt.sourceFile
+      || cached.key!==request.cachedReceipt.sourceKey || cached.url!==String(url))) {
+      throw new Error('Admitted cache evidence is unavailable or changed; refusing a paid fallback.');
+    }
+    const response = cached ? Response.json(cached.data) : await (isPublic ? publicFetchImpl : fetchImpl)(url, {
       ...options, signal: request.signal, redirect:isPublic ? 'manual' : 'error' });
     const reader = response.body.getReader();
     let bytes = 0; const chunks = [];
@@ -57,7 +85,8 @@ export function createLiveTransport({ keys, responseDir, fetchImpl = fetch, publ
       status:response.status,location:response.headers.get('location')});
     else try { data = JSON.parse(text); } catch { data = { text }; }
     const packet = { profileId: request.profileId, kind: request.kind, key: request.key,
-      at: new Date().toISOString(), url: String(url), status: response.status, data };
+      at: new Date().toISOString(), url: String(url), status: response.status, data,
+      cacheSource:cached ? {sourceFile:cached.sourceFile,sourceKey:cached.key,sourceAt:cached.at} : undefined };
     await fs.writeFile(`${responseDir}/${request.key.replaceAll(':','-')}.json`, JSON.stringify(packet, redact, 2), { flag: 'wx' });
     const message = JSON.stringify(data).slice(0,3000);
     const creditFailure = /(?:insufficient|exhausted|not enough|no remaining|out of|exceeded).{0,45}(?:credit|balance)|(?:credit|balance).{0,40}(?:insufficient|exhausted|depleted)|invalid.{0,15}api.?key|unauthori[sz]ed/i.test(message);
@@ -76,7 +105,16 @@ export function createLiveTransport({ keys, responseDir, fetchImpl = fetch, publ
     }
     return data;
   }
-  return { live: true, async dispatch(request) {
+  return { live: true,
+    inputBytes({kind,payload}) {
+      if(kind!=='jev') throw new Error('No input-byte estimator for this provider.');
+      return Buffer.byteLength(JSON.stringify(jevRequest(payload)));
+    },
+    cachedAdmission(request) {
+      const p=cachedPacketFor(cachedPackets,request);
+      return p ? {sourceFile:p.sourceFile,sourceKey:p.key,sourceAt:p.at} : undefined;
+    },
+    async dispatch(request) {
     const { kind, payload } = request;
     if (kind === 'spotify_oembed') {
       const u = new URL(payload.url);
@@ -101,8 +139,7 @@ export function createLiveTransport({ keys, responseDir, fetchImpl = fetch, publ
         displayName: data.name, bio: data.description, externalUrls: [] };
     }
     if (kind === 'serper') {
-      const q = payload.queryIndex === 0 ? `"${payload.artist}" musician Instagram site:instagram.com`
-        : `"${payload.artist}" Instagram`;
+      const q = serperQuery(payload);
       const data = await http(request, 'https://google.serper.dev/search', { method: 'POST',
         headers: {'X-API-KEY': keys.SERPERDEV_API_KEY, 'Content-Type':'application/json'},
         body: JSON.stringify({q, num:10}) });

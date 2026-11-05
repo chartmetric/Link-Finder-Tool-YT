@@ -159,8 +159,12 @@ test('fixture runner keeps clues from both searches and verifies music chain wit
     transport:{fixture:true,dispatch:async({kind,payload})=>{
       observed.push(kind);
       if(kind==='spotify_oembed')return {...catalog,displayName:'Frankelly Bello'};
-      if(kind==='serper')return {profiles:payload.queryIndex===0 ? [clue] : [],methodsUsed:[{method:'serper',status:'used'}]};
-      if(kind==='scrapecreators_candidate')return {url:ig,displayName:'Frankelly Bello',externalUrls:[hubUrl]};
+      if(kind==='serper')return {profiles:payload.queryIndex===0 ? [clue,{...clue,url:'https://www.instagram.com/unreadable_fan/',discoveryPriority:0}] : [],
+        methodsUsed:[{method:'serper',status:'used'}]};
+      if(kind==='scrapecreators_candidate') {
+        if(payload.url!==ig) throw new Error('Restricted neighbouring candidate');
+        return {url:ig,displayName:'Frankelly Bello',externalUrls:[hubUrl]};
+      }
       if(kind==='public_page')return parsePublicMusicPage(payload.url,pages[payload.url]);
       if(kind==='jev'){assert.equal(payload.profiles[0].identityComparison.status,'likely');
         return [{url:ig,jevVerification:{verdict:'verified',sameIdentityProbability:0.96}}];}
@@ -169,6 +173,7 @@ test('fixture runner keeps clues from both searches and verifies music chain wit
   assert.equal(observed.filter(k=>k==='serper').length,2);
   assert.equal(observed.filter(k=>k==='public_page').length,3);
   assert.deepEqual(result.results[0].urls,[ig]);
+  assert.match(result.results[0].rawResult.profiles[1].metadataLookupError,/Restricted/);
   assert.equal(result.claimsSubmitted,0);
   assert.equal(result.results[0].approvedCatalogLinks,false);
   const weak=await runFixturePilot({manifest:manifest(),journalPath:path.join(await temp(t),'journal.jsonl'),

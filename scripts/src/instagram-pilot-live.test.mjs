@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import {createLiveTransport,jevRequest} from './instagram-pilot-live-transport.mjs';
-import {evaluateKnownCases} from './instagram-pilot-live.mjs';
+import {createLiveTransport,jevRequest,cachedPacketFor,serperQuery} from './instagram-pilot-live-transport.mjs';
+import {evaluateKnownCases,parseApprovedCap,loadCompletedPilotCache} from './instagram-pilot-live.mjs';
 import {createPilotBudget} from './instagram-pilot-budget.mjs';
 
 async function temp(t) {
@@ -60,17 +60,22 @@ test('restricted response is unresolved; credit failures stop globally; requests
 
 test('JEV endpoint uses typed decisions, checks complete request size and records exact cost',async t=>{
   let calls=0;
-  const transport=createLiveTransport({keys,responseDir:await temp(t),fetchImpl:async(url,options)=>{
+  const transportDir=await temp(t);
+  const transport=createLiveTransport({keys,responseDir:transportDir,fetchImpl:async(url,options)=>{
     calls++;assert.equal(url,'https://openrouter.ai/api/alpha/decisions');
     const body=JSON.parse(options.body);assert.equal(body.model,'typesafe/jev-1.13');
     assert.ok(Buffer.byteLength(options.body)<=6000);
-    return Response.json({usage:{cost:0.0002},answers:{candidate_0_same_identity:{noul:0.97},
+    return Response.json({accessToken:'fixture-never-preserve',usage:{cost:0.0002,input_tokens:768,output_tokens:10},answers:{candidate_0_same_identity:{noul:0.97},
       candidate_0_verdict:{choice:'verified'}}});
   }});
   const payload={artist:'Example',catalogReference:reference,
     profiles:[{url:candidate.url,identityComparison:{reference,candidate}}]};
   const result=await transport.dispatch(req('jev',payload));
   assert.equal(result[0].jevVerification.sameIdentityProbability,0.97);
+  const packet=JSON.parse(await fs.readFile(path.join(transportDir,'1-jev-0.json'),'utf8'));
+  assert.equal(packet.data.usage.input_tokens,768);
+  assert.equal(packet.data.usage.output_tokens,10);
+  assert.equal(packet.data.accessToken,'[redacted]');
   assert.equal(calls,1);
   const huge={...payload,artist:'x'.repeat(7000)};
   await assert.rejects(transport.dispatch(req('jev',huge)),/6000-byte/);
@@ -119,4 +124,70 @@ test('regression barrier cannot pass by merely rejecting everything or promoting
   assert.equal(evaluateKnownCases([{profileId:'1',urls:[]}],holdouts).passed,false);
   assert.equal(evaluateKnownCases([{profileId:'1',urls:[candidate.url]}],holdouts).passed,true);
   assert.equal(evaluateKnownCases([{profileId:'1',urls:[candidate.url,'https://www.instagram.com/wrong/']}],holdouts).passed,false);
+});
+
+test('remaining dollar cap parses exact cents and rejects an excessive or ambiguous ceiling',()=>{
+  assert.equal(parseApprovedCap('--approved-cap-usd=9.89'),989);
+  assert.equal(parseApprovedCap('--approved-cap-usd=10'),1000);
+  for(const value of ['--approved-cap-usd=10.01','--approved-cap-usd=9.899','--approved-cap-usd=-1','--approved-cap-usd=0']) {
+    assert.throws(()=>parseApprovedCap(value),/Invalid/);
+  }
+});
+
+test('only completed same-profile exact-query recent packets may be reused; JEV always refreshes',async t=>{
+  const dir=await temp(t);await fs.mkdir(path.join(dir,'responses'));
+  const payload={artist:'Example Artist',queryIndex:0};
+  const packet={profileId:'1',kind:'serper',key:'saved',at:new Date().toISOString(),
+    status:200,url:'https://google.serper.dev/search',data:{organic:[],searchParameters:{q:serperQuery(payload)}}};
+  await fs.writeFile(path.join(dir,'responses','saved.json'),JSON.stringify(packet));
+  await fs.writeFile(path.join(dir,'admissions.jsonl'),[
+    {phase:'admitted',key:'saved',profileId:'1',kind:'serper'},
+    {phase:'returned',key:'saved',profileId:'1',kind:'serper'},
+  ].map(JSON.stringify).join('\n')+'\n');
+  const loaded=await loadCompletedPilotCache(dir);
+  const request=req('serper',payload);
+  assert.equal(cachedPacketFor(loaded,request).key,'saved');
+  assert.equal(cachedPacketFor(loaded,{...request,profileId:'2'}),undefined);
+  assert.equal(cachedPacketFor(loaded,{...request,payload:{...payload,queryIndex:1}}),undefined);
+  assert.equal(cachedPacketFor(loaded,{...request,kind:'jev'}),undefined);
+  assert.equal(cachedPacketFor(loaded,request,Date.now()+25*60*60*1000),undefined);
+  let calls=0;
+  const output=await temp(t);
+  const transport=createLiveTransport({keys,responseDir:output,cachedPackets:loaded,
+    fetchImpl:async()=>{calls++;throw new Error('Paid fallback forbidden');}});
+  const receipt=transport.cachedAdmission(request);
+  await transport.dispatch({...request,cachedReceipt:receipt});
+  assert.equal(calls,0);
+  const saved=JSON.parse(await fs.readFile(path.join(output,'1-serper-0.json'),'utf8'));
+  assert.equal(saved.cacheSource.sourceKey,'saved');
+  await assert.rejects(transport.dispatch({...request,key:'bad-cache',cachedReceipt:{sourceFile:'missing',sourceKey:'saved'}}),/refusing a paid fallback/);
+  assert.equal(calls,0);
+  await fs.appendFile(path.join(dir,'admissions.jsonl'),JSON.stringify({phase:'failed_no_retry',key:'saved'})+'\n');
+  assert.equal((await loadCompletedPilotCache(dir)).length,0);
+});
+
+test('JEV budget measures the outgoing request, not larger archived discovery evidence',async t=>{
+  const dir=await temp(t);
+  const manifest={run_allowed:true,authorization:{approved:true,maxSpendCents:989},
+    artists:[{profile_id:'1',source_identity_matches:true,reference_preflight:{readiness:'reference_usable'}}],
+    proposed_limits:{serper_requests_total:68,scrapecreators_requests_total:103,jev_requests_total:34,
+      public_spotify_oembed_requests_total:33,public_official_or_linkhub_page_requests_total:136,
+      public_music_page_requests_per_artist:4,serper_requests_per_artist:2,instagram_candidate_metadata_per_artist:3,
+      reference_metadata_per_artist:1,jev_requests_per_artist:1,paid_http_requests_total:205,
+      global_concurrent_provider_requests:5,per_request_timeout_seconds:20,jev_max_input_tokens_per_request:6000,
+      jev_max_output_tokens_per_request:1000}};
+  let calls=0;
+  const transport=createLiveTransport({keys,responseDir:dir,fetchImpl:async(_,options)=>{
+    calls++;assert.ok(Buffer.byteLength(options.body)<=6000);
+    return Response.json({usage:{cost:0.0001},answers:{candidate_0_same_identity:{noul:0.96},candidate_0_verdict:{choice:'verified'}}});
+  }});
+  const budget=await createPilotBudget({manifest,journalPath:path.join(dir,'admissions.jsonl'),transport,mode:'live'});
+  const payload={artist:'Example Artist',catalogReference:reference,profiles:[{url:candidate.url,
+    archivedSearchEvidence:'x'.repeat(7000),identityComparison:{reference,candidate}}]};
+  assert.ok(Buffer.byteLength(JSON.stringify(payload))>6000);
+  const result=await budget.request({profileId:'1',kind:'jev',key:'sizing-fixed',payload});
+  assert.equal(result[0].jevVerification.verdict,'verified');assert.equal(calls,1);
+  await assert.rejects(budget.request({profileId:'1',kind:'jev',key:'oversized',
+    payload:{...payload,artist:'x'.repeat(7000)}}),/reservation/);
+  assert.equal(calls,1);await budget.close();
 });

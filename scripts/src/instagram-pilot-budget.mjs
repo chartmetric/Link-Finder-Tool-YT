@@ -48,7 +48,8 @@ export async function createPilotBudget({ manifest, journalPath, transport, mode
     && a.source_identity_matches).map(a => String(a.profile_id)));
   const journal = await fs.open(journalPath, 'wx'); // Never resume/replay a previous journal.
   const counts = { paid: 0, scrapecreators: 0, byKind: {}, byArtist: {},
-    reservedSpendCents: 0, maxSpendCents: live ? manifest.authorization.maxSpendCents : null };
+    reservedSpendCents: 0, maxSpendCents: live ? manifest.authorization.maxSpendCents : null,
+    reusedCompletedPackets: 0 };
   const keys = new Set(), waiters = [];
   let active = 0, stopped, closed = false, serial = Promise.resolve();
   const append = async row => {
@@ -65,8 +66,10 @@ export async function createPilotBudget({ manifest, journalPath, transport, mode
     if (!allowed.has(profileId)) throw new Error('Artist is outside the frozen paid-eligible scope.');
     if (!Object.hasOwn(cap, kind)) throw new Error('Unbudgeted provider kind.');
     if (!key || typeof key !== 'string') throw new Error('A unique admission key is required.');
-    if (kind === 'jev' && (Buffer.byteLength(JSON.stringify(payload)) > limits.jev_max_input_tokens_per_request
-      || !Number.isInteger(limits.jev_max_output_tokens_per_request))) {
+    const inputBytes = kind==='jev' ? (live && transport.inputBytes
+      ? transport.inputBytes({kind,payload}) : Buffer.byteLength(JSON.stringify(payload))) : 0;
+    if (kind === 'jev' && (!Number.isInteger(inputBytes) || inputBytes<1
+      || inputBytes > limits.jev_max_input_tokens_per_request || !Number.isInteger(limits.jev_max_output_tokens_per_request))) {
       throw new Error('JEV evidence exceeds the conservative byte-based input reservation.');
     }
     await slot();
@@ -75,7 +78,8 @@ export async function createPilotBudget({ manifest, journalPath, transport, mode
         if (closed || stopped) throw new Error(stopped ?? 'Pilot budget is closed.');
         if (Date.now() >= deadlineAt) throw new Error('Pilot time budget exceeded before dispatch.');
         if (keys.has(key)) throw new Error('Admission already used; automatic replay is forbidden.');
-        const reserveCents = live ? pilotReservationsCents[kind] : 0;
+        const cachedReceipt = live ? transport.cachedAdmission?.({profileId,kind,payload}) : undefined;
+        const reserveCents = live && !cachedReceipt ? pilotReservationsCents[kind] : 0;
         if (live && counts.reservedSpendCents + reserveCents > counts.maxSpendCents) {
           stopped = 'Approved dollar ceiling reached; new admissions stopped.';
           throw new Error(stopped);
@@ -87,17 +91,19 @@ export async function createPilotBudget({ manifest, journalPath, transport, mode
           || (kind.startsWith('scrapecreators_') && counts.scrapecreators >= limits.scrapecreators_requests_total)) {
           throw new Error('Pilot request cap reached; no dispatch.');
         }
-        await append({ phase: 'admitted', profileId, kind, key, reserveCents, at: new Date().toISOString() });
+        await append({ phase: 'admitted', profileId, kind, key, reserveCents, cachedReceipt, at: new Date().toISOString() });
         counts.reservedSpendCents += reserveCents;
         keys.add(key);
         counts.byKind[kind] = (counts.byKind[kind] ?? 0) + 1;
         artist[kind] = (artist[kind] ?? 0) + 1;
         counts.byArtist[profileId] = artist;
-        if (paidKinds.has(kind)) counts.paid++;
-        if (kind.startsWith('scrapecreators_')) counts.scrapecreators++;
+        if (cachedReceipt) counts.reusedCompletedPackets++;
+        if (paidKinds.has(kind) && !cachedReceipt) counts.paid++;
+        if (kind.startsWith('scrapecreators_') && !cachedReceipt) counts.scrapecreators++;
+        return cachedReceipt;
       });
       serial = admission.catch(() => {});
-      await admission;
+      const cachedReceipt = await admission;
       if (Date.now() >= deadlineAt) {
         await append({ phase: 'cancelled_before_dispatch', profileId, kind, key });
         throw new Error('Pilot time budget exceeded before dispatch.');
@@ -114,6 +120,7 @@ export async function createPilotBudget({ manifest, journalPath, transport, mode
         });
         const value = await Promise.race([Promise.resolve().then(() => transport.dispatch({
           profileId, kind, key, payload, signal: controller.signal,
+          cachedReceipt,
           maxOutputTokens: kind === 'jev' ? limits.jev_max_output_tokens_per_request : undefined,
         })), timeout]);
         await append({ phase: 'returned', profileId, kind, key });
