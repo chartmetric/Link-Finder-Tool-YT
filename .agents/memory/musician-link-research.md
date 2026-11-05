@@ -27,6 +27,12 @@ Validate search-strategy changes against known existing accounts before scaling,
 
 **How to apply:** Keep supplied URLs out of blind discovery queries, retain unfiltered search evidence (including posts and topic pages) for diagnosis, and report raw-hit counts separately from plausible artist matches. Do not replace production outcomes with an unreviewed validation sample.
 
+Frankelly Bello's user-confirmed Instagram handle is `frankellybello_`; Serper's `belloo_official` result is unrelated, and the saved `Frankellybello` result without the trailing underscore is not the supplied account.
+
+**Why:** The saved candidate set included several profiles selected on partial-name overlap, while its `belloo_official` snippet described a different singer/songwriter. All saved results were explicitly unverified.
+
+**How to apply:** Use this as a negative identity-resolution test. Never import `belloo_official` for Frankelly Bello; route the supplied exact URL through the link-claim resolver and keep it unapproved unless resolution supports it.
+
 A failed artist-name search does not establish that an Instagram account is unindexed.
 
 **Why:** Exact Instagram-path searches recovered a known account that multiple name-only searches missed; its indexed display name differed from its artist name.
