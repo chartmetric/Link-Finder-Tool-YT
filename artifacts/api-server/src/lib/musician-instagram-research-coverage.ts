@@ -18,20 +18,30 @@ export type MusicianInstagramResearchTier = {
   profilesWithUrlOrNoSupportedMatch: number;
 };
 
-const tiers = [1, 2, 3] as const;
+const tiers = [1, 2, 3, 4, 5] as const;
 
 export const musicianInstagramResearchCoverageSql = `
   WITH fresh_tier_rows AS (
     SELECT profile, tier, computed_at, updated_at
     FROM new_vertical.l_profile_tier FINAL
     WHERE profile_type = 'musician'
+      AND grain = 'global'
       AND computed_at >= toStartOfDay(now())
   ),
   tier_assignments AS (
     SELECT profile, argMax(tier, tuple(computed_at, updated_at)) AS assigned_tier
     FROM fresh_tier_rows
     GROUP BY profile
-    HAVING assigned_tier IN (1, 2, 3)
+    HAVING assigned_tier IN (1, 2, 3, 4, 5)
+  ),
+  catalog_instagram_profiles AS (
+    SELECT l.profile_id,
+      countIf(notEmpty(trim(ifNull(a.account_url, '')))) > 0 AS has_catalog_instagram_url
+    FROM new_vertical.l_profile_account l
+    INNER JOIN new_vertical.account a ON a.id = l.account_id
+    WHERE l.disconnected_at IS NULL
+      AND lower(a.platform) = 'instagram'
+    GROUP BY l.profile_id
   ),
   latest_lookup AS (
     SELECT profile_id,
@@ -39,23 +49,23 @@ export const musicianInstagramResearchCoverageSql = `
     FROM poc_new_verticals.musician_instagram_discovery_events
     GROUP BY profile_id
   ),
-  -- The saved Tier 1-3 discovery cohort was selected from profiles without an Instagram catalog link.
-  -- Therefore, a tier profile with no saved research row has a catalog Instagram URL.
   tier_results AS (
     SELECT
       t.profile,
       t.assigned_tier AS tier,
       tupleElement(l.outcome, 1) AS research_status,
-      tupleElement(l.outcome, 2) AS instagram_urls
+      tupleElement(l.outcome, 2) AS instagram_urls,
+      coalesce(c.has_catalog_instagram_url, 0) AS has_catalog_instagram_url
     FROM tier_assignments AS t
     LEFT JOIN latest_lookup AS l ON toUInt64(t.profile) = l.profile_id
+    LEFT JOIN catalog_instagram_profiles AS c ON toUInt64(t.profile) = c.profile_id
   ),
   profile_coverage AS (
     SELECT
       tier,
-      research_status = ''
+      has_catalog_instagram_url
         OR (research_status = 'candidates_found' AND notEmpty(instagram_urls)) AS has_instagram_url,
-      research_status = 'no_candidates' AS no_supported_match
+      research_status = 'no_candidates' AND NOT has_catalog_instagram_url AS no_supported_match
     FROM tier_results
   )
   SELECT

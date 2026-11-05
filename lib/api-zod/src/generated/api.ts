@@ -96,7 +96,7 @@ export const GetMusicianCoverageResponse = zod.object({
 
 
 /**
- * @summary Count saved Tier 1-3 Instagram research results
+ * @summary Count Instagram URL coverage for Tier 1-5 musicians
  */
 export const GetMusicianInstagramResearchCoverageResponse = zod.object({
   "tiers": zod.array(zod.object({

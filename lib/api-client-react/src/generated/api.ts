@@ -341,7 +341,7 @@ export const getGetMusicianInstagramResearchCoverageUrl = () => {
 }
 
 /**
- * @summary Count saved Tier 1-3 Instagram research results
+ * @summary Count Instagram URL coverage for Tier 1-5 musicians
  */
 export const getMusicianInstagramResearchCoverage = async ( options?: Parameters<typeof customFetch>[1]): Promise<MusicianInstagramResearchCoverage> => {
 
@@ -388,7 +388,7 @@ export type GetMusicianInstagramResearchCoverageQueryError = ErrorType<void>
 
 
 /**
- * @summary Count saved Tier 1-3 Instagram research results
+ * @summary Count Instagram URL coverage for Tier 1-5 musicians
  */
 
 export function useGetMusicianInstagramResearchCoverage<TData = Awaited<ReturnType<typeof getMusicianInstagramResearchCoverage>>, TError = ErrorType<void>>(
