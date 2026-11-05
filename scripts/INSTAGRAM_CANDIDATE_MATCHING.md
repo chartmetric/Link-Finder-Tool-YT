@@ -57,7 +57,17 @@ Live requests reserve conservative whole cents before dispatch: Serper 1 cent, S
 
 Price sources checked 2026-11-05: Serper Starter $1/1k at https://serper.dev; ScrapeCreators $47/25k credits at https://scrapecreators.com, profile/channel endpoints list one credit in https://docs.scrapecreators.com/v1/instagram/profile and https://docs.scrapecreators.com/v1/youtube/channel; pinned `typesafe/jev-1.13` is $0.042/M input and $0 output at https://openrouter.ai/typesafe/jev-1.13. The JEV reservation exceeds the price of its full 262,144-token context at those rates. Recheck pricing before separately approving another run.
 
-One candidate-sourced `linktr.ee` page can be read per artist, with fixed HTTPS domain/path checks, no redirects or credentials, and a bounded response. Arbitrary official-site crawling and other music landing-page hosts are not enabled. The first authorized live regression stage did not pass: Frankelly's correct URL was independently found but had no exact Spotify cross-link in accessible metadata; Shenge's results contained posts/topic pages but no direct profile. Remaining cases were not dispatched. This is not a successful full-sample verification or a corrected production dataset.
+## Music landing pages and post-level search clues
+
+The pilot now follows candidate-sourced `onerpm.link` and `linktr.ee` pages. OneRPM's declared Spotify service button may contain a Feature.fm wrapper; only its Spotify destination is decoded, with no JavaScript execution or analytics-click request. Direct artist targets retain their exact IDs. Track/album targets use public Spotify embed metadata bound to the exact requested content URI. A single-track album can lead to its track and credited artist ID. Names, recommended artists and arbitrary ID strings elsewhere in HTML do not count. Multi-artist credits, multi-track albums without explicit artist IDs, unreadable metadata and mismatched artist IDs remain unresolved.
+
+Every public page or redirect is a separate budget admission. The default remains **one page per artist** for old manifests; no previous approved cap is silently increased. A proposed revised manifest beside the original sample allows at most four pages per artist (136 music pages plus 33 Spotify reference reads), with the same 50 cases, 34 eligible artists and unchanged paid caps. That proposal has not been executed. It is necessary to approve the revised public-read budget before testing multi-page paths live.
+
+The public client uses an exact HTTPS host/path allowlist, public IPv4 DNS checks, socket-address pinning and TLS hostname verification. Redirects are manual and revalidated, with no credentials/cookies, arbitrary site crawling, or private-network access. Responses are size/time bounded. Public-page packets persist only selected link/credit evidence and a body hash, not Spotify's embedded anonymous sessions or raw tracking payloads.
+
+Serper candidates now retain explicit Instagram handles from post/reel titles, snippets and owner paths with their original source URLs and `ownershipConfirmed: false`. No handles are invented from display names or topic slugs. Candidate ranking can prioritize exact normalized artist-name handles, but it does not increase identity scores. Post-only clues do not suppress the second already-budgeted search, and clues from both searches are retained. Every clue still requires account-bound metadata, music-reference evidence and JEV verification; a fan, venue or label posting about an artist does not become the artist.
+
+Saved-evidence validation now traces Frankelly's OneRPM button through the Spotify album and track to the exact catalog artist ID, and recovers `shenge_wasehlalankosi` from an explicit mention in a saved Serper post title. No paid calls were repeated, previous JEV decisions were not replaced, and no URLs were promoted or imported. The original live pilot remains stopped at its failed regression gate; these fixes do not retroactively turn it into a passing pilot.
 
 Run the runner/guard checks without network access:
 
@@ -69,4 +79,10 @@ Check live adapters and dollar reservations using mocked HTTP only:
 
 ```sh
 node --test scripts/src/instagram-pilot-live.test.mjs
+```
+
+Test music-link resolution, SSRF protections, post clues and end-to-end fixture behavior:
+
+```sh
+node --test scripts/src/public-music-links.test.mjs
 ```

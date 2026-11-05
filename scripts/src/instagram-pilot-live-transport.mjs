@@ -1,12 +1,15 @@
 import fs from 'node:fs/promises';
 import { instagramProfileUrl } from './musician-instagram-matching.mjs';
+import { instagramSearchCandidates } from './instagram-search-clues.mjs';
+import { musicPageUrl, parsePublicMusicPage } from './public-music-links.mjs';
+import { safeMusicFetch } from './safe-music-fetch.mjs';
 
 const MODEL = 'typesafe/jev-1.13';
 const externalUrls = user => [...new Set([user.external_url, ...(user.bio_links ?? []).map(b => b.url)]
   .filter(value => { try { const u = new URL(value); return u.protocol === 'https:' && !u.username && !u.password && !u.port; } catch { return false; } }))];
 
 // Never preserve credentials, cookies, tracking tokens or headers in response files.
-const redact = (key, value) => /(^|_)(token|password|secret|api_key|cookie)($|_)/i.test(key) ? '[redacted]' : value;
+const redact = (key, value) => /token|password|secret|api.?key|cookie|authorization/i.test(key) ? '[redacted]' : value;
 
 export function jevRequest(payload) {
   const questions = Object.fromEntries(payload.profiles.flatMap((p, i) => [
@@ -20,18 +23,25 @@ export function jevRequest(payload) {
   // Evidence is explicitly bounded; full raw packets are stored separately.
   const meta = m => ({ platform: m.platform, url: m.url, urlAliases: m.urlAliases,
     displayName: m.displayName?.slice(0,160), bio: m.bio?.slice(0,700),
-    externalUrls: m.externalUrls?.slice(0,10) });
+    externalUrls: m.externalUrls?.slice(0,10),
+    musicLinkPath: m.externalLinkEvidence ? {
+      status:m.externalLinkEvidence.status,
+      pages:m.externalLinkEvidence.pages.map(p=>({sourceUrl:p.sourceUrl,creditedArtistUrls:p.creditedArtistUrls})),
+      ownershipConfirmed:false,
+    } : undefined });
   return { model: MODEL, state: { artist: payload.artist, knownProfileUrl: payload.catalogReference.url,
     candidates: payload.profiles.map(p => ({ url: p.url, reference: meta(p.identityComparison.reference),
       candidate: meta(p.identityComparison.candidate) })) }, questions };
 }
 
-export function createLiveTransport({ keys, responseDir, fetchImpl = fetch }) {
+export function createLiveTransport({ keys, responseDir, fetchImpl = fetch, publicFetchImpl = safeMusicFetch }) {
   for (const name of ['SERPERDEV_API_KEY', 'SCRAPECREATORS_API_KEY', 'OPENROUTER_API_KEY']) {
     if (!keys[name]) throw new Error(`Required secret is missing: ${name}`);
   }
   async function http(request, url, options = {}) {
-    const response = await fetchImpl(url, { ...options, signal: request.signal, redirect: 'error' });
+    const isPublic = request.kind === 'public_page';
+    const response = await (isPublic ? publicFetchImpl : fetchImpl)(url, {
+      ...options, signal: request.signal, redirect:isPublic ? 'manual' : 'error' });
     const reader = response.body.getReader();
     let bytes = 0; const chunks = [];
     for (;;) {
@@ -42,13 +52,16 @@ export function createLiveTransport({ keys, responseDir, fetchImpl = fetch }) {
       chunks.push(Buffer.from(value));
     }
     const text = Buffer.concat(chunks).toString('utf8');
-    let data; try { data = JSON.parse(text); } catch { data = { text }; }
+    let data;
+    if (isPublic) data = parsePublicMusicPage(String(url),text,{
+      status:response.status,location:response.headers.get('location')});
+    else try { data = JSON.parse(text); } catch { data = { text }; }
     const packet = { profileId: request.profileId, kind: request.kind, key: request.key,
       at: new Date().toISOString(), url: String(url), status: response.status, data };
     await fs.writeFile(`${responseDir}/${request.key.replaceAll(':','-')}.json`, JSON.stringify(packet, redact, 2), { flag: 'wx' });
     const message = JSON.stringify(data).slice(0,3000);
     const creditFailure = /(?:insufficient|exhausted|not enough|no remaining|out of|exceeded).{0,45}(?:credit|balance)|(?:credit|balance).{0,40}(?:insufficient|exhausted|depleted)|invalid.{0,15}api.?key|unauthori[sz]ed/i.test(message);
-    if (!response.ok || data.success === false || data.error) {
+    if ((!response.ok && !(isPublic && data.redirectUrl)) || data.success === false || data.error) {
       const restricted = [403,404].includes(response.status) && /restrict|18 years|age.?gat|login.required|log in to continue/i.test(message);
       throw Object.assign(new Error(restricted ? 'Restricted profile; skipped without absence claim.'
         : `${request.kind} failed (HTTP ${response.status}); evidence saved.`),
@@ -94,10 +107,10 @@ export function createLiveTransport({ keys, responseDir, fetchImpl = fetch }) {
         headers: {'X-API-KEY': keys.SERPERDEV_API_KEY, 'Content-Type':'application/json'},
         body: JSON.stringify({q, num:10}) });
       if (!Array.isArray(data.organic)) throw new Error('Serper response missing organic results; not an empty successful search.');
-      return { profiles: data.organic.flatMap(hit => {
-        const url = instagramProfileUrl(hit.link);
-        return url ? [{url, title:hit.title, snippet:hit.snippet, methods:['serper']}] : [];
-      }), methodsUsed:[{method:'serper',status:'used'}], query:q };
+      return { profiles: instagramSearchCandidates(data.organic,payload.artist),
+        searchScope:{rawHitCount:data.organic.length,
+          note:'Post mentions and owners are unverified retrieval clues, not artist-ownership evidence.'},
+        methodsUsed:[{method:'serper',status:'used'}], query:q };
     }
     if (kind === 'scrapecreators_candidate') {
       const canonical = instagramProfileUrl(payload.url);
@@ -111,13 +124,10 @@ export function createLiveTransport({ keys, responseDir, fetchImpl = fetch }) {
         displayName:user.full_name, bio:user.biography, externalUrls:externalUrls(user)};
     }
     if (kind === 'public_page') {
-      const u = new URL(payload.url);
-      // One source-linked page, no arbitrary domains, redirects, nested crawling or cookies.
-      if (u.protocol !== 'https:' || u.hostname !== 'linktr.ee' || u.username || u.password || u.port
-        || !/^\/[A-Za-z0-9._-]+\/?$/.test(u.pathname) || u.search || u.hash) throw new Error('Unsafe or unsupported link-hub URL.');
-      const data = await http(request, u.href);
-      const text = (data.text ?? JSON.stringify(data)).replaceAll('\\/','/').replaceAll('&amp;','&');
-      return {sourceUrl:u.href, externalUrls:[...new Set(text.match(/https:\/\/(?:open\.spotify\.com\/artist\/[A-Za-z0-9]{22}|(?:www\.)?youtube\.com\/(?:channel\/[A-Za-z0-9_-]+|@[A-Za-z0-9._-]+))/g) ?? [])]};
+      const url = musicPageUrl(payload.url);
+      if (!url) throw new Error('Unsafe or unsupported music page URL.');
+      // Exactly one request. Redirects and further content reads require new admissions.
+      return http(request,url);
     }
     if (kind === 'jev') {
       const body = JSON.stringify(jevRequest(payload));

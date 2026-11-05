@@ -31,12 +31,15 @@ export async function createPilotBudget({ manifest, journalPath, transport, mode
   const perArtist = { serper: limits.serper_requests_per_artist,
     scrapecreators_candidate: limits.instagram_candidate_metadata_per_artist,
     scrapecreators_reference: limits.reference_metadata_per_artist,
-    jev: limits.jev_requests_per_artist, spotify_oembed: 1, public_page: 1 };
+    jev: limits.jev_requests_per_artist, spotify_oembed: 1,
+    public_page: limits.public_music_page_requests_per_artist ?? 1 };
+  const publicCap = limits.public_http_requests_total ?? cap.spotify_oembed + cap.public_page;
   for (const value of [...Object.values(cap), ...Object.values(perArtist), limits.paid_http_requests_total,
-    limits.global_concurrent_provider_requests, limits.per_request_timeout_seconds]) {
+    publicCap, limits.global_concurrent_provider_requests, limits.per_request_timeout_seconds]) {
     if (!Number.isInteger(value) || value < 0) throw new Error('Invalid pilot request limits.');
   }
   if (limits.global_concurrent_provider_requests < 1 || limits.global_concurrent_provider_requests > 5) throw new Error('Invalid concurrency limit.');
+  if (perArtist.public_page<1 || perArtist.public_page>4) throw new Error('Public music-page limit must be 1–4 per artist.');
   if (limits.per_request_timeout_seconds < 1 || !Number.isInteger(limits.jev_max_input_tokens_per_request)
     || limits.jev_max_input_tokens_per_request < 1 || !Number.isInteger(limits.jev_max_output_tokens_per_request)
     || limits.jev_max_output_tokens_per_request < 1) throw new Error('Invalid timeout or JEV token reservation.');
@@ -80,6 +83,7 @@ export async function createPilotBudget({ manifest, journalPath, transport, mode
         const artist = counts.byArtist[profileId] ?? {};
         if ((counts.byKind[kind] ?? 0) >= cap[kind] || (artist[kind] ?? 0) >= perArtist[kind]
           || (paidKinds.has(kind) && counts.paid >= limits.paid_http_requests_total)
+          || (!paidKinds.has(kind) && (counts.byKind.spotify_oembed ?? 0)+(counts.byKind.public_page ?? 0)>=publicCap)
           || (kind.startsWith('scrapecreators_') && counts.scrapecreators >= limits.scrapecreators_requests_total)) {
           throw new Error('Pilot request cap reached; no dispatch.');
         }

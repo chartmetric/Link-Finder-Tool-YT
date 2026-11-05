@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { catalogReferences, referenceUrl, instagramProfileUrl, hasCatalogCrossLink, assessInstagramCandidates } from './musician-instagram-matching.mjs';
 import { createPilotBudget } from './instagram-pilot-budget.mjs';
+import { isMusicLandingUrl, resolveMusicEvidence } from './public-music-links.mjs';
 
 export function pilotPreflight(manifest) {
   if (!Number.isInteger(manifest.proposed_limits.artist_workers) || manifest.proposed_limits.artist_workers < 1
@@ -74,28 +75,30 @@ export async function runPilot({ manifest, journalPath, transport, evaluateRegre
           discoveryAttempts.push(discovery);
           // Failure/incomplete discovery is never an empty successful search.
           assessInstagramCandidates(discovery, artist);
-          if (discovery.profiles?.length) break;
+          // Clues alone must not suppress the second allowed search. Fixture
+          // profiles without provenance retain their existing direct-profile behavior.
+          if (discovery.profiles?.some(p=>!p.discoveryEvidence
+            || p.discoveryEvidence.some(e=>e.kind==='direct_profile'))) break;
         }
         if (!Array.isArray(discovery?.profiles)) throw new Error('Discovery response is incomplete.');
-        const unique = [...new Map(discovery.profiles.flatMap(p => {
+        const unique = [...new Map(discoveryAttempts.flatMap(attempt=>attempt.profiles).flatMap(p => {
           const url = instagramProfileUrl(p.url);
           return url ? [[url, { ...p, url }]] : [];
         })).values()];
         unique.sort((a, b) => Number(hasCatalogCrossLink(reference, { url: b.url }, b.url, scope.reference))
-          - Number(hasCatalogCrossLink(reference, { url: a.url }, a.url, scope.reference)));
+          - Number(hasCatalogCrossLink(reference, { url: a.url }, a.url, scope.reference))
+          || (b.discoveryPriority ?? 0)-(a.discoveryPriority ?? 0));
         const selected = unique.slice(0, manifest.proposed_limits.instagram_candidate_metadata_per_artist);
         const profiles = evidence.profiles;
         for (const p of selected) {
           const candidate = await call('scrapecreators_candidate', { url: p.url });
-          if (mode === 'live' && candidate.externalUrls?.some(url => /^https:\/\/linktr\.ee\/[^/?#]+\/?$/i.test(url))
+          if (instagramProfileUrl(candidate.url)===p.url && candidate.externalUrls?.some(isMusicLandingUrl)
             && !evidence.linkHubAttempted) {
             evidence.linkHubAttempted = true;
-            const hubUrl = candidate.externalUrls.find(url => /^https:\/\/linktr\.ee\/[^/?#]+\/?$/i.test(url));
-            try {
-              const hub = await call('public_page', { url: hubUrl });
-              candidate.externalLinkEvidence = hub;
-              candidate.externalUrls = [...new Set([...candidate.externalUrls, ...hub.externalUrls])];
-            } catch (error) { candidate.linkHubError = error.message; }
+            const hub = await resolveMusicEvidence({candidate,catalog:scope.reference,
+              readPage:url=>call('public_page',{url})});
+            candidate.externalLinkEvidence = hub;
+            candidate.externalUrls = [...new Set([...candidate.externalUrls,...hub.externalUrls])];
           }
           const linked = hasCatalogCrossLink(reference, candidate, p.url, scope.reference);
           profiles.push({ ...p, identityComparison: { reference, candidate, status: linked ? 'likely' : 'uncertain',
@@ -107,7 +110,7 @@ export async function runPilot({ manifest, journalPath, transport, evaluateRegre
         }
         const assessment = assessInstagramCandidates({ ...discovery, profiles }, artist);
         // Invalid or truncated candidates cannot turn into a completed absence.
-        if (!profiles.length && discovery.profiles.length) assessment.status = 'needs_review';
+        if (!profiles.length && discoveryAttempts.some(a=>a.profiles.length)) assessment.status = 'needs_review';
         await record({ profileId: id, ...assessment, uninspectedCandidates: Math.max(0, unique.length - selected.length),
           rawResult: { ...discovery, profiles }, discoveryAttempts, fixtureOnly: true, approvedCatalogLinks: false });
       } catch (error) { await record({ profileId: id, status: 'needs_review', reason: error.message,

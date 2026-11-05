@@ -9,7 +9,7 @@ export function instagramProfileUrl(value) {
     if (url.protocol !== 'https:' || url.username || url.password || url.port
       || !['instagram.com', 'www.instagram.com', 'm.instagram.com'].includes(url.hostname)
       || parts.length !== 1 || !/^[a-z0-9._]{1,30}$/i.test(parts[0])
-      || ['p', 'reel', 'reels', 'stories', 'explore', 'accounts', 'tv', 'about', 'direct'].includes(parts[0].toLowerCase())) return null;
+      || ['p', 'reel', 'reels', 'stories', 'explore', 'accounts', 'tv', 'about', 'direct', 'popular'].includes(parts[0].toLowerCase())) return null;
     return `https://www.instagram.com/${parts[0].toLowerCase()}/`;
   } catch { return null; }
 }
