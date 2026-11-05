@@ -73,6 +73,18 @@ Saved-evidence validation now traces Frankelly's OneRPM button through the Spoti
 
 The updated live stage reused 12 completed packets and collected new metadata/JEV evidence. It found the exact Frankelly music-account path, but his final verification was initially blocked before admission by an archived-payload size check. After measuring the actual outgoing request under the same limit, only that provably unsent JEV step was completed in a new exclusive journal. No admitted request was replayed. JEV still returned `likely`, not `verified`; Shenge's retrieved account had no music cross-link. Neither was promoted. All model/source disagreement stays explicit rather than becoming account absence or a proven mismatch. Total conservative reservations across both pilots and that one-step completion were $0.39; no claims or catalog writes occurred.
 
+### Offline audit of the verifier disagreement
+
+The saved Frankelly response was HTTP 200 with a complete typed `likely` / 0.42 decision, not an API or credit failure. Reconstructing the historical 4,735-byte input identified three evidence-contract problems:
+
+- The music path always said `ownershipConfirmed:false`, even though the resolver had not assessed ownership.
+- Path compression retained page addresses and final artist IDs but dropped the two music-service destination edges connecting OneRPM → album → track.
+- The binary question grouped “different identity” and “insufficient ownership evidence” under the same false criterion, so a low score did not distinguish an actual mismatch from missing evidence.
+
+The payload now expresses ownership as `unassessed`, retains source/target links and bound content types/URLs, and explicitly distinguishes uncertainty from evidence of a different identity. The model, its API route, the strict 0.9-plus-verified gate and all saved decisions remain unchanged. Future response packets also preserve the actual decision request plus its SHA-256, without authentication headers, so audits need not reconstruct input from newer code.
+
+Offline checks against the real saved Frankelly evidence confirm both edges reach the outgoing request, which is 5,564 bytes and remains below the same 6,000-byte ceiling. The old result is still unresolved. No paid call or import was performed for this audit. The effect on JEV's score remains unmeasured until a separately approved controlled live validation; do not call the false-negative issue fixed solely because the payload is corrected.
+
 Run the runner/guard checks without network access:
 
 ```sh

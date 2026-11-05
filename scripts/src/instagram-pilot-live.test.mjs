@@ -76,11 +76,50 @@ test('JEV endpoint uses typed decisions, checks complete request size and record
   assert.equal(packet.data.usage.input_tokens,768);
   assert.equal(packet.data.usage.output_tokens,10);
   assert.equal(packet.data.accessToken,'[redacted]');
+  assert.deepEqual(packet.decisionRequest,JSON.parse(JSON.stringify(jevRequest(payload))));
+  assert.match(packet.requestBodySha256,/^[a-f0-9]{64}$/);
+  assert.equal(Object.hasOwn(packet,'headers'),false);
   assert.equal(calls,1);
   const huge={...payload,artist:'x'.repeat(7000)};
   await assert.rejects(transport.dispatch(req('jev',huge)),/6000-byte/);
   assert.equal(calls,1);
   assert.ok(jevRequest(payload).questions.candidate_0_same_identity);
+});
+
+test('JEV retains source-bound music edges without pre-deciding ownership or equating uncertainty with mismatch',()=>{
+  const album='https://open.spotify.com/album/AAAAAAAAAAAAAAAAAAAAAA';
+  const track='https://open.spotify.com/track/BBBBBBBBBBBBBBBBBBBBBB';
+  const sourceUrl='https://onerpm.link/example';
+  const evidence={sourceUrl,status:'exact_catalog_music_identity',ownershipConfirmed:false,
+    pages:[
+      {sourceUrl,musicTargets:[album]},
+      {sourceUrl:`https://open.spotify.com/embed/album/AAAAAAAAAAAAAAAAAAAAAA`,contentUrl:album,
+        contentType:'album',musicTargets:[track]},
+      {sourceUrl:`https://open.spotify.com/embed/track/BBBBBBBBBBBBBBBBBBBBBB`,contentUrl:track,
+        contentType:'track',creditedArtistUrls:[reference.url]},
+    ]};
+  const body=jevRequest({artist:'Example',catalogReference:reference,profiles:[
+    {url:candidate.url,identityComparison:{reference,candidate:{...candidate,externalLinkEvidence:evidence}}},
+  ]});
+  const path=body.state.candidates[0].candidate.musicLinkPath;
+  assert.equal(path.sourceUrl,sourceUrl);
+  assert.deepEqual(path.pages[0].musicTargets,[album]);
+  assert.deepEqual(path.pages[1].musicTargets,[track]);
+  assert.equal(path.pages[1].contentUrl,album);
+  assert.equal(path.pages[2].contentType,'track');
+  assert.deepEqual(path.pages[2].creditedArtistUrls,[reference.url]);
+  assert.equal(path.ownershipAssessment,'unassessed');
+  assert.equal(Object.hasOwn(path,'ownershipConfirmed'),false);
+  assert.equal(evidence.ownershipConfirmed,false); // Never mutate saved evidence.
+  const question=body.questions.candidate_0_same_identity;
+  assert.match(question.instructions,/Missing evidence means uncertainty, not mismatch/);
+  assert.doesNotMatch(question.criteria.false,/insufficient|missing/);
+  assert.match(question.criteria.false,/different identity/);
+  assert.ok(Buffer.byteLength(JSON.stringify(body))<=6000);
+  const withoutMusic=jevRequest({artist:'Example',catalogReference:reference,profiles:[
+    {url:candidate.url,identityComparison:{reference,candidate}},
+  ]});
+  assert.equal(withoutMusic.state.candidates[0].candidate.musicLinkPath,undefined);
 });
 
 test('missing billing evidence fails closed; unsafe link hubs cause zero HTTP requests',async t=>{

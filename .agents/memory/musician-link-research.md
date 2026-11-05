@@ -74,3 +74,9 @@ Strict abstention must be evaluated alongside independent recovery of known corr
 **Why:** A live regression pilot independently recovered a user-confirmed account but initially could not traverse its music landing page. Another known account was missed when searches returned posts and topic pages instead of a direct profile URL. Even after the exact music-ID path was collected, the model still abstained. None of those failures alone proves a wrong identity or account absence.
 
 **How to apply:** Keep known-answer handles separate from discovery inputs, test both false-positive prevention and known-positive recovery before expanding, and distinguish missing discovery/link-path evidence from an actual mismatch. When a visible music-service button has not been followed, describe an unchecked verification path, not a missing link or a questionable Instagram account. Report a model disagreement separately from the objective cross-link evidence; a low model score does not erase an observed music-ID match. Do not weaken identity thresholds merely to increase acceptance.
+
+Verification inputs must distinguish unassessed ownership from negative ownership evidence and retain the source-to-target music link chain.
+
+**Why:** The pilot sent a hardcoded negative ownership flag for an unassessed account, dropped the links connecting its music landing page to Spotify recordings, and combined insufficient evidence with a different identity in one classifier criterion. A model abstention on that input cannot isolate which defect mattered.
+
+**How to apply:** Keep technical music-ID matches separate from artist-account ownership, represent unknown as unknown, and retain both intermediate destinations and bound final artist IDs. Validate the repaired evidence contract offline first; only a controlled live comparison can establish whether model decisions improve.
