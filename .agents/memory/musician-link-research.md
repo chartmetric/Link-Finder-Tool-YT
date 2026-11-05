@@ -33,6 +33,12 @@ Frankelly Bello's user-confirmed Instagram handle is `frankellybello_`; Serper's
 
 **How to apply:** Use this as a negative identity-resolution test. Never import `belloo_official` for Frankelly Bello; route the supplied exact URL through the link-claim resolver and keep it unapproved unless resolution supports it.
 
+The user reports that Gula Mın 76 has no Instagram account; the saved `gulagulafestival` result is a festival page, not her account.
+
+**Why:** Serper returned a partial-name hit describing a festival in Vilvoorde, and the saved result had zero high-confidence candidates.
+
+**How to apply:** Never associate `gulagulafestival` with Gula Mın 76. Treat this as a negative identity-resolution case; do not convert a same-name festival hit into an artist link.
+
 A failed artist-name search does not establish that an Instagram account is unindexed.
 
 **Why:** Exact Instagram-path searches recovered a known account that multiple name-only searches missed; its indexed display name differed from its artist name.
