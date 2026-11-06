@@ -169,6 +169,20 @@ All requests and responses are archived separately under `generated-artifacts/in
 
 ### Broader verification-only diagnostic
 
+#### Facts-only alternate-verifier expansion
+
+The approved saved-evidence expansion is archived under `generated-artifacts/instagram-broader-facts-validation-2026-11-06`. Runner: `scripts/src/instagram-broader-facts-validation.mjs`; offline reporter: `scripts/src/instagram-broader-facts-report.mjs`. The exclusive journal admits at most 23 serial requests, with no retries, no new search/metadata calls and no claims or database writes. Prior workflow judgments are excluded; evaluator labels stay outside model inputs. Raw Instagram packets restore direct-link provenance. Historical wrong-person and festival evidence is explicitly typed as saved Serper snippets, not fabricated profile metadata.
+
+All 23 paired requests completed: 18 existing benchmark targets plus five regression comparisons (Frankelly appears twice). Four candidate assessments passed the diagnostic gate, representing three unique artists: Aimee Carty, Eliah Sternhardt and Frankelly Bello. Frankelly's supplied trailing-underscore account passed in both comparisons. `belloo_official` remained uncertain (0.25), the Gula festival was mismatch (0.05), and the associated cymbal brand and venue were mismatches. No rotated distinct-catalog control passed (19 assessments). Rooby's label association was held offline for missing music reference; it was not model-tested or verified.
+
+Five other candidates received a verified / 0.95 model verdict without the required exact catalog-bound link. The deterministic evidence gate held all five. These are not established false positives, but demonstrate why a model's confident verdict alone must not authorize ingestion. Shenge's user-confirmed account remained likely / 0.72 and held; Gin_Beatz was also likely / 0.72. Removing internal labels helps the exact-evidence cases but does not solve missing reference paths or establish full-rerun readiness.
+
+The sample is historical and intentionally selected, not a population-accuracy estimate. Catalog benchmark labels remain provisional. The alternate verifier is not a validated production replacement for JEV. Provider-reported total cost was $0.063476; conservative reservations increased by $1.38 to $3.17, leaving $6.83 of the original $10 ceiling. Exact requests, responses, source hashes, report and `results-NOT-FOR-IMPORT.csv` are retained. Production rules and discovery records are unchanged.
+
+```sh
+node --test scripts/src/instagram-broader-facts-validation.test.mjs scripts/src/instagram-alternate-verifier.test.mjs
+```
+
 The authorized 20-artist benchmark (four per current audit tier, half provisional catalog links and half saved candidates) is archived under `generated-artifacts/instagram-verification-benchmark-2026-11-06`. It makes no Serper discovery calls and never writes claims or catalog data. Benchmark membership and expected labels are excluded from JEV inputs; rotated cross-artist controls reuse already retrieved metadata.
 
 Eighteen cases completed; two Instagram metadata calls returned HTTP 500 and were not retried. All 18 cross-artist controls received mismatch verdicts. None of the nine evaluated catalog benchmarks or nine saved candidates passed the unchanged exact-cross-link plus verified 0.90 diagnostic gate. Aimee Carty and Eliah Sternhardt each had exact music identity links and a verified verdict at 0.78, which remained held. Other metadata exposed unchecked music landing sites and Spotify release paths, not proof of incorrect ownership or absence.
