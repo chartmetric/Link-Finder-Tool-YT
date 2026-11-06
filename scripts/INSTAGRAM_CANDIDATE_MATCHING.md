@@ -106,3 +106,17 @@ Test music-link resolution, SSRF protections, post clues and end-to-end fixture 
 ```sh
 node --test scripts/src/public-music-links.test.mjs
 ```
+
+### Broader verification-only diagnostic
+
+The authorized 20-artist benchmark (four per current audit tier, half provisional catalog links and half saved candidates) is archived under `generated-artifacts/instagram-verification-benchmark-2026-11-06`. It makes no Serper discovery calls and never writes claims or catalog data. Benchmark membership and expected labels are excluded from JEV inputs; rotated cross-artist controls reuse already retrieved metadata.
+
+Eighteen cases completed; two Instagram metadata calls returned HTTP 500 and were not retried. All 18 cross-artist controls received mismatch verdicts. None of the nine evaluated catalog benchmarks or nine saved candidates passed the unchanged exact-cross-link plus verified 0.90 diagnostic gate. Aimee Carty and Eliah Sternhardt each had exact music identity links and a verified verdict at 0.78, which remained held. Other metadata exposed unchecked music landing sites and Spotify release paths, not proof of incorrect ownership or absence.
+
+These are diagnostic controls, not independently adjudicated ground truth or population accuracy measurements. The run reserved $0.76, bringing cumulative original-pilot reservations to $1.19 of $10. It did not start a full rerun or alter legacy results.
+
+Runner, budget, transport and benchmark fixtures:
+
+```sh
+node --test scripts/src/instagram-verification-benchmark.test.mjs scripts/src/instagram-pilot-runner.test.mjs scripts/src/instagram-pilot-live.test.mjs
+```

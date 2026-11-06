@@ -252,3 +252,17 @@ mtime_ms = 1793923144365
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/da712d66-62a3-4804-9434-067a59ef3a26/fea0667d-9aef-4d2d-a4a6-50a721850b97"
 storage_version_token = "1793923169815584"
 content_type = "text/csv"
+
+[[outputs]]
+id = "Cjj9q8XuhYv7EV7u3VQN_"
+uri = "file://generated-artifacts/instagram-verification-benchmark-2026-11-06/verification-results-NOT-FOR-IMPORT.csv"
+type = "table"
+title = "Tier 1–5 verification sample results"
+description = "20 artists, model verdicts and scores, exact music-link evidence, cross-artist controls, and unresolved metadata errors. Diagnostic only; not for import."
+logical_id = "c0d1d562-ce53-4e1b-9951-986cc73d7bfa"
+content_hash = "sha256:9a5bc8fb92e684061721cd9e5f0331f3c3e19dffede10b7fee1c56647496e71d"
+size = 4342
+mtime_ms = 1793990539886
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/c0d1d562-ce53-4e1b-9951-986cc73d7bfa/317efbfc-087a-4d39-95bc-00ffab69f607"
+storage_version_token = "1793990606783712"
+content_type = "text/csv"

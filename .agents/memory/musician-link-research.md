@@ -80,3 +80,9 @@ Verification inputs must distinguish unassessed ownership from negative ownershi
 **Why:** The pilot sent a hardcoded negative ownership flag for an unassessed account, dropped the links connecting its music landing page to Spotify recordings, and combined insufficient evidence with a different identity in one classifier criterion. A model abstention on that input cannot isolate which defect mattered. A same-model paired check of the repaired input improved a known-positive decision while retaining negative-control rejections, but the verified label still did not satisfy the separate numeric gate.
 
 **How to apply:** Keep technical music-ID matches separate from artist-account ownership, represent unknown as unknown, and retain both intermediate destinations and bound final artist IDs. Validate the repaired evidence contract offline first; only a controlled live comparison can establish whether model decisions improve. Report the verifier's categorical verdict separately from its numeric score and application acceptance; do not calibrate thresholds or claim population accuracy from one known-positive case.
+
+Existing catalog Instagram links are provisional benchmark labels, not independently adjudicated ground truth.
+
+**Why:** The broader verification diagnostic uses catalog-linked accounts as positive controls and rotated accounts from other catalog artists as negative controls. Catalog errors, aliases and related entities can undermine those assumptions; such a sample cannot establish population precision or recall.
+
+**How to apply:** Retain label provenance, keep benchmark labels outside verifier inputs, and report verifier-only checks separately from full discovery acceptance. Investigate control disagreements rather than automatically correcting the catalog or treating every abstention as a known false negative.
