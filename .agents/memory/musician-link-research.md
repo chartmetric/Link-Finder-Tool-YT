@@ -101,6 +101,6 @@ Direct Instagram bio links must remain distinct from music URLs derived through 
 
 Keep prior workflow judgments distinct from observed source facts when testing identity verifiers.
 
-**Why:** An alternate verifier recognized exact music links but cited the application's own "ownership unassessed" label as a reason it could not verify ownership. That creates a possible circular dependency rather than new negative evidence.
+**Why:** An alternate verifier recognized exact music links but cited the application's own "ownership unassessed" label as a reason it could not verify ownership. Removing only internal comparison/music-path judgments made both provisional positives pass its diagnostic threshold on repeated inputs while neither unrelated control passed. This supports a circular-dependency concern for that verifier, not population accuracy or JEV behavior.
 
 **How to apply:** Test source facts separately from internal comparison/ownership labels under a controlled, approved scope. Never replace unknown with confirmed ownership. Model explanations are diagnostic clues, not established causal explanations for another model, and self-reported scores from different verifiers are not calibrated equivalents.

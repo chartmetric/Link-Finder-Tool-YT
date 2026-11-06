@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 
 const source='generated-artifacts/instagram-provenance-diagnostic-2026-11-06';
 const output='generated-artifacts/instagram-alternate-verifier-2026-11-06';
+const factsOutput='generated-artifacts/instagram-facts-only-verifier-2026-11-06';
 export const MODEL='anthropic/claude-haiku-4.5';
 const maxTokens=8192;
 const reserveCents=6;
@@ -21,6 +22,22 @@ const schema={type:'object',additionalProperties:false,required:['candidates'],p
       same_identity_score:{type:'number',minimum:0,maximum:1},reason:{type:'string'}},
   }},
 }};
+
+// Remove only prior application judgments. Observed names, URLs and path edges
+// remain byte-for-byte identical; do not turn "unassessed" into "confirmed".
+export function factsOnlyDecision(decision) {
+  const clean=structuredClone(decision);
+  for(const candidate of clean.state.candidates) {
+    delete candidate.identityComparisonStatus;
+    delete candidate.identityComparisonReasons;
+    for(const metadata of [candidate.reference,candidate.candidate]) {
+      if(!metadata?.musicLinkPath) continue;
+      delete metadata.musicLinkPath.status;
+      delete metadata.musicLinkPath.ownershipAssessment;
+    }
+  }
+  return clean;
+}
 
 export function requestFor(decisionRequest) {
   return {model:MODEL,max_tokens:maxTokens,temperature:0,
@@ -58,16 +75,27 @@ export function checkPrice(model,bodyBytes) {
   return conservative;
 }
 
-async function prepare() {
+async function prepare(factsOnly=false) {
   const cases=[];
   for(const profileId of ['207595','270344']) {
     const packet=await read(`${source}/responses/${profileId}-provenance-check-1.json`);
     assert.equal(hash(JSON.stringify(packet.decisionRequest)),packet.requestBodySha256);
     assert.ok(packet.decisionRequest.state.candidates.every(c=>c.reference.url===packet.decisionRequest.state.knownProfileUrl));
-    const body=requestFor(packet.decisionRequest);
+    const decision=factsOnly?factsOnlyDecision(packet.decisionRequest):packet.decisionRequest;
+    const body=requestFor(decision);
+    if(factsOnly) {
+      const prior=await read(`${output}/${profileId}-1-request.json`);
+      assert.equal(hash(JSON.stringify(prior.request)),prior.requestSha256);
+      // Isolate the state-field removal: same model, prompt, questions and options.
+      assert.deepEqual(prior.request,requestFor(packet.decisionRequest));
+      const expected=structuredClone(prior.request);
+      expected.messages[1].content=JSON.stringify({state:decision.state,questions:decision.questions});
+      assert.deepEqual(body,expected);
+    }
     cases.push({profileId,artist:packet.decisionRequest.state.artist,body,
       sourceRequestSha256:packet.requestBodySha256,
-      stateSha256:hash(JSON.stringify(packet.decisionRequest.state)),
+      stateSha256:hash(JSON.stringify(decision.state)),
+      originalStateSha256:hash(JSON.stringify(packet.decisionRequest.state)),
       expectedUrls:packet.decisionRequest.state.candidates.map(c=>c.url),
       exactLinks:packet.decisionRequest.state.candidates.map(c=>c.observedExactCatalogLinks.length>0
         ||c.candidate.musicLinkPath?.status==='exact_catalog_music_identity')});
@@ -76,29 +104,36 @@ async function prepare() {
 }
 
 async function main() {
-  const cases=await prepare();
+  const factsOnly=process.argv.includes('--facts-only');
+  const destination=factsOnly?factsOutput:output;
+  const cases=await prepare(factsOnly);
   if(!process.argv.includes('--run-approved-test')) {
-    console.log(JSON.stringify({model:MODEL,calls:4,maxNewReservationUsd:0.24,
+    console.log(JSON.stringify({model:MODEL,factsOnly,calls:4,maxNewReservationUsd:0.24,
       cases:cases.map(c=>({artist:c.artist,bytes:Buffer.byteLength(JSON.stringify(c.body)),stateSha256:c.stateSha256})),
       noDiscovery:true,noImports:true},null,2));return;
   }
   if(!process.env.OPENROUTER_API_KEY) throw Error('OPENROUTER_API_KEY is missing.');
-  const prior=await read(`${source}/summary.json`);
-  assert.equal(prior.cumulativeConservativeReservationUsd,1.31);
-  assert.ok(1.31+0.24<=10);
+  const prior=await read(`${factsOnly?output:source}/summary.json`);
+  const priorCents=Math.round(prior.cumulativeConservativeReservationUsd*100);
+  assert.equal(priorCents,factsOnly?155:131);
+  assert.ok(priorCents+24<=1000);
   // Public model catalogue only: no inference before durable admission.
   const catalogResponse=await fetch('https://openrouter.ai/api/v1/models',{signal:AbortSignal.timeout(20000)});
   if(!catalogResponse.ok) throw Error('Model catalogue unavailable.');
   const model=(await catalogResponse.json()).data.find(m=>m.id===MODEL);
   for(const c of cases) checkPrice(model,Buffer.byteLength(JSON.stringify(c.body)));
-  await fs.mkdir(output,{recursive:false});
-  await fs.mkdir(`${output}/responses`);
-  await save(`${output}/approved-scope.json`,{model,priorReservedUsd:1.31,
+  await fs.mkdir(destination,{recursive:false});
+  await fs.mkdir(`${destination}/responses`);
+  await save(`${destination}/approved-scope.json`,{model,priorReservedUsd:priorCents/100,factsOnly,
     maxNewReservedUsd:0.24,maxCalls:4,automaticRetries:0,maxOutputTokens:maxTokens,
-    authorization:'User approved another verifier on the same saved evidence within remaining pilot budget.',
+    authorization:factsOnly
+      ? 'User approved removing internal status labels and repeating the capped saved-evidence comparison.'
+      : 'User approved another verifier on the same saved evidence within remaining pilot budget.',
+    removedFields:factsOnly?['identityComparisonStatus','identityComparisonReasons',
+      'musicLinkPath.status','musicLinkPath.ownershipAssessment']:[],
     noDiscovery:true,noMetadata:true,noDatabaseWrites:true,noClaims:true,
     limitation:'Alternative scores are self-reported, not calibrated against JEV. Labels are provisional catalog positives.'});
-  const journal=await fs.open(`${output}/admissions.jsonl`,'wx');
+  const journal=await fs.open(`${destination}/admissions.jsonl`,'wx');
   let admitted=0;const results=[];
   const append=async row=>{await journal.write(`${JSON.stringify({...row,at:new Date().toISOString()})}\n`);await journal.sync();};
   try {
@@ -107,7 +142,8 @@ async function main() {
       const body=JSON.stringify(c.body);
       assert.ok(admitted<4);
       checkPrice(model,Buffer.byteLength(body));
-      await save(`${output}/${key}-request.json`,{request:c.body,stateSha256:c.stateSha256,
+      await save(`${destination}/${key}-request.json`,{request:c.body,stateSha256:c.stateSha256,
+        originalStateSha256:c.originalStateSha256,
         sourceRequestSha256:c.sourceRequestSha256,requestSha256:hash(body)});
       await append({phase:'admitted',key,reserveCents,requestSha256:hash(body)});
       admitted++;
@@ -119,7 +155,7 @@ async function main() {
         const text=await response.text();
         if(Buffer.byteLength(text)>2000000) throw Error('Response exceeds evidence limit.');
         const data=JSON.parse(text);
-        await save(`${output}/responses/${key}.json`,{status:response.status,data});
+        await save(`${destination}/responses/${key}.json`,{status:response.status,data});
         if(!response.ok||data.error) throw Error(`Alternate verifier failed (HTTP ${response.status}); evidence saved.`);
         if(!Number.isFinite(data.usage?.cost)||data.usage.cost<0||data.usage.cost>reserveCents/100) throw Error('Missing or excessive charge; stop without retry.');
         const candidates=parseDecision(data,c.expectedUrls);
@@ -131,7 +167,7 @@ async function main() {
         };
         await append({phase:'returned',key,reportedCostUsd:data.usage.cost});
         results.push(row);
-        await save(`${output}/${key}-result.json`,row);
+        await save(`${destination}/${key}-result.json`,row);
         console.log(JSON.stringify(row));
       } catch(error) {
         await append({phase:'failed_no_retry',key,message:error.message});
@@ -142,10 +178,10 @@ async function main() {
     }
   } finally {
     await journal.close();
-    await save(`${output}/summary.json`,{results,admitted,completed:results.length===4,
+    await save(`${destination}/summary.json`,{results,admitted,factsOnly,completed:results.length===4,
       conservativeNewReservationUsd:admitted*reserveCents/100,
-      cumulativeConservativeReservationUsd:(131+admitted*reserveCents)/100,
-      remainingOriginalBudgetUsd:(1000-131-admitted*reserveCents)/100,
+      cumulativeConservativeReservationUsd:(priorCents+admitted*reserveCents)/100,
+      remainingOriginalBudgetUsd:(1000-priorCents-admitted*reserveCents)/100,
       reportedCostUsd:results.reduce((s,r)=>s+r.reportedCostUsd,0),
       newSearches:0,newMetadataCalls:0,claims:0,databaseWrites:0,fullRerunStarted:false});
   }

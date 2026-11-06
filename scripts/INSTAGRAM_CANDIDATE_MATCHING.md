@@ -150,6 +150,23 @@ Offline tests:
 node --test scripts/src/instagram-alternate-verifier.test.mjs
 ```
 
+### Removing internal status labels: controlled alternate-verifier test
+
+The user approved removing internal review labels and repeating the comparison. The `--facts-only` mode removes candidate `identityComparisonStatus` and `identityComparisonReasons`, plus music-path `status` and `ownershipAssessment`. Source names, bio text, URLs, exact-link summaries, music-path destinations, questions, system prompt, model settings and acceptance thresholds are unchanged. Unknown is not replaced with confirmed ownership.
+
+Offline assertions and post-run archive comparisons confirm these are the only request-content changes. Four new calls (two identical repeats per target) completed without retries. Compared with the previous same-verifier requests:
+
+| Target/control | With application labels | Without application labels, both repeats |
+| --- | --- | --- |
+| Aimee Carty | likely / 0.82 | verified / 0.95 |
+| The Format control | mismatch / 0.05 | mismatch / 0.05 |
+| Eliah Sternhardt | likely / 0.85 | verified / 0.98 |
+| Billylildove control | uncertain / 0.15 | mismatch / 0.02 |
+
+Both provisional positives met the diagnostic threshold in both repeats; neither control did. This supports removing prior workflow judgments from this verifier's evidence input. It does not validate JEV behavior, full discovery recovery, population accuracy, or a production replacement. The model's free-text explanation is not ground truth: Aimee's path is still derived through Linktree and music releases, even where the generated explanation loosely calls it direct.
+
+All requests and responses are archived separately under `generated-artifacts/instagram-facts-only-verifier-2026-11-06`. Provider-reported charges were $0.011786; new conservative reservation was $0.24. Cumulative reservations are $1.79, leaving $8.21 of the original $10 ceiling. No production verifier, saved discovery outcome, database row, claim or import changed. A broader independently supported positive and related-entity negative benchmark is still needed before scaling.
+
 ### Broader verification-only diagnostic
 
 The authorized 20-artist benchmark (four per current audit tier, half provisional catalog links and half saved candidates) is archived under `generated-artifacts/instagram-verification-benchmark-2026-11-06`. It makes no Serper discovery calls and never writes claims or catalog data. Benchmark membership and expected labels are excluded from JEV inputs; rotated cross-artist controls reuse already retrieved metadata.

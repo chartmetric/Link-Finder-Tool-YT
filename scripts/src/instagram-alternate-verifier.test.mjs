@@ -1,6 +1,32 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {requestFor,parseDecision,checkPrice,MODEL} from './instagram-alternate-verifier.mjs';
+import {requestFor,parseDecision,checkPrice,MODEL,factsOnlyDecision} from './instagram-alternate-verifier.mjs';
+
+test('facts-only ablation removes prior judgments without changing source facts, criteria or archives',()=>{
+  const path={status:'exact_catalog_music_identity',ownershipAssessment:'unassessed',
+    sourceUrl:'https://linktr.ee/example',pages:[{sourceUrl:'https://linktr.ee/example',
+      musicTargets:['https://open.spotify.com/album/AAAAAAAAAAAAAAAAAAAAAA']}]};
+  const decision={state:{artist:'Example',knownProfileUrl:'spotify',candidates:[
+    {url:'instagram',identityComparisonStatus:'likely',identityComparisonReasons:['Ownership unassessed'],
+      observedExactCatalogLinks:[{source:'instagram_profile_bio_link',targetUrl:'spotify'}],
+      reference:{url:'spotify'},candidate:{displayName:'Example',bio:'Musician',
+        externalUrls:['https://linktr.ee/example'],musicLinkPath:path}},
+  ]},questions:{same:{instructions:'Require artist ownership',criteria:{true:'Same artist',false:'Different artist'}}}};
+  const original=structuredClone(decision);
+  const clean=factsOnlyDecision(decision);
+  const item=clean.state.candidates[0];
+  assert.equal(Object.hasOwn(item,'identityComparisonStatus'),false);
+  assert.equal(Object.hasOwn(item,'identityComparisonReasons'),false);
+  assert.deepEqual(item.candidate.musicLinkPath,{sourceUrl:path.sourceUrl,pages:path.pages});
+  assert.deepEqual(item.observedExactCatalogLinks,original.state.candidates[0].observedExactCatalogLinks);
+  assert.deepEqual(item.candidate.externalUrls,original.state.candidates[0].candidate.externalUrls);
+  assert.deepEqual(clean.questions,original.questions);
+  assert.deepEqual(decision,original);
+  assert.deepEqual(factsOnlyDecision(clean),clean);
+  const body=requestFor(clean),baseline=requestFor(decision);
+  assert.deepEqual(body.messages[0],baseline.messages[0]);
+  assert.deepEqual(body.response_format,baseline.response_format);
+});
 
 test('alternate verifier preserves exact evidence and question content without benchmark labels',()=>{
   const decision={state:{artist:'Example',candidates:[{url:'https://www.instagram.com/example/'}]},
