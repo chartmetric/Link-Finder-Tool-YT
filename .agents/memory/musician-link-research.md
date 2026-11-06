@@ -81,6 +81,12 @@ Verification inputs must distinguish unassessed ownership from negative ownershi
 
 **How to apply:** Keep technical music-ID matches separate from artist-account ownership, represent unknown as unknown, and retain both intermediate destinations and bound final artist IDs. Validate the repaired evidence contract offline first; only a controlled live comparison can establish whether model decisions improve. Report the verifier's categorical verdict separately from its numeric score and application acceptance; do not calibrate thresholds or claim population accuracy from one known-positive case.
 
+More explicit verifier instructions can reduce known-positive scores even when exact-link evidence is made clearer.
+
+**Why:** A capped same-evidence comparison showed the revised account-ownership caution lowered two prior positive JEV scores while both unrelated controls remained mismatches. The unchanged 0.90 acceptance gate prevented either positive from being promoted.
+
+**How to apply:** Treat prompt and evidence-schema changes as behavior changes; compare known positives and negatives before scaling. Do not weaken the acceptance threshold to compensate. Preserve uncertainty and the original results when an experiment regresses.
+
 Existing catalog Instagram links are provisional benchmark labels, not independently adjudicated ground truth.
 
 **Why:** The broader verification diagnostic uses catalog-linked accounts as positive controls and rotated accounts from other catalog artists as negative controls. Catalog errors, aliases and related entities can undermine those assumptions; such a sample cannot establish population precision or recall.
