@@ -98,3 +98,9 @@ Direct Instagram bio links must remain distinct from music URLs derived through 
 **Why:** A saved-evidence audit found a derived Spotify artist URL had been labeled a direct Instagram bio link. A subsequent comparison also paired unrelated controls with their own references, making its before/after scores misleading.
 
 **How to apply:** Restore direct-link provenance from raw provider packets for historical evidence; unknown provenance must not be described as direct. Bind every control to the same target catalog identity as its positive, calculate comparison status from the evidence, and preserve identical request hashes for repeatability checks. Stable repeated scores do not prove ownership or justify relaxing acceptance rules.
+
+Keep prior workflow judgments distinct from observed source facts when testing identity verifiers.
+
+**Why:** An alternate verifier recognized exact music links but cited the application's own "ownership unassessed" label as a reason it could not verify ownership. That creates a possible circular dependency rather than new negative evidence.
+
+**How to apply:** Test source facts separately from internal comparison/ownership labels under a controlled, approved scope. Never replace unknown with confirmed ownership. Model explanations are diagnostic clues, not established causal explanations for another model, and self-reported scores from different verifiers are not calibrated equivalents.

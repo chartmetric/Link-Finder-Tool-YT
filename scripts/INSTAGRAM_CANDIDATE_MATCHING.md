@@ -134,6 +134,22 @@ All four calls resolved to the same reported model release. None passed the unch
 
 Reported JEV charges total $0.000294756; conservative reservations increased from $1.23 to $1.31, leaving $8.69 of the original $10 ceiling. The full rerun and all imports remain held. These results test saved evidence, not fresh discovery recovery.
 
+### Alternative verifier on frozen saved inputs
+
+The user approved comparison with another verifier. The one-shot script `scripts/src/instagram-alternate-verifier.mjs` uses Claude Haiku 4.5, selected from the live OpenRouter catalogue, with the exact saved state and questions from the provenance-corrected JEV packets. Two identical requests per target assess repeatability. It does not replace the production verifier or submit claims. Alternate numeric scores are self-reported estimates, not calibrated equivalents of JEV's Noul output.
+
+Four admitted calls completed without retries under a $0.24 conservative reservation. Both Aimee decisions were likely / 0.82; both Eliah decisions were likely / 0.85. The Format control was mismatch / 0.05; Billylildove was uncertain / 0.15, in both repeats. No candidate passed the diagnostic verified-plus-0.90 threshold, and no production acceptance rules changed.
+
+The explanations reveal a possible circular-evidence problem: despite recognizing exact music links and consistent names, the alternate verifier cites the application's own "ownership unassessed" annotation as a reason verification cannot be completed. This is not independent evidence from Instagram that ownership is unknown. It supports a controlled future test separating observed source facts from prior workflow/comparison labels; it does not prove that JEV has the same reasoning or that the accounts should be automatically accepted.
+
+Results and exact requests are archived under `generated-artifacts/instagram-alternate-verifier-2026-11-06`. Reported charges were $0.011836 total. Cumulative conservative reservations are $1.55, leaving $8.45 of the original $10 ceiling. No searches, metadata calls, database writes, claims or full rerun occurred. Both positives remain provisional catalog benchmark labels, not independent ground truth.
+
+Offline tests:
+
+```sh
+node --test scripts/src/instagram-alternate-verifier.test.mjs
+```
+
 ### Broader verification-only diagnostic
 
 The authorized 20-artist benchmark (four per current audit tier, half provisional catalog links and half saved candidates) is archived under `generated-artifacts/instagram-verification-benchmark-2026-11-06`. It makes no Serper discovery calls and never writes claims or catalog data. Benchmark membership and expected labels are excluded from JEV inputs; rotated cross-artist controls reuse already retrieved metadata.
