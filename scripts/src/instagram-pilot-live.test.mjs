@@ -133,7 +133,8 @@ test('JEV receives the exact observed bio link as a connection, not ownership pr
     source:'instagram_profile_bio_link',targetUrl:reference.url,
   }]);
   assert.equal(item.identityComparisonStatus,'likely');
-  assert.match(request.questions.candidate_0_same_identity.instructions,/not by itself proof of account ownership/);
+  assert.match(request.questions.candidate_0_same_identity.instructions,/Combine them with exact IDs, Instagram display name, bio/);
+  assert.match(request.questions.candidate_0_same_identity.instructions,/Do not discard a strong exact link/);
   assert.ok(Buffer.byteLength(JSON.stringify(request))<6000);
 });
 

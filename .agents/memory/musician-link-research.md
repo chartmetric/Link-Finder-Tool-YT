@@ -83,7 +83,7 @@ Verification inputs must distinguish unassessed ownership from negative ownershi
 
 More explicit verifier instructions can reduce known-positive scores even when exact-link evidence is made clearer.
 
-**Why:** A capped same-evidence comparison showed the revised account-ownership caution lowered two prior positive JEV scores while both unrelated controls remained mismatches. The unchanged 0.90 acceptance gate prevented either positive from being promoted.
+**Why:** A capped saved-evidence check returned lower scores than two earlier positive JEV decisions while both unrelated controls remained mismatches. This does not isolate wording from model variability. The unchanged 0.90 gate prevented promotion.
 
 **How to apply:** Treat prompt and evidence-schema changes as behavior changes; compare known positives and negatives before scaling. Do not weaken the acceptance threshold to compensate. Preserve uncertainty and the original results when an experiment regresses.
 
