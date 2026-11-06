@@ -112,7 +112,7 @@ test('JEV retains source-bound music edges without pre-deciding ownership or equ
   assert.equal(Object.hasOwn(path,'ownershipConfirmed'),false);
   assert.equal(evidence.ownershipConfirmed,false); // Never mutate saved evidence.
   const question=body.questions.candidate_0_same_identity;
-  assert.match(question.instructions,/Missing evidence means uncertainty, not mismatch/);
+  assert.match(question.instructions,/Missing, unavailable or unsupported evidence means uncertainty, not mismatch/);
   assert.doesNotMatch(question.criteria.false,/insufficient|missing/);
   assert.match(question.criteria.false,/different identity/);
   assert.ok(Buffer.byteLength(JSON.stringify(body))<=6000);
@@ -120,6 +120,21 @@ test('JEV retains source-bound music edges without pre-deciding ownership or equ
     {url:candidate.url,identityComparison:{reference,candidate}},
   ]});
   assert.equal(withoutMusic.state.candidates[0].candidate.musicLinkPath,undefined);
+});
+
+test('JEV receives the exact observed bio link as a connection, not ownership proof',()=>{
+  const exact = `${reference.url}?si=tracking`;
+  const request = jevRequest({artist:'Example',catalogReference:reference,profiles:[
+    {url:candidate.url,identityComparison:{status:'likely',reasons:['Exact catalog account cross-link'],
+      reference,candidate:{...candidate,externalUrls:[exact]}}},
+  ]});
+  const item=request.state.candidates[0];
+  assert.deepEqual(item.observedExactCatalogLinks,[{
+    source:'instagram_profile_bio_link',targetUrl:reference.url,
+  }]);
+  assert.equal(item.identityComparisonStatus,'likely');
+  assert.match(request.questions.candidate_0_same_identity.instructions,/not by itself proof of account ownership/);
+  assert.ok(Buffer.byteLength(JSON.stringify(request))<6000);
 });
 
 test('missing billing evidence fails closed; unsafe link hubs cause zero HTTP requests',async t=>{

@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {EventEmitter} from 'node:events';
 import {Readable} from 'node:stream';
-import {parsePublicMusicPage,resolveMusicEvidence,spotifyContent,musicPageUrl} from './public-music-links.mjs';
+import {parsePublicMusicPage,resolveMusicEvidence,spotifyContent,musicPageUrl,isMusicLandingUrl} from './public-music-links.mjs';
 import {safeMusicFetch,isPublicIPv4} from './safe-music-fetch.mjs';
 import {instagramSearchCandidates} from './instagram-search-clues.mjs';
 import {createLiveTransport} from './instagram-pilot-live-transport.mjs';
@@ -87,11 +87,96 @@ test('different artist, multi-artist credits, multi-track albums and page budget
   assert.equal(failed.pages.length,1);assert.match(failed.reason,/budget/);
 });
 
+test('approved music link hosts and Spotify releases canonicalize to safe, query-free fetch targets',()=>{
+  const cases=[
+    ['https://ernest.komi.io','https://ernest.komi.io/'],
+    ['https://artist.lnk.to/Release?utm_source=instagram','https://artist.lnk.to/Release'],
+    ['https://hyperfollow.com/artist/release','https://hyperfollow.com/artist/release'],
+    ['https://distrokid.com/hyperfollow/artist/release?fbclid=tracking','https://distrokid.com/hyperfollow/artist/release'],
+    ['https://paa.ge/artist/en?source=instagram','https://paa.ge/artist/en'],
+    ['https://bfan.link/release?utm_campaign=test','https://bfan.link/release'],
+    [`https://open.spotify.com/track/${trackId}?si=tracking#share`,
+      `https://open.spotify.com/embed/track/${trackId}`],
+    [`https://open.spotify.com/album/${albumId}`,`https://open.spotify.com/embed/album/${albumId}`],
+    [`https://youtu.be/${trackId.slice(0,11)}?si=tracking`,
+      `https://www.youtube.com/watch?v=${trackId.slice(0,11)}`],
+    [`https://www.youtube.com/watch?v=${trackId.slice(0,11)}&feature=share`,
+      `https://www.youtube.com/watch?v=${trackId.slice(0,11)}`],
+  ];
+  for(const [input,expected] of cases) assert.equal(musicPageUrl(input),expected,input);
+  for(const url of [
+    'https://komi.io.evil.test','https://hyperfollow.com.evil.test/x','https://distrokid.com/artist/release',
+    'https://lnk.to/x/../../../private','https://www.youtube.com/watch?v=../private',
+    'https://youtu.be/short','https://open.spotify.com.evil.test/track/0123456789ABCDEFGHIJKL',
+    'https://user:pass@artist.lnk.to/release','https://artist.lnk.to:444/release',
+  ]) assert.equal(musicPageUrl(url),null,url);
+  assert.equal(isMusicLandingUrl(`https://open.spotify.com/artist/${artistId}`),false);
+  assert.equal(isMusicLandingUrl(`https://open.spotify.com/track/${trackId}`),true);
+});
+
+test('direct Spotify release bio links are resolved and exact IDs outrank unrelated releases',async()=>{
+  const other='0123456789ABCDEFGHIJKL';
+  const visited=[];
+  const pages={
+    [ `https://open.spotify.com/embed/track/${trackId}` ]:embed('track',trackId,{artists:[{uri:`spotify:artist:${artistId}`}]}),
+    [ `https://open.spotify.com/embed/track/${other}` ]:embed('track',other,{artists:[{uri:`spotify:artist:${other}`}]}),
+  };
+  const result=await resolveMusicEvidence({candidate:{externalUrls:[
+    `https://open.spotify.com/track/${other}?si=tracking`,
+    `https://open.spotify.com/track/${trackId}?si=tracking`,
+  ]},catalog,readPage:async url=>{
+    visited.push(url);assert.ok(pages[url]);return parsePublicMusicPage(url,pages[url]);
+  },maxPages:3});
+  assert.equal(result.status,'exact_catalog_music_identity');
+  assert.deepEqual(result.externalUrls,[catalog.url]);
+  assert.equal(visited.length,2);
+  assert.ok(visited.every(url=>!url.includes('tracking')));
+});
+
+test('landing pages expose bounded Spotify and YouTube video links; video owner IDs are exact references',async()=>{
+  const videoId='abcdefghijk';
+  const landing='https://artist.lnk.to/new-release';
+  const video=`https://www.youtube.com/watch?v=${videoId}`;
+  const otherVideo=`https://www.youtube.com/watch?v=zyxwvutsrqp`;
+  const youtubeCatalog={platform:'youtube',url:'https://www.youtube.com/channel/UC1234567890123456789012'};
+  const youtubeHtml=`<meta itemprop="channelId" content="UC1234567890123456789012">
+    <link itemprop="url" href="https://www.youtube.com/channel/UC1234567890123456789012">`;
+  const visited=[];
+  const result=await resolveMusicEvidence({candidate:{externalUrls:[landing]},catalog:youtubeCatalog,readPage:async url=>{
+    visited.push(url);
+    if(url===landing)return parsePublicMusicPage(url,
+      `<a href="https://www.youtube.com/watch?v=${videoId}&amp;si=tracking">Video</a>
+       <a href="https://open.spotify.com/artist/${artistId}">Spotify</a>`);
+    if(url===video)return parsePublicMusicPage(url,youtubeHtml);
+    throw Error('Unexpected URL');
+  }});
+  assert.equal(result.status,'exact_catalog_music_identity');
+  assert.deepEqual(visited,[landing,video]);
+  assert.equal(musicPageUrl(otherVideo),'https://www.youtube.com/watch?v=zyxwvutsrqp');
+});
+
+test('candidate link worklist checks alternative sources after a mismatched release and never treats collaboration as ownership',async()=>{
+  const wrong='0123456789ABCDEFGHIJKL';
+  const wrongUrl=`https://open.spotify.com/embed/track/${wrong}`;
+  const rightUrl=`https://open.spotify.com/embed/track/${trackId}`;
+  const pages={
+    [wrongUrl]:embed('track',wrong,{artists:[{uri:`spotify:artist:${wrong}`}]}),
+    [rightUrl]:embed('track',trackId,{artists:[{uri:`spotify:artist:${artistId}`},{uri:`spotify:artist:${wrong}`}]})
+  };
+  const result=await resolveMusicEvidence({candidate:{externalUrls:[
+    `https://open.spotify.com/track/${wrong}`,`https://open.spotify.com/track/${trackId}`]},
+    catalog,readPage:async url=>parsePublicMusicPage(url,pages[url])});
+  assert.equal(result.status,'unresolved');
+  assert.deepEqual(result.externalUrls,[]);
+  assert.match(result.reason,/Multiple credited/);
+});
+
 test('unsafe URLs, wrappers and redirects are rejected without fetching arbitrary destinations',()=>{
   for(const url of ['http://onerpm.link/x','https://onerpm.link.evil.test/x','https://127.0.0.1/x',
-    'https://user:pass@onerpm.link/x','https://onerpm.link/x?next=http://localhost','https://onerpm.link:444/x']) {
+    'https://user:pass@onerpm.link/x','https://onerpm.link:444/x']) {
     assert.equal(musicPageUrl(url),null);
   }
+  assert.equal(musicPageUrl('https://onerpm.link/x?next=http://localhost'),'https://onerpm.link/x');
   assert.deepEqual(parsePublicMusicPage(hubUrl,button('http://127.0.0.1/private')).musicTargets,[]);
   assert.throws(()=>parsePublicMusicPage(hubUrl,'',{status:302,location:'https://127.0.0.1/'}),/Unsafe/);
   assert.equal(parsePublicMusicPage(hubUrl,'',{status:302,location:`https://open.spotify.com/album/${albumId}`}).redirectUrl,

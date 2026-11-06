@@ -25,16 +25,43 @@ export function spotifyContent(value) {
 export function musicPageUrl(value) {
   try {
     const u = new URL(value);
-    if (u.protocol !== 'https:' || u.username || u.password || u.port || u.hash || u.search) return null;
-    if (['onerpm.link','linktr.ee'].includes(u.hostname) && /^\/[A-Za-z0-9._-]+\/?$/.test(u.pathname)) return u.href;
-    if (u.hostname === 'open.spotify.com' && /^\/embed\/(?:artist|track|album)\/[A-Za-z0-9]{22}$/.test(u.pathname)) return u.href;
+    if (u.protocol !== 'https:' || u.username || u.password || u.port) return null;
+    const spotify = spotifyContent(u.href);
+    if (spotify) return spotify.embedUrl;
+    const parts = u.pathname.split('/').filter(Boolean);
+    const slug = /^[A-Za-z0-9._-]{1,120}$/;
+    const oneOrTwo = parts.length >= 1 && parts.length <= 2 && parts.every(part => slug.test(part));
+    if (['onerpm.link','linktr.ee','hyperfollow.com','bfan.link'].includes(u.hostname)
+      && oneOrTwo) return `${u.origin}/${parts.join('/')}`;
+    if (/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.lnk\.to$/.test(u.hostname)
+      && oneOrTwo) return `${u.origin}/${parts.join('/')}`;
+    if (u.hostname === 'distrokid.com' && parts.length >= 2 && parts.length <= 4
+      && parts[0].toLowerCase() === 'hyperfollow' && parts.slice(1).every(part => slug.test(part))) {
+      return `${u.origin}/${parts.join('/')}`;
+    }
+    if (u.hostname === 'paa.ge' && oneOrTwo) return `${u.origin}/${parts.join('/')}`;
+    if ((u.hostname === 'komi.io' || /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.komi\.io$/.test(u.hostname))
+      && parts.length <= 1 && parts.every(part => slug.test(part))) return `${u.origin}/${parts.join('/')}`;
+    if (['youtube.com','www.youtube.com','music.youtube.com'].includes(u.hostname)) {
+      if (parts.length === 1 && parts[0] === 'watch') {
+        const id = u.searchParams.get('v');
+        if (id && /^[A-Za-z0-9_-]{11}$/.test(id)) return `https://www.youtube.com/watch?v=${id}`;
+      }
+      if (parts.length === 2 && ['embed','shorts'].includes(parts[0])
+        && /^[A-Za-z0-9_-]{11}$/.test(parts[1])) return `https://www.youtube.com/watch?v=${parts[1]}`;
+    }
+    if (u.hostname === 'youtu.be' && parts.length === 1 && /^[A-Za-z0-9_-]{11}$/.test(parts[0])) {
+      return `https://www.youtube.com/watch?v=${parts[0]}`;
+    }
   } catch { /* Untrusted URL: no request. */ }
   return null;
 }
 
 export function isMusicLandingUrl(value) {
   const url = musicPageUrl(value);
-  return !!url && new URL(url).hostname !== 'open.spotify.com';
+  if (!url) return false;
+  const content = spotifyContent(url);
+  return !content || content.type !== 'artist';
 }
 
 function spotifyButtonTarget(href,service) {
@@ -59,6 +86,25 @@ function scripts(html, match) {
     if (!match(m[1])) return [];
     try { return [JSON.parse(m[2])]; } catch { return []; }
   });
+}
+
+function youtubeChannelIds(html) {
+  const found = new Set();
+  for (const match of html.matchAll(/<meta\b[^>]*>/gi)) {
+    const tag = match[0];
+    if (/itemprop\s*=\s*["']channelId["']/i.test(tag)) {
+      const id = attr(tag, 'content');
+      if (/^UC[A-Za-z0-9_-]{22}$/.test(id ?? '')) found.add(`https://www.youtube.com/channel/${id}`);
+    }
+  }
+  for (const match of html.matchAll(/<link\b[^>]*>/gi)) {
+    const tag = match[0];
+    if (!/itemprop\s*=\s*["']url["']/i.test(tag)) continue;
+    const href = attr(tag, 'href');
+    const channel = referenceUrl(href, 'youtube');
+    if (channel) found.add(channel);
+  }
+  return [...found];
 }
 
 /** Parse narrowly scoped public evidence. Never return embedded sessions/tokens. */
@@ -106,6 +152,8 @@ export function parsePublicMusicPage(sourceUrl, html, {status=200,location}={}) 
     if (!href) continue;
     const target = spotifyButtonTarget(href,attr(m[0],'service'));
     if (target) targets.push(target);
+    const safeTarget = musicPageUrl(href);
+    if (safeTarget && !targets.includes(safeTarget)) targets.push(safeTarget);
     const youtube = referenceUrl(href,'youtube');
     if (youtube) base.externalUrls.push(youtube);
   }
@@ -117,39 +165,53 @@ export function parsePublicMusicPage(sourceUrl, html, {status=200,location}={}) 
       }
     }
   }
-  return {...base,musicTargets:[...new Set(targets)],
-    externalUrls:[...new Set([...base.externalUrls,...targets.filter(u=>spotifyContent(u)?.type==='artist')])]};
+  const youtubeVideo = ['youtube.com','www.youtube.com','music.youtube.com'].includes(new URL(sourceUrl).hostname)
+    && /\/watch\?v=/.test(sourceUrl);
+  if (youtubeVideo) base.externalUrls.push(...youtubeChannelIds(html));
+  const uniqueTargets = [...new Set(targets)];
+  return {...base,musicTargets:uniqueTargets,
+    creditedArtistUrls:youtubeVideo ? youtubeChannelIds(html) : [],
+    externalUrls:[...new Set([...base.externalUrls,
+      ...uniqueTargets.filter(u=>spotifyContent(u)?.type==='artist')])]};
 }
 
 /** Each readPage call is ONE separately admitted HTTP request, including redirects.
  * Existing one-page manifests are not expanded; a further read can fail its budget. */
 export async function resolveMusicEvidence({candidate,catalog,readPage,maxPages=4}) {
   if (!Number.isInteger(maxPages) || maxPages<1 || maxPages>4) throw new Error('Music evidence path must allow 1–4 pages.');
-  const sourceUrl = (candidate.externalUrls ?? []).find(isMusicLandingUrl);
-  const evidence = {sourceUrl,pages:[],externalUrls:[],status:'unresolved',ownershipConfirmed:false};
+  const sourceUrls = [...new Set((candidate.externalUrls ?? []).map(value => isMusicLandingUrl(value) ? musicPageUrl(value) : null).filter(Boolean))];
+  const sourceUrl = sourceUrls[0];
+  const evidence = {sourceUrl,sourceUrls,pages:[],externalUrls:[],status:'unresolved',ownershipConfirmed:false};
   if (!sourceUrl) return {...evidence,reason:'No supported source-linked music landing page.'};
-  let next = sourceUrl;
   const seen = new Set();
+  const queue = sourceUrls.map(url => ({url,linkedFrom:null}));
   try {
-    while (next && evidence.pages.length < maxPages) {
-      if (!musicPageUrl(next) || seen.has(next)) throw new Error('Unsafe URL or loop in music evidence path.');
-      seen.add(next);
-      const page = await readPage(next);
-      if (page.sourceUrl !== next) throw new Error('Public page evidence is not bound to the requested source.');
-      evidence.pages.push(page);
-      if (page.externalUrls?.includes(catalog.url)) {
+    while (queue.length && evidence.pages.length < maxPages) {
+      const {url,linkedFrom} = queue.shift();
+      if (!musicPageUrl(url) || seen.has(url)) continue;
+      seen.add(url);
+      const page = await readPage(url);
+      if (page.sourceUrl !== url) throw new Error('Public page evidence is not bound to the requested source.');
+      evidence.pages.push({...page,linkedFrom});
+      const exactTarget = [...(page.externalUrls ?? []),...(page.musicTargets ?? [])]
+        .some(value => referenceUrl(value,catalog.platform) === catalog.url);
+      const credited = (page.creditedArtistUrls ?? []).map(value => referenceUrl(value,catalog.platform)).filter(Boolean);
+      if (exactTarget) {
         evidence.externalUrls = [catalog.url];
         evidence.status = 'exact_catalog_music_identity';
         return evidence; // Still requires independent ownership/JEV assessment.
       }
-      if (page.creditedArtistUrls?.length) {
-        evidence.reason = page.creditedArtistUrls.length>1 ? 'Multiple credited artists; not sole ownership.'
-          : 'Credited music artist differs from the catalog reference.';
-        return evidence;
+      if (credited.length) {
+        if (credited.length>1) evidence.reason = 'Multiple credited music artists; not sole ownership.';
+        else evidence.reason ??= 'Credited music artist differs from the catalog reference.';
       }
-      next = page.redirectUrl ?? (page.musicTargets?.[0] ? spotifyContent(page.musicTargets[0])?.embedUrl : undefined);
+      const targets = [...(page.redirectUrl ? [page.redirectUrl] : []),...(page.musicTargets ?? [])]
+        .map(value => musicPageUrl(value)).filter(Boolean)
+        .sort((a,b)=>Number(referenceUrl(b,catalog.platform)===catalog.url)-Number(referenceUrl(a,catalog.platform)===catalog.url));
+      for (const target of targets) if (!seen.has(target)) queue.push({url:target,linkedFrom:url});
     }
-    evidence.reason = next ? 'Public music-page limit reached.' : 'No exact catalog artist ID in the checked music path.';
+    evidence.reason ??= queue.length ? 'Public music-page limit reached before all supported links were checked.'
+      : 'No exact catalog artist ID in the checked music path.';
   } catch (error) { evidence.reason = error.message; }
   return evidence;
 }
