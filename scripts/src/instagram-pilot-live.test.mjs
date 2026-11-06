@@ -151,6 +151,23 @@ test('missing billing evidence fails closed; unsafe link hubs cause zero HTTP re
   assert.equal(calls,1);
 });
 
+test('derived music URLs are not direct bio links and controls cannot use their own catalog identity',()=>{
+  const derived={...candidate,externalUrls:[reference.url],
+    externalLinkEvidence:{status:'exact_catalog_music_identity',sourceUrl:'https://linktr.ee/example',pages:[]}};
+  const build=(ref,cand)=>jevRequest({artist:'Example',catalogReference:reference,profiles:[
+    {url:candidate.url,identityComparison:{reference:ref,candidate:cand}},
+  ]}).state.candidates[0];
+  assert.deepEqual(build(reference,derived).observedExactCatalogLinks,[]);
+  assert.deepEqual(build(reference,derived).candidate.externalUrls,[]);
+  assert.equal(build(reference,{...derived,directExternalUrls:[reference.url]}).observedExactCatalogLinks.length,1);
+  const wrongRef={...reference,url:'https://open.spotify.com/artist/AAAAAAAAAAAAAAAAAAAAAA'};
+  assert.deepEqual(build(wrongRef,{...candidate,externalUrls:[reference.url]}).observedExactCatalogLinks,[]);
+  assert.deepEqual(build({...reference,externalUrls:[reference.url]},candidate).observedExactCatalogLinks,[]);
+  assert.deepEqual(build({...reference,externalUrls:[candidate.url]},candidate).observedExactCatalogLinks,[
+    {source:'catalog_profile_link_to_instagram',targetUrl:candidate.url},
+  ]);
+});
+
 test('dollar reservations are serialized, durable, and never refunded after uncertain dispatch',async t=>{
   const dir=await temp(t);
   const manifest={run_allowed:true,authorization:{approved:true,maxSpendCents:1},

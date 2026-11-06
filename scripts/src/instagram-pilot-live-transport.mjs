@@ -29,13 +29,13 @@ const externalUrls = user => [...new Set([user.external_url, ...(user.bio_links 
   .filter(value => { try { const u = new URL(value); return u.protocol === 'https:' && !u.username && !u.password && !u.port; } catch { return false; } }))];
 
 function exactCatalogLinkEdges(reference,candidate,catalog,candidateUrl) {
-  if (instagramProfileUrl(candidate?.url) !== candidateUrl) return [];
-  const links = [...(candidate?.externalUrls ?? []).map(url=>({source:'instagram_profile_bio_link',url})),
+  if (instagramProfileUrl(candidate?.url) !== candidateUrl
+    || referenceUrl(reference?.url,catalog.platform) !== referenceUrl(catalog.url,catalog.platform)) return [];
+  const direct = candidate.directExternalUrls ?? (candidate.externalLinkEvidence ? [] : candidate.externalUrls ?? []);
+  const links = [...direct.map(url=>({source:'instagram_profile_bio_link',url})),
     ...[...String(candidate?.bio ?? '').matchAll(/https:\/\/[^\s<>"']+/g)]
       .map(([url])=>({source:'instagram_profile_bio_text',url})),
-    ...(reference?.externalUrls ?? []).map(url=>({source:'catalog_profile_link',url})),
-    ...[...String(reference?.bio ?? '').matchAll(/https:\/\/[^\s<>"']+/g)]
-      .map(([url])=>({source:'catalog_profile_bio_text',url}))];
+  ];
   const expected = catalog.platform === 'instagram'
     ? instagramProfileUrl(catalog.url) : referenceUrl(catalog.url,catalog.platform);
   if (!expected) return [];
@@ -45,6 +45,12 @@ function exactCatalogLinkEdges(reference,candidate,catalog,candidateUrl) {
       ? instagramProfileUrl(link.url.replace(/[),;]+$/,''))
       : referenceUrl(link.url.replace(/[),;]+$/,''),catalog.platform);
     if(target===expected) exact.push({source:link.source,targetUrl:expected});
+  }
+  for(const url of [...(reference.externalUrls ?? []),
+    ...[...String(reference.bio ?? '').matchAll(/https:\/\/[^\s<>"']+/g)].map(([url])=>url)]) {
+    if(instagramProfileUrl(url.replace(/[),;]+$/,''))===candidateUrl) {
+      exact.push({source:'catalog_profile_link_to_instagram',targetUrl:candidateUrl});
+    }
   }
   return [...new Map(exact.map(edge=>[`${edge.source}:${edge.targetUrl}`,edge])).values()].slice(0,4);
 }
@@ -68,7 +74,7 @@ export function jevRequest(payload) {
   // Evidence is explicitly bounded; full raw packets are stored separately.
   const meta = m => ({ platform: m.platform, url: m.url, urlAliases: m.urlAliases,
     displayName: m.displayName?.slice(0,160), bio: m.bio?.slice(0,700),
-    externalUrls: m.externalUrls?.slice(0,10),
+    externalUrls: (m.directExternalUrls ?? (m.externalLinkEvidence ? [] : m.externalUrls))?.slice(0,10),
     musicLinkPath: m.externalLinkEvidence ? {
       status:m.externalLinkEvidence.status,
       sourceUrl:m.externalLinkEvidence.sourceUrl,
@@ -195,7 +201,8 @@ export function createLiveTransport({ keys, responseDir, fetchImpl = fetch, publ
       const user = data.data?.user;
       if (!user?.username) throw new Error('Instagram metadata missing response-bound username.');
       return {platform:'instagram',url:`https://www.instagram.com/${user.username}/`,
-        displayName:user.full_name, bio:user.biography, externalUrls:externalUrls(user)};
+        displayName:user.full_name, bio:user.biography, externalUrls:externalUrls(user),
+        directExternalUrls:externalUrls(user)};
     }
     if (kind === 'public_page') {
       const url = musicPageUrl(payload.url);

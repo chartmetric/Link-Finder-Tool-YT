@@ -115,6 +115,25 @@ Test music-link resolution, SSRF protections, post clues and end-to-end fixture 
 node --test scripts/src/public-music-links.test.mjs
 ```
 
+### Saved-input provenance audit and repeatability check
+
+The next authorized diagnostic checked all 18 saved metadata packets against their raw Instagram provider responses. Aimee's exact Spotify artist URL was derived through Linktree → album → track, not directly returned as an Instagram bio link. Eliah's exact Spotify artist URL was directly returned in Instagram `bio_links`. The prior two-call experiment also incorrectly gave each unrelated control its own catalog reference and marked both positive/control comparisons `likely`; that experiment cannot isolate prompt effects.
+
+The transport now preserves raw `directExternalUrls` separately from enriched links. Legacy enriched metadata without raw provenance no longer produces a claimed direct bio link. Music paths remain in the decision evidence. Catalog-to-Instagram links are checked in the correct direction, and reference identity must match the target before exact-link summaries are emitted. Source archives and legacy outcomes remain unchanged.
+
+`scripts/src/instagram-provenance-diagnostic.mjs` reconstructs provenance from raw saved packets, binds both candidates to the same target artist, computes comparison status rather than hardcoding it, and freezes exact outgoing input hashes. Offline mode makes no provider requests. The one-shot approved run uses four JEV-only calls, two identical inputs per artist, with exclusive journals and an eight-cent maximum reservation. No Serper, metadata, public-page, database or claim requests are made.
+
+Results under `generated-artifacts/instagram-provenance-diagnostic-2026-11-06`:
+
+| Target | Repeat 1 | Repeat 2 | Unrelated control |
+| --- | --- | --- | --- |
+| Aimee Carty | likely / 0.75 | likely / 0.76 | mismatch / 0.04 both |
+| Eliah Sternhardt | likely / 0.68 | likely / 0.68 | uncertain / 0.08 and 0.09 |
+
+All four calls resolved to the same reported model release. None passed the unchanged exact-cross-link plus verified 0.90 diagnostic gate. Scores were stable within these repeated inputs, but two provisional positives do not establish population accuracy or independent ground truth. Differences from older runs remain confounded by input/prompt repairs; do not ascribe them to a single change.
+
+Reported JEV charges total $0.000294756; conservative reservations increased from $1.23 to $1.31, leaving $8.69 of the original $10 ceiling. The full rerun and all imports remain held. These results test saved evidence, not fresh discovery recovery.
+
 ### Broader verification-only diagnostic
 
 The authorized 20-artist benchmark (four per current audit tier, half provisional catalog links and half saved candidates) is archived under `generated-artifacts/instagram-verification-benchmark-2026-11-06`. It makes no Serper discovery calls and never writes claims or catalog data. Benchmark membership and expected labels are excluded from JEV inputs; rotated cross-artist controls reuse already retrieved metadata.

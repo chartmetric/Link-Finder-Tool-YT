@@ -92,3 +92,9 @@ Existing catalog Instagram links are provisional benchmark labels, not independe
 **Why:** The broader verification diagnostic uses catalog-linked accounts as positive controls and rotated accounts from other catalog artists as negative controls. Catalog errors, aliases and related entities can undermine those assumptions; such a sample cannot establish population precision or recall.
 
 **How to apply:** Retain label provenance, keep benchmark labels outside verifier inputs, and report verifier-only checks separately from full discovery acceptance. Investigate control disagreements rather than automatically correcting the catalog or treating every abstention as a known false negative.
+
+Direct Instagram bio links must remain distinct from music URLs derived through landing pages.
+
+**Why:** A saved-evidence audit found a derived Spotify artist URL had been labeled a direct Instagram bio link. A subsequent comparison also paired unrelated controls with their own references, making its before/after scores misleading.
+
+**How to apply:** Restore direct-link provenance from raw provider packets for historical evidence; unknown provenance must not be described as direct. Bind every control to the same target catalog identity as its positive, calculate comparison status from the evidence, and preserve identical request hashes for repeatability checks. Stable repeated scores do not prove ownership or justify relaxing acceptance rules.
