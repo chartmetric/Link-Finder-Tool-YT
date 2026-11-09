@@ -148,6 +148,19 @@ export interface MusicianInstagramResearchTier {
   profilesWithFailedOrIncompleteSearches: number;
 }
 
+/**
+ * Recent snapshots remain usable for at most 36 hours; stale or missing snapshots have no tier counts.
+ */
+export type MusicianInstagramResearchCoverageSnapshotStatus = typeof MusicianInstagramResearchCoverageSnapshotStatus[keyof typeof MusicianInstagramResearchCoverageSnapshotStatus];
+
+
+export const MusicianInstagramResearchCoverageSnapshotStatus = {
+  current: 'current',
+  recent: 'recent',
+  stale: 'stale',
+  unavailable: 'unavailable',
+} as const;
+
 export interface MusicianInstagramResearchHistoryDay {
   date: string;
   /** Distinct profiles with a dispatched attempt recorded on this date */
@@ -171,8 +184,15 @@ export interface MusicianInstagramResearchHistoryDay {
 }
 
 export interface MusicianInstagramResearchCoverage {
+  /**
+     * Exact musician tier snapshot used for all coverage counts, in UTC.
+     * @nullable
+     */
+  snapshotAt: string | null;
+  /** Recent snapshots remain usable for at most 36 hours; stale or missing snapshots have no tier counts. */
+  snapshotStatus: MusicianInstagramResearchCoverageSnapshotStatus;
   tiers: MusicianInstagramResearchTier[];
-  /** Daily results for dispatched run/profile attempts in the current global Tier 1-3 cohort. */
+  /** Daily results for dispatched run/profile attempts in the global Tier 1-3 cohort from snapshotAt; empty when the snapshot is stale or unavailable. */
   history: MusicianInstagramResearchHistoryDay[];
   generatedAt: string;
 }

@@ -502,15 +502,23 @@ components:
           description: Profiles without a catalog URL, research candidate, or completed no-supported-match outcome. Includes failed, incomplete, and not-yet-searched profiles; excluded from coverage.
     MusicianInstagramResearchCoverage:
       type: object
-      required: [tiers, history, generatedAt]
+      required: [tiers, history, generatedAt, snapshotAt, snapshotStatus]
       properties:
+        snapshotAt:
+          type: [string, "null"]
+          format: date-time
+          description: Exact musician tier snapshot used for all coverage counts, in UTC.
+        snapshotStatus:
+          type: string
+          enum: [current, recent, stale, unavailable]
+          description: Recent snapshots remain usable for at most 36 hours; stale or missing snapshots have no tier counts.
         tiers:
           type: array
           items:
             $ref: "#/components/schemas/MusicianInstagramResearchTier"
         history:
           type: array
-          description: Daily results for dispatched run/profile attempts in the current global Tier 1-3 cohort.
+          description: Daily results for dispatched run/profile attempts in the global Tier 1-3 cohort from snapshotAt; empty when the snapshot is stale or unavailable.
           items:
             $ref: "#/components/schemas/MusicianInstagramResearchHistoryDay"
         generatedAt: { type: string, format: date-time }

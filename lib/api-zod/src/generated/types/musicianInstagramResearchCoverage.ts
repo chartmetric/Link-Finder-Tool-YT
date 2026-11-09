@@ -5,12 +5,20 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MusicianInstagramResearchCoverageSnapshotStatus } from './musicianInstagramResearchCoverageSnapshotStatus';
 import type { MusicianInstagramResearchHistoryDay } from './musicianInstagramResearchHistoryDay';
 import type { MusicianInstagramResearchTier } from './musicianInstagramResearchTier';
 
 export interface MusicianInstagramResearchCoverage {
+  /**
+     * Exact musician tier snapshot used for all coverage counts, in UTC.
+     * @nullable
+     */
+  snapshotAt: Date | null;
+  /** Recent snapshots remain usable for at most 36 hours; stale or missing snapshots have no tier counts. */
+  snapshotStatus: MusicianInstagramResearchCoverageSnapshotStatus;
   tiers: MusicianInstagramResearchTier[];
-  /** Daily results for dispatched run/profile attempts in the current global Tier 1-3 cohort. */
+  /** Daily results for dispatched run/profile attempts in the global Tier 1-3 cohort from snapshotAt; empty when the snapshot is stale or unavailable. */
   history: MusicianInstagramResearchHistoryDay[];
   generatedAt: Date;
 }

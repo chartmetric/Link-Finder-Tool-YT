@@ -57,6 +57,12 @@ Treat an empty current-day tier selection immediately after UTC midnight as a po
 
 **How to apply:** Inspect snapshot timestamps before reporting an empty cohort. For an explicitly requested run, disclose and pin a recent completed snapshot, rejecting one older than 36 hours rather than silently selecting stale historical assignments. Keep ordinary current-day selection unchanged unless this alternative is explicitly chosen.
 
+Read-only Instagram coverage may automatically retain a recent global musician tier snapshot across UTC midnight; this does not authorize paid research to switch selection modes automatically.
+
+**Why:** Coverage must remain visible during the nightly tier-refresh gap without silently broadening or changing the cohort for paid work.
+
+**How to apply:** Display the snapshot's UTC timestamp, enforce the same 36-hour age limit even when retaining cached counts after failures, and use one pinned snapshot rather than filling missing assignments from older dates.
+
 Reconcile a final saved-status snapshot before treating a completed worker's profile as unfinished.
 
 **Why:** Multiple completed research batches initially reported one profile as still running even though all worker completions were logged; a fresh read then showed the final saved result without another provider call. The visibility delay's exact cause has not been established.

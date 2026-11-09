@@ -129,6 +129,13 @@ export function MusicianInstagramResearchProgress() {
     },
   });
   const data = q.data;
+  // Also guard retained React Query data after a failed refresh.
+  const snapshotAge = data?.snapshotAt ? Date.now() - Date.parse(data.snapshotAt) : NaN;
+  const usableSnapshot = data && (data.snapshotStatus === 'current' || data.snapshotStatus === 'recent')
+    && snapshotAge >= 0 && snapshotAge <= 36 * 60 * 60_000;
+  const snapshotLabel = data?.snapshotAt
+    ? new Date(data.snapshotAt).toISOString().replace('T', ' ').replace('.000Z', ' UTC')
+    : null;
 
   return (
     <section className="blk-cov blk-ig" aria-labelledby="blk-ig-title" data-testid="section-instagram-research-progress">
@@ -158,9 +165,22 @@ export function MusicianInstagramResearchProgress() {
         </div>
       )}
 
-      {data && (
+      {data && !usableSnapshot && (
+        <p className="blk-cov-error" role="status" data-testid="status-instagram-research-unavailable">
+          Instagram coverage is unavailable, not zero. {snapshotLabel
+            ? `The latest tier snapshot (${snapshotLabel}) is stale or unusable; snapshots must be no more than 36 hours old.`
+            : 'No musician tier snapshot is available.'} Waiting for a recent completed snapshot.
+        </p>
+      )}
+
+      {data && usableSnapshot && (
         <>
           {q.isError && <p className="blk-ig-stale" role="status">The latest refresh failed; showing the previous coverage counts.</p>}
+          <p className="blk-ig-message" role="status" data-testid="text-instagram-research-snapshot">
+            Tier snapshot: {snapshotLabel}.
+            {data.snapshotAt?.slice(0, 10) !== new Date().toISOString().slice(0, 10)
+              && ' Showing the recent snapshot while the next UTC-day tier refresh is pending (36-hour maximum age).'}
+          </p>
 
           <div className="blk-ig-toggle" role="group" aria-label="Instagram coverage view">
             <button type="button" onClick={() => setView('urls')} aria-pressed={view === 'urls'} data-testid="button-instagram-view-urls">
@@ -186,7 +206,7 @@ export function MusicianInstagramResearchProgress() {
           <LatestResearchSummary tiers={data.tiers} />
           <HistoryTable history={data.history} />
           <p className="blk-ig-foot" data-testid="text-instagram-research-definition">
-            Each profile is counted once using its current-day global Tier 1–5 assignment. URL coverage includes catalog Instagram URLs and saved non-empty research URLs, which are candidates, not approved catalog links. Catalog links and research candidates may overlap, but coverage counts each profile once. The second view also counts completed searches with no candidate as a practical “no supported match,” not proof that no account exists. Failed, incomplete, and not-yet-searched outcomes do not add coverage.
+            Each profile is counted once using its global Tier 1–5 assignment from the single tier snapshot shown above. URL coverage includes catalog Instagram URLs and saved non-empty research URLs, which are candidates, not approved catalog links. Catalog links and research candidates may overlap, but coverage counts each profile once. The second view also counts completed searches with no candidate as a practical “no supported match,” not proof that no account exists. Failed, incomplete, and not-yet-searched outcomes do not add coverage.
           </p>
         </>
       )}

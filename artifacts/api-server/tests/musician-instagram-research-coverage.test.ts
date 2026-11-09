@@ -6,6 +6,9 @@ import {
   musicianInstagramResearchCoverageResponse,
   musicianInstagramResearchCoverageSql,
   musicianInstagramResearchHistorySql,
+  musicianTierSnapshotSql,
+  musicianTierSnapshotStatus,
+  createMusicianInstagramResearchCoverage,
 } from "../src/lib/musician-instagram-research-coverage";
 
 test("research coverage returns URL and resolved counts for all five tiers", () => {
@@ -50,7 +53,7 @@ test("research coverage returns URL and resolved counts for all five tiers", () 
       profiles_with_catalog_instagram_urls: "0", profiles_with_research_candidates: "350",
       profiles_with_failed_or_incomplete_searches: "100",
     },
-  ], [], new Date("2026-11-03T20:00:00.000Z"));
+  ], "2026-11-03T04:00:00.000Z", new Date("2026-11-03T20:00:00.000Z"));
 
   assert.equal(result.tiers.reduce((sum, row) => sum + row.totalProfiles, 0), 1500);
   assert.equal(result.tiers.reduce((sum, row) => sum + row.profilesWithInstagramUrls, 0), 1130);
@@ -62,6 +65,8 @@ test("research coverage returns URL and resolved counts for all five tiers", () 
   assert.equal(result.tiers.slice(0, 3).reduce((sum, row) => sum + row.failedProfiles, 0), 13);
   assert.equal(result.tiers.slice(0, 3).reduce((sum, row) => sum + row.pendingProfiles, 0), 9);
   assert.equal(result.generatedAt, "2026-11-03T20:00:00.000Z");
+  assert.equal(result.snapshotAt, "2026-11-03T04:00:00.000Z");
+  assert.equal(result.snapshotStatus, "current");
   assert.deepEqual(result.tiers.map(row => [row.tier, row.totalProfiles, row.profilesWithUrlOrNoSupportedMatch]), [
     [1, 100, 95], [2, 200, 170], [3, 300, 270], [4, 400, 340], [5, 500, 400],
   ]);
@@ -72,14 +77,13 @@ test("research coverage returns URL and resolved counts for all five tiers", () 
 });
 
 test("research coverage preserves empty tiers including tier 4", () => {
-  const result = musicianInstagramResearchCoverageResponse([]);
+  const result = musicianInstagramResearchCoverageResponse([], "2026-11-03T04:00:00.000Z", new Date("2026-11-03T20:00:00Z"));
   assert.deepEqual(result.tiers.map(row => row.tier), [1, 2, 3, 4, 5]);
   assert.equal(result.tiers[3].totalProfiles, 0);
   assert.equal(result.tiers[3].profilesWithFailedOrIncompleteSearches, 0);
 });
 
-test("research coverage SQL includes current global tiers, catalog URLs, and latest research outcomes", () => {
-  assert.match(musicianInstagramResearchCoverageSql, /computed_at >= toStartOfDay\(now\(\)\)/);
+test("research coverage SQL includes pinned global tiers, catalog URLs, and latest research outcomes", () => {
   assert.match(musicianInstagramResearchCoverageSql, /grain = 'global'/);
   assert.match(musicianInstagramResearchCoverageSql, /HAVING assigned_tier IN \(1, 2, 3, 4, 5\)/);
   assert.match(musicianInstagramResearchCoverageSql, /catalog_instagram_profiles/);
@@ -93,9 +97,21 @@ test("research coverage SQL includes current global tiers, catalog URLs, and lat
   assert.match(musicianInstagramResearchCoverageSql, /countIf\(has_catalog_instagram_url\) AS profiles_with_catalog_instagram_urls/);
   assert.match(musicianInstagramResearchCoverageSql, /countIf\(NOT has_instagram_url AND NOT no_supported_match\)/);
 });
+test("research coverage pins one global snapshot without historical tier mixing", () => {
+  assert.match(musicianTierSnapshotSql, /maxOrNull\(computed_at\)/);
+  assert.doesNotMatch(musicianTierSnapshotSql, /tier IN|toStartOfDay/);
+  for (const sql of [musicianTierSnapshotSql, musicianInstagramResearchCoverageSql, musicianInstagramResearchHistorySql]) {
+    assert.match(sql, /profile_type = 'musician' AND grain = 'global'/);
+  }
+  for (const sql of [musicianInstagramResearchCoverageSql, musicianInstagramResearchHistorySql]) {
+    assert.match(sql, /computed_at = toDateTime\(\{snapshotAt:String\}, 'UTC'\)/);
+    assert.doesNotMatch(sql, /computed_at >=|toStartOfDay/);
+  }
+  assert.doesNotMatch(musicianInstagramResearchCoverageSql, /research_status = ''/);
+});
 
 test("research history separates attempts from unique profiles and cumulative profile coverage", () => {
-  const result = musicianInstagramResearchCoverageResponse([], [
+  const result = musicianInstagramResearchCoverageResponse([], "2026-11-03T04:00:00.000Z", new Date("2026-11-03T20:00:00Z"), [
     {
       date: "2026-11-01",
       unique_profiles: "3",
@@ -179,10 +195,9 @@ test("coverage SQL retains Tier 4 outcomes without inferring links from missing 
     .replace("new_vertical.l_profile_tier FINAL", fixture("profile UInt64, tier UInt8, profile_type String, grain String, computed_at DateTime, updated_at DateTime", rows))
     .replace("poc_new_verticals.musician_instagram_discovery_events", fixture("profile_id UInt64, status String, instagram_urls Array(String), updated_at DateTime", events))
     .replace("new_vertical.l_profile_account l", `${fixture("profile_id UInt64, account_id UInt64, disconnected_at Nullable(DateTime)", links)} l`)
-    .replace("new_vertical.account a", `${fixture("id UInt64, platform String, account_url String", accounts)} a`)
-    .replace("toStartOfDay(now())", "toDateTime('2026-11-04 00:00:00')");
-  const response = await clickHouseJson<Parameters<typeof musicianInstagramResearchCoverageResponse>[0][number]>(sql);
-  const result = musicianInstagramResearchCoverageResponse(response.data);
+    .replace("new_vertical.account a", `${fixture("id UInt64, platform String, account_url String", accounts)} a`);
+  const response = await clickHouseJson<Parameters<typeof musicianInstagramResearchCoverageResponse>[0][number]>(sql, { snapshotAt: "2026-11-04 10:00:00" });
+  const result = musicianInstagramResearchCoverageResponse(response.data, "2026-11-04T10:00:00.000Z", new Date("2026-11-04T12:00:00Z"));
   for (const row of result.tiers) {
     assert.equal(row.totalProfiles, 10);
     assert.equal(row.profilesWithCatalogInstagramUrls, 1);
@@ -194,4 +209,121 @@ test("coverage SQL retains Tier 4 outcomes without inferring links from missing 
     assert.equal(row.failedProfiles, 1);
     assert.equal(row.pendingProfiles, 2);
   }
+});
+
+const counts = [{
+  tier: 1, total_profiles: "100", profiles_with_instagram_urls: "90",
+  profiles_with_no_supported_match: "5", profiles_with_url_or_no_supported_match: "95",
+}];
+const flush = () => new Promise(resolve => setImmediate(resolve));
+
+function fixture() {
+  let time = new Date("2026-11-03T23:59:00Z");
+  let snapshot: string | null = "2026-11-03 04:00:00";
+  let fail = false;
+  const pinned: string[] = [];
+  const historyPinned: string[] = [];
+  const read: typeof clickHouseJson = async <T>(sql: string, params?: Record<string, string>) => {
+    if (fail) throw new Error("read failed");
+    if (sql === musicianTierSnapshotSql) return { data: [{ snapshot_at: snapshot }] as T[] };
+    if (sql === musicianInstagramResearchHistorySql) {
+      historyPinned.push(params!.snapshotAt);
+      return { data: [{
+        date: "2026-11-03", unique_profiles: "1", cumulative_unique_profiles: "1",
+        attempts: "1", candidate_profiles: "1", candidate_attempts: "1", candidate_urls: "1",
+        no_candidate_profiles: "0", no_candidate_attempts: "0", failed_profiles: "0",
+        failed_attempts: "0", in_progress_attempts: "0",
+      }] as T[] };
+    }
+    assert.equal(sql, musicianInstagramResearchCoverageSql);
+    pinned.push(params!.snapshotAt);
+    return { data: counts as T[] };
+  };
+  return {
+    get: createMusicianInstagramResearchCoverage(read, () => time, () => {}),
+    at: (value: string) => { time = new Date(value); },
+    snapshot: (value: string | null) => { snapshot = value; },
+    fail: () => { fail = true; },
+    pinned,
+    historyPinned,
+  };
+}
+
+test("UTC midnight retains one recent snapshot without changing counts or mixing tier history", async () => {
+  const f = fixture();
+  const before = await f.get();
+  f.at("2026-11-04T00:01:00Z");
+  const after = await f.get();
+  assert.equal(before.snapshotStatus, "current");
+  assert.equal(after.snapshotStatus, "recent");
+  assert.equal(after.snapshotAt, "2026-11-03T04:00:00.000Z");
+  assert.deepEqual(before.tiers, after.tiers);
+  assert.deepEqual(before.history, after.history);
+  assert.equal(after.history[0].attempts, 1);
+  assert.deepEqual(f.pinned, ["2026-11-03 04:00:00"]);
+  assert.deepEqual(f.historyPinned, f.pinned);
+});
+
+test("a newly arrived snapshot replaces the pinned snapshot on cache refresh", async () => {
+  const f = fixture();
+  await f.get();
+  f.at("2026-11-04T04:01:00Z");
+  f.snapshot("2026-11-04 04:00:00");
+  await f.get(); // Read-only cache serves the last success during refresh.
+  await flush();
+  const updated = await f.get();
+  assert.equal(updated.snapshotStatus, "current");
+  assert.equal(updated.snapshotAt, "2026-11-04T04:00:00.000Z");
+  assert.deepEqual(f.pinned, ["2026-11-03 04:00:00", "2026-11-04 04:00:00"]);
+  assert.deepEqual(f.historyPinned, f.pinned);
+});
+
+test("36-hour age limit is inclusive and independent of UTC day boundaries", () => {
+  const at = "2026-11-03T04:00:00.000Z";
+  assert.equal(musicianTierSnapshotStatus(at, new Date("2026-11-04T16:00:00Z")), "recent");
+  assert.equal(musicianTierSnapshotStatus(at, new Date("2026-11-04T16:00:00.001Z")), "stale");
+  assert.equal(musicianTierSnapshotStatus(at, new Date("2026-11-03T03:59:59Z")), "unavailable");
+  assert.equal(musicianTierSnapshotStatus(null), "unavailable");
+  assert.equal(musicianTierSnapshotStatus("invalid"), "unavailable");
+});
+
+test("old or missing snapshots are unavailable, not zero coverage; no counts query is run", async () => {
+  for (const snapshot of ["2026-11-01 04:00:00", null]) {
+    const f = fixture();
+    f.snapshot(snapshot);
+    const result = await f.get();
+    assert.equal(result.snapshotStatus, snapshot ? "stale" : "unavailable");
+    assert.deepEqual(result.tiers, []);
+    assert.deepEqual(result.history, []);
+    assert.deepEqual(f.pinned, []);
+    assert.deepEqual(f.historyPinned, []);
+  }
+});
+
+test("failed refresh cannot keep serving counts after their tier snapshot exceeds 36 hours", async () => {
+  const f = fixture();
+  await f.get();
+  f.fail();
+  f.at("2026-11-04T15:59:00Z");
+  assert.equal((await f.get()).snapshotStatus, "recent");
+  await flush();
+  f.at("2026-11-04T16:00:00.001Z");
+  const result = await f.get();
+  assert.equal(result.snapshotStatus, "stale");
+  assert.deepEqual(result.tiers, []);
+  assert.deepEqual(result.history, []);
+  assert.equal(result.snapshotAt, "2026-11-03T04:00:00.000Z");
+});
+
+test("a stale cached snapshot recovers when a recent snapshot arrives", async () => {
+  const f = fixture();
+  f.snapshot("2026-11-01 04:00:00");
+  assert.equal((await f.get()).snapshotStatus, "stale");
+  f.at("2026-11-04T00:05:00Z");
+  f.snapshot("2026-11-03 04:00:00");
+  await f.get();
+  await flush();
+  const result = await f.get();
+  assert.equal(result.snapshotStatus, "recent");
+  assert.equal(result.tiers[0].totalProfiles, 100);
 });

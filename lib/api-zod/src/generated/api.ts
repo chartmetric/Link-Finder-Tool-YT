@@ -100,6 +100,8 @@ export const GetMusicianCoverageResponse = zod.object({
  * @summary Count Instagram URL coverage for Tier 1-5 musicians
  */
 export const GetMusicianInstagramResearchCoverageResponse = zod.object({
+  "snapshotAt": zod.coerce.date().nullable().describe('Exact musician tier snapshot used for all coverage counts, in UTC.'),
+  "snapshotStatus": zod.enum(['current', 'recent', 'stale', 'unavailable']).describe('Recent snapshots remain usable for at most 36 hours; stale or missing snapshots have no tier counts.'),
   "tiers": zod.array(zod.object({
   "tier": zod.number(),
   "totalProfiles": zod.number(),
@@ -128,7 +130,7 @@ export const GetMusicianInstagramResearchCoverageResponse = zod.object({
   "failedProfiles": zod.number().describe('Distinct profiles with a failed attempt on this date; may overlap other outcome profile counts after retries.'),
   "failedAttempts": zod.number(),
   "inProgressAttempts": zod.number()
-})).describe('Daily results for dispatched run\/profile attempts in the current global Tier 1-3 cohort.'),
+})).describe('Daily results for dispatched run\/profile attempts in the global Tier 1-3 cohort from snapshotAt; empty when the snapshot is stale or unavailable.'),
   "generatedAt": zod.coerce.date()
 })
 

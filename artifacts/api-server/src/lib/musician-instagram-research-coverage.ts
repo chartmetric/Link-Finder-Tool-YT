@@ -51,13 +51,22 @@ export type MusicianInstagramResearchHistoryDay = {
 
 const tiers = [1, 2, 3, 4, 5] as const;
 
+export const musicianTierSnapshotMaxAgeMs = 36 * 60 * 60_000;
+
+// Resolve once, before tier filtering: never fill gaps using older assignments.
+export const musicianTierSnapshotSql = `
+  SELECT toString(maxOrNull(computed_at), 'UTC') AS snapshot_at
+  FROM new_vertical.l_profile_tier FINAL
+  WHERE profile_type = 'musician' AND grain = 'global'
+  FORMAT JSON
+`;
+
 export const musicianInstagramResearchCoverageSql = `
   WITH fresh_tier_rows AS (
     SELECT profile, tier, computed_at, updated_at
     FROM new_vertical.l_profile_tier FINAL
-    WHERE profile_type = 'musician'
-      AND grain = 'global'
-      AND computed_at >= toStartOfDay(now())
+    WHERE profile_type = 'musician' AND grain = 'global'
+      AND computed_at = toDateTime({snapshotAt:String}, 'UTC')
   ),
   tier_assignments AS (
     SELECT profile, argMax(tier, tuple(computed_at, updated_at)) AS assigned_tier
@@ -126,9 +135,8 @@ export const musicianInstagramResearchHistorySql = `
   WITH fresh_tier_rows AS (
     SELECT profile, tier, computed_at, updated_at
     FROM new_vertical.l_profile_tier FINAL
-    WHERE profile_type = 'musician'
-      AND grain = 'global'
-      AND computed_at >= toStartOfDay(now())
+    WHERE profile_type = 'musician' AND grain = 'global'
+      AND computed_at = toDateTime({snapshotAt:String}, 'UTC')
   ),
   tier_assignments AS (
     SELECT profile, argMax(tier, tuple(computed_at, updated_at)) AS assigned_tier
@@ -218,9 +226,11 @@ const asCount = (value: number | string | undefined) => {
 
 export function musicianInstagramResearchCoverageResponse(
   rows: ResearchRow[],
-  historyRows: ResearchHistoryRow[] = [],
+  snapshotAt: string | null,
   generatedAt = new Date(),
+  historyRows: ResearchHistoryRow[] = [],
 ) {
+  const snapshotStatus = musicianTierSnapshotStatus(snapshotAt, generatedAt);
   const tierRows: MusicianInstagramResearchTier[] = tiers.map(tier => {
     const row = rows.find(item => Number(item.tier) === tier);
     return {
@@ -241,8 +251,10 @@ export function musicianInstagramResearchCoverageResponse(
   });
 
   return {
-    tiers: tierRows,
-    history: historyRows.map(row => ({
+    tiers: snapshotStatus === "current" || snapshotStatus === "recent" ? tierRows : [],
+    snapshotAt,
+    snapshotStatus,
+    history: (snapshotStatus === "current" || snapshotStatus === "recent" ? historyRows : []).map(row => ({
       date: row.date,
       uniqueProfiles: asCount(row.unique_profiles),
       cumulativeUniqueProfiles: asCount(row.cumulative_unique_profiles),
@@ -258,16 +270,48 @@ export function musicianInstagramResearchCoverageResponse(
     })),
     generatedAt: generatedAt.toISOString(),
   };
+
 }
 
-const coverageCache = createCoverageCache(async () => {
-  const [coverage, history] = await Promise.all([
-    clickHouseJson<ResearchRow>(musicianInstagramResearchCoverageSql, {}, 30_000),
-    clickHouseJson<ResearchHistoryRow>(musicianInstagramResearchHistorySql, {}, 30_000),
-  ]);
-  return musicianInstagramResearchCoverageResponse(coverage.data, history.data);
-}, error => logger.warn({ err: error }, "Musician Instagram research coverage failed; retaining last successful snapshot when available"));
-
-export function getMusicianInstagramResearchCoverage() {
-  return coverageCache.get();
+export function musicianTierSnapshotStatus(snapshotAt: string | null, now = new Date()) {
+  const time = snapshotAt ? Date.parse(snapshotAt) : NaN;
+  if (!Number.isFinite(time) || time > now.getTime()) return "unavailable" as const;
+  if (now.getTime() - time > musicianTierSnapshotMaxAgeMs) return "stale" as const;
+  return snapshotAt!.slice(0, 10) === now.toISOString().slice(0, 10) ? "current" as const : "recent" as const;
 }
+
+export function createMusicianInstagramResearchCoverage(
+  read = clickHouseJson,
+  now = () => new Date(),
+  onError = (error: unknown) => logger.warn({ err: error }, "Musician Instagram research coverage failed; retaining last successful snapshot when available"),
+) {
+  const coverageCache = createCoverageCache(async () => {
+    const snapshot = await read<{ snapshot_at: string | null }>(musicianTierSnapshotSql, {}, 30_000);
+    const raw = snapshot.data[0]?.snapshot_at;
+    const snapshotAt = raw ? new Date(`${raw.replace(" ", "T")}Z`).toISOString() : null;
+    const status = musicianTierSnapshotStatus(snapshotAt, now());
+    if (status === "stale" || status === "unavailable") {
+      return musicianInstagramResearchCoverageResponse([], snapshotAt, now());
+    }
+    const params = { snapshotAt: raw! };
+    const [result, history] = await Promise.all([
+      read<ResearchRow>(musicianInstagramResearchCoverageSql, params, 30_000),
+      read<ResearchHistoryRow>(musicianInstagramResearchHistorySql, params, 30_000),
+    ]);
+    return musicianInstagramResearchCoverageResponse(result.data, snapshotAt, now(), history.data);
+  }, onError, () => now().getTime());
+
+  return async () => {
+    const result = await coverageCache.get();
+    // Cache retention after a failed read must not extend the tier snapshot's age.
+    const snapshotStatus = musicianTierSnapshotStatus(result.snapshotAt, now());
+    return {
+      ...result,
+      snapshotStatus,
+      tiers: snapshotStatus === "current" || snapshotStatus === "recent" ? result.tiers : [],
+      history: snapshotStatus === "current" || snapshotStatus === "recent" ? result.history : [],
+    };
+  };
+}
+
+export const getMusicianInstagramResearchCoverage = createMusicianInstagramResearchCoverage();
