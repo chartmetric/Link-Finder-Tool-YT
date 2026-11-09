@@ -120,7 +120,8 @@ export async function runPilot({ manifest, journalPath, transport, evaluateRegre
         const readableProfiles=profiles.filter(p=>p.identityComparison);
         if (profiles.length && !readableProfiles.length) throw new Error('No candidate had readable identity metadata; evidence retained.');
         if (readableProfiles.length) {
-          const decisions = await call('jev', { artist: artist.artist, catalogReference: scope.reference, profiles:readableProfiles });
+          const decisions = await call('jev', { artist: artist.artist, catalogReference: scope.reference, profiles:readableProfiles,
+            ...(artist.metadata_context ? { artistContext: artist.metadata_context } : {}) });
           for (const p of profiles) p.jevVerification = decisions.find(d => instagramProfileUrl(d.url) === p.url)?.jevVerification;
         }
         const assessment = assessInstagramCandidates({ ...discovery, profiles }, artist);

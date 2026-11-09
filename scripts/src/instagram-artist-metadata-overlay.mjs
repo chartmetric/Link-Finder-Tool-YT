@@ -115,6 +115,37 @@ export function buildMetadataOverlay(manifest,data,collectedAt) {
     packets};
 }
 
+/** Converts only source-bound, current-account context for the verifier. Instagram
+ * candidates and unbound profile/platform snapshots can never supply it. */
+export function artistContextFromPacket(packet,{staleAfterDays=365,maxItems=8}={}) {
+  const asOf=Date.parse(packet.collectedAt),items=[];
+  const age=date=>Number.isFinite(asOf)&&Number.isFinite(Date.parse(date))?Math.max(0,Math.floor((asOf-Date.parse(date))/864e5)):null;
+  for(const s of packet.platformSnapshots)if(s.usableAsContext&&s.bio.trim()){
+    const ageDays=age(s.snapshotDate);
+    items.push({kind:'bio',platform:s.platform,source:s.source,asOf:s.snapshotDate,ageDays,
+      stale:ageDays===null||ageDays>staleAfterDays,text:s.bio});
+  }
+  for(const s of packet.spotifyMetadata)if(s.usableAsContext&&text(s.latest[1]).trim()){
+    const ageDays=age(s.latest[4]);
+    items.push({kind:'spotify_biography',platform:'spotify',source:s.source,asOf:s.latest[4],ageDays,
+      stale:ageDays===null||ageDays>staleAfterDays,text:s.latest[1]});
+  }
+  if(text(packet.chartmetric?.code2).trim())items.push({kind:'country',source:'new_vertical.cm_artist',
+    asOf:packet.chartmetric.source_updated_at,ageDays:age(packet.chartmetric.source_updated_at),stale:false,text:packet.chartmetric.code2});
+  for(const t of packet.tags.filter(t=>t.tag_type==='genre'))items.push({kind:'genre',source:t.table,
+    asOf:t.source_updated_at,ageDays:age(t.source_updated_at),stale:false,text:t.tag_slug});
+  return {ownershipConfirmed:false,items:items.slice(0,maxItems)};
+}
+export function attachMetadataContext(manifest,overlay) {
+  const byId=new Map(overlay.packets.map(p=>[p.profileId,p]));
+  return {...manifest,artists:manifest.artists.map(a=>{
+    const p=byId.get(String(a.profile_id));
+    if(!p||p.cmArtist!==String(a.cm_artist))throw Error('Metadata evidence does not match the frozen artist.');
+    const context=artistContextFromPacket(p);
+    return context.items.length?{...a,metadata_context:context}:a;
+  })};
+}
+
 function csvCell(v) {
   let s=String(v??'');
   if(/^\s*[=+\-@]|^[\t\r]/.test(s))s=`'${s}`;
