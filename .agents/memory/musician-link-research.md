@@ -91,7 +91,7 @@ Existing catalog Instagram links are provisional benchmark labels, not independe
 
 **Why:** The broader verification diagnostic uses catalog-linked accounts as positive controls and rotated accounts from other catalog artists as negative controls. Catalog errors, aliases and related entities can undermine those assumptions; such a sample cannot establish population precision or recall.
 
-**How to apply:** Retain label provenance, keep benchmark labels outside verifier inputs, and report verifier-only checks separately from full discovery acceptance. Investigate control disagreements rather than automatically correcting the catalog or treating every abstention as a known false negative.
+**How to apply:** Retain label provenance, keep benchmark labels outside verifier inputs, and report verifier-only checks separately from full discovery acceptance. User-confirmed corrections can anchor a regression test but do not constitute newly rechecked live ownership or catalog evidence. Never invent a missing music cross-link to make an expected-positive example pass; distinguish a verifier hold from an independent evidence-gate hold. Investigate control disagreements rather than automatically correcting the catalog or treating every abstention as a known false negative.
 
 Direct Instagram bio links must remain distinct from music URLs derived through landing pages.
 

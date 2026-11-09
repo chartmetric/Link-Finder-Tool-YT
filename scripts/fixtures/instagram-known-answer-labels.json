@@ -1,0 +1,38 @@
+{
+  "purpose": "Evaluator-only user-confirmed regression labels; never send these answers to a verifier.",
+  "labels": [
+    {
+      "profileId": "302463",
+      "artist": "Frankelly Bello",
+      "url": "https://www.instagram.com/frankellybello_/",
+      "expectedArtistOwned": true,
+      "provenance": "User explicitly identified this as Frankelly Bello's actual account.",
+      "independentlyRechecked": false
+    },
+    {
+      "profileId": "302463",
+      "artist": "Frankelly Bello",
+      "url": "https://www.instagram.com/belloo_official/",
+      "expectedArtistOwned": false,
+      "provenance": "User explicitly corrected this attribution to Frankelly Bello.",
+      "independentlyRechecked": false
+    },
+    {
+      "profileId": "281761",
+      "artist": "Shenge wasehlalankosi",
+      "url": "https://www.instagram.com/shenge_wasehlalankosi/",
+      "expectedArtistOwned": true,
+      "provenance": "User supplied this account as a known missed Instagram account for Shenge.",
+      "independentlyRechecked": false
+    }
+  ],
+  "absenceAssertions": [
+    {
+      "profileId": "249317",
+      "artist": "Gula Mın 76",
+      "provenance": "User reported that this artist does not have an Instagram account.",
+      "scored": false,
+      "reason": "An artist-level absence report does not independently adjudicate every candidate URL or prove current absence."
+    }
+  ]
+}

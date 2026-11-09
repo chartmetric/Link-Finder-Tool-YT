@@ -213,6 +213,22 @@ This does not establish whether JEV is appropriately cautious or overly restrict
 
 Archive: `generated-artifacts/instagram-jev-label-ablation-2026-11-09`. Four admissions and four returns reconciled with no retries, searches, metadata/public/database reads, claims, database writes or imports. Actual reported charge: $0.00036918. Conservative cumulative reservation: $3.29; remaining original budget: $6.71. No full rerun started.
 
+### Offline known-answer benchmark preparation
+
+The user approved preparation only, without paid calls. `scripts/src/instagram-known-answer-benchmark.mjs` freezes seven saved paired requests in `generated-artifacts/instagram-known-answer-benchmark-2026-11-09`. It has no HTTP client, secret access, provider transport or database adapter. Preparation completed with `fetch` disabled. Every request fits the unchanged 6,000-byte limit, preserves its typed questions, binds both candidates to the same target catalog reference and has a separate SHA-256 hash.
+
+Evaluator-only labels in `scripts/fixtures/instagram-known-answer-labels.json` contain three unique user-confirmed regression assertions:
+
+- Frankelly Bello / `frankellybello_`: expected positive.
+- Frankelly Bello / `belloo_official`: expected negative.
+- Shenge wasehlalankosi / `shenge_wasehlalankosi`: expected positive.
+
+These are user-confirmed examples, not newly or independently rechecked live ownership. Only the two core requests score those three assertions. The other packets retain three related-entity challenges (cymbal brand, venue, festival) and eight unscored observations, including repeated positives, Gin_Beatz and the provisional album-linked examples. They do not become gold labels by appearing in the benchmark. Rooby's label-associated candidate remains blocked for lack of a usable catalog reference. Gula's user-reported account absence is recorded separately, not treated as proof of absence or an adjudication of every candidate URL.
+
+The scorecard distinguishes JEV-held known positives, JEV-accepted known negatives, and missing saved exact-link evidence. In particular, an independently expected positive must not have a cross-link invented to pass the application gate. A confidently accepted wrong account remains visible even if the separate evidence gate would hold it. Results must bind to the frozen request hash and candidate order; duplicate results, changed URLs and invalid scores fail explicitly.
+
+`benchmark.json` sets `run_allowed:false`, with zero authorized paid calls/imports. `offline-scorecard.json` reports all cases as not tested. A future core-only test would require separate approval for at most two JEV calls / $0.04 conservative reservation; this proposal is not an admission. No tests of the prepared accounts were run in this step, no new money was reserved, and the remaining original budget is still $6.71. Four unit tests cover offline/no-results behavior, separate gate outcomes, result bindings and input-size/reference checks. No population accuracy, threshold calibration or full-rerun readiness claim is made.
+
 ```sh
 node --test scripts/src/catalog-album-evidence.test.mjs scripts/src/public-music-links.test.mjs scripts/src/instagram-pilot-live.test.mjs scripts/src/instagram-pilot-runner.test.mjs scripts/src/instagram-verification-benchmark.test.mjs
 ```
