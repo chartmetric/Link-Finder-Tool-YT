@@ -11,6 +11,7 @@ import {
   ListProfileInvestigationsResponse,
   GetMusicianCoverageResponse,
   GetMusicianInstagramResearchCoverageResponse,
+  GetMusicianInstagramResearchNoCandidatesResponse,
   GetMusicianInstagramRerunEligibilityResponse,
   StartMusicianInstagramRerunBody,
   StartMusicianInstagramRerunResponse,
@@ -27,7 +28,10 @@ import {
 } from "../lib/clickhouse-profiles";
 import { listProfileInvestigations, saveProfileInvestigation } from "../lib/profile-investigations";
 import { getMusicianCoverage, invalidateMusicianCoverage } from "../lib/musician-coverage";
-import { getMusicianInstagramResearchCoverage } from "../lib/musician-instagram-research-coverage";
+import {
+  getMusicianInstagramResearchCoverage,
+  getMusicianInstagramResearchNoCandidates,
+} from "../lib/musician-instagram-research-coverage";
 import {
   getInstagramRerunEligibility,
   startInstagramNoMatchRerun,
@@ -53,6 +57,15 @@ router.get("/profiles/musician-instagram-research-coverage", async (req, res): P
   } catch (error) {
     req.log.error({ err: error }, "Musician Instagram research coverage failed");
     res.status(503).json({ error: "Instagram research statistics are unavailable. Please retry." });
+  }
+});
+
+router.get("/profiles/musician-instagram-research-no-candidates", async (req, res): Promise<void> => {
+  try {
+    res.json(GetMusicianInstagramResearchNoCandidatesResponse.parse(await getMusicianInstagramResearchNoCandidates()));
+  } catch (error) {
+    req.log.error({ err: error }, "Musician Instagram no-candidate export failed");
+    res.status(503).json({ error: "Instagram research export is unavailable. Please retry." });
   }
 });
 

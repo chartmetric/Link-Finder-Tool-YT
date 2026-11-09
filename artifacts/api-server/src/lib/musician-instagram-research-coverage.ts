@@ -19,6 +19,15 @@ type ResearchRow = {
   profiles_with_failed_or_incomplete_searches: number | string;
 };
 
+type NoCandidateResearchRow = {
+  profile_id: string;
+  cm_artist: string;
+  artist: string;
+  chartmetric_url: string;
+  outcome: string;
+  last_search_at: string;
+};
+
 type ResearchHistoryRow = {
   date: string;
   unique_profiles: number | string;
@@ -219,6 +228,79 @@ export const musicianInstagramResearchHistorySql = `
   FORMAT JSON
 `;
 
+export const musicianInstagramResearchNoCandidatesSql = `
+  WITH tier_assignments AS (
+    SELECT profile, argMax(tier, tuple(computed_at, updated_at)) AS assigned_tier
+    FROM new_vertical.l_profile_tier
+    WHERE profile_type = 'musician' AND grain = 'global'
+    GROUP BY profile
+    HAVING assigned_tier IN (1, 2, 3)
+  ),
+  current_profiles AS (
+    SELECT
+      p.id AS profile_id,
+      t.assigned_tier,
+      toString(p.cm_source_id) AS cm_artist,
+      p.name AS artist,
+      concat('https://app.chartmetric.com/artist/', toString(p.cm_source_id)) AS chartmetric_url
+    FROM tier_assignments AS t
+    INNER JOIN (
+      SELECT id, name, cm_source_id
+      FROM new_vertical.profile FINAL
+      WHERE cm_source = 'cm_artist' AND cm_source_id IS NOT NULL AND deleted_at IS NULL
+    ) AS p ON p.id = t.profile
+  ),
+  instagram_linked_profiles AS (
+    SELECT DISTINCT l.profile_id
+    FROM new_vertical.l_profile_account AS l FINAL
+    INNER JOIN (
+      SELECT id, platform
+      FROM new_vertical.account FINAL
+      WHERE platform = 'instagram'
+    ) AS a ON a.id = l.account_id
+    WHERE l.disconnected_at IS NULL
+  ),
+  latest_lookup AS (
+    SELECT profile_id,
+      argMax(tuple(toString(cm_artist), status, instagram_urls, updated_at), updated_at) AS latest
+    FROM poc_new_verticals.musician_instagram_discovery_events
+    GROUP BY profile_id
+  ),
+  no_url_profiles AS (
+    SELECT
+      p.profile_id,
+      p.assigned_tier,
+      p.cm_artist,
+      p.artist,
+      p.chartmetric_url,
+      tupleElement(l.latest, 1) AS research_cm_artist,
+      tupleElement(l.latest, 2) AS research_status,
+      tupleElement(l.latest, 3) AS instagram_urls,
+      tupleElement(l.latest, 4) AS last_search_at
+    FROM current_profiles AS p
+    LEFT JOIN latest_lookup AS l ON p.profile_id = l.profile_id
+    WHERE p.profile_id NOT IN (SELECT profile_id FROM instagram_linked_profiles)
+      AND empty(tupleElement(l.latest, 3))
+  )
+  SELECT
+    toString(profile_id) AS profile_id,
+    cm_artist,
+    artist,
+    chartmetric_url,
+    multiIf(
+      research_status = '', 'not_searched',
+      research_cm_artist != cm_artist, 'incomplete',
+      research_status = 'no_candidates', 'completed_no_candidate',
+      research_status = 'failed', 'failed',
+      research_status IN ('queued', 'running', 'needs_review'), 'incomplete',
+      'incomplete'
+    ) AS outcome,
+    if(research_status = '', '', toString(last_search_at)) AS last_search_at
+  FROM no_url_profiles
+  ORDER BY assigned_tier, artist, profile_id
+  FORMAT JSON
+`;
+
 const asCount = (value: number | string | undefined) => {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
@@ -271,6 +353,28 @@ export function musicianInstagramResearchCoverageResponse(
     generatedAt: generatedAt.toISOString(),
   };
 
+}
+
+export function musicianInstagramResearchNoCandidatesResponse(
+  rows: NoCandidateResearchRow[],
+  generatedAt = new Date(),
+) {
+  return {
+    profiles: rows.map(row => ({
+      profileId: row.profile_id,
+      cmArtist: row.cm_artist,
+      artist: row.artist,
+      chartmetricUrl: row.chartmetric_url,
+      outcome: row.outcome,
+      lastSearchAt: row.last_search_at || null,
+    })),
+    generatedAt: generatedAt.toISOString(),
+  };
+}
+
+export async function getMusicianInstagramResearchNoCandidates() {
+  const result = await clickHouseJson<NoCandidateResearchRow>(musicianInstagramResearchNoCandidatesSql, {}, 45_000);
+  return musicianInstagramResearchNoCandidatesResponse(result.data);
 }
 
 export function musicianTierSnapshotStatus(snapshotAt: string | null, now = new Date()) {

@@ -9,7 +9,68 @@ import {
   musicianTierSnapshotSql,
   musicianTierSnapshotStatus,
   createMusicianInstagramResearchCoverage,
+  musicianInstagramResearchNoCandidatesResponse,
+  musicianInstagramResearchNoCandidatesSql,
 } from "../src/lib/musician-instagram-research-coverage";
+
+test("no-candidate export preserves the current profile identity and latest outcome timestamp", () => {
+  const result = musicianInstagramResearchNoCandidatesResponse([
+    {
+      profile_id: "9007199254740993",
+      cm_artist: "12345",
+      artist: "Artist One",
+      chartmetric_url: "https://app.chartmetric.com/artist/12345",
+      outcome: "completed_no_candidate",
+      last_search_at: "2026-11-03 20:00:00",
+    },
+    {
+      profile_id: "44",
+      cm_artist: "55",
+      artist: "Artist Two",
+      chartmetric_url: "https://app.chartmetric.com/artist/55",
+      outcome: "failed",
+      last_search_at: "2026-11-03 20:01:00",
+    },
+    {
+      profile_id: "66",
+      cm_artist: "77",
+      artist: "Artist Three",
+      chartmetric_url: "https://app.chartmetric.com/artist/77",
+      outcome: "incomplete",
+      last_search_at: "2026-11-03 20:02:00",
+    },
+    {
+      profile_id: "88",
+      cm_artist: "99",
+      artist: "Artist Four",
+      chartmetric_url: "https://app.chartmetric.com/artist/99",
+      outcome: "not_searched",
+      last_search_at: "",
+    },
+  ], new Date("2026-11-03T20:03:00.000Z"));
+
+  assert.equal(result.generatedAt, "2026-11-03T20:03:00.000Z");
+  assert.deepEqual(result.profiles.map(profile => [
+    profile.profileId, profile.cmArtist, profile.artist, profile.outcome, profile.lastSearchAt,
+  ]), [
+    ["9007199254740993", "12345", "Artist One", "completed_no_candidate", "2026-11-03 20:00:00"],
+    ["44", "55", "Artist Two", "failed", "2026-11-03 20:01:00"],
+    ["66", "77", "Artist Three", "incomplete", "2026-11-03 20:02:00"],
+    ["88", "99", "Artist Four", "not_searched", null],
+  ]);
+});
+
+test("no-candidate export SQL uses latest global tiers and latest saved no-URL outcomes", () => {
+  assert.match(musicianInstagramResearchNoCandidatesSql, /profile_type = 'musician' AND grain = 'global'/);
+  assert.match(musicianInstagramResearchNoCandidatesSql, /argMax\(tier, tuple\(computed_at, updated_at\)\)/);
+  assert.match(musicianInstagramResearchNoCandidatesSql, /HAVING assigned_tier IN \(1, 2, 3\)/);
+  assert.match(musicianInstagramResearchNoCandidatesSql, /argMax\(tuple\(toString\(cm_artist\), status, instagram_urls, updated_at\), updated_at\)/);
+  assert.match(musicianInstagramResearchNoCandidatesSql, /empty\(tupleElement\(l\.latest, 3\)\)/);
+  assert.match(musicianInstagramResearchNoCandidatesSql, /new_vertical\.l_profile_account/);
+  assert.match(musicianInstagramResearchNoCandidatesSql, /'completed_no_candidate'/);
+  assert.match(musicianInstagramResearchNoCandidatesSql, /'failed'/);
+  assert.match(musicianInstagramResearchNoCandidatesSql, /'incomplete'/);
+});
 
 test("research coverage returns URL and resolved counts for all five tiers", () => {
   const result = musicianInstagramResearchCoverageResponse([

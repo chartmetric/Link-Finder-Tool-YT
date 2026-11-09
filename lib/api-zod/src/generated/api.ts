@@ -268,6 +268,23 @@ export const StopMusicianInstagramRerunResponse = zod.object({
 
 
 /**
+ * Returns a fresh export of active musicians in their latest global Tier 1-3 assignment that have no active Instagram catalog link or saved Instagram URL candidate.
+ * @summary List current Tier 1-3 musicians without Instagram URLs
+ */
+export const GetMusicianInstagramResearchNoCandidatesResponse = zod.object({
+  "profiles": zod.array(zod.object({
+  "profileId": zod.string(),
+  "cmArtist": zod.string(),
+  "artist": zod.string(),
+  "chartmetricUrl": zod.string(),
+  "outcome": zod.enum(['completed_no_candidate', 'failed', 'incomplete', 'not_searched']),
+  "lastSearchAt": zod.string().nullish()
+})),
+  "generatedAt": zod.coerce.date()
+})
+
+
+/**
  * @summary List saved single-profile investigations, newest first
  */
 export const listProfileInvestigationsQueryPageDefault = 1;

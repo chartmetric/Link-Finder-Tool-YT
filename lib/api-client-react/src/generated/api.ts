@@ -43,6 +43,7 @@ import type {
   MusicianInstagramRerunEligibility,
   MusicianInstagramRerunRun,
   MusicianInstagramResearchCoverage,
+  MusicianInstagramResearchNoCandidates,
   ProfileInvestigationPage,
   ProfileSearchInput,
   ProfileSearchResponse,
@@ -707,6 +708,84 @@ export const useStopMusicianInstagramRerun = <TError = ErrorType<void>,
       > => {
       return useMutation(getStopMusicianInstagramRerunMutationOptions(options));
     }
+
+export const getGetMusicianInstagramResearchNoCandidatesUrl = () => {
+
+
+
+
+  return `/api/profiles/musician-instagram-research-no-candidates`
+}
+
+/**
+ * Returns a fresh export of active musicians in their latest global Tier 1-3 assignment that have no active Instagram catalog link or saved Instagram URL candidate.
+ * @summary List current Tier 1-3 musicians without Instagram URLs
+ */
+export const getMusicianInstagramResearchNoCandidates = async ( options?: Parameters<typeof customFetch>[1]): Promise<MusicianInstagramResearchNoCandidates> => {
+
+  return customFetch<MusicianInstagramResearchNoCandidates>(getGetMusicianInstagramResearchNoCandidatesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMusicianInstagramResearchNoCandidatesQueryKey = () => {
+    return [
+    `/api/profiles/musician-instagram-research-no-candidates`
+    ] as const;
+    }
+
+
+export const getGetMusicianInstagramResearchNoCandidatesQueryOptions = <TData = Awaited<ReturnType<typeof getMusicianInstagramResearchNoCandidates>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMusicianInstagramResearchNoCandidates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMusicianInstagramResearchNoCandidatesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMusicianInstagramResearchNoCandidates>>> = ({ signal }) => getMusicianInstagramResearchNoCandidates({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMusicianInstagramResearchNoCandidates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMusicianInstagramResearchNoCandidatesQueryResult = NonNullable<Awaited<ReturnType<typeof getMusicianInstagramResearchNoCandidates>>>
+export type GetMusicianInstagramResearchNoCandidatesQueryError = ErrorType<void>
+
+
+/**
+ * @summary List current Tier 1-3 musicians without Instagram URLs
+ */
+
+export function useGetMusicianInstagramResearchNoCandidates<TData = Awaited<ReturnType<typeof getMusicianInstagramResearchNoCandidates>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMusicianInstagramResearchNoCandidates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMusicianInstagramResearchNoCandidatesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListProfileInvestigationsUrl = (params?: ListProfileInvestigationsParams,) => {
   const normalizedParams = new URLSearchParams();

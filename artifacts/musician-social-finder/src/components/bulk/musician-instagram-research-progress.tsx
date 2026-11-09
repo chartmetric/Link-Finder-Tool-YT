@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { CircleAlert, RefreshCw, Square } from 'lucide-react';
+import { CircleAlert, Download, RefreshCw, Square } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
+  getMusicianInstagramResearchNoCandidates,
   getGetMusicianInstagramResearchCoverageQueryKey,
   getGetMusicianInstagramRerunQueryKey,
   useGetMusicianInstagramResearchCoverage,
@@ -14,6 +15,7 @@ import {
   type MusicianInstagramResearchHistoryDay,
 } from '@workspace/api-client-react';
 import { apiError, readStorage, writeStorage } from '@/lib/bulk';
+import { downloadMusicianInstagramNoCandidatesCsv } from '@/lib/musician-instagram-research-csv';
 
 const fmt = (value: number) => value.toLocaleString();
 const pct = (value: number, total: number) => total > 0 ? `${(100 * value / total).toFixed(1)}%` : 'N/A';
@@ -138,6 +140,8 @@ function LatestResearchSummary({ tiers }: { tiers: MusicianInstagramResearchTier
 
 export function MusicianInstagramResearchProgress() {
   const [view, setView] = useState<CoverageView>('urls');
+  const [exporting, setExporting] = useState(false);
+  const [exportMessage, setExportMessage] = useState<{ kind: 'status' | 'error'; text: string } | null>(null);
   const qc = useQueryClient();
   const [runId, setRunId] = useState<string | null>(() => readStorage<string | null>(RERUN_ID_KEY, null));
   const [pendingRequestId, setPendingRequestId] = useState<string | null>(() => readStorage<string | null>(RERUN_PENDING_KEY, null));
@@ -177,6 +181,28 @@ export function MusicianInstagramResearchProgress() {
   const snapshotLabel = data?.snapshotAt
     ? new Date(data.snapshotAt).toISOString().replace('T', ' ').replace('.000Z', ' UTC')
     : null;
+
+  const downloadNoCandidateExport = async () => {
+    setExporting(true);
+    setExportMessage(null);
+    try {
+      const result = await getMusicianInstagramResearchNoCandidates({
+        signal: AbortSignal.timeout(60_000),
+      });
+      downloadMusicianInstagramNoCandidatesCsv(result);
+      setExportMessage({
+        kind: 'status',
+        text: `Downloaded ${result.profiles.length.toLocaleString()} profiles using research saved ${new Date(result.generatedAt).toLocaleString()}.`,
+      });
+    } catch (error) {
+      setExportMessage({
+        kind: 'error',
+        text: error instanceof Error ? error.message : 'The latest artist export could not be downloaded. Please retry.',
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
   const start = () => {
     if (!eligibility.data || eligibility.data.count < 1 || !ackPaid || startRerun.isPending || pendingRequestId) return;
     const requestId = crypto.randomUUID();
@@ -221,8 +247,13 @@ export function MusicianInstagramResearchProgress() {
           <button type="button" className="inv-retry" onClick={() => q.refetch()} disabled={q.isFetching} data-testid="button-refresh-instagram-research">
             <RefreshCw size={12} className={q.isFetching ? 'inv-spin' : ''} /> {q.isFetching ? 'Refreshing' : 'Refresh'}
           </button>
+          <button type="button" className="inv-retry" onClick={downloadNoCandidateExport} disabled={exporting} data-testid="button-download-instagram-no-candidates">
+            <Download size={12} className={exporting ? 'inv-spin' : ''} /> {exporting ? 'Preparing CSV' : 'Download no-URL CSV'}
+          </button>
         </div>
       </div>
+
+      {exportMessage && <p className="blk-ig-message" role={exportMessage.kind === 'error' ? 'alert' : 'status'} data-testid="status-instagram-no-candidate-export">{exportMessage.text}</p>}
 
       {q.isLoading && <p className="blk-ig-message" role="status" data-testid="status-instagram-research-loading">Loading saved Instagram research counts…</p>}
 

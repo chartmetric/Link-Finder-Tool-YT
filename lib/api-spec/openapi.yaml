@@ -138,6 +138,21 @@ paths:
         "409": { description: Rerun is not active on this server }
         "404": { description: Rerun not found }
         "503": { description: Stop state could not be saved }
+  /profiles/musician-instagram-research-no-candidates:
+    get:
+      operationId: getMusicianInstagramResearchNoCandidates
+      tags: [profile-search]
+      summary: List current Tier 1-3 musicians without Instagram URLs
+      description: Returns a fresh export of active musicians in their latest global Tier 1-3 assignment that have no active Instagram catalog link or saved Instagram URL candidate.
+      responses:
+        "200":
+          description: Current musicians with no Instagram URL candidate and the latest saved research outcome
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MusicianInstagramResearchNoCandidates"
+        "503":
+          description: Instagram research export unavailable
   /profiles/investigations:
     get:
       operationId: listProfileInvestigations
@@ -641,6 +656,26 @@ components:
         profiles:
           type: array
           items: { $ref: "#/components/schemas/MusicianInstagramRerunProfile" }
+    MusicianInstagramResearchNoCandidate:
+      type: object
+      required: [profileId, cmArtist, artist, chartmetricUrl, outcome]
+      properties:
+        profileId: { type: string }
+        cmArtist: { type: string }
+        artist: { type: string }
+        chartmetricUrl: { type: string }
+        outcome:
+          type: string
+          enum: [completed_no_candidate, failed, incomplete, not_searched]
+        lastSearchAt: { type: [string, "null"] }
+    MusicianInstagramResearchNoCandidates:
+      type: object
+      required: [profiles, generatedAt]
+      properties:
+        profiles:
+          type: array
+          items: { $ref: "#/components/schemas/MusicianInstagramResearchNoCandidate" }
+        generatedAt: { type: string, format: date-time }
     ProfileInvestigation:
       type: object
       required: [id, knownProfileUrl, result]

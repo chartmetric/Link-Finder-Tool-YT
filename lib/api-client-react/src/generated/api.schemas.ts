@@ -267,6 +267,31 @@ export interface MusicianInstagramRerunRun {
   profiles: MusicianInstagramRerunProfile[];
 }
 
+export type MusicianInstagramResearchNoCandidateOutcome = typeof MusicianInstagramResearchNoCandidateOutcome[keyof typeof MusicianInstagramResearchNoCandidateOutcome];
+
+
+export const MusicianInstagramResearchNoCandidateOutcome = {
+  completed_no_candidate: 'completed_no_candidate',
+  failed: 'failed',
+  incomplete: 'incomplete',
+  not_searched: 'not_searched',
+} as const;
+
+export interface MusicianInstagramResearchNoCandidate {
+  profileId: string;
+  cmArtist: string;
+  artist: string;
+  chartmetricUrl: string;
+  outcome: MusicianInstagramResearchNoCandidateOutcome;
+  /** @nullable */
+  lastSearchAt?: string | null;
+}
+
+export interface MusicianInstagramResearchNoCandidates {
+  profiles: MusicianInstagramResearchNoCandidate[];
+  generatedAt: string;
+}
+
 export interface IdentityMetadata {
   platform: string;
   handle: string;
