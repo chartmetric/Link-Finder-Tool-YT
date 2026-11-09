@@ -1,5 +1,11 @@
 {
   "purpose": "Evaluator-only user-confirmed regression labels; never send these answers to a verifier.",
+  "independentBenchmark": {
+    "labelsFile": "scripts/fixtures/instagram-ownership-adjudications.json",
+    "inputsFile": "scripts/fixtures/instagram-ownership-inputs.json",
+    "standard": "Source-reviewed historical ownership, independent of model decisions; not a second human review or a held-out calibration sample.",
+    "legacyAssertionsRemainUserConfirmedOnly": true
+  },
   "labels": [
     {
       "profileId": "302463",
@@ -7,6 +13,8 @@
       "url": "https://www.instagram.com/frankellybello_/",
       "expectedArtistOwned": true,
       "provenance": "User explicitly identified this as Frankelly Bello's actual account.",
+      "observedAt": null,
+      "observationTimeReason": "Original user confirmation time was not retained; preparation time is not observation time.",
       "independentlyRechecked": false
     },
     {
@@ -15,6 +23,8 @@
       "url": "https://www.instagram.com/belloo_official/",
       "expectedArtistOwned": false,
       "provenance": "User explicitly corrected this attribution to Frankelly Bello.",
+      "observedAt": null,
+      "observationTimeReason": "Original user confirmation time was not retained; preparation time is not observation time.",
       "independentlyRechecked": false
     },
     {
@@ -23,6 +33,8 @@
       "url": "https://www.instagram.com/shenge_wasehlalankosi/",
       "expectedArtistOwned": true,
       "provenance": "User supplied this account as a known missed Instagram account for Shenge.",
+      "observedAt": null,
+      "observationTimeReason": "Original user confirmation time was not retained; preparation time is not observation time.",
       "independentlyRechecked": false
     }
   ],
@@ -31,6 +43,7 @@
       "profileId": "249317",
       "artist": "Gula Mın 76",
       "provenance": "User reported that this artist does not have an Instagram account.",
+      "observedAt": null,
       "scored": false,
       "reason": "An artist-level absence report does not independently adjudicate every candidate URL or prove current absence."
     }

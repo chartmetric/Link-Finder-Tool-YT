@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "standard": "Single curator review of source facts, not verifier outputs. Previously exposed development examples; no claim of blinded multi-human adjudication, current ownership, threshold calibration or population accuracy.",
+  "evidence": {
+    "aimee": {
+      "sourceUrl": "https://www.aimeecarty.com/",
+      "observedAt": "2026-11-09T18:46:39.500Z",
+      "sourceKind": "first_party_artist_site",
+      "title": "Aimee Carty",
+      "bodySha256": "90c1848c8ba0735fdeb50f09374ac3e787fce16d262a95dddaf0ead4135ea280",
+      "archiveFile": "generated-artifacts/instagram-reference-label-audit-2026-11-09-ready/direct-html-links-207595.json",
+      "archiveSha256": "cfcc549847fa55d42ead15e48a665f51ead7c373f545689f8a027dd4d01d4b54",
+      "selectedLinks": ["https://www.instagram.com/aimee.carty_music/#", "https://open.spotify.com/artist/4LkmOQU5KA6vZgvJHnpQDl?si=zbsW3qI7REKOoq9EUjhqcg"],
+      "review": "Artist-titled first-party site explicitly links this Instagram and the exact catalog artist ID together."
+    },
+    "ernest": {
+      "sourceUrl": "https://ernestofficial.com/",
+      "observedAt": "2026-11-09T18:46:38.930Z",
+      "sourceKind": "first_party_artist_site",
+      "title": "ERNEST | 'Boat Named After You' out now!",
+      "bodySha256": "5bb0cae47afbc6a91a022fddbf6b65348190c130bf22eeb7632d7abce7a7cd92",
+      "archiveFile": "generated-artifacts/instagram-reference-label-audit-2026-11-09-ready/direct-html-links-226788.json",
+      "archiveSha256": "d9ad42736b6484a2af43b1df4d5b4de3c8c417a98b29100ed46ec5225c82b22d",
+      "selectedLinks": ["https://www.instagram.com/ernest/", "https://open.spotify.com/artist/4GGfAshSkqoxpZdoaHm7ky"],
+      "review": "Artist-titled first-party site explicitly links this Instagram and the exact catalog artist ID together."
+    },
+    "format": {
+      "sourceUrl": "https://www.theformat.com/",
+      "observedAt": "2026-11-09T18:46:39.166Z",
+      "sourceKind": "first_party_artist_site",
+      "title": "The Format",
+      "bodySha256": "e48162434999bcfd6f533e9f69be0cf36ba8bf3425cab892c917daa697702d03",
+      "archiveFile": "generated-artifacts/instagram-reference-label-audit-2026-11-09-ready/direct-html-links-35092.json",
+      "archiveSha256": "c7aa916db044c8350a4daeea0e325f7c1839d90c17aecd98cbc2c35b99ecda12",
+      "selectedLinks": ["https://instagram.com/theformat", "https://open.spotify.com/artist/3ZJC8cLts8Q8s8JbNJKsLf?si=G0AhL7iVRkSrIoHK-VC6Tw"],
+      "review": "Band-titled first-party site explicitly links this Instagram and the exact catalog artist ID together. A band is an artist identity for this benchmark."
+    },
+    "brand": {
+      "sourceUrl": "https://www.goldenlegendscymbals.com/",
+      "observedAt": "2026-11-09T18:46:39.183Z",
+      "sourceKind": "first_party_business_site",
+      "title": "Home | Golden Legends Cymbals",
+      "bodySha256": "3e40466f06ea533af71870f2553086ac941bd2692f05bbf765ec2755f6c43612",
+      "archiveFile": "generated-artifacts/instagram-reference-label-audit-2026-11-09-ready/direct-html-links-302463.json",
+      "archiveSha256": "0368f5ff95819c684a751906dcff45bca697b8f0ec5141b1fe265a741ff53ae9",
+      "selectedLinks": ["https://www.instagram.com/goldenlegendscymbals/"],
+      "review": "Manufacturer's own site links the business account; artist endorsement is association, not artist ownership."
+    },
+    "festival": {
+      "sourceUrl": "https://ra.co/events/2423910",
+      "observedAt": "2026-11-09T18:45:11.788Z",
+      "sourceKind": "independent_event_listing",
+      "archiveFile": "generated-artifacts/instagram-reference-label-audit-2026-11-09-ready/site-249317.json",
+      "archiveSha256": "4fe6c89df0487a288c02732bf800dd88e9ee7bb955766c192c77e07317ea6df2",
+      "excerpt": "Multidisciplinary festival Gula Gula is back for its second edition",
+      "selectedLinks": ["https://gulagula.be/", "https://www.instagram.com/gulagulafestival"],
+      "review": "Event listing's promotional links explicitly bind the handle to the festival, not the similarly named target musician."
+    },
+    "fan": {
+      "sourceUrl": "https://www.instagram.com/gigi.murin.en/",
+      "observedAt": "2026-11-06T18:40:59.599Z",
+      "sourceKind": "response_bound_instagram_biography",
+      "archiveFile": "generated-artifacts/instagram-verification-benchmark-2026-11-06/responses/283662-scrapecreators_candidate-1.json",
+      "archiveSha256": "7a1acc416df3d96906b7263ff317872bcbc5d236016ca11c38d49e2cb54285fb",
+      "username": "gigi.murin.en",
+      "excerpt": "Gigi Murin Fanpage!\nDedicated to the Gremurin of Hololive Justice!",
+      "review": "Successful metadata packet binds the explicit Fanpage self-description to this exact username, not a search mention."
+    },
+    "label": {
+      "sourceUrl": "https://www.subpop.com/",
+      "observedAt": "2026-11-09T19:09:43.908Z",
+      "sourceKind": "first_party_label_site",
+      "status": 200,
+      "title": "Sub Pop Records",
+      "bodySha256": "fe0b3a247213474cec4a86619d253f481fe038e6b0f772a8ebbe92d6b53cc972",
+      "selectedLinks": ["http://instagram.com/subpop"],
+      "review": "Record label homepage links its own account. The observed HTTP href is preserved; canonical HTTPS is only URL normalization, not another observed link."
+    },
+    "venue": {
+      "sourceUrl": "https://www.fuse.be/",
+      "observedAt": "2026-11-09T19:10:06.737Z",
+      "sourceKind": "first_party_venue_site_and_event_directory",
+      "status": 200,
+      "title": "Fuse Brussels",
+      "bodySha256": "840fb47542c0f2b39c6da0e9ee8da43ef93d5235b0ec1bdd132e7b230773113c",
+      "selectedLinks": ["https://www.instagram.com/fusebrussels/"],
+      "corroboratingEvidence": "festival",
+      "corroboratingExcerpt": "Popular Clubs: Fuse (https://ra.co/clubs/2069)",
+      "review": "Venue homepage links its own account; the separately archived RA page lists Fuse among Brussels clubs. It is not the target musician."
+    }
+  },
+  "cases": [
+    {"id": "aimee-owned", "requestId": "aimee-pair", "profileId": "207595", "url": "https://www.instagram.com/aimee.carty_music/", "expectedArtistOwned": true, "stratum": "artist_owned", "evidenceIds": ["aimee"], "savedExactLinkEligible": true},
+    {"id": "aimee-fan", "requestId": "aimee-pair", "profileId": "207595", "url": "https://www.instagram.com/gigi.murin.en/", "expectedArtistOwned": false, "stratum": "fan", "evidenceIds": ["fan"], "savedExactLinkEligible": false},
+    {"id": "ernest-owned", "requestId": "ernest-pair", "profileId": "226788", "url": "https://www.instagram.com/ernest/", "expectedArtistOwned": true, "stratum": "artist_owned", "evidenceIds": ["ernest"], "savedExactLinkEligible": false},
+    {"id": "ernest-wrong-person", "requestId": "ernest-pair", "profileId": "226788", "url": "https://www.instagram.com/aimee.carty_music/", "expectedArtistOwned": false, "stratum": "wrong_person", "evidenceIds": ["ernest", "aimee"], "savedExactLinkEligible": false},
+    {"id": "format-owned", "requestId": "format-pair", "profileId": "35092", "url": "https://www.instagram.com/theformat/", "expectedArtistOwned": true, "stratum": "artist_owned", "evidenceIds": ["format"], "savedExactLinkEligible": false},
+    {"id": "format-wrong-person", "requestId": "format-pair", "profileId": "35092", "url": "https://www.instagram.com/ernest/", "expectedArtistOwned": false, "stratum": "wrong_person", "evidenceIds": ["format", "ernest"], "savedExactLinkEligible": false},
+    {"id": "frankelly-brand", "requestId": "frankelly-entities", "profileId": "302463", "url": "https://www.instagram.com/goldenlegendscymbals/", "expectedArtistOwned": false, "stratum": "brand", "evidenceIds": ["brand"], "savedExactLinkEligible": false},
+    {"id": "frankelly-label", "requestId": "frankelly-entities", "profileId": "302463", "url": "https://www.instagram.com/subpop/", "expectedArtistOwned": false, "stratum": "label", "evidenceIds": ["label"], "savedExactLinkEligible": false},
+    {"id": "gula-festival", "requestId": "gula-entities", "profileId": "249317", "url": "https://www.instagram.com/gulagulafestival/", "expectedArtistOwned": false, "stratum": "festival", "evidenceIds": ["festival"], "savedExactLinkEligible": false},
+    {"id": "gula-venue", "requestId": "gula-entities", "profileId": "249317", "url": "https://www.instagram.com/fusebrussels/", "expectedArtistOwned": false, "stratum": "venue", "evidenceIds": ["venue"], "savedExactLinkEligible": false}
+  ],
+  "uncertain": [
+    {"profileId": "209186", "artist": "Gin_Beatz", "url": "https://www.instagram.com/gin_beatz/", "expectedArtistOwned": null, "observedAt": null, "reason": "No independent ownership proof in reviewed sources. Observation time not established; do not substitute review time."},
+    {"profileId": "208216", "artist": "Billylildove", "url": null, "expectedArtistOwned": null, "observedAt": null, "reason": "Catalog album relationship proves a music connection, not account ownership. Resolve exact candidate and observation time from original archive before adjudication."},
+    {"profileId": "3861995", "artist": "Rooby Jeantal", "url": "https://www.instagram.com/elgremioink/", "expectedArtistOwned": null, "observedAt": null, "reason": "Suspected label association lacks reviewed account-bound proof and usable catalog reference. Not a gold label negative."},
+    {"profileId": "281761", "artist": "Shenge wasehlalankosi", "url": "https://www.instagram.com/musas_shisanyama/", "expectedArtistOwned": null, "observedAt": "2026-11-05T19:59:52.940Z", "reason": "Venue-like bio is a challenge, not enough independently reviewed ownership evidence for gold status."}
+  ],
+  "collection": {
+    "newPaidCalls": 0,
+    "newClaims": 0,
+    "newImports": 0,
+    "newPublicReadAttempts": 6,
+    "successfulUsableNewSources": ["label", "venue"],
+    "unusablePublicReads": [
+      {"url": "https://www.royalalberthall.com/", "observedAt": "2026-11-09T19:09:44.060Z", "status": 200, "reason": "No usable social links in returned document; no label assigned."},
+      {"url": "https://thejazzcafelondon.com/", "observedAt": null, "status": null, "reason": "Transport failure; no response observation or label."},
+      {"url": "https://www.ronniescotts.co.uk/", "observedAt": "2026-11-09T19:09:58.468Z", "status": 403, "reason": "Challenge page; no label assigned."},
+      {"url": "https://www.aimeemann.com/", "observedAt": null, "status": null, "reason": "Transport failure; no close-name ownership assertion or positive label added."}
+    ]
+  }
+}

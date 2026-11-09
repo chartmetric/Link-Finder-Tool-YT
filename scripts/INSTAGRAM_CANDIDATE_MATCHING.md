@@ -1,5 +1,108 @@
 # Artist Instagram candidate matching
 
+## Source-adjudicated offline ownership benchmark
+
+The source-reviewed benchmark is separate from the historical JEV-abstention
+diagnostics below. Prepare it without network, credentials, paid calls, database
+access, claims or imports:
+
+```sh
+node scripts/src/instagram-known-answer-benchmark.mjs --independent \
+  --output=generated-artifacts/instagram-source-adjudicated-benchmark
+node --test scripts/src/instagram-known-answer-benchmark.test.mjs \
+  scripts/src/instagram-ownership-benchmark.test.mjs
+```
+
+The output directory must be new; preparation never overwrites an earlier run.
+It contains a manifest, an untested scorecard and **separate request-only packets**.
+Do not send the manifest to a verifier: it contains evaluator answers.
+No new model evaluation is authorized or performed by this command.
+
+### Evidence and adjudication
+
+- `fixtures/instagram-known-answer-labels.json` retains the original three
+  **user-confirmed-only** assertions. Their original observation times were not
+  retained, so these remain explicitly unknown, not replaced by preparation time.
+- `fixtures/instagram-ownership-adjudications.json` contains ten separately
+  source-reviewed artist/account pairs: **three positives and seven negatives**,
+  across five target artists and eight distinct accounts. All gold sources have
+  original observation times, source URLs, selected links/excerpts and source
+  hashes. Historical packet paths/hashes remain available for provenance; selected
+  evidence is committed so ordinary offline checks do not need ignored archives.
+- `fixtures/instagram-ownership-inputs.json` indexes frozen source requests and
+  the two new public-only controls.
+  `fixtures/instagram-ownership-snapshots.json` reconstructs those source requests
+  from committed state plus shared questions, checking the **original request
+  hashes**. Changed source facts/questions fail closed. Preparation requires
+  no files from historical `generated-artifacts` directories.
+
+| Stratum | Unique artist/account pairs | Independent source basis |
+| --- | ---: | --- |
+| Artist-owned | 3 | Aimee Carty, ERNEST and The Format: artist-titled first-party sites link both the exact target Spotify artist ID and Instagram |
+| Wrong person | 2 | Aimee Carty against ERNEST; ERNEST against The Format. Each account's documented owner has a distinct exact music ID |
+| Fan | 1 | Original response-bound `gigi.murin.en` biography explicitly declares a fan page |
+| Brand | 1 | Golden Legends Cymbals homepage links its manufacturer's account, not Frankelly |
+| Label | 1 | Sub Pop Records homepage links `subpop`, not Frankelly |
+| Festival | 1 | RA's Gula Gula event listing explicitly links the promoter account, not Gula Mın 76 |
+| Venue | 1 | Fuse homepage links `fusebrussels`; the archived RA directory corroborates that Fuse is a club, not Gula Mın 76 |
+
+“Independent” means adjudication from documented source facts **rather than
+model verdicts, scores, catalog membership or exact music links alone**.
+This is single-curator source review, not two blinded human raters. Artist
+ownership means the artist's official account, including managed band accounts,
+not proof of who personally operates a login. Proof is historical, not a promise
+of current ownership. First-party identity is reviewed case by case here;
+this is not a general rule that any site linking two accounts proves ownership.
+
+The wrong-person controls have strong source attribution but different artist
+names. The harder near-name `belloo_official` correction stays in the original
+user-confirmed tier: it has **not** acquired independent proof. Do not overstate
+the difficulty or independence of those controls.
+
+Gin_Beatz, Billylildove, suspected label `elgremioink` and venue-like
+`musas_shisanyama` remain in a separate **uncertain**, unscored list. Unknown
+observation times stay unknown. Gula's artist-level absence assertion remains
+separate and unscored; it cannot turn every candidate into a gold negative.
+Failed/challenged public sources never become evidence of account absence.
+
+### Input isolation and gate reporting
+
+Input construction receives only source snapshots/descriptors, never grading
+labels. Three existing baseline pairs are preserved byte-for-byte; the brand
+and festival pairs reuse their frozen questions, catalog references and source
+candidate metadata, adding raw first-party website observations for Sub Pop and
+Fuse. Those two controls have **no fabricated Instagram metadata or music link**.
+Their source observations are evidence the verifier may see, not answer labels.
+Grading artist-site proof, reviewer conclusions, strata and expected answers
+remain outside every request. Recursive evaluator-field rejection, immutable
+request hashes, target bindings, duplicate-pair checks and the unchanged 6,000-byte
+ceiling are covered offline.
+
+`scoreKnownAnswers` still requires `verified` **and** identity probability
+at least **0.90**. It reports false acceptances even when the independent
+exact-link gate would block them. It now separately reports:
+
+- model-held positives with historical exact-link evidence;
+- positives held by both model and exact-link evidence;
+- model-accepted positives held only by exact-link evidence;
+- tested/untested and false acceptances by stratum.
+
+Historical exact-link eligibility is not an ownership label. Aimee has that
+saved evidence; ERNEST and The Format do not in these frozen inputs. Their
+grading-site proof is not inserted into verifier inputs or used to manufacture
+eligibility. “Model miss” describes failure to recover an expected positive
+under the supplied evidence and existing gate, not proof that uncertainty was
+unreasonable.
+
+No new model responses are attributed to these prepared requests; all ten cases
+start **not tested**. Prior requests that changed pairings cannot reuse their old
+results under the new hashes. These examples were already exposed during earlier
+development comparisons and include reused accounts. They are **not a held-out
+test, random population sample, threshold-calibration set or accuracy estimate**.
+This task adds no paid calls, reservations, claims, imports, default-policy
+changes or full rerun. Any further collection/model evaluation, import or
+threshold change requires separately approved scope and spending limits.
+
 Proposed future acceptance rules are documented in
 [INSTAGRAM_ACCEPTANCE_POLICY_DRAFT.md](./INSTAGRAM_ACCEPTANCE_POLICY_DRAFT.md).
 That document is a draft only; it does not change the active rules below.

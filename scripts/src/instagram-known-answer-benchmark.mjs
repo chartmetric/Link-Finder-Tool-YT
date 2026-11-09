@@ -45,6 +45,8 @@ export function scoreKnownAnswers(suite,responses=[]) {
     const decision=mapped.get(q.id)?.decisions[i];
     const modelAccepted=decision?decision.verdict==='verified'&&decision.sameIdentityProbability>=0.9:null;
     return {...c,requestId:q.id,modelAccepted,
+      modelHold:decision?!modelAccepted:null,
+      exactLinkEvidenceHold:!c.savedExactLinkEligible,
       savedEvidenceAndVerifierGatePassed:decision?c.savedExactLinkEligible&&modelAccepted:null,
       outcome:!decision?'not_tested':c.category!=='known_answer'?'unscored'
         :c.expectedArtistOwned?(modelAccepted?'recognized_known_positive':'held_known_positive')
@@ -53,7 +55,20 @@ export function scoreKnownAnswers(suite,responses=[]) {
   const known=rows.filter(r=>r.category==='known_answer'),tested=known.filter(r=>r.modelAccepted!==null);
   return {rows,knownAnswers:known.length,testedKnownAnswers:tested.length,
     heldKnownPositives:tested.filter(r=>r.outcome==='held_known_positive').length,
+    modelMissWithExactLink:tested.filter(r=>r.expectedArtistOwned&&r.modelHold&&!r.exactLinkEvidenceHold).length,
+    modelAndEvidenceHeldKnownPositives:tested.filter(r=>r.expectedArtistOwned&&r.modelHold&&r.exactLinkEvidenceHold).length,
+    evidenceOnlyHeldKnownPositives:tested.filter(r=>r.expectedArtistOwned&&!r.modelHold&&r.exactLinkEvidenceHold).length,
+    exactLinkHeldKnownPositives:tested.filter(r=>r.expectedArtistOwned&&r.exactLinkEvidenceHold).length,
     wronglyAcceptedKnownNegatives:tested.filter(r=>r.outcome==='wrongly_accepted_known_negative').length,
+    byStratum:Object.fromEntries([...new Set(known.map(r=>r.stratum??'legacy_user_confirmed'))].map(stratum=>{
+      const all=known.filter(r=>(r.stratum??'legacy_user_confirmed')===stratum);
+      const seen=all.filter(r=>r.modelAccepted!==null);
+      return [stratum,{cases:all.length,tested:seen.length,
+        positives:seen.filter(r=>r.expectedArtistOwned).length,
+        modelHeldPositives:seen.filter(r=>r.expectedArtistOwned&&!r.modelAccepted).length,
+        negatives:seen.filter(r=>!r.expectedArtistOwned).length,
+        modelAcceptedNegatives:seen.filter(r=>!r.expectedArtistOwned&&r.modelAccepted).length}];
+    })),
     populationAccuracyClaim:false,thresholdCalibrated:false,productionApproved:false};
 }
 
@@ -141,4 +156,10 @@ export async function prepareKnownAnswerBenchmark() {
     requests:requests.map(r=>({id:r.id,group:r.group,bytes:Buffer.byteLength(JSON.stringify(r.body))})),
     remainingBudgetUsd:suite.budget.remainingOriginalBudgetUsd},null,2));
 }
-if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) await prepareKnownAnswerBenchmark();
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
+  if(process.argv.includes('--independent')) {
+    const {prepareOwnershipBenchmark}=await import('./instagram-ownership-benchmark.mjs');
+    const flag=process.argv.find(a=>a.startsWith('--output='));
+    await prepareOwnershipBenchmark({destination:flag?.slice('--output='.length)});
+  } else await prepareKnownAnswerBenchmark();
+}

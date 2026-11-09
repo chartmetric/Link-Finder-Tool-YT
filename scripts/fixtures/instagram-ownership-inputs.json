@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "description": "Input-only archive index backed by committed snapshots. Original archive file hashes are provenance; reconstructed request hashes fail closed. Grading labels and artist-site ownership proof are not dispatched. New public-only controls expose raw website observations, never invented Instagram metadata.",
+  "requests": [
+    {
+      "id": "aimee-pair",
+      "profileId": "207595",
+      "file": "generated-artifacts/instagram-20-answer-check-2026-11-09/207595-0-baseline-request.json",
+      "sha256": "a21afad36a5526721cf89c4f53029b1a4963538312dadd264f2d5423a9bebea0",
+      "candidateIndexes": [0, 1]
+    },
+    {
+      "id": "ernest-pair",
+      "profileId": "226788",
+      "file": "generated-artifacts/instagram-20-answer-check-2026-11-09/226788-0-baseline-request.json",
+      "sha256": "0a47760727b071dd020bb6f2ef1b99b2ef11b4069bec82faf5d23ec9a18ae822",
+      "candidateIndexes": [0, 1]
+    },
+    {
+      "id": "format-pair",
+      "profileId": "35092",
+      "file": "generated-artifacts/instagram-20-answer-check-2026-11-09/35092-0-baseline-request.json",
+      "sha256": "f7d7350c1f56db333b9c375733794948f5732e7a555048b96b43f177f8e5d5a2",
+      "candidateIndexes": [0, 1]
+    },
+    {
+      "id": "frankelly-entities",
+      "profileId": "302463",
+      "file": "generated-artifacts/instagram-known-answer-benchmark-2026-11-09/requests/regression-frankelly-associated.json",
+      "sha256": "fd929887ce9b6ca3ce4a728a1c70eb946d9a8cd52c0f54924d758d75d254b637",
+      "candidateIndexes": [1, null],
+      "publicCandidate": {
+        "url": "https://www.instagram.com/subpop/",
+        "sourceObservation": {
+          "sourceUrl": "https://www.subpop.com/",
+          "observedAt": "2026-11-09T19:09:43.908Z",
+          "title": "Sub Pop Records",
+          "declaredInstagramHref": "http://instagram.com/subpop",
+          "bodySha256": "fe0b3a247213474cec4a86619d253f481fe038e6b0f772a8ebbe92d6b53cc972"
+        }
+      }
+    },
+    {
+      "id": "gula-entities",
+      "profileId": "249317",
+      "file": "generated-artifacts/instagram-known-answer-benchmark-2026-11-09/requests/regression-gula-festival.json",
+      "sha256": "303b8eb4245398d02820d71b821e4eec6801095f831f40de687ed80b02f6a420",
+      "candidateIndexes": [0, null],
+      "publicCandidate": {
+        "url": "https://www.instagram.com/fusebrussels/",
+        "sourceObservation": {
+          "sourceUrl": "https://www.fuse.be/",
+          "observedAt": "2026-11-09T19:10:06.737Z",
+          "title": "Fuse Brussels",
+          "declaredInstagramHref": "https://www.instagram.com/fusebrussels/",
+          "bodySha256": "840fb47542c0f2b39c6da0e9ee8da43ef93d5235b0ec1bdd132e7b230773113c"
+        }
+      }
+    }
+  ]
+}
