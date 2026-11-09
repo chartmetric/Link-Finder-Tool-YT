@@ -305,3 +305,37 @@ Runner, budget, transport and benchmark fixtures:
 ```sh
 node --test scripts/src/instagram-verification-benchmark.test.mjs scripts/src/instagram-pilot-runner.test.mjs scripts/src/instagram-pilot-live.test.mjs
 ```
+
+## Twenty documented artist/account examples: current versus revised criteria
+
+The user approved assembling known-answer examples and comparing the two policies, with an overall new conservative ceiling of $0.50. This is **20 unique artist/account pairs across five target artists and nine unique Instagram handles**, not 20 independent artists or 20 unique accounts. Each policy evaluates the same 20 pairs: five positives and 15 negatives. Repeated controls and two policies do not increase the independent sample size.
+
+Reference research used ten bounded, journaled Serper queries, no retries and a $0.10 reservation. Archive: `generated-artifacts/instagram-reference-label-audit-2026-11-09-ready`. An earlier preparation attempt failed the numeric profile-ID preflight before any budget admission or HTTP dispatch; its exclusive directory is retained and not replayed. Subsequent free public reference reads were separate from the Serper/JEV journals.
+
+Three positive accounts were checked against first-party HTML containing **both** the expected Instagram handle and the exact preexisting Spotify artist ID:
+
+- Aimee Carty: `https://www.aimeecarty.com/`.
+- ERNEST: `https://ernestofficial.com/`.
+- The Format: `https://www.theformat.com/`.
+
+Reference packets retain checked times, selected links, page titles and body hashes. Readable extraction omitted these sites' social icon links, so bounded raw HTML inspection was necessary. The specialized music fetcher correctly refused unsupported first-party domains; its allowlist was not widened. Separate fixed-domain reference reads allowed only same-domain HTTPS redirects and bounded response size. Two other positives are the user-confirmed Frankelly and Shenge regressions, not newly rechecked public ownership.
+
+Negative examples use the user-reported wrong Bello attribution; an explicit fan-page biography bound to its original Instagram API username; the cymbal manufacturer's website linking its own handle; a Resident Advisor festival listing explicitly linking the promoter's handle; and different documented artists with distinct music IDs. The exact case/proof metadata is in `example-labels.json`. Ambiguous prospects, including an artist homepage pointing to an alternative account and a Linktree with an inconsistent Instagram handle, were not forced into positive labels.
+
+`scripts/src/instagram-20-answer-check.mjs` creates ten two-candidate packets and evaluates each under the default questions and `evidence_weighted_v1`, for twenty JEV calls / forty answers. Original direct links are restored from response-bound provider packets and deduplicated. Source facts, model and candidate order are identical within each comparison; evaluator labels and the newly collected first-party grading proof are **not** sent to JEV. The existing historical candidate/reference evidence remains the verifier's input. This tests that saved evidence plus policy, not whether JEV could use independently collected official-site evidence if it were supplied.
+
+All twenty calls completed on `typesafe/jev-1.13-20260917`, with no retries. Full requests were 4,080–5,980 bytes, within the unchanged 6,000-byte ceiling. Twenty admissions and twenty returns reconciled; frozen input hashes match all request and response archives. Shared bounded experiment transport lives in `scripts/src/instagram-frozen-jev.mjs`.
+
+| Outcome per policy | Default | Revised |
+|---|---:|---:|
+| Documented correct examples evaluated | 5 | 5 |
+| Correct examples accepted by verified + 0.90 | 0 | 0 |
+| Correct examples held | 5 | 5 |
+| Incorrect examples evaluated | 15 | 15 |
+| Incorrect examples accepted | 0 | 0 |
+
+The revised criteria increased all five positive numeric scores but did not change acceptance. Frankelly changed from likely / 0.72 to verified / 0.74. Shenge moved 0.39 → 0.50, Aimee 0.74 → 0.78, ERNEST 0.56 → 0.66, and The Format 0.62 → 0.69; those four remained likely. Wrong Bello moved uncertain / 0.23 → likely / 0.33 and still failed the unchanged gate. There were eight related-entity observations per policy, reusing three distinct fan/brand/festival accounts. There is no reject-all “75% accuracy” claim: missing all five positives is exposed separately.
+
+Comparison archive: `generated-artifacts/instagram-20-answer-check-2026-11-09`. JEV reported cost was $0.001358952; the conservative comparison reservation was $0.40. Including Serper research, this step reserved exactly $0.50, cumulative original-pilot reservations are $3.93, and the remaining original ceiling is $6.07. Three new offline tests cover tampered-input/no-dispatch behavior, archived exact requests without auth headers, billing fail-closed/no retry, and separate false-negative/false-positive reporting.
+
+There were no new Instagram metadata calls, database queries/writes, claims or imports. Default verification policy and 0.90 acceptance remain unchanged; no full rerun began. This small, imbalanced development sample with reused examples is not a population accuracy or calibration result. The next distinct evidence question is whether providing genuine first-party website cross-links—rather than changing the wording or weakening acceptance—improves known-positive recovery without promoting negatives.

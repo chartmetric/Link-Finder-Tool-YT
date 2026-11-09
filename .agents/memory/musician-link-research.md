@@ -91,7 +91,7 @@ Existing catalog Instagram links are provisional benchmark labels, not independe
 
 **Why:** The broader verification diagnostic uses catalog-linked accounts as positive controls and rotated accounts from other catalog artists as negative controls. Catalog errors, aliases and related entities can undermine those assumptions; such a sample cannot establish population precision or recall. A separate user-confirmed regression check also held known positives while declining the known wrong account. That demonstrates missed positives under the supplied labels and saved evidence, but does not isolate an overly strict numeric threshold from missing evidence or verifier instructions.
 
-**How to apply:** Retain label provenance, keep benchmark labels outside verifier inputs, and report verifier-only checks separately from full discovery acceptance. User-confirmed corrections can anchor a regression test but do not constitute newly rechecked live ownership or catalog evidence. Never invent a missing music cross-link to make an expected-positive example pass; distinguish a verifier hold from an independent evidence-gate hold. Investigate control disagreements rather than automatically correcting the catalog or treating every abstention as a known false negative.
+**How to apply:** Retain label provenance, keep benchmark labels outside verifier inputs, and report verifier-only checks separately from full discovery acceptance. Report artist/account pairs, distinct artists, distinct account handles and repeated policy evaluations separately; reused controls are not independent samples. User-confirmed corrections can anchor a regression test but do not constitute newly rechecked live ownership or catalog evidence. Never invent a missing music cross-link to make an expected-positive example pass; distinguish a verifier hold from an independent evidence-gate hold. Investigate control disagreements rather than automatically correcting the catalog or treating every abstention as a known false negative.
 
 Direct Instagram bio links must remain distinct from music URLs derived through landing pages.
 
@@ -110,6 +110,12 @@ A music landing page's global navigation and promoted profiles are not artist-de
 **Why:** A live Linktree check exposed unrelated creator profiles and site navigation as whole-page anchors. Following all allowlisted links would create false identity paths even though each host was safe to fetch.
 
 **How to apply:** Require profile-bound declared link records for Linktree traversal; domain safety is not ownership provenance. Keep generic related-artist references separate from exact credits, and do not infer ownership of a multi-track album from its title or one selected track. An unavailable path or missing credit ID remains unresolved, not evidence of account absence.
+
+Readable webpage extraction can omit valid artist-owned social icon links.
+
+**Why:** First-party artist websites' readable extracts omitted social links, while their HTML contained both the exact Instagram URL and the expected Spotify artist ID. Treating the text-only extract as complete would have discarded useful reference evidence.
+
+**How to apply:** Inspect bounded source HTML anchors before concluding that an artist website has no social link. Bind first-party website ownership and both account IDs explicitly, preserve timestamps/source hashes, and distinguish artist-site footer links from a link aggregator's unrelated global navigation. Keep independently collected grading evidence distinct from evidence actually supplied to a verifier; a hold on incomplete input does not isolate model calibration.
 
 Check existing exact catalog album-to-artist relationships before adding another credit provider or inferring album ownership from public embeds.
 
