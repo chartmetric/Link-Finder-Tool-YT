@@ -339,3 +339,23 @@ The revised criteria increased all five positive numeric scores but did not chan
 Comparison archive: `generated-artifacts/instagram-20-answer-check-2026-11-09`. JEV reported cost was $0.001358952; the conservative comparison reservation was $0.40. Including Serper research, this step reserved exactly $0.50, cumulative original-pilot reservations are $3.93, and the remaining original ceiling is $6.07. Three new offline tests cover tampered-input/no-dispatch behavior, archived exact requests without auth headers, billing fail-closed/no retry, and separate false-negative/false-positive reporting.
 
 There were no new Instagram metadata calls, database queries/writes, claims or imports. Default verification policy and 0.90 acceptance remain unchanged; no full rerun began. This small, imbalanced development sample with reused examples is not a population accuracy or calibration result. The next distinct evidence question is whether providing genuine first-party website cross-links—rather than changing the wording or weakening acceptance—improves known-positive recovery without promoting negatives.
+
+## Three-call official-site evidence check
+
+The user approved the capped three-call test with at most $0.06 additional reservation. `scripts/src/instagram-official-site-evidence-check.mjs` takes the frozen default-policy packets for Aimee, ERNEST and The Format and adds only a shared `state.websiteEvidence` observation: saved source URL, title, observation time, body hash and actual observed URLs. Questions, model, candidate order, prior metadata and target bindings are byte-for-byte equivalent after removing that one added field. No answer labels or new verdict/ownership flags are sent.
+
+Each saved proof packet must match its SHA-256 reference in the prior 20-example scope, contain the exact target Spotify artist ID and a safe direct Instagram account URL, and have a valid successful-page snapshot. This uses the already reviewed source snapshots; it does **not** implement a general first-party-domain trust resolver or assume that any website linking music and Instagram is authoritative. Website links remain separately sourced; they are not relabeled as links observed on Spotify itself.
+
+| Known positive | Prior default score/verdict | With website evidence | Unchanged acceptance |
+|---|---|---|---|
+| Aimee Carty | 0.74 / likely | 0.84 / verified | Held |
+| ERNEST | 0.56 / likely | 0.83 / verified | Held |
+| The Format | 0.62 / likely | 0.80 / verified | Held |
+
+All three paired wrong accounts remained mismatches, with scores 0.02, 0.04 and 0.04 respectively. All calls resolved to the same `typesafe/jev-1.13-20260917` release as the baseline. This is an evidence-availability diagnostic using selected grading-reference sources, not a held-out accuracy or probability-calibration result; baseline calls were not repeated in this three-call scope.
+
+The extra source facts changed all three categorical answers to verified without changing prompt criteria. The application still holds them because it additionally requires the separate identity score to be at least 0.90. The confidence returned for the verified **label** is not that identity score and was not substituted. ERNEST and The Format would also need the separate website-derived exact-link evidence integrated into the application's source-aware gate; their historical direct-link eligibility remains false. No evidence gate, acceptance threshold or default behavior was changed.
+
+Archive: `generated-artifacts/instagram-official-site-evidence-check-2026-11-09`. Three admissions and three returns reconciled; input bodies were 5,285, 5,122 and 4,448 bytes. Two new offline tests cover evidence-only mutation, unchanged source metadata/questions, no answer-label injection, exact ID checks, unsafe/unbound source rejection and size limits. Actual JEV reported cost was $0.000228228. Conservative additional reservation was $0.06; cumulative original-pilot reservations are $3.99, leaving $6.01.
+
+There were no new searches, public reads, Instagram metadata calls, database queries/writes, claims, imports or full rerun. A source-trust and acceptance-policy review is now a separate question from prompt tweaking: these selected positive cases do not by themselves authorize lowering the global threshold or treating an arbitrary website as official.

@@ -113,9 +113,9 @@ A music landing page's global navigation and promoted profiles are not artist-de
 
 Readable webpage extraction can omit valid artist-owned social icon links.
 
-**Why:** First-party artist websites' readable extracts omitted social links, while their HTML contained both the exact Instagram URL and the expected Spotify artist ID. Treating the text-only extract as complete would have discarded useful reference evidence.
+**Why:** First-party artist websites' readable extracts omitted social links, while their HTML contained both the exact Instagram URL and the expected Spotify artist ID. Treating the text-only extract as complete would have discarded useful reference evidence. Supplying the reviewed website facts to JEV changed known-positive verdicts to verified without prompt changes, but the separate numeric acceptance requirement still held them. Evidence availability and application acceptance policy are distinct constraints.
 
-**How to apply:** Inspect bounded source HTML anchors before concluding that an artist website has no social link. Bind first-party website ownership and both account IDs explicitly, preserve timestamps/source hashes, and distinguish artist-site footer links from a link aggregator's unrelated global navigation. Keep independently collected grading evidence distinct from evidence actually supplied to a verifier; a hold on incomplete input does not isolate model calibration.
+**How to apply:** Inspect bounded source HTML anchors before concluding that an artist website has no social link. Bind first-party website ownership and both account IDs explicitly, preserve timestamps/source hashes, and distinguish artist-site footer links from a link aggregator's unrelated global navigation. Keep independently collected grading evidence distinct from evidence actually supplied to a verifier; a hold on incomplete input does not isolate model calibration. If grading-reference facts are deliberately added in an evidence diagnostic, report that source reuse rather than claiming held-out accuracy. Keep website provenance separate from links observed on a music platform, and never infer first-party trust merely because a page links both IDs.
 
 Check existing exact catalog album-to-artist relationships before adding another credit provider or inferring album ownership from public embeds.
 
