@@ -1,6 +1,7 @@
 import { clickHouseJson } from "./clickhouse-profiles";
 import { createCoverageCache } from "./coverage-cache";
 import { logger } from "./logger";
+import type { MusicianInstagramResearchTier } from "@workspace/api-zod";
 
 type ResearchRow = {
   tier: number | string;
@@ -13,19 +14,9 @@ type ResearchRow = {
   completed_no_candidate_profiles: number | string;
   failed_profiles: number | string;
   pending_profiles: number | string;
-};
-
-export type MusicianInstagramResearchTier = {
-  tier: number;
-  totalProfiles: number;
-  processedProfiles: number;
-  profilesWithInstagramUrls: number;
-  profilesWithResearchUrls: number;
-  profilesWithNoSupportedMatch: number;
-  profilesWithUrlOrNoSupportedMatch: number;
-  completedNoCandidateProfiles: number;
-  failedProfiles: number;
-  pendingProfiles: number;
+  profiles_with_catalog_instagram_urls: number | string;
+  profiles_with_research_candidates: number | string;
+  profiles_with_failed_or_incomplete_searches: number | string;
 };
 
 type ResearchHistoryRow = {
@@ -104,6 +95,7 @@ export const musicianInstagramResearchCoverageSql = `
     SELECT
       tier,
       research_status,
+      has_catalog_instagram_url,
       research_status = 'candidates_found' AND notEmpty(instagram_urls) AS has_research_url,
       has_catalog_instagram_url
         OR (research_status = 'candidates_found' AND notEmpty(instagram_urls)) AS has_instagram_url,
@@ -120,7 +112,10 @@ export const musicianInstagramResearchCoverageSql = `
     countIf(has_instagram_url OR no_supported_match) AS profiles_with_url_or_no_supported_match,
     countIf(research_status = 'no_candidates') AS completed_no_candidate_profiles,
     countIf(research_status = 'failed') AS failed_profiles,
-    countIf(research_status IN ('queued', 'running')) AS pending_profiles
+    countIf(research_status IN ('queued', 'running')) AS pending_profiles,
+    countIf(has_catalog_instagram_url) AS profiles_with_catalog_instagram_urls,
+    countIf(has_research_url) AS profiles_with_research_candidates,
+    countIf(NOT has_instagram_url AND NOT no_supported_match) AS profiles_with_failed_or_incomplete_searches
   FROM profile_coverage
   GROUP BY tier
   ORDER BY tier
@@ -239,6 +234,9 @@ export function musicianInstagramResearchCoverageResponse(
       completedNoCandidateProfiles: asCount(row?.completed_no_candidate_profiles),
       failedProfiles: asCount(row?.failed_profiles),
       pendingProfiles: asCount(row?.pending_profiles),
+      profilesWithCatalogInstagramUrls: asCount(row?.profiles_with_catalog_instagram_urls),
+      profilesWithResearchCandidates: asCount(row?.profiles_with_research_candidates),
+      profilesWithFailedOrIncompleteSearches: asCount(row?.profiles_with_failed_or_incomplete_searches),
     };
   });
 

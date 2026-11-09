@@ -110,7 +110,10 @@ export const GetMusicianInstagramResearchCoverageResponse = zod.object({
   "profilesWithUrlOrNoSupportedMatch": zod.number(),
   "completedNoCandidateProfiles": zod.number(),
   "failedProfiles": zod.number(),
-  "pendingProfiles": zod.number()
+  "pendingProfiles": zod.number(),
+  "profilesWithCatalogInstagramUrls": zod.number().describe('Profiles with actual connected catalog Instagram URL evidence, counted once.'),
+  "profilesWithResearchCandidates": zod.number().describe('Saved candidates_found outcomes with non-empty Instagram URLs, not approved catalog links. May overlap catalog links.'),
+  "profilesWithFailedOrIncompleteSearches": zod.number().describe('Profiles without a catalog URL, research candidate, or completed no-supported-match outcome. Includes failed, incomplete, and not-yet-searched profiles; excluded from coverage.')
 })),
   "history": zod.array(zod.object({
   "date": zod.coerce.date(),

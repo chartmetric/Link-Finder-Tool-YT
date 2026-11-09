@@ -83,9 +83,12 @@ function TierCard({ tier, view }: { tier: MusicianInstagramResearchTier; view: C
       </div>
       <dl className="blk-ig-tier-stats">
         <div><dt>Instagram URL</dt><dd data-testid={`text-instagram-coverage-tier-${tier.tier}-urls`}>{fmt(tier.profilesWithInstagramUrls)}</dd></div>
-        {view === 'resolved' && (
-          <div><dt>No supported match</dt><dd data-testid={`text-instagram-coverage-tier-${tier.tier}-no-match`}>{fmt(tier.profilesWithNoSupportedMatch)}</dd></div>
-        )}
+        <div><dt>Catalog links</dt><dd data-testid={`text-instagram-coverage-tier-${tier.tier}-catalog`}>{fmt(tier.profilesWithCatalogInstagramUrls)}</dd></div>
+        <div><dt>Research candidates</dt><dd data-testid={`text-instagram-coverage-tier-${tier.tier}-candidates`}>{fmt(tier.profilesWithResearchCandidates)}</dd></div>
+        <div><dt>No supported match</dt><dd data-testid={`text-instagram-coverage-tier-${tier.tier}-no-match`}>{fmt(tier.profilesWithNoSupportedMatch)}</dd></div>
+        <div><dt>Failed searches</dt><dd>{fmt(tier.failedProfiles)}</dd></div>
+        <div><dt>Pending searches</dt><dd>{fmt(tier.pendingProfiles)}</dd></div>
+        <div><dt>Unresolved / not searched</dt><dd data-testid={`text-instagram-coverage-tier-${tier.tier}-incomplete`}>{fmt(tier.profilesWithFailedOrIncompleteSearches)}</dd></div>
       </dl>
     </article>
   );
@@ -183,7 +186,7 @@ export function MusicianInstagramResearchProgress() {
           <LatestResearchSummary tiers={data.tiers} />
           <HistoryTable history={data.history} />
           <p className="blk-ig-foot" data-testid="text-instagram-research-definition">
-            Each profile is counted once using its current-day global Tier 1–5 assignment. URL coverage includes catalog Instagram URLs and saved non-empty research URLs, which are candidates, not approved catalog links. The second view also counts completed searches with no candidate as a practical “no supported match,” not proof that no account exists. Failed and incomplete searches do not count.
+            Each profile is counted once using its current-day global Tier 1–5 assignment. URL coverage includes catalog Instagram URLs and saved non-empty research URLs, which are candidates, not approved catalog links. Catalog links and research candidates may overlap, but coverage counts each profile once. The second view also counts completed searches with no candidate as a practical “no supported match,” not proof that no account exists. Failed, incomplete, and not-yet-searched outcomes do not add coverage.
           </p>
         </>
       )}

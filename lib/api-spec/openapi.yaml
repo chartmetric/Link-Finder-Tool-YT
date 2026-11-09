@@ -479,7 +479,7 @@ components:
         generatedAt: { type: string, format: date-time }
     MusicianInstagramResearchTier:
       type: object
-      required: [tier, totalProfiles, processedProfiles, profilesWithInstagramUrls, profilesWithResearchUrls, profilesWithNoSupportedMatch, profilesWithUrlOrNoSupportedMatch, completedNoCandidateProfiles, failedProfiles, pendingProfiles]
+      required: [tier, totalProfiles, processedProfiles, profilesWithInstagramUrls, profilesWithResearchUrls, profilesWithNoSupportedMatch, profilesWithUrlOrNoSupportedMatch, completedNoCandidateProfiles, failedProfiles, pendingProfiles, profilesWithCatalogInstagramUrls, profilesWithResearchCandidates, profilesWithFailedOrIncompleteSearches]
       properties:
         tier: { type: number }
         totalProfiles: { type: number }
@@ -491,6 +491,15 @@ components:
         completedNoCandidateProfiles: { type: number }
         failedProfiles: { type: number }
         pendingProfiles: { type: number }
+        profilesWithCatalogInstagramUrls:
+          type: number
+          description: Profiles with actual connected catalog Instagram URL evidence, counted once.
+        profilesWithResearchCandidates:
+          type: number
+          description: Saved candidates_found outcomes with non-empty Instagram URLs, not approved catalog links. May overlap catalog links.
+        profilesWithFailedOrIncompleteSearches:
+          type: number
+          description: Profiles without a catalog URL, research candidate, or completed no-supported-match outcome. Includes failed, incomplete, and not-yet-searched profiles; excluded from coverage.
     MusicianInstagramResearchCoverage:
       type: object
       required: [tiers, history, generatedAt]

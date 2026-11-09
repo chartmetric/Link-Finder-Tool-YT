@@ -19,4 +19,10 @@ export interface MusicianInstagramResearchTier {
   completedNoCandidateProfiles: number;
   failedProfiles: number;
   pendingProfiles: number;
+  /** Profiles with actual connected catalog Instagram URL evidence, counted once. */
+  profilesWithCatalogInstagramUrls: number;
+  /** Saved candidates_found outcomes with non-empty Instagram URLs, not approved catalog links. May overlap catalog links. */
+  profilesWithResearchCandidates: number;
+  /** Profiles without a catalog URL, research candidate, or completed no-supported-match outcome. Includes failed, incomplete, and not-yet-searched profiles; excluded from coverage. */
+  profilesWithFailedOrIncompleteSearches: number;
 }
