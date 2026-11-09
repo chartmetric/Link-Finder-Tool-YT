@@ -83,9 +83,9 @@ Verification inputs must distinguish unassessed ownership from negative ownershi
 
 More explicit verifier instructions can reduce known-positive scores even when exact-link evidence is made clearer.
 
-**Why:** A capped saved-evidence check returned lower scores than two earlier positive JEV decisions while both unrelated controls remained mismatches. This does not isolate wording from model variability. The unchanged 0.90 gate prevented promotion.
+**Why:** A capped saved-evidence check returned lower scores than two earlier positive JEV decisions while both unrelated controls remained mismatches. This does not isolate wording from model variability. A later generic ownership-criteria experiment changed a known-positive verdict to verified without meeting the independent numeric gate, while making a known wrong account's verdict/score less conservative. Better positive labels alone are not evidence of a safer acceptance policy. The unchanged 0.90 gate prevented promotion.
 
-**How to apply:** Treat prompt and evidence-schema changes as behavior changes; compare known positives and negatives before scaling. Do not weaken the acceptance threshold to compensate. Preserve uncertainty and the original results when an experiment regresses.
+**How to apply:** Treat prompt and evidence-schema changes as behavior changes; compare known positives and negatives before scaling. Keep experimental criteria opt-in when results are mixed, report verdict and numeric acceptance separately, and watch negative-score movement even when no wrong account crosses the threshold. Do not weaken the acceptance threshold to compensate. Preserve uncertainty and the original results when an experiment regresses.
 
 Existing catalog Instagram links are provisional benchmark labels, not independently adjudicated ground truth.
 

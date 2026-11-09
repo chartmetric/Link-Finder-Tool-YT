@@ -247,6 +247,27 @@ The original frozen requests were 5,100 and 4,178 bytes. Two admissions and two 
 
 This establishes holds on user-confirmed positive regressions under this historical evidence and policy, not merely holds on provisional catalog positives. It does not establish population error rates, prove that 0.90 is the wrong threshold, or isolate instructions from evidence insufficiency. The wrong account was not promoted, but its evidence is only a saved search snippet. No full rerun, production policy change or account import is justified by this tiny set alone.
 
+### Opt-in evidence-weighted ownership criteria
+
+The user approved a general evaluation adjustment based on the Frankelly regression, not an account-specific exception or threshold reduction. `scripts/src/instagram-ownership-rubric.mjs` implements `evidence_weighted_v1`: a declared, source-bound exact music path plus consistent account self-identification can support automated ownership verification without requiring an existing catalog Instagram entry, reciprocal link, badge or manual approval. It still excludes association-only links, related entities, ambiguous/shared releases and name-only matches. Missing evidence is not mismatch, and nothing assigns a minimum score or fabricates a source link.
+
+`jevRequest` accepts this rubric only through the explicit `payload.ownershipRubric` setting. The default request remains unchanged; unknown rubric names fail rather than silently falling back. The rubric replaces only typed question criteria, retaining model, source evidence, candidate order and catalog bindings. Acceptance remains both verified **and** identity probability at least 0.90, plus the independent existing evidence and related-entity gates.
+
+The approved `scripts/src/instagram-ownership-rubric-check.mjs` made five bounded calls, with the same resolved JEV release and no new discovery/metadata/public/database reads. A fresh baseline and revised Frankelly pair used identical state; revised Shenge, cymbal-brand and festival pairs exercised additional saved regressions.
+
+| Candidate | Baseline | Revised criteria | Accepted |
+|---|---|---|---|
+| Correct Frankelly, beside wrong Bello | likely / 0.72 | verified / 0.73 | No |
+| Wrong Bello | uncertain / 0.22 | likely / 0.34 | No |
+| Correct Shenge | previously likely / 0.26 | likely / 0.32 | No |
+| Correct Frankelly, beside cymbal brand | no fresh paired baseline | verified / 0.80 | No |
+| Cymbal brand | no fresh paired baseline | mismatch / 0.03 | No |
+| Festival | no fresh paired baseline | mismatch / 0.09 | No |
+
+The unadjudicated other Gula candidate received mismatch / 0.13. Both Frankelly categorical verdicts improved to verified, but neither met the independent numeric requirement. The wrong Bello classification/score became less conservative despite still failing acceptance. Therefore this is a mixed development result, not a solved attribution problem: the update remains opt-in and is **not** enabled by default, no saved results are relabeled, and no full rerun or imports began. Shenge still lacks the required saved exact music connection.
+
+Archive: `generated-artifacts/instagram-ownership-rubric-check-2026-11-09`. All five admissions/returns reconciled, no retries. Input bodies were 5,100–5,980 bytes. Actual reported cost was $0.000370482. Conservative reservation was $0.10, cumulative reservations $3.43, remaining original ceiling $6.57. Thirty-two relevant offline tests passed, including unchanged numeric, mismatch, related-entity and missing-link holds, opt-in behavior, unknown-mode rejection and no example-specific identifiers in the new criteria. Expanded independently adjudicated checks are still needed before any default-policy or threshold decision.
+
 ```sh
 node --test scripts/src/catalog-album-evidence.test.mjs scripts/src/public-music-links.test.mjs scripts/src/instagram-pilot-live.test.mjs scripts/src/instagram-pilot-runner.test.mjs scripts/src/instagram-verification-benchmark.test.mjs
 ```
