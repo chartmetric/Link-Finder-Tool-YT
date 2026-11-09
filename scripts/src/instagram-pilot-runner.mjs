@@ -97,11 +97,17 @@ export async function runPilot({ manifest, journalPath, transport, evaluateRegre
             profiles.push({...p,metadataLookupError:error.message});
             continue; // A restricted/unreadable neighbour must not discard readable candidates.
           }
+          const publicLimit=Math.min(4,manifest.proposed_limits.public_music_page_requests_per_artist??1);
+          const remainingPages=publicLimit-(evidence.musicPagesAttempted??0);
           if (instagramProfileUrl(candidate.url)===p.url && candidate.externalUrls?.some(isMusicLandingUrl)
-            && !evidence.linkHubAttempted) {
-            evidence.linkHubAttempted = true;
+            && remainingPages>0) {
+            if(!candidate.externalLinkEvidence) candidate.directExternalUrls??=[...(candidate.externalUrls??[])];
             const hub = await resolveMusicEvidence({candidate,catalog:scope.reference,
-              readPage:url=>call('public_page',{url})});
+              maxPages:remainingPages,readPage:url=>{
+                // Count attempts, not successes; failures cannot expand the cap.
+                evidence.musicPagesAttempted=(evidence.musicPagesAttempted??0)+1;
+                return call('public_page',{url});
+              }});
             candidate.externalLinkEvidence = hub;
             candidate.externalUrls = [...new Set([...candidate.externalUrls,...hub.externalUrls])];
           }

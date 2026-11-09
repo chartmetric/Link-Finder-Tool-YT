@@ -135,19 +135,32 @@ export function parsePublicMusicPage(sourceUrl, html, {status=200,location}={}) 
     const artists = entity.type==='artist' ? [artistUri(entity.uri)]
       : Array.isArray(entity.artists) ? entity.artists.map(a=>artistUri(a.uri)) : [];
     const artistUrls = artists.length && artists.every(Boolean) ? [...new Set(artists)] : [];
+    // Album embeds can omit `artists` yet explicitly declare the artist URI
+    // related to this exact album. Keep this relation distinct from credits and
+    // never let it override explicit multiple/invalid artist credits.
+    const relatedArtist=entity.type==='album'&&(!Array.isArray(entity.artists)||entity.artists.length===0)
+      ? artistUri(entity.relatedEntityUri):null;
+    const relatedArtistUrls=relatedArtist?[relatedArtist]:[];
     const singleTrack = entity.type==='album' && entity.trackList?.length===1
       ? /^spotify:track:([A-Za-z0-9]{22})$/.exec(entity.trackList[0].uri)?.[1] : undefined;
     return {...base,contentUrl:expected.url,contentType:entity.type,
       creditedArtistUrls:artistUrls,
+      relatedArtistUrls,
       // A multi-artist recording is association, not sufficient sole-ownership evidence.
+      // A generic "related" artist is association, not a sole credited artist.
+      // Retain it for diagnostics without satisfying the exact-link gate.
       externalUrls:artistUrls.length===1 ? artistUrls : [],
       musicTargets:artistUrls.length===0 && singleTrack && idPattern.test(singleTrack)
         ? [`https://open.spotify.com/track/${singleTrack}`] : [],
       reason:artistUrls.length>1 ? 'Multiple credited artists; ownership remains ambiguous.'
+        : relatedArtist ? 'Exact album declares a related artist ID; account ownership remains unassessed.'
         : !artistUrls.length && !singleTrack ? 'No exact credited artist identity in bounded public metadata.' : undefined};
   }
   const targets = [];
-  for (const m of html.matchAll(/<a\b[^>]*>/gi)) {
+  const linktree=new URL(sourceUrl).hostname==='linktr.ee';
+  // Whole-page Linktree anchors include navigation and promoted OTHER profiles.
+  // Only its declared profile-link records below can seed identity paths.
+  for (const m of linktree?[]:html.matchAll(/<a\b[^>]*>/gi)) {
     const href = attr(m[0],'href');
     if (!href) continue;
     const target = spotifyButtonTarget(href,attr(m[0],'service'));
@@ -157,11 +170,21 @@ export function parsePublicMusicPage(sourceUrl, html, {status=200,location}={}) 
     const youtube = referenceUrl(href,'youtube');
     if (youtube) base.externalUrls.push(youtube);
   }
-  if (new URL(sourceUrl).hostname==='linktr.ee') {
+  if (linktree) {
     for (const data of scripts(html,tag=>attr(tag,'id')==='__NEXT_DATA__')) {
-      for (const link of data.props?.pageProps?.links ?? []) {
-        const target = spotifyContent(link.url);
-        if (target) targets.push(target.url);
+      // Linktree groups can contain another declared links array. Inspect only
+      // these link records, not unrelated recommendation/session JSON.
+      const pending=[...(Array.isArray(data.props?.pageProps?.links)?data.props.pageProps.links:[])];
+      let inspected=0;
+      while(pending.length&&inspected++<100) {
+        const link=pending.shift();
+        if(!link||typeof link!=='object') continue;
+        const spotify=spotifyContent(link.url);
+        const target=spotify?.url??musicPageUrl(link.url);
+        if(target) targets.push(target);
+        const youtube=referenceUrl(link.url,'youtube');
+        if(youtube) base.externalUrls.push(youtube);
+        if(Array.isArray(link.links)) pending.push(...link.links.slice(0,100-inspected));
       }
     }
   }
@@ -179,19 +202,30 @@ export function parsePublicMusicPage(sourceUrl, html, {status=200,location}={}) 
  * Existing one-page manifests are not expanded; a further read can fail its budget. */
 export async function resolveMusicEvidence({candidate,catalog,readPage,maxPages=4}) {
   if (!Number.isInteger(maxPages) || maxPages<1 || maxPages>4) throw new Error('Music evidence path must allow 1–4 pages.');
-  const sourceUrls = [...new Set((candidate.externalUrls ?? []).map(value => isMusicLandingUrl(value) ? musicPageUrl(value) : null).filter(Boolean))];
+  // Previously derived artist URLs cannot become independent starting evidence.
+  const direct=candidate.directExternalUrls??(candidate.externalLinkEvidence?[]:candidate.externalUrls??[]);
+  const sourceUrls = [...new Set(direct.map(value => isMusicLandingUrl(value) ? musicPageUrl(value) : null).filter(Boolean))];
   const sourceUrl = sourceUrls[0];
-  const evidence = {sourceUrl,sourceUrls,pages:[],externalUrls:[],status:'unresolved',ownershipConfirmed:false};
+  const evidence = {sourceUrl,sourceUrls,pages:[],attempts:[],externalUrls:[],status:'unresolved',ownershipConfirmed:false};
   if (!sourceUrl) return {...evidence,reason:'No supported source-linked music landing page.'};
   const seen = new Set();
   const queue = sourceUrls.map(url => ({url,linkedFrom:null}));
   try {
-    while (queue.length && evidence.pages.length < maxPages) {
+    while (queue.length && evidence.attempts.length < maxPages) {
       const {url,linkedFrom} = queue.shift();
       if (!musicPageUrl(url) || seen.has(url)) continue;
       seen.add(url);
-      const page = await readPage(url);
+      const attempt={sourceUrl:url,linkedFrom,status:'started'};
+      evidence.attempts.push(attempt);
+      let page;
+      try {page=await readPage(url);}
+      catch(error) {
+        attempt.status='failed';
+        attempt.reason=error.message;
+        continue; // An unavailable branch must not hide other source-linked paths.
+      }
       if (page.sourceUrl !== url) throw new Error('Public page evidence is not bound to the requested source.');
+      attempt.status='returned';
       evidence.pages.push({...page,linkedFrom});
       const exactTarget = [...(page.externalUrls ?? []),...(page.musicTargets ?? [])]
         .some(value => referenceUrl(value,catalog.platform) === catalog.url);
@@ -211,6 +245,7 @@ export async function resolveMusicEvidence({candidate,catalog,readPage,maxPages=
       for (const target of targets) if (!seen.has(target)) queue.push({url:target,linkedFrom:url});
     }
     evidence.reason ??= queue.length ? 'Public music-page limit reached before all supported links were checked.'
+      : evidence.attempts.some(a=>a.status==='failed') ? 'Some source-linked music pages were unavailable; identity remains unresolved.'
       : 'No exact catalog artist ID in the checked music path.';
   } catch (error) { evidence.reason = error.message; }
   return evidence;

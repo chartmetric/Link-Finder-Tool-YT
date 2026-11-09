@@ -84,7 +84,109 @@ test('different artist, multi-artist credits, multi-track albums and page budget
   assert.equal(reads,1);assert.match(limited.reason,/limit/);
   const failed=await resolveMusicEvidence({candidate:{externalUrls:[hubUrl]},catalog,
     readPage:async u=>{if(u!==hubUrl)throw new Error('Existing one-page budget reached');return parsePublicMusicPage(u,pages[u]);}});
-  assert.equal(failed.pages.length,1);assert.match(failed.reason,/budget/);
+  assert.equal(failed.pages.length,1);assert.match(failed.reason,/unavailable/);
+  assert.match(failed.attempts[1].reason,/budget/);
+});
+
+test('one unavailable source does not hide another and failed requests consume the page cap',async()=>{
+  const first='https://linktr.ee/unavailable',second='https://artist.lnk.to/release';
+  const candidate={externalUrls:[first,second]};
+  const calls=[];
+  const readPage=async url=>{
+    calls.push(url);
+    if(url===first) throw Error('Public music page unavailable (HTTP 503).');
+    return parsePublicMusicPage(url,`<a href="${catalog.url}">Spotify</a>`);
+  };
+  const recovered=await resolveMusicEvidence({candidate,catalog,readPage,maxPages:2});
+  assert.equal(recovered.status,'exact_catalog_music_identity');
+  assert.deepEqual(calls,[first,second]);
+  assert.deepEqual(recovered.attempts.map(a=>a.status),['failed','returned']);
+  calls.length=0;
+  const limited=await resolveMusicEvidence({candidate,catalog,readPage,maxPages:1});
+  assert.equal(limited.status,'unresolved');assert.equal(calls.length,1);
+  assert.match(limited.reason,/limit/);
+});
+
+test('nested declared Linktree links retain source-bound hub paths, not unrelated JSON',async()=>{
+  const root='https://linktr.ee/musician';
+  const html=`<script id="__NEXT_DATA__">${JSON.stringify({props:{pageProps:{
+    links:[{links:[{url:hubUrl}]}],recommendations:[{url:catalog.url}],
+  }}})}</script>`;
+  const parsed=parsePublicMusicPage(root,html);
+  assert.deepEqual(parsed.musicTargets,[hubUrl]);assert.deepEqual(parsed.externalUrls,[]);
+  const result=await resolveMusicEvidence({candidate:{externalUrls:[root]},catalog,maxPages:4,
+    readPage:async url=>parsePublicMusicPage(url,url===root?html:pages[url])});
+  assert.equal(result.status,'exact_catalog_music_identity');
+  assert.equal(result.pages[1].linkedFrom,root);
+  assert.equal(result.pages[3].linkedFrom,`https://open.spotify.com/embed/album/${albumId}`);
+  assert.equal(result.ownershipConfirmed,false);
+});
+
+test('Linktree navigation, promotions and unrelated anchors cannot supply identity paths',()=>{
+  const html=`<a href="https://linktr.ee/otherartist">Promoted</a>
+    <a href="${catalog.url}">Recommended artist</a>
+    <script id="__NEXT_DATA__">${JSON.stringify({props:{pageProps:{
+      links:[{url:hubUrl}],recommendations:[{url:catalog.url}],
+    }}})}</script>`;
+  const p=parsePublicMusicPage('https://linktr.ee/sourceartist',html);
+  assert.deepEqual(p.musicTargets,[hubUrl]);
+  assert.deepEqual(p.externalUrls,[]);
+  assert.deepEqual(parsePublicMusicPage('https://linktr.ee/sourceartist',
+    `<a href="${catalog.url}">Unbound recommendation</a>`).externalUrls,[]);
+});
+
+test('source-bound album artist relation is retained distinctly and cannot override multiple credits',async()=>{
+  const url=`https://open.spotify.com/embed/album/${albumId}`;
+  const p=parsePublicMusicPage(url,embed('album',albumId,{relatedEntityUri:`spotify:artist:${artistId}`,
+    trackList:[{uri:`spotify:track:${trackId}`},{uri:`spotify:track:${trackId}`}]}));
+  assert.deepEqual(p.creditedArtistUrls,[]);
+  assert.deepEqual(p.relatedArtistUrls,[catalog.url]);
+  assert.deepEqual(p.externalUrls,[]);
+  assert.match(p.reason,/ownership remains unassessed/);
+  const result=await resolveMusicEvidence({candidate:{externalUrls:[url]},catalog,readPage:async()=>p});
+  assert.equal(result.status,'unresolved');
+  assert.equal(result.ownershipConfirmed,false);
+  for(const fields of [
+    {relatedEntityUri:`spotify:artist:${artistId}`,artists:[{uri:`spotify:artist:${artistId}`},{uri:'spotify:artist:0123456789ABCDEFGHIJKL'}]},
+    {relatedEntityUri:`spotify:artist:${artistId}`,artists:[{uri:'invalid'}]},
+    {relatedEntityUri:`spotify:album:${artistId}`},
+  ]) assert.deepEqual(parsePublicMusicPage(url,embed('album',albumId,fields)).externalUrls,[]);
+  const foreign=parsePublicMusicPage(url,embed('album','0123456789ABCDEFGHIJKL',
+    {relatedEntityUri:`spotify:artist:${artistId}`}));
+  assert.deepEqual(foreign.externalUrls,[]);
+});
+
+test('derived URLs cannot seed a fresh independent path when original direct provenance is missing',async()=>{
+  let calls=0;
+  const r=await resolveMusicEvidence({candidate:{externalUrls:[hubUrl],
+    externalLinkEvidence:{status:'unresolved'}},catalog,readPage:async()=>{calls++;throw Error('Unexpected');}});
+  assert.equal(calls,0);assert.equal(r.status,'unresolved');
+});
+
+test('pilot uses remaining shared page allowance on a later candidate after an unavailable first hub',async t=>{
+  const m=manifest(),other='https://www.instagram.com/unrelated_music/';
+  const attempted=[];
+  const result=await runFixturePilot({manifest:m,journalPath:path.join(await temp(t),'journal.jsonl'),
+    evaluateRegressions:async()=>true,transport:{fixture:true,dispatch:async({kind,payload})=>{
+      if(kind==='spotify_oembed')return {...catalog,displayName:'Frankelly Bello'};
+      if(kind==='serper')return {profiles:[{url:other},{url:ig}],methodsUsed:[{method:'serper',status:'used'}]};
+      if(kind==='scrapecreators_candidate')return {url:payload.url,externalUrls:[
+        payload.url===other?'https://linktr.ee/unavailable':hubUrl]};
+      if(kind==='public_page') {
+        attempted.push(payload.url);
+        if(payload.url==='https://linktr.ee/unavailable')throw Error('Unavailable HTTP 503');
+        return parsePublicMusicPage(payload.url,pages[payload.url]);
+      }
+      if(kind==='jev')return payload.profiles.map(p=>({url:p.url,jevVerification:{
+        verdict:p.url===ig?'verified':'mismatch',sameIdentityProbability:p.url===ig?0.96:0.01}}));
+      throw Error(`Unexpected stage ${kind}`);
+    }}});
+  assert.equal(attempted.length,4);
+  assert.deepEqual(result.results[0].urls,[ig]);
+  const profiles=result.results[0].rawResult.profiles;
+  assert.equal(profiles[0].identityComparison.candidate.externalLinkEvidence.status,'unresolved');
+  assert.equal(profiles[1].identityComparison.candidate.externalLinkEvidence.status,'exact_catalog_music_identity');
+  assert.deepEqual(profiles[1].identityComparison.candidate.directExternalUrls,[hubUrl]);
 });
 
 test('approved music link hosts and Spotify releases canonicalize to safe, query-free fetch targets',()=>{

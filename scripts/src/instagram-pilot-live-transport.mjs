@@ -81,6 +81,7 @@ export function jevRequest(payload) {
       pages:m.externalLinkEvidence.pages.map(p=>({
         sourceUrl:p.sourceUrl,contentUrl:p.contentUrl,contentType:p.contentType,
         musicTargets:p.musicTargets,redirectUrl:p.redirectUrl,creditedArtistUrls:p.creditedArtistUrls,
+        relatedArtistUrls:p.relatedArtistUrls,
       })),
       // A technical cross-link match is not an ownership decision in either direction.
       ownershipAssessment:'unassessed',

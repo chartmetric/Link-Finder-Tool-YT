@@ -104,3 +104,9 @@ Keep prior workflow judgments distinct from observed source facts when testing i
 **Why:** An alternate verifier recognized exact music links but cited the application's own "ownership unassessed" label as a reason it could not verify ownership. Removing only internal comparison/music-path judgments made both provisional positives pass its diagnostic threshold on repeated inputs while neither unrelated control passed. A broader saved-evidence check also supported the user-confirmed Frankelly account, but gave confident verified verdicts to other candidates lacking required exact catalog links; the separate evidence gate correctly held those. This supports a circular-dependency concern for that verifier, not population accuracy or JEV behavior.
 
 **How to apply:** Test source facts separately from internal comparison/ownership labels under a controlled, approved scope. Never replace unknown with confirmed ownership. Preserve the independent catalog-bound evidence gate even when a model says verified with high confidence. Model explanations are diagnostic clues, not established causal explanations for another model, and self-reported scores from different verifiers are not calibrated equivalents.
+
+A music landing page's global navigation and promoted profiles are not artist-declared links.
+
+**Why:** A live Linktree check exposed unrelated creator profiles and site navigation as whole-page anchors. Following all allowlisted links would create false identity paths even though each host was safe to fetch.
+
+**How to apply:** Require profile-bound declared link records for Linktree traversal; domain safety is not ownership provenance. Keep generic related-artist references separate from exact credits, and do not infer ownership of a multi-track album from its title or one selected track. An unavailable path or missing credit ID remains unresolved, not evidence of account absence.

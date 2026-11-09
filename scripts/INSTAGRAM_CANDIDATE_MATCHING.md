@@ -169,6 +169,16 @@ All requests and responses are archived separately under `generated-artifacts/in
 
 ### Broader verification-only diagnostic
 
+#### Music-path follow-through fixes
+
+The resolver now tries another directly source-linked path after a public-page failure, counts failed attempts against the same page allowance, and lets a later selected candidate use the artist's remaining shared allowance. Grouped Linktree link records are traversed, while whole-page navigation/promoted-profile anchors are excluded. Previously derived URLs cannot be reused as independent starting evidence.
+
+A bounded public-page diagnostic for Billylildove, JUNHEE and The Format is archived under `generated-artifacts/instagram-music-path-check-2026-11-09`, with album-parser follow-up under the sibling `-album-schema` directory. Seven original page requests, two additional schema-inspection requests and two follow-up album reads occurred (eleven public requests total, zero paid provider calls). The Format landing page was reused from its archived packet for the follow-up rather than fetched again. No fresh search, Instagram metadata, model decision, claim, database write or import occurred; conservative pilot funds remain $6.83.
+
+The public sample uncovered Linktree navigation and promoted profiles in whole-page anchors. The fix now requires declared profile-link records; the corrected filtering is covered offline, not claimed as a fresh JUNHEE live result. Both Spotify album embeds returned the requested album identity and track names, but did not expose usable exact artist credits in the parsed bounded metadata. No new exact music-ID matches or ownership approvals were established. Related-artist URI fields, when present, are retained separately as association and cannot satisfy the exact-link gate. Multi-track album names or a single selected track must not be substituted for authoritative album artist credits.
+
+The source-URL allowlist, DNS pinning, four-page artist cap, separate ownership check and verification threshold remain intact. Offline regressions cover unavailable branches, nested links, unrelated page promotions, provenance, shared candidate allowances, mismatched IDs and multi-artist ambiguity. This improves evidence collection and prevents unrelated navigation from becoming evidence; it does not establish full-rerun readiness.
+
 #### Facts-only alternate-verifier expansion
 
 The approved saved-evidence expansion is archived under `generated-artifacts/instagram-broader-facts-validation-2026-11-06`. Runner: `scripts/src/instagram-broader-facts-validation.mjs`; offline reporter: `scripts/src/instagram-broader-facts-report.mjs`. The exclusive journal admits at most 23 serial requests, with no retries, no new search/metadata calls and no claims or database writes. Prior workflow judgments are excluded; evaluator labels stay outside model inputs. Raw Instagram packets restore direct-link provenance. Historical wrong-person and festival evidence is explicitly typed as saved Serper snippets, not fabricated profile metadata.
