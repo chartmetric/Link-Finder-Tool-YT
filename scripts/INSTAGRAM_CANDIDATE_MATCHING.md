@@ -198,6 +198,21 @@ Both JEV calls completed on `typesafe/jev-1.13-20260917`. Billylildove received 
 
 Requests, hashes, responses, admissions and results are archived exclusively under `generated-artifacts/instagram-catalog-album-verifier-test-2026-11-09`. The archive retains catalog update times but does not invent a missing original query-observation timestamp; replay time is not query time. Two admissions and two returns reconciled, with no retries or other request kinds. Provider-reported total cost was $0.000191142. Conservative cumulative reservations are $3.21, leaving $6.79 of the original $10 ceiling. There were no new searches, public reads, metadata calls, database queries, claims, database writes or imports. No full rerun started. Source completeness improved; verifier uncertainty remains and no population-level readiness claim is justified.
 
+### Controlled JEV label comparison
+
+The user approved investigating whether the remaining holds reflect JEV's judgment or restrictive application inputs/rules. `scripts/src/instagram-jev-label-ablation.mjs` performs four exclusively journaled calls: the exact archived baseline request and a source-facts-only variant for each of those two artists. It removes only internal comparison status/reasons, music-path status/ownership assessment, and catalog-link computed status. Raw music relationships, source URLs, declared direct links, page edges, questions, model, target bindings and acceptance rules are preserved. The two tests cover preservation and distinguish identity probability from confidence in a categorical verdict.
+
+| Target | Fresh baseline | Source facts only | Unrelated controls |
+|---|---|---|---|
+| Billylildove | likely / 0.74 | likely / 0.60 | mismatch / 0.03 and 0.02 |
+| The Format | likely / 0.79 | likely / 0.62 | mismatch / 0.04 and 0.04 |
+
+All calls resolved to the same `typesafe/jev-1.13-20260917` release as the archived requests. Baseline repeats showed small numeric variability. Removing labels did not yield acceptance; all four positive assessments remained likely and below the independent 0.90 numeric gate. The choice distribution did shift, so this is not evidence that labels have no effect. Neither lowering the numeric threshold alone nor mistaking verdict-label confidence for identity probability would address the full categorical-plus-numeric gate. The existing code reads the actual Noul identity answer correctly; the separately returned choice confidence describes the selected verdict, not artist ownership.
+
+This does not establish whether JEV is appropriately cautious or overly restrictive in the population. Both targets are provisional positives rather than an independent ownership gold standard, and unrelated-artist controls do not exercise label/festival/fan attribution. A benchmark with independently confirmed positive accounts and hard related-entity negatives is needed before threshold calibration or a full rerun. The alternate verifier's earlier facts-only improvement cannot be assumed to transfer to JEV. Production inputs and thresholds remain unchanged.
+
+Archive: `generated-artifacts/instagram-jev-label-ablation-2026-11-09`. Four admissions and four returns reconciled with no retries, searches, metadata/public/database reads, claims, database writes or imports. Actual reported charge: $0.00036918. Conservative cumulative reservation: $3.29; remaining original budget: $6.71. No full rerun started.
+
 ```sh
 node --test scripts/src/catalog-album-evidence.test.mjs scripts/src/public-music-links.test.mjs scripts/src/instagram-pilot-live.test.mjs scripts/src/instagram-pilot-runner.test.mjs scripts/src/instagram-verification-benchmark.test.mjs
 ```
