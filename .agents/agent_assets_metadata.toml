@@ -434,3 +434,31 @@ mtime_ms = 1794260875530
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/6cac33d8-1c12-4b73-9737-1cee66de323c/1011ff94-0edf-48a4-a29f-f566b61c5be1"
 storage_version_token = "1794260882509536"
 content_type = "text/csv"
+
+[[outputs]]
+id = "rqzeKvhZuGmHLlBKWAglC"
+uri = "file://generated-artifacts/instagram-bulk-shadow-approved-250-usd20/catalog-metadata-overlay/artist-metadata-summary.csv"
+type = "table"
+title = "250 artists — additional identity metadata"
+description = "Artist names, IDs, linked accounts, available countries, genre tags and saved bios. Supplemental evidence only; original decisions unchanged."
+logical_id = "31f9c4d0-2dc7-43cc-bf51-6520ac3ae1f4"
+content_hash = "sha256:a7c4deb76863476b511298fbb8f4d873151c615f413474250645942547080b23"
+size = 95823
+mtime_ms = 1794262252110
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/31f9c4d0-2dc7-43cc-bf51-6520ac3ae1f4/f7d9a971-e18a-40e6-ab9c-380dc553e175"
+storage_version_token = "1794262277855498"
+content_type = "text/csv"
+
+[[outputs]]
+id = "TBFIQqmqrMr0iRGNHwP_I"
+uri = "file://generated-artifacts/instagram-bulk-shadow-approved-250-usd20/catalog-metadata-overlay/artist-metadata-evidence.json"
+type = "unspecified"
+title = "Full artist metadata evidence"
+description = "Structured evidence for all 250 artists, including sources, dates, missing-data markers and account-binding cautions. No paid calls or database writes."
+logical_id = "c1185175-3e35-4c5d-a27f-feef641b6cee"
+content_hash = "sha256:27e7ec6adeb8cad2e96bf038d6dea08dd52a8ca9b58db9b4a360dedc114ee6a7"
+size = 734585
+mtime_ms = 1794262252102
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/c1185175-3e35-4c5d-a27f-feef641b6cee/577c257c-08ef-42fb-84f3-20b3ba2ec8a1"
+storage_version_token = "1794262278476077"
+content_type = "application/octet-stream"
