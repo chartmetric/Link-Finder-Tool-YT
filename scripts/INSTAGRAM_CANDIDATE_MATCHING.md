@@ -229,6 +229,24 @@ The scorecard distinguishes JEV-held known positives, JEV-accepted known negativ
 
 `benchmark.json` sets `run_allowed:false`, with zero authorized paid calls/imports. `offline-scorecard.json` reports all cases as not tested. A future core-only test would require separate approval for at most two JEV calls / $0.04 conservative reservation; this proposal is not an admission. No tests of the prepared accounts were run in this step, no new money was reserved, and the remaining original budget is still $6.71. Four unit tests cover offline/no-results behavior, separate gate outcomes, result bindings and input-size/reference checks. No population accuracy, threshold calibration or full-rerun readiness claim is made.
 
+### Approved core known-answer test
+
+The user subsequently approved running the two core requests. `scripts/src/instagram-known-answer-live-test.mjs` keeps the preparation archive unchanged and records a separate four-cent authorization, exclusive admission journal, frozen requests and raw responses under `generated-artifacts/instagram-known-answer-live-test-2026-11-09`. It dispatches only the request bodies, never evaluator labels, and stops on uncertain failures, model changes or acceptance of a known wrong account. There are no automatic retries, new searches, metadata/public/database reads, imports, claims or database writes.
+
+Both calls completed on the unchanged `typesafe/jev-1.13-20260917` release:
+
+| User-confirmed example | Identity score | Verdict | Existing acceptance |
+|---|---|---|---|
+| Frankelly / `frankellybello_` (positive) | 0.71 | likely | Held |
+| Frankelly / `belloo_official` (negative) | 0.23 | uncertain | Held, not accepted; not a definitive mismatch |
+| Shenge / `shenge_wasehlalankosi` (positive) | 0.26 | likely | Held |
+
+The unscored venue candidate received mismatch / 0.17. Three known answers were evaluated: two known positives held, zero known negatives accepted. Frankelly has saved exact-link eligibility, so its hold is in the verifier stage; Shenge additionally lacks the saved exact music cross-link required by the separate evidence rule. Even a higher JEV score alone would not satisfy that missing evidence prerequisite. No observed source link was invented or label assertion converted into music evidence.
+
+The original frozen requests were 5,100 and 4,178 bytes. Two admissions and two returns reconciled. Reported charge was $0.00013545, with a $0.04 conservative reservation; cumulative conservative reservations are $3.33 and the original remaining ceiling is $6.67. `scorecard.json` records both verifier outcomes and saved-evidence gate outcomes, while the unrun optional packets remain untested.
+
+This establishes holds on user-confirmed positive regressions under this historical evidence and policy, not merely holds on provisional catalog positives. It does not establish population error rates, prove that 0.90 is the wrong threshold, or isolate instructions from evidence insufficiency. The wrong account was not promoted, but its evidence is only a saved search snippet. No full rerun, production policy change or account import is justified by this tiny set alone.
+
 ```sh
 node --test scripts/src/catalog-album-evidence.test.mjs scripts/src/public-music-links.test.mjs scripts/src/instagram-pilot-live.test.mjs scripts/src/instagram-pilot-runner.test.mjs scripts/src/instagram-verification-benchmark.test.mjs
 ```
