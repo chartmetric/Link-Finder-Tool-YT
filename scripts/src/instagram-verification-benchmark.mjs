@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createPilotBudget } from './instagram-pilot-budget.mjs';
 import { createLiveTransport } from './instagram-pilot-live-transport.mjs';
+import {createCatalogAlbumLookup} from './catalog-album-evidence.mjs';
 import { instagramProfileUrl, referenceUrl, hasCatalogCrossLink } from './musician-instagram-matching.mjs';
 import { isMusicLandingUrl, resolveMusicEvidence } from './public-music-links.mjs';
 
@@ -103,8 +104,12 @@ export async function runBenchmark(outputDir) {
     return [name,process.env[name]];
   }));
   await fs.mkdir(`${outputDir}/responses`,{recursive:false});
+  manifest.catalog_album_lookup={enabled:true,readonly:true,maxPerArtist:4,
+    maxTotal:manifest.artists.length*4,automaticRetries:0};
   await save(`${outputDir}/approved-manifest.json`,manifest);
-  const transport = createLiveTransport({keys,responseDir:`${outputDir}/responses`});
+  const transport = createLiveTransport({keys,responseDir:`${outputDir}/responses`,
+    catalogAlbumLookup:createCatalogAlbumLookup({profileIds:manifest.artists.map(a=>a.profile_id),
+      responseDir:`${outputDir}/responses`})});
   const budget = await createPilotBudget({manifest,transport,journalPath:`${outputDir}/admissions.jsonl`,mode:'live'});
   const prepared = [], results = [];
   const deadlineAt = Date.now()+manifest.proposed_limits.job_wall_time_minutes*60000;
@@ -121,6 +126,7 @@ export async function runBenchmark(outputDir) {
         if(instagramProfileUrl(a.candidateMetadata.url) !== a.url) throw Error('Instagram response does not bind to requested identity.');
         if(a.candidateMetadata.externalUrls.some(isMusicLandingUrl)) {
           const hub = await resolveMusicEvidence({candidate:a.candidateMetadata,catalog:a.reference,
+            lookupAlbum:transport.lookupAlbum?url=>transport.lookupAlbum({profileId:a.profile_id,url,deadlineAt}):undefined,
             readPage:url=>request(a,'public_page',{url})});
           a.candidateMetadata.externalLinkEvidence = hub;
           a.candidateMetadata.externalUrls = [...new Set([...a.candidateMetadata.externalUrls,...hub.externalUrls])];

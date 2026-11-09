@@ -100,9 +100,11 @@ export async function runPilot({ manifest, journalPath, transport, evaluateRegre
           const publicLimit=Math.min(4,manifest.proposed_limits.public_music_page_requests_per_artist??1);
           const remainingPages=publicLimit-(evidence.musicPagesAttempted??0);
           if (instagramProfileUrl(candidate.url)===p.url && candidate.externalUrls?.some(isMusicLandingUrl)
-            && remainingPages>0) {
+            && (remainingPages>0||transport.lookupAlbum)) {
             if(!candidate.externalLinkEvidence) candidate.directExternalUrls??=[...(candidate.externalUrls??[])];
             const hub = await resolveMusicEvidence({candidate,catalog:scope.reference,
+              lookupAlbum:transport.lookupAlbum?url=>transport.lookupAlbum({profileId:id,url,
+                deadlineAt:Math.min(deadline,started+manifest.proposed_limits.per_artist_wall_time_seconds*1000)}):undefined,
               maxPages:remainingPages,readPage:url=>{
                 // Count attempts, not successes; failures cannot expand the cap.
                 evidence.musicPagesAttempted=(evidence.musicPagesAttempted??0)+1;

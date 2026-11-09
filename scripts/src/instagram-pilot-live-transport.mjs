@@ -83,6 +83,11 @@ export function jevRequest(payload) {
         musicTargets:p.musicTargets,redirectUrl:p.redirectUrl,creditedArtistUrls:p.creditedArtistUrls,
         relatedArtistUrls:p.relatedArtistUrls,
       })),
+      catalogAlbumLinks:m.externalLinkEvidence.catalogAlbums?.map(a=>({
+        source:a.source,albumUrl:a.albumUrl,albumId:a.albumId,linkedFrom:a.linkedFrom,
+        checkedAt:a.checkedAt,albumRows:a.albumRows,artistRows:a.artistRows,
+        status:a.status,reason:a.reason,
+      })),
       // A technical cross-link match is not an ownership decision in either direction.
       ownershipAssessment:'unassessed',
     } : undefined });
@@ -97,7 +102,7 @@ export function jevRequest(payload) {
     }) }, questions };
 }
 
-export function createLiveTransport({ keys, responseDir, fetchImpl = fetch, publicFetchImpl = safeMusicFetch, cachedPackets=[] }) {
+export function createLiveTransport({ keys, responseDir, fetchImpl = fetch, publicFetchImpl = safeMusicFetch, cachedPackets=[],catalogAlbumLookup }) {
   for (const name of ['SERPERDEV_API_KEY', 'SCRAPECREATORS_API_KEY', 'OPENROUTER_API_KEY']) {
     if (!keys[name]) throw new Error(`Required secret is missing: ${name}`);
   }
@@ -150,6 +155,7 @@ export function createLiveTransport({ keys, responseDir, fetchImpl = fetch, publ
     return data;
   }
   return { live: true,
+    lookupAlbum:catalogAlbumLookup,
     inputBytes({kind,payload}) {
       if(kind!=='jev') throw new Error('No input-byte estimator for this provider.');
       return Buffer.byteLength(JSON.stringify(jevRequest(payload)));

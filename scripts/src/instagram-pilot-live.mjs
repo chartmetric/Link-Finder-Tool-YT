@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { runPilot, pilotPreflight } from './instagram-pilot-runner.mjs';
 import { createLiveTransport } from './instagram-pilot-live-transport.mjs';
+import {createCatalogAlbumLookup} from './catalog-album-evidence.mjs';
 
 export function evaluateKnownCases(results, holdouts) {
   const cases = holdouts.cases.map(expected => {
@@ -77,6 +78,9 @@ export async function startApprovedPilot({ manifestPath, holdoutsPath, outputDir
   await fs.mkdir(outputDir, { recursive: false }); // New run only; never restart a paid admission journal.
   const responseDir = join(outputDir, 'responses');
   await fs.mkdir(responseDir);
+  const lookupProfileIds=preflight.artists.filter(a=>a.eligible).map(a=>a.profileId);
+  manifest.catalog_album_lookup={enabled:lookupProfileIds.length>0,readonly:true,
+    maxPerArtist:4,maxTotal:lookupProfileIds.length*4,automaticRetries:0};
   await fs.writeFile(join(outputDir, 'approved-manifest.json'), JSON.stringify(manifest,null,2), {flag:'wx'});
   await fs.writeFile(join(outputDir, 'preflight.json'), JSON.stringify(preflight,null,2), {flag:'wx'});
   const resultJournal = await fs.open(join(outputDir, 'results.jsonl'), 'wx');
@@ -84,7 +88,9 @@ export async function startApprovedPilot({ manifestPath, holdoutsPath, outputDir
   try {
     const result = await runPilot({ manifest, mode: 'live',
       journalPath: join(outputDir, 'admissions.jsonl'),
-      transport: createLiveTransport({keys,responseDir,cachedPackets}),
+      transport: createLiveTransport({keys,responseDir,cachedPackets,
+        catalogAlbumLookup:lookupProfileIds.length?createCatalogAlbumLookup({
+          profileIds:lookupProfileIds,responseDir}):undefined}),
       onResult: async r => {
         await resultJournal.write(`${JSON.stringify(r)}\n`); await resultJournal.sync();
         const artist = manifest.artists.find(a => String(a.profile_id) === r.profileId);

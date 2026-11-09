@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { referenceUrl } from './musician-instagram-matching.mjs';
+import {albumCreditEvidence} from './catalog-album-evidence.mjs';
 
 const idPattern = /^[A-Za-z0-9]{22}$/;
 const decodeEntities = text => text.replace(/&amp;/gi,'&').replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'")
@@ -200,8 +201,10 @@ export function parsePublicMusicPage(sourceUrl, html, {status=200,location}={}) 
 
 /** Each readPage call is ONE separately admitted HTTP request, including redirects.
  * Existing one-page manifests are not expanded; a further read can fail its budget. */
-export async function resolveMusicEvidence({candidate,catalog,readPage,maxPages=4}) {
-  if (!Number.isInteger(maxPages) || maxPages<1 || maxPages>4) throw new Error('Music evidence path must allow 1–4 pages.');
+export async function resolveMusicEvidence({candidate,catalog,readPage,lookupAlbum,maxPages=4}) {
+  if (!Number.isInteger(maxPages) || maxPages<0 || maxPages>4 || (maxPages===0&&!lookupAlbum)) {
+    throw new Error('Music evidence path must allow 1–4 pages, or zero public pages for catalog-only work.');
+  }
   // Previously derived artist URLs cannot become independent starting evidence.
   const direct=candidate.directExternalUrls??(candidate.externalLinkEvidence?[]:candidate.externalUrls??[]);
   const sourceUrls = [...new Set(direct.map(value => isMusicLandingUrl(value) ? musicPageUrl(value) : null).filter(Boolean))];
@@ -210,11 +213,33 @@ export async function resolveMusicEvidence({candidate,catalog,readPage,maxPages=
   if (!sourceUrl) return {...evidence,reason:'No supported source-linked music landing page.'};
   const seen = new Set();
   const queue = sourceUrls.map(url => ({url,linkedFrom:null}));
+  let catalogAttempts=0,pageLimitReached=false;
   try {
-    while (queue.length && evidence.attempts.length < maxPages) {
+    while (queue.length) {
       const {url,linkedFrom} = queue.shift();
       if (!musicPageUrl(url) || seen.has(url)) continue;
       seen.add(url);
+      if(lookupAlbum&&spotifyContent(url)?.type==='album'&&catalogAttempts<4) {
+        catalogAttempts++;
+        try {
+          const credit=albumCreditEvidence(url,await lookupAlbum(url),catalog);
+          (evidence.catalogAlbums??=[]).push({...credit,linkedFrom});
+          if(credit.status==='exact_catalog_music_identity') {
+            evidence.externalUrls=[catalog.url];
+            evidence.status='exact_catalog_music_identity';
+            return evidence;
+          }
+          evidence.reason=credit.reason;
+          // A conflicting/missing catalog relationship cannot be filtered away
+          // or replaced by names or a conveniently selected album track.
+          continue;
+        }catch {
+          (evidence.catalogLookupErrors??=[]).push({albumUrl:spotifyContent(url).url,
+            reason:'Catalog lookup unavailable; no account-absence inference.'});
+          // Existing separately bounded public evidence remains an alternative.
+        }
+      }
+      if(evidence.attempts.length>=maxPages) {pageLimitReached=true;continue;}
       const attempt={sourceUrl:url,linkedFrom,status:'started'};
       evidence.attempts.push(attempt);
       let page;
@@ -244,7 +269,7 @@ export async function resolveMusicEvidence({candidate,catalog,readPage,maxPages=
         .sort((a,b)=>Number(referenceUrl(b,catalog.platform)===catalog.url)-Number(referenceUrl(a,catalog.platform)===catalog.url));
       for (const target of targets) if (!seen.has(target)) queue.push({url:target,linkedFrom:url});
     }
-    evidence.reason ??= queue.length ? 'Public music-page limit reached before all supported links were checked.'
+    evidence.reason ??= pageLimitReached ? 'Public music-page limit reached before all supported links were checked.'
       : evidence.attempts.some(a=>a.status==='failed') ? 'Some source-linked music pages were unavailable; identity remains unresolved.'
       : 'No exact catalog artist ID in the checked music path.';
   } catch (error) { evidence.reason = error.message; }
