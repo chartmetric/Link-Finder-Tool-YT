@@ -31,6 +31,10 @@ test('report keeps raw URLs separate and non-importable; CSV text cannot execute
     const csv=await fs.readFile(path.join(dir,'artist-research-results.csv'),'utf8');
     assert.ok(csv.includes(`"'=UNTRUSTED_FORMULA()"`));
     assert.ok(csv.includes('"accountIds"'));
+    const candidates=await fs.readFile(path.join(dir,'candidate-evidence.csv'),'utf8');
+    assert.ok(candidates.includes('"artist"'));
+    assert.ok(candidates.includes(`"'=UNTRUSTED_FORMULA()"`));
+    assert.equal(r.decisions[0].artist,'=UNTRUSTED_FORMULA()');
     await assert.rejects(reportShadowRun(dir),/EEXIST/);
   }finally{await fs.rm(dir,{recursive:true,force:true});}
 });

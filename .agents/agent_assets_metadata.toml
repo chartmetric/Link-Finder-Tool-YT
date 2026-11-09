@@ -420,3 +420,17 @@ mtime_ms = 1794260378394
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/4efab7ba-b20d-41d9-99c3-f2d270764ff0/034a334e-7363-4e37-bcf2-6e93cf6cccb4"
 storage_version_token = "1794260400305067"
 content_type = "text/csv"
+
+[[outputs]]
+id = "rWa2FkNWab5-LTyRBmmF0"
+uri = "file://generated-artifacts/instagram-bulk-shadow-approved-250-usd20/candidate-evidence-with-artist-names.csv"
+type = "table"
+title = "Instagram candidates with artist names"
+description = "All 465 candidate rows, now including artist names alongside profile IDs, Chartmetric IDs, URLs and verification results."
+logical_id = "6cac33d8-1c12-4b73-9737-1cee66de323c"
+content_hash = "sha256:348f2de5896d6486e9071ce72c81a1dfad50e44608f88e1a6b44a11b8df15c8e"
+size = 95490
+mtime_ms = 1794260875530
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/6cac33d8-1c12-4b73-9737-1cee66de323c/1011ff94-0edf-48a4-a29f-f566b61c5be1"
+storage_version_token = "1794260882509536"
+content_type = "text/csv"

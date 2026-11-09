@@ -35,7 +35,8 @@ export async function reportShadowRun(dir){
   });
   const decisions=results.flatMap(r=>(r.rawResult?.profiles??r.partialEvidence?.profiles??[]).map(p=>{
     const matching=r.candidates?.find(c=>c.url===p.url);
-    return {profileId:r.profileId,cmArtist:r.cmArtist,url:p.url,status:matching?.status??'unresolved',
+    const artist=manifest.artists.find(a=>a.profile_id===r.profileId);
+    return {profileId:r.profileId,cmArtist:r.cmArtist,artist:artist.artist,url:p.url,status:matching?.status??'unresolved',
       verdict:p.jevVerification?.verdict??'not_evaluated',score:p.jevVerification?.sameIdentityProbability??null,
       reason:matching?.reason??p.metadataLookupError??r.reason??'',safeForImport:false};
   }));
@@ -51,7 +52,7 @@ export async function reportShadowRun(dir){
     experimentalAcceptanceEnabled:false,safeForImport:false,claimsSubmitted:0,databaseWrites:0,
     storage:'Local research archive and CSV only; no ClickHouse or catalog updates.',rows,decisions};
   const columns=['profileId','cmArtist','accountIds','artist','tier','outcome','serperCompleted','rawCandidateUrls','supportedResearchUrls','reason','safeForImport'];
-  const candidateColumns=['profileId','cmArtist','url','status','verdict','score','reason','safeForImport'];
+  const candidateColumns=['profileId','cmArtist','artist','url','status','verdict','score','reason','safeForImport'];
   for(const [file,text] of [
     ['workflow-report.json',JSON.stringify(report,null,2)],
     ['artist-research-results.csv',csv([columns,...rows.map(r=>columns.map(k=>Array.isArray(r[k])?r[k].join(' | '):r[k]))])],
