@@ -10,7 +10,7 @@ import {controlFor,verificationGate} from './instagram-verification-benchmark.mj
 import {enrichManifest,attachMetadataContext,select} from './instagram-artist-metadata-overlay.mjs';
 
 const source='generated-artifacts/instagram-verification-benchmark-2026-11-06';
-const output='generated-artifacts/instagram-context-comparison-2026-11-09';
+const output=process.env.COMPARISON_OUTPUT??'generated-artifacts/instagram-context-comparison-2026-11-09';
 const hash=x=>createHash('sha256').update(x).digest('hex');
 const save=(f,x)=>fs.writeFile(f,JSON.stringify(x,null,2),{flag:'wx'});
 

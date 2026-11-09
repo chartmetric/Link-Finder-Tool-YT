@@ -59,7 +59,20 @@ test('saved metadata reaches verifier requests as bounded, dated, non-authoritat
   const without=jevRequest(payload),withContext=jevRequest({...payload,artistContext:attached.metadata_context});
   assert.equal(without.state.artistContext,undefined);
   assert.equal(withContext.state.artistContext.note,'Context only; not ownership evidence.');
-  assert.match(withContext.questions.candidate_0_same_identity.instructions,/cannot by itself establish ownership/);
+  assert.equal(withContext.state.artistContext.candidateSignals[0].otherPlatformBioLinksToCandidate.result,'no_information');
+  assert.match(withContext.questions.candidate_0_same_identity.instructions,/cannot by themselves establish ownership/);
   assert.throws(()=>jevRequest({...payload,artistContext:{ownershipConfirmed:true,items:[]}}),/Invalid artist context/);
   assert.throws(()=>attachMetadataContext({artists:[{...manifest.artists[0],cm_artist:'999'}]},overlay),/does not match/);
+});
+
+import {contextSignals} from './instagram-context-signals.mjs';
+test('context signals separate support, contradiction and missing information',()=>{
+  const ctx={items:[{kind:'release',text:'Midnight Harbor — Album'},{kind:'bio',text:'Follow instagram.com/other_person'}]};
+  const s=contextSignals(ctx,{url:'https://www.instagram.com/real_artist/',displayName:'Real Artist',bio:'new single Midnight Harbor out now'},'Real Artist');
+  assert.equal(s.songTitlesInCandidateProfile.result,'support');
+  assert.equal(s.otherPlatformBioLinksToCandidate.result,'contradiction');
+  assert.equal(s.artistNameInCandidateProfile.result,'support');
+  const none=contextSignals({items:[]},{url:'https://www.instagram.com/x/',displayName:'Z',bio:''},'Real Artist');
+  assert.equal(none.songTitlesInCandidateProfile.result,'no_information');
+  assert.equal(contextSignals({items:[{kind:'bio',text:'instagram.com/Real_Artist'}]},{url:'https://www.instagram.com/real_artist/'},'Q').otherPlatformBioLinksToCandidate.result,'support');
 });

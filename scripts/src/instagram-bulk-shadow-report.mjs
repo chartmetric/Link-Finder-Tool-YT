@@ -18,6 +18,30 @@ export function classifyShadowResult(r){
   }
   return 'unresolved_candidates';
 }
+// Reporting labels only; acceptance gates and import safety are unchanged.
+export function finalOutcome(row){
+  const incomplete=row.uninspected>0;
+  switch(row.outcome){
+    case 'supported_research_links':return {finalOutcome:'link_found',countsAsDone:true,recheckEligible:false};
+    case 'completed_no_candidates':return {finalOutcome:'no_instagram_found',countsAsDone:true,recheckEligible:false};
+    // Lower-ranked candidates skipped by the per-artist inspection cap are a bounded-search
+    // limit, not a provider failure; they stay visible through boundedSearch and recheck.
+    case 'unresolved_candidates':return {finalOutcome:'no_verified_link',countsAsDone:true,recheckEligible:true,boundedSearch:incomplete};
+    default:return {finalOutcome:'incomplete',countsAsDone:false,recheckEligible:true};
+  }
+}
+export async function relabelShadowRun(dir){
+  const report=JSON.parse(await fs.readFile(`${dir}/workflow-report.json`,'utf8'));
+  const rows=report.rows.map(r=>({profileId:r.profileId,cmArtist:r.cmArtist,artist:r.artist,tier:r.tier,
+    previousOutcome:r.outcome,...finalOutcome(r),candidateUrls:r.rawCandidateUrls,
+    uninspectedCandidates:r.uninspected??null,note:finalOutcome(r).finalOutcome==='no_verified_link'?`Candidates exist but none were confirmed; this is not proof the artist has no Instagram.${r.uninspected>0?` ${r.uninspected} lower-ranked candidate(s) were not inspected (per-artist cap).`:''}`:'',
+    safeForImport:false}));
+  const counts=Object.fromEntries([...new Set(rows.map(r=>r.finalOutcome))].map(k=>[k,rows.filter(r=>r.finalOutcome===k).length]));
+  const columns=['profileId','cmArtist','artist','tier','previousOutcome','finalOutcome','countsAsDone','recheckEligible','uninspectedCandidates','candidateUrls','note','safeForImport'];
+  await fs.writeFile(`${dir}/final-outcomes.json`,JSON.stringify({counts,newProviderCalls:0,databaseWrites:0,rows},null,2),{flag:'wx'});
+  await fs.writeFile(`${dir}/final-outcomes.csv`,csv([columns,...rows.map(r=>columns.map(k=>Array.isArray(r[k])?r[k].join(' | '):r[k]))]),{flag:'wx'});
+  return counts;
+}
 export async function reportShadowRun(dir){
   const manifest=JSON.parse(await fs.readFile(`${dir}/approved-manifest.json`,'utf8'));
   const summary=JSON.parse(await fs.readFile(`${dir}/summary.json`,'utf8'));
@@ -28,7 +52,7 @@ export async function reportShadowRun(dir){
     const attempts=r.discoveryAttempts??r.partialEvidence?.discoveryAttempts??[];
     const rawUrls=[...new Set(attempts.flatMap(a=>a.profiles??[]).map(p=>instagramProfileUrl(p.url)).filter(Boolean))];
     return {profileId:r.profileId,cmArtist:artist.cm_artist,accountIds:artist.account_ids,artist:artist.artist,
-      tier:artist.tier,outcome:classifyShadowResult(r),serperCompleted:attempts.some(a=>a.methodsUsed?.some(m=>m.method==='serper'&&m.status==='used')),
+      tier:artist.tier,outcome:classifyShadowResult(r),finalOutcome:finalOutcome({outcome:classifyShadowResult(r),uninspected:r.uninspectedCandidates??null}).finalOutcome,serperCompleted:attempts.some(a=>a.methodsUsed?.some(m=>m.method==='serper'&&m.status==='used')),
       rawCandidateUrls:rawUrls,supportedResearchUrls:r.urls??[],verifiedCandidates:profiles.filter(p=>p.jevVerification?.verdict==='verified').length,
       uninspected:r.uninspectedCandidates??null,reason:r.reason??r.candidates?.filter(c=>c.status!=='supported').map(c=>c.reason).join(' | ')??'',
       safeForImport:false};
@@ -61,6 +85,7 @@ export async function reportShadowRun(dir){
   return report;
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+  if(process.argv[3]==='--relabel'){console.log(JSON.stringify(await relabelShadowRun(process.argv[2]),null,2));process.exit(0);}
   const report=await reportShadowRun(process.argv[2]);
   const {rows,decisions,...totals}=report;console.log(JSON.stringify(totals,null,2));
 }

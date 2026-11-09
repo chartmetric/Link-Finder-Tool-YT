@@ -38,3 +38,12 @@ test('report keeps raw URLs separate and non-importable; CSV text cannot execute
     await assert.rejects(reportShadowRun(dir),/EEXIST/);
   }finally{await fs.rm(dir,{recursive:true,force:true});}
 });
+import {finalOutcome} from './instagram-bulk-shadow-report.mjs';
+test('final outcomes accept completed no-link results without treating them as proof or retry-free failures',()=>{
+  assert.deepEqual(finalOutcome({outcome:'completed_no_candidates'}),{finalOutcome:'no_instagram_found',countsAsDone:true,recheckEligible:false});
+  assert.equal(finalOutcome({outcome:'unresolved_candidates',uninspected:0}).finalOutcome,'no_verified_link');
+  assert.deepEqual([finalOutcome({outcome:'unresolved_candidates',uninspected:2}).countsAsDone,finalOutcome({outcome:'unresolved_candidates',uninspected:2}).boundedSearch],[true,true]);
+  assert.equal(finalOutcome({outcome:'processing_incomplete'}).finalOutcome,'incomplete');
+  assert.equal(finalOutcome({outcome:'restricted_skip'}).countsAsDone,false);
+  assert.equal(finalOutcome({outcome:'supported_research_links'}).finalOutcome,'link_found');
+});
