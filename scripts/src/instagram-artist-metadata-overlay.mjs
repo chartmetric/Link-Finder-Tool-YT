@@ -197,7 +197,7 @@ export function metadataCsv(overlay) {
   return [columns,...rows].map(row=>row.map(csvCell).join(',')).join('\n')+'\n';
 }
 
-async function select(query) {
+export async function select(query) {
   if(!query.startsWith('SELECT'))throw Error('SELECT only.');
   const env=process.env;
   if(!env.CLICKHOUSE_VERT_HOST||!env.CLICKHOUSE_USERNAME||!env.CLICKHOUSE_PASSWORD)
