@@ -364,3 +364,31 @@ mtime_ms = 1794252683996
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/6a0561f6-b335-42b8-9eca-efbafa06e3bb/ac737439-79e8-474d-b379-30b799031fa5"
 storage_version_token = "1794252795757381"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "p-Q2jYjYKNTVgJ23W9HKZ"
+uri = "file://generated-artifacts/instagram-bulk-shadow-2026-11-09-approved-50/artist-research-results-with-lookup-ids.csv"
+type = "table"
+title = "49-Artist Bulk Pilot Results"
+description = "Research-only results with profile, Chartmetric and account IDs; candidate URLs are explicitly separate from supported links. Not importable."
+logical_id = "f94214f2-2368-40ed-859b-ec1b50fc6358"
+content_hash = "sha256:796b146dff322a1fb8b544b08384de15202ebc38a8aefc035c3545106c1746b9"
+size = 24378
+mtime_ms = 1794255338554
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/f94214f2-2368-40ed-859b-ec1b50fc6358/12a19b58-4976-4287-8834-5067eb2c5230"
+storage_version_token = "1794255378581342"
+content_type = "text/csv"
+
+[[outputs]]
+id = "chQlvZrc0zk7SCdRrYxvt"
+uri = "file://generated-artifacts/instagram-bulk-shadow-2026-11-09-approved-50/candidate-evidence.csv"
+type = "table"
+title = "Candidate Verification Details"
+description = "91 candidate inspections, verification outcomes and hold reasons. These are research observations, not approved artist links."
+logical_id = "0066d6dd-9779-4225-9389-f7d10d77b74f"
+content_hash = "sha256:cb47f45590c8f1c166581dd7fecba96c60d725aca1bc816b9dc18c1671cdbd4c"
+size = 17360
+mtime_ms = 1794255187762
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/0066d6dd-9779-4225-9389-f7d10d77b74f/56e80265-80e0-4961-8df3-c2d62ebc6f03"
+storage_version_token = "1794255379165533"
+content_type = "text/csv"

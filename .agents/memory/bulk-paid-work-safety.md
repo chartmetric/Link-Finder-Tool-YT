@@ -62,3 +62,14 @@ High concurrency can saturate the globally serialized bulk coordinator and excee
 **Why:** A 20-worker brand run safely stopped when a coordinator transaction hit the five-second lock timeout; provider billing health was clear.
 
 **How to apply:** Treat this as coordinator contention, not provider-credit exhaustion. Before increasing workers or resuming, check queued and uncertain admissions; load-test coordinator contention and never replay work whose paid outcome is unknown.
+
+Original pilot spending reconciliation must include all archived paid-admission
+formats, not only the latest experiment's summary.
+
+**Why:** Earlier experiments stored profile identity in frozen case scopes or
+admission keys rather than a uniform row field. Assuming one journal schema
+can lose identities or undercount previously reserved work.
+
+**How to apply:** Recover identities only from explicit archived bindings,
+preserve failed/uncertain reservations, and block on unreadable or unbound
+history. Keep conservative reservations separate from provider-reported charges.
