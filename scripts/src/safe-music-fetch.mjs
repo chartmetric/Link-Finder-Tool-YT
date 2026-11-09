@@ -1,7 +1,7 @@
 import https from 'node:https';
 import { lookup as dnsLookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
-import { Readable } from 'node:stream';
+import { Readable, Transform } from 'node:stream';
 import { musicPageUrl } from './public-music-links.mjs';
 
 export function isPublicIPv4(address) {
@@ -36,7 +36,20 @@ export async function safeMusicFetch(value,{signal,lookup=dnsLookup,request=http
       if ([204,205,304].includes(res.statusCode)) {
         res.resume();
         resolve(new Response(null,{status:res.statusCode,headers}));
-      } else resolve(new Response(Readable.toWeb(res),{status:res.statusCode,headers}));
+      } else {
+        // Match the transport's existing evidence cap even when this client is
+        // used independently. Destroy the upstream stream on overflow/cancel.
+        let bytes=0;
+        const bounded=new Transform({transform(chunk,encoding,callback) {
+          bytes+=chunk.length;
+          callback(bytes>2_000_000 ? new Error('Public music response exceeded evidence size limit.') : null,
+            bytes>2_000_000 ? undefined : chunk);
+        }});
+        res.on('error',error=>bounded.destroy(error));
+        bounded.on('close',()=>res.destroy());
+        res.pipe(bounded);
+        resolve(new Response(Readable.toWeb(bounded),{status:res.statusCode,headers}));
+      }
     });
     req.on('error',reject);
     req.end();

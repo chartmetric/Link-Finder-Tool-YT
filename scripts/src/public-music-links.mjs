@@ -25,6 +25,10 @@ export function spotifyContent(value) {
 
 export function musicPageUrl(value) {
   try {
+    // URL normalizes dot segments before pathname validation. Reject the raw
+    // traversal syntax instead of allowing it to become an innocent-looking slug.
+    const rawPath=/^https:\/\/[^/?#]+([^?#]*)/i.exec(String(value))?.[1] ?? '';
+    if(String(value).includes('\\') || /(?:^|\/)(?:\.|%2e){1,2}(?:\/|$)/i.test(rawPath)) return null;
     const u = new URL(value);
     if (u.protocol !== 'https:' || u.username || u.password || u.port) return null;
     const spotify = spotifyContent(u.href);
@@ -32,7 +36,7 @@ export function musicPageUrl(value) {
     const parts = u.pathname.split('/').filter(Boolean);
     const slug = /^[A-Za-z0-9._-]{1,120}$/;
     const oneOrTwo = parts.length >= 1 && parts.length <= 2 && parts.every(part => slug.test(part));
-    if (['onerpm.link','linktr.ee','hyperfollow.com','bfan.link'].includes(u.hostname)
+    if (['onerpm.link','linktr.ee','hyperfollow.com','bfan.link','lnk.to'].includes(u.hostname)
       && oneOrTwo) return `${u.origin}/${parts.join('/')}`;
     if (/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.lnk\.to$/.test(u.hostname)
       && oneOrTwo) return `${u.origin}/${parts.join('/')}`;
@@ -112,14 +116,14 @@ function youtubeChannelIds(html) {
 export function parsePublicMusicPage(sourceUrl, html, {status=200,location}={}) {
   if (!musicPageUrl(sourceUrl)) throw new Error('Unsafe or unsupported music page URL.');
   const base = {sourceUrl,status,bodySha256:createHash('sha256').update(html).digest('hex'),
-    externalUrls:[],musicTargets:[]};
+    externalUrls:[],musicTargets:[],linkEvidence:[]};
   if ([301,302,303,307,308].includes(status)) {
     let target;
     try { target = new URL(location,sourceUrl).href; } catch { /* invalid redirect */ }
     const content = spotifyContent(target);
     const redirectUrl = content ? content.embedUrl : musicPageUrl(target);
     if (!redirectUrl) throw new Error('Unsafe music-page redirect; not followed.');
-    return {...base,redirectUrl};
+    return {...base,redirectUrl,linkEvidence:[{sourceUrl,targetUrl:redirectUrl,kind:'http_redirect'}]};
   }
   if (status<200 || status>=300) throw new Error(`Public music page unavailable (HTTP ${status}).`);
   const expected = spotifyContent(sourceUrl);
@@ -158,18 +162,50 @@ export function parsePublicMusicPage(sourceUrl, html, {status=200,location}={}) 
         : !artistUrls.length && !singleTrack ? 'No exact credited artist identity in bounded public metadata.' : undefined};
   }
   const targets = [];
-  const linktree=new URL(sourceUrl).hostname==='linktr.ee';
+  const host=new URL(sourceUrl).hostname;
+  const linktree=host==='linktr.ee';
+  const landingHost=['komi.io','lnk.to','hyperfollow.com','distrokid.com','paa.ge','bfan.link'].includes(host)
+    || host.endsWith('.komi.io') || host.endsWith('.lnk.to');
+  const addTarget=(value,kind,service)=>{
+    if(!value || value.startsWith('#')) return;
+    let href;
+    try { href=new URL(value,sourceUrl).href; } catch { return; }
+    const target=spotifyButtonTarget(href,service) ?? musicPageUrl(href);
+    const youtube=referenceUrl(href,'youtube');
+    if(target) targets.push(target);
+    if(youtube) base.externalUrls.push(youtube);
+    for(const targetUrl of new Set([target,youtube].filter(Boolean))) {
+      if(!base.linkEvidence.some(edge=>edge.targetUrl===targetUrl&&edge.kind===kind)) {
+        base.linkEvidence.push({sourceUrl,targetUrl,kind});
+      }
+    }
+  };
+  // Inert content is not a rendered profile link. In particular, JSON strings,
+  // comments and script templates must not masquerade as source-linked anchors.
+  const markup=html.replace(/<!--[\s\S]*?(?:-->|$)/g,'')
+    .replace(/<(script|style|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,'');
   // Whole-page Linktree anchors include navigation and promoted OTHER profiles.
   // Only its declared profile-link records below can seed identity paths.
-  for (const m of linktree?[]:html.matchAll(/<a\b[^>]*>/gi)) {
+  for (const m of linktree?[]:markup.matchAll(/<a\b[^>]*>/gi)) {
     const href = attr(m[0],'href');
-    if (!href) continue;
-    const target = spotifyButtonTarget(href,attr(m[0],'service'));
-    if (target) targets.push(target);
-    const safeTarget = musicPageUrl(href);
-    if (safeTarget && !targets.includes(safeTarget)) targets.push(safeTarget);
-    const youtube = referenceUrl(href,'youtube');
-    if (youtube) base.externalUrls.push(youtube);
+    if (href) addTarget(href,'anchor',attr(m[0],'service'));
+    // Linkfire service buttons can declare their outbound URL in data-link.
+    // Only an explicit Spotify button is eligible; never decode click scripts,
+    // arbitrary JSON, analytics endpoints or generic redirect query strings.
+    if(landingHost && attr(m[0],'data-service')==='spotify') {
+      const destination=attr(m[0],'data-link');
+      const spotify=spotifyContent(destination);
+      if(spotify) addTarget(spotify.url,'spotify_service_button');
+    }
+  }
+  if(landingHost) {
+    for(const m of markup.matchAll(/<iframe\b[^>]*>/gi)) {
+      const src=attr(m[0],'src');
+      const content=spotifyContent(src);
+      if(content && new URL(src).pathname.startsWith('/embed/')) {
+        addTarget(content.url,'spotify_embed');
+      }
+    }
   }
   if (linktree) {
     for (const data of scripts(html,tag=>attr(tag,'id')==='__NEXT_DATA__')) {
@@ -180,11 +216,7 @@ export function parsePublicMusicPage(sourceUrl, html, {status=200,location}={}) 
       while(pending.length&&inspected++<100) {
         const link=pending.shift();
         if(!link||typeof link!=='object') continue;
-        const spotify=spotifyContent(link.url);
-        const target=spotify?.url??musicPageUrl(link.url);
-        if(target) targets.push(target);
-        const youtube=referenceUrl(link.url,'youtube');
-        if(youtube) base.externalUrls.push(youtube);
+        if(typeof link.url==='string') addTarget(link.url,'declared_profile_link');
         if(Array.isArray(link.links)) pending.push(...link.links.slice(0,100-inspected));
       }
     }

@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Komi Spotify embed",
+    "url": "https://artist.komi.io/",
+    "html": "<iframe src=\"https://open.spotify.com/embed/artist/6rjRx8doaSSBvE6J4tvWL2?utm_source=generator\"></iframe>",
+    "kind": "spotify_embed"
+  },
+  {
+    "name": "Linkfire declared Spotify button",
+    "url": "https://artist.lnk.to/release",
+    "html": "<a href=\"#\" data-service=\"spotify\" data-link=\"https://open.spotify.com/artist/6rjRx8doaSSBvE6J4tvWL2?si=tracking\">Spotify</a>",
+    "kind": "spotify_service_button"
+  },
+  {
+    "name": "Hyperfollow artist link",
+    "url": "https://hyperfollow.com/artist",
+    "html": "<a href=\"https://open.spotify.com/artist/6rjRx8doaSSBvE6J4tvWL2?si=tracking&amp;utm_source=bio\">Listen</a>",
+    "kind": "anchor"
+  },
+  {
+    "name": "DistroKid Hyperfollow artist link",
+    "url": "https://distrokid.com/hyperfollow/artist/release",
+    "html": "<a class=\"service\" href=\"https://open.spotify.com/artist/6rjRx8doaSSBvE6J4tvWL2\">Spotify</a>",
+    "kind": "anchor"
+  },
+  {
+    "name": "Paa.ge music link",
+    "url": "https://paa.ge/artist/en",
+    "html": "<a href='https://open.spotify.com/artist/6rjRx8doaSSBvE6J4tvWL2'>Music</a>",
+    "kind": "anchor"
+  },
+  {
+    "name": "Bfan music link",
+    "url": "https://bfan.link/release",
+    "html": "<a href=\"https://open.spotify.com/artist/6rjRx8doaSSBvE6J4tvWL2\">Listen on Spotify</a>",
+    "kind": "anchor"
+  }
+]
