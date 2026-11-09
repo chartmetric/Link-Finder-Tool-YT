@@ -171,6 +171,21 @@ All requests and responses are archived separately under `generated-artifacts/in
 
 #### Music-path follow-through fixes
 
+##### Exact album-credit source investigation
+
+The subsequent read-only investigation found an existing exact-ID source on the `vert` service: `catalog.l_spotify_album_spotify_artist`, with album metadata in `catalog.spotify_album`. Evidence and source queries are archived under `generated-artifacts/instagram-album-source-investigation-2026-11-09/catalog-evidence.json`. Both tables were read with `FINAL`; all relationship rows for each requested album were examined before checking deletion/ambiguity.
+
+| Target | Linked album | Exact album ID | Active related Spotify artist ID |
+| --- | --- | --- | --- |
+| Billylildove | Succubus | `5mBygSc9qIZ1oTAnazLwmL` | `430ft5iRke01tvX74xVM8Z` |
+| The Format | Boycott Heaven | `4yMJnpezQRZr8MIkNUor1M` | `3ZJC8cLts8Q8s8JbNJKsLf` |
+
+Each album has exactly one active relationship, the album is active and not classified as a compilation, and the observed artist URL matches the target's saved catalog reference exactly. These are stored catalog relationships, not a fresh Spotify API response. Relationship timestamps are retained in the archive. They fill the missing music-ID connection, not proof that the Instagram account is owned by the artist.
+
+Spotify's official [Get Album](https://developer.spotify.com/documentation/web-api/reference/get-an-album) documentation also specifies an `artists` array containing exact artist IDs/URLs. That API requires authorization, but a new Spotify integration is unnecessary for these two already-covered catalog records. No paid searches, metadata calls, model calls, claims or database writes were performed.
+
+The investigation did not yet wire catalog reads into the pilot or replace a saved verifier decision. The integration should bind every lookup to a directly observed album URL or a preserved landing-page-to-album edge, keep catalog provenance separate from public-page evidence, reject missing/deleted/conflicting/multi-artist/compilation cases for automatic acceptance, and still require the independent artist-ownership decision. Never route the lookup result directly to live account/profile-link tables.
+
 The resolver now tries another directly source-linked path after a public-page failure, counts failed attempts against the same page allowance, and lets a later selected candidate use the artist's remaining shared allowance. Grouped Linktree link records are traversed, while whole-page navigation/promoted-profile anchors are excluded. Previously derived URLs cannot be reused as independent starting evidence.
 
 A bounded public-page diagnostic for Billylildove, JUNHEE and The Format is archived under `generated-artifacts/instagram-music-path-check-2026-11-09`, with album-parser follow-up under the sibling `-album-schema` directory. Seven original page requests, two additional schema-inspection requests and two follow-up album reads occurred (eleven public requests total, zero paid provider calls). The Format landing page was reused from its archived packet for the follow-up rather than fetched again. No fresh search, Instagram metadata, model decision, claim, database write or import occurred; conservative pilot funds remain $6.83.

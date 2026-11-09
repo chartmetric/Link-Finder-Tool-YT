@@ -110,3 +110,9 @@ A music landing page's global navigation and promoted profiles are not artist-de
 **Why:** A live Linktree check exposed unrelated creator profiles and site navigation as whole-page anchors. Following all allowlisted links would create false identity paths even though each host was safe to fetch.
 
 **How to apply:** Require profile-bound declared link records for Linktree traversal; domain safety is not ownership provenance. Keep generic related-artist references separate from exact credits, and do not infer ownership of a multi-track album from its title or one selected track. An unavailable path or missing credit ID remains unresolved, not evidence of account absence.
+
+Check existing exact catalog album-to-artist relationships before adding another credit provider or inferring album ownership from public embeds.
+
+**Why:** Public Spotify album embeds omitted usable artist IDs even though the existing music catalog already contained exact album-to-artist mappings matching the saved artist references. More public-page scraping was unnecessary for those music connections.
+
+**How to apply:** Inspect the current schema and bind lookup inputs to actual source-linked album IDs. Preserve catalog provenance and timestamps; exclude deleted, conflicting, multi-artist and compilation evidence from automatic acceptance. A matching music relationship supports identity verification but does not independently prove Instagram ownership or authorize ingestion.
