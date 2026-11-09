@@ -47,11 +47,16 @@ test("coverage SQL counts and pages share active, latest, platform-specific evid
     profile_types: i + 1 === 11 ? ["musician", "creator"] : [], updated_at: 1,
   }));
   const tiers = [
-    ...[1, 2, 5, 8, 9, 12].map(profile => ({ profile, profile_type: "brand", tier: 2 })),
-    { profile: 3, profile_type: "brand", tier: 4 },
-    { profile: 7, profile_type: "creator", tier: 3 },
-    { profile: 11, profile_type: "musician", tier: 1 },
-    { profile: 11, profile_type: "creator", tier: 5 },
+    ...[1, 2, 5, 8, 9, 12].map(profile => ({
+      profile, profile_type: "brand", tier: profile === 2 ? 6 : 2,
+      computed_at: 2, updated_at: 1,
+    })),
+    // ID 2's older global tier must not keep it in either tier bucket.
+    { profile: 2, profile_type: "brand", tier: 2, computed_at: 1, updated_at: 1 },
+    { profile: 3, profile_type: "brand", tier: 4, computed_at: 2, updated_at: 1 },
+    { profile: 7, profile_type: "creator", tier: 3, computed_at: 2, updated_at: 1 },
+    { profile: 11, profile_type: "musician", tier: 1, computed_at: 2, updated_at: 1 },
+    { profile: 11, profile_type: "creator", tier: 5, computed_at: 2, updated_at: 1 },
   ];
   const activeLinkedProfileIds = [1, 2, 3, 4, 5, 8, 9, 11, 12];
   const accountLinks = activeLinkedProfileIds.map((profileId, index) => ({
@@ -87,7 +92,8 @@ test("coverage SQL counts and pages share active, latest, platform-specific evid
       FROM (SELECT arrayJoin(JSONExtractArrayRaw({catalog:String})) AS row)) GROUP`)
     .replace("new_vertical.l_profile_tier", `(
       SELECT JSONExtractUInt(row, 'profile') AS profile, JSONExtractString(row, 'profile_type') AS profile_type,
-        JSONExtractUInt(row, 'tier') AS tier, 'global' AS grain, 1 AS computed_at, 1 AS updated_at
+        JSONExtractUInt(row, 'tier') AS tier, 'global' AS grain,
+        JSONExtractUInt(row, 'computed_at') AS computed_at, JSONExtractUInt(row, 'updated_at') AS updated_at
       FROM (SELECT arrayJoin(JSONExtractArrayRaw({tiers:String})) AS row))`);
   const params = {
     events: JSON.stringify(events.map(event => ({ ...event, data_json: JSON.parse(event.data_json) }))),
@@ -107,9 +113,10 @@ test("coverage SQL counts and pages share active, latest, platform-specific evid
   assert.equal(all.profilesWithLinksOrFullyResolved, 4); // ID 1 is both a candidate and fully resolved
   assert.equal(all.investigated, 8);
   assert.equal(all.uncoveredInvestigated, 7);
-  assert.equal(brand.buckets.find(b => b.group === "tiers_1_3")!.total, 6);
-  assert.equal(brand.buckets.find(b => b.group === "tiers_1_3")!.profilesWithActiveLinks, 6);
-  assert.equal(brand.buckets.find(b => b.group === "tiers_1_5")!.total, 7);
+  assert.equal(brand.buckets.find(b => b.group === "tiers_1_3")!.total, 5);
+  assert.equal(brand.buckets.find(b => b.group === "tiers_1_3")!.profilesWithActiveLinks, 5);
+  assert.equal(brand.buckets.find(b => b.group === "tiers_1_5")!.total, 6);
+  assert.equal(brand.buckets.find(b => b.group === "tiers_1_5")!.profilesWithActiveLinks, 6);
   const count = (platform: string, state: string) => all.platformBreakdown
     .find(p => p.platform === platform)!.states.find(s => s.state === state)!.count;
   assert.equal(count("TikTok", "likely_only"), 2);
