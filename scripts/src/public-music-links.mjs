@@ -69,6 +69,14 @@ export function isMusicLandingUrl(value) {
   return !content || content.type !== 'artist';
 }
 
+/** Only observed bio links may seed a path, never previously derived artist URLs.
+ * Spotify album/track shares use the same canonical embed reads as hub targets. */
+export function musicEvidenceSources(candidate) {
+  const direct = candidate.directExternalUrls
+    ?? (candidate.externalLinkEvidence ? [] : candidate.externalUrls ?? []);
+  return [...new Set(direct.map(value => isMusicLandingUrl(value) ? musicPageUrl(value) : null).filter(Boolean))];
+}
+
 function spotifyButtonTarget(href,service) {
   const direct = spotifyContent(href);
   if (direct) return direct.url;
@@ -138,7 +146,7 @@ export function parsePublicMusicPage(sourceUrl, html, {status=200,location}={}) 
       return m ? `https://open.spotify.com/artist/${m[1]}` : null;
     };
     const artists = entity.type==='artist' ? [artistUri(entity.uri)]
-      : Array.isArray(entity.artists) ? entity.artists.map(a=>artistUri(a.uri)) : [];
+      : Array.isArray(entity.artists) ? entity.artists.map(a=>artistUri(a?.uri)) : [];
     const artistUrls = artists.length && artists.every(Boolean) ? [...new Set(artists)] : [];
     // Album embeds can omit `artists` yet explicitly declare the artist URI
     // related to this exact album. Keep this relation distinct from credits and
@@ -155,7 +163,7 @@ export function parsePublicMusicPage(sourceUrl, html, {status=200,location}={}) 
       // A generic "related" artist is association, not a sole credited artist.
       // Retain it for diagnostics without satisfying the exact-link gate.
       externalUrls:artistUrls.length===1 ? artistUrls : [],
-      musicTargets:artistUrls.length===0 && singleTrack && idPattern.test(singleTrack)
+      musicTargets:artists.length===0 && singleTrack && idPattern.test(singleTrack)
         ? [`https://open.spotify.com/track/${singleTrack}`] : [],
       reason:artistUrls.length>1 ? 'Multiple credited artists; ownership remains ambiguous.'
         : relatedArtist ? 'Exact album declares a related artist ID; account ownership remains unassessed.'
@@ -238,11 +246,10 @@ export async function resolveMusicEvidence({candidate,catalog,readPage,lookupAlb
     throw new Error('Music evidence path must allow 1–4 pages, or zero public pages for catalog-only work.');
   }
   // Previously derived artist URLs cannot become independent starting evidence.
-  const direct=candidate.directExternalUrls??(candidate.externalLinkEvidence?[]:candidate.externalUrls??[]);
-  const sourceUrls = [...new Set(direct.map(value => isMusicLandingUrl(value) ? musicPageUrl(value) : null).filter(Boolean))];
+  const sourceUrls = musicEvidenceSources(candidate);
   const sourceUrl = sourceUrls[0];
   const evidence = {sourceUrl,sourceUrls,pages:[],attempts:[],externalUrls:[],status:'unresolved',ownershipConfirmed:false};
-  if (!sourceUrl) return {...evidence,reason:'No supported source-linked music landing page.'};
+  if (!sourceUrl) return {...evidence,reason:'No supported source-linked music landing page or release.'};
   const seen = new Set();
   const queue = sourceUrls.map(url => ({url,linkedFrom:null}));
   let catalogAttempts=0,pageLimitReached=false;

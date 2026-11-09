@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { catalogReferences, referenceUrl, instagramProfileUrl, hasCatalogCrossLink, assessInstagramCandidates } from './musician-instagram-matching.mjs';
 import { createPilotBudget } from './instagram-pilot-budget.mjs';
-import { isMusicLandingUrl, resolveMusicEvidence } from './public-music-links.mjs';
+import { musicEvidenceSources, resolveMusicEvidence } from './public-music-links.mjs';
 
 export function pilotPreflight(manifest) {
   if (!Number.isInteger(manifest.proposed_limits.artist_workers) || manifest.proposed_limits.artist_workers < 1
@@ -99,7 +99,7 @@ export async function runPilot({ manifest, journalPath, transport, evaluateRegre
           }
           const publicLimit=Math.min(4,manifest.proposed_limits.public_music_page_requests_per_artist??1);
           const remainingPages=publicLimit-(evidence.musicPagesAttempted??0);
-          if (instagramProfileUrl(candidate.url)===p.url && candidate.externalUrls?.some(isMusicLandingUrl)
+          if (instagramProfileUrl(candidate.url)===p.url && musicEvidenceSources(candidate).length
             && (remainingPages>0||transport.lookupAlbum)) {
             if(!candidate.externalLinkEvidence) candidate.directExternalUrls??=[...(candidate.externalUrls??[])];
             const hub = await resolveMusicEvidence({candidate,catalog:scope.reference,
@@ -111,7 +111,7 @@ export async function runPilot({ manifest, journalPath, transport, evaluateRegre
                 return call('public_page',{url});
               }});
             candidate.externalLinkEvidence = hub;
-            candidate.externalUrls = [...new Set([...candidate.externalUrls,...hub.externalUrls])];
+            candidate.externalUrls = [...new Set([...(candidate.externalUrls??[]),...hub.externalUrls])];
           }
           const linked = hasCatalogCrossLink(reference, candidate, p.url, scope.reference);
           profiles.push({ ...p, identityComparison: { reference, candidate, status: linked ? 'likely' : 'uncertain',

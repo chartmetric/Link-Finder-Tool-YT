@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {EventEmitter} from 'node:events';
 import {Readable} from 'node:stream';
-import {parsePublicMusicPage,resolveMusicEvidence,spotifyContent,musicPageUrl,isMusicLandingUrl} from './public-music-links.mjs';
+import {parsePublicMusicPage,resolveMusicEvidence,spotifyContent,musicPageUrl,isMusicLandingUrl,musicEvidenceSources} from './public-music-links.mjs';
 import {safeMusicFetch,isPublicIPv4} from './safe-music-fetch.mjs';
 import {instagramSearchCandidates} from './instagram-search-clues.mjs';
 import {createLiveTransport} from './instagram-pilot-live-transport.mjs';
@@ -233,6 +233,120 @@ test('direct Spotify release bio links are resolved and exact IDs outrank unrela
   assert.deepEqual(result.externalUrls,[catalog.url]);
   assert.equal(visited.length,2);
   assert.ok(visited.every(url=>!url.includes('tracking')));
+});
+
+test('direct album and track fixtures require exact content and sole credited IDs, never similar names or associations',async()=>{
+  const other='0123456789ABCDEFGHIJKL';
+  const credit=uri=>({name:'Frankelly Bello',uri:`spotify:artist:${uri}`});
+  const cases=[
+    {name:'matching album',type:'album',id:albumId,fields:{artists:[credit(artistId)]},exact:true},
+    {name:'matching track',type:'track',id:trackId,fields:{artists:[credit(artistId)]},exact:true},
+    {name:'same name, wrong ID',type:'album',id:albumId,fields:{artists:[credit(other)]}},
+    {name:'collaboration album',type:'album',id:albumId,fields:{artists:[credit(artistId),credit(other)]}},
+    {name:'collaboration track',type:'track',id:trackId,fields:{artists:[credit(artistId),credit(other)]}},
+    {name:'foreign content',type:'track',id:trackId,responseId:other,fields:{artists:[credit(artistId)]}},
+    {name:'related artist only',type:'album',id:albumId,fields:{relatedEntityUri:`spotify:artist:${artistId}`}},
+    {name:'multiple tracks without credits',type:'album',id:albumId,
+      fields:{trackList:[{uri:`spotify:track:${trackId}`},{uri:`spotify:track:${other}`}]}},
+    {name:'invalid explicit credits cannot select a track',type:'album',id:albumId,
+      fields:{artists:[credit('invalid')],trackList:[{uri:`spotify:track:${trackId}`}]}},
+    {name:'partial credits cannot select a track',type:'album',id:albumId,
+      fields:{artists:[credit(artistId),null],trackList:[{uri:`spotify:track:${trackId}`}]}},
+  ];
+  for(const fixture of cases) {
+    const source=`https://open.spotify.com/intl-es/${fixture.type}/${fixture.id}?si=tracking#bio`;
+    const expected=`https://open.spotify.com/embed/${fixture.type}/${fixture.id}`;
+    const visited=[];
+    const result=await resolveMusicEvidence({candidate:{directExternalUrls:[source],externalUrls:[hubUrl]},
+      catalog,readPage:async url=>{
+        visited.push(url);
+        return parsePublicMusicPage(url,embed(fixture.type,fixture.responseId??fixture.id,fixture.fields));
+      }});
+    assert.deepEqual(visited,[expected],fixture.name);
+    assert.equal(result.status,fixture.exact?'exact_catalog_music_identity':'unresolved',fixture.name);
+    assert.deepEqual(result.externalUrls,fixture.exact?[catalog.url]:[],fixture.name);
+    assert.equal(result.ownershipConfirmed,false,fixture.name);
+    assert.equal(result.pages[0].linkedFrom,null,fixture.name);
+    assert.deepEqual(result.sourceUrls,[expected],fixture.name);
+  }
+});
+
+test('source selection uses explicit direct provenance and deduplicates release share aliases',()=>{
+  const share=`https://open.spotify.com/album/${albumId}?si=tracking`;
+  const canonical=`https://open.spotify.com/embed/album/${albumId}`;
+  assert.deepEqual(musicEvidenceSources({directExternalUrls:[share,canonical,catalog.url],
+    externalUrls:[hubUrl],externalLinkEvidence:{status:'unresolved'}}),[canonical]);
+  assert.deepEqual(musicEvidenceSources({directExternalUrls:[],externalUrls:[share]}),[]);
+  assert.deepEqual(musicEvidenceSources({externalUrls:[share],externalLinkEvidence:{status:'unresolved'}}),[]);
+});
+
+test('direct album single-track path needs separate reads and cannot escape its page budget',async()=>{
+  const source=`https://open.spotify.com/album/${albumId}`;
+  for(const maxPages of [1,2]) {
+    const visited=[];
+    const result=await resolveMusicEvidence({candidate:{externalUrls:[source]},catalog,maxPages,readPage:async url=>{
+      visited.push(url);return parsePublicMusicPage(url,pages[url]);
+    }});
+    assert.equal(visited.length,maxPages);
+    assert.equal(result.status,maxPages===2?'exact_catalog_music_identity':'unresolved');
+    assert.equal(result.ownershipConfirmed,false);
+    if(maxPages===1) assert.match(result.reason,/limit/);
+    else assert.equal(result.pages[1].linkedFrom,`https://open.spotify.com/embed/album/${albumId}`);
+  }
+});
+
+test('pilot admits direct bio release reads separately, retains JEV gate and never expands existing caps',async t=>{
+  const album=`https://open.spotify.com/album/${albumId}?si=bio`;
+  const first=`https://open.spotify.com/embed/album/${albumId}`;
+  const second=`https://open.spotify.com/embed/track/${trackId}`;
+  const cases=[
+    {name:'verified',perArtist:4,total:5,aggregate:4,verdict:'verified',expected:[first,second],exact:true,accepted:true},
+    {name:'JEV uncertain',perArtist:4,total:5,aggregate:4,verdict:'uncertain',expected:[first,second],exact:true},
+    {name:'JEV mismatch',perArtist:4,total:5,aggregate:4,verdict:'mismatch',expected:[first,second],exact:true},
+    {name:'old one-page allowance',total:5,aggregate:4,verdict:'verified',expected:[first]},
+    {name:'shared total exhausted by reference',perArtist:4,total:1,aggregate:4,verdict:'verified',expected:[]},
+    {name:'aggregate music cap',perArtist:4,total:5,aggregate:1,verdict:'verified',expected:[first]},
+  ];
+  for(const c of cases) {
+    const m=manifest();
+    m.proposed_limits.jev_max_input_tokens_per_request=20000;
+    if(c.perArtist) m.proposed_limits.public_music_page_requests_per_artist=c.perArtist;
+    else delete m.proposed_limits.public_music_page_requests_per_artist;
+    m.proposed_limits.public_http_requests_total=c.total;
+    m.proposed_limits.public_official_or_linkhub_page_requests_total=c.aggregate;
+    const journalPath=path.join(await temp(t),'journal.jsonl');
+    const reads=[],admitted=[],jevCandidates=[];
+    const result=await runFixturePilot({manifest:m,journalPath,evaluateRegressions:async()=>true,
+      transport:{fixture:true,dispatch:async({kind,key,payload})=>{
+        if(kind==='spotify_oembed')return {...catalog,displayName:'Frankelly Bello'};
+        if(kind==='serper')return {profiles:[{url:ig,title:'Frankelly Bello'}],
+          methodsUsed:[{method:'serper',status:'used'}]};
+        // No flattened externalUrls: the original bio provenance alone is sufficient.
+        if(kind==='scrapecreators_candidate')return {url:ig,displayName:'Frankelly Bello',directExternalUrls:[album]};
+        if(kind==='public_page') {
+          reads.push(payload.url);
+          const rows=(await fs.readFile(journalPath,'utf8')).trim().split('\n').map(JSON.parse);
+          admitted.push(rows.some(row=>row.phase==='admitted'&&row.kind==='public_page'&&row.key===key));
+          return parsePublicMusicPage(payload.url,pages[payload.url]);
+        }
+        if(kind==='jev') {
+          jevCandidates.push(payload.profiles[0].identityComparison.candidate);
+          return [{url:ig,jevVerification:{verdict:c.verdict,sameIdentityProbability:0.99}}];
+        }
+        throw Error(`Unexpected kind ${kind}`);
+      }}});
+    assert.deepEqual(reads,c.expected,c.name);
+    assert.ok(admitted.every(Boolean),c.name);
+    assert.equal(jevCandidates.length,1,c.name);
+    const candidate=jevCandidates[0];
+    assert.deepEqual(candidate.directExternalUrls,[album],c.name);
+    assert.equal(candidate.externalLinkEvidence.ownershipConfirmed,false,c.name);
+    assert.equal(candidate.externalLinkEvidence.status,c.exact?'exact_catalog_music_identity':'unresolved',c.name);
+    assert.deepEqual(result.results[0].urls,c.accepted?[ig]:[],c.name);
+    assert.equal(result.results[0].approvedCatalogLinks,false,c.name);
+    assert.equal(result.claimsSubmitted,0);
+    assert.equal(result.databaseWrites,0);
+  }
 });
 
 test('landing pages expose bounded Spotify and YouTube video links; video owner IDs are exact references',async()=>{
