@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { validatePlayers, candidateUrls, processQueue, initialState, researchTiers, selectionForTiers, selectionAtSnapshot, researchWorkers, admittedProfileIds, rerunNoCandidateProfiles } from './musician-instagram-research.mjs';
+import {
+  bioMusicLinks, catalogMusicIdentity, directMusicLinks, isAllowedPublicProfileUrl,
+  linktreeUrls, verifyMusicLinkEvidence,
+} from './musician-instagram-identity-verification.mjs';
 import { readFileSync } from 'node:fs';
 
 const referenceUrl = 'https://open.spotify.com/artist/0123456789ABCDEFGHIJKL';
@@ -214,4 +218,59 @@ test('failed admission prevents any paid request and a failed result save never 
     save: async (p, status) => { if (status !== 'running') throw new Error('result storage down'); },
     search: async () => { dispatched++; return success; } }), /result storage down/);
   assert.equal(dispatched, 1);
+});
+
+test('music identities require exact Spotify artist or Apple Music artist destination IDs', () => {
+  const spotifyId = '4NHQUGzhtTLFvgF5SZesLK';
+  const appleId = '1234567890';
+  assert.equal(catalogMusicIdentity('spotify', `https://open.spotify.com/artist/${spotifyId}`)?.id, spotifyId);
+  assert.equal(catalogMusicIdentity('apple_music', `https://music.apple.com/us/artist/name/id${appleId}`)?.id, appleId);
+  assert.equal(catalogMusicIdentity('spotify', `https://open.spotify.com/artist/${spotifyId.slice(1)}`), null);
+  assert.equal(catalogMusicIdentity('spotify', 'https://open.spotify.com/user/similar-handle'), null);
+  assert.equal(catalogMusicIdentity('instagram', `https://open.spotify.com/artist/${spotifyId}`), null);
+});
+
+test('bio and Linktree evidence is extracted from escaped public-page URLs', () => {
+  const html = String.raw`<meta content="https:\/\/linktr.ee\/example" /><a href="https://open.spotify.com/artist/4NHQUGzhtTLFvgF5SZesLK?si=abc">`;
+  const links = bioMusicLinks(html);
+  assert.equal(links.length, 2);
+  assert.equal(linktreeUrls(links).length, 1);
+  assert.equal(directMusicLinks(links).length, 1);
+  assert.ok(isAllowedPublicProfileUrl('https://www.instagram.com/example.artist/'));
+  assert.ok(isAllowedPublicProfileUrl('https://linktr.ee/example'));
+  assert.ok(!isAllowedPublicProfileUrl('https://evil.example/'));
+});
+
+test('verification accepts exact account IDs but leaves conflicts and insufficient evidence unverified', () => {
+  const spotifyId = '4NHQUGzhtTLFvgF5SZesLK';
+  const appleId = '1234567890';
+  const accounts = [
+    { account_id: '456', platform: 'spotify', account_url: `https://open.spotify.com/artist/${spotifyId}` },
+    { account_id: '789', platform: 'apple_music', account_url: `https://music.apple.com/us/artist/name/id${appleId}` },
+  ];
+  assert.equal(verifyMusicLinkEvidence({
+    links: [{ sourceUrl: 'https://www.instagram.com/artist/', url: `https://open.spotify.com/artist/${spotifyId}` }],
+    catalogAccounts: accounts,
+  }).identityStatus, 'verified');
+  assert.equal(verifyMusicLinkEvidence({
+    links: [{ sourceUrl: 'https://linktr.ee/artist', url: 'https://music.apple.com/us/artist/other/id9876543210' }],
+    catalogAccounts: accounts,
+  }).identityStatus, 'conflicting');
+  const mixed = verifyMusicLinkEvidence({
+    links: [
+      { sourceUrl: 'https://www.instagram.com/artist/', url: `https://open.spotify.com/artist/${spotifyId}` },
+      { sourceUrl: 'https://linktr.ee/artist', url: 'https://music.apple.com/us/artist/other/id9876543210' },
+    ],
+    catalogAccounts: accounts,
+  });
+  assert.equal(mixed.identityStatus, 'conflicting');
+  assert.equal(mixed.evidence.filter(item => item.outcome === 'exact_match').length, 1);
+  assert.equal(verifyMusicLinkEvidence({
+    links: [{ sourceUrl: 'https://www.instagram.com/producer/', url: 'https://example.com/producer' }],
+    catalogAccounts: accounts,
+  }).identityStatus, 'insufficient');
+  assert.equal(verifyMusicLinkEvidence({
+    links: [{ sourceUrl: 'https://linktr.ee/artist', url: `https://open.spotify.com/artist/${spotifyId}` }],
+    catalogAccounts: [],
+  }).identityStatus, 'insufficient');
 });

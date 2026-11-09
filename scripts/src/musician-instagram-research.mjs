@@ -3,6 +3,10 @@ import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assessInstagramCandidates, instagramSearchRequest, MATCHING_POLICY } from './musician-instagram-matching.mjs';
+import {
+  bioMusicLinks, directMusicLinks, isAllowedPublicProfileUrl,
+  linktreeUrls, verifyMusicLinkEvidence,
+} from './musician-instagram-identity-verification.mjs';
 
 export function researchTiers(args = []) {
   const option = args.find(arg => arg.startsWith('--tiers='));
@@ -42,7 +46,9 @@ function rerunDirectory(runId) {
   if (!/^[0-9a-f-]{36}$/i.test(runId)) throw new Error('A valid --run-id is required for this rerun.');
   return `generated-artifacts/musician-instagram-rerun-no-candidates-${runId}`;
 }
-if (requestedRunId && !rerunNoCandidates) throw new Error('--run-id is only valid with --rerun-no-candidates.');
+if (requestedRunId && !rerunNoCandidates && process.argv[2] !== 'verify') {
+  throw new Error('--run-id is only valid with --rerun-no-candidates or verify.');
+}
 if (rerunNoCandidates && ['run', 'status'].includes(process.argv[2]) && !requestedRunId) {
   throw new Error('--run-id from the prepare output is required for this rerun.');
 }
@@ -52,6 +58,8 @@ let directory = rerunNoCandidates
 const events = 'poc_new_verticals.musician_instagram_discovery_events';
 const runs = 'poc_new_verticals.musician_instagram_discovery_runs';
 const lookup = 'poc_new_verticals.musician_instagram_lookup';
+const verificationEvents = 'poc_new_verticals.musician_instagram_verification_events';
+const verificationLookup = 'poc_new_verticals.musician_instagram_verification_lookup';
 const stamp = () => new Date().toISOString().replace('T', ' ').replace('Z', '');
 const quote = value => `'${String(value).replaceAll('\\', '\\\\').replaceAll("'", "\\'")}'`;
 
@@ -97,6 +105,23 @@ async function setup() {
       FROM ${events}
     ) AS source
     GROUP BY source.profile_id`);
+  await sql(`CREATE TABLE IF NOT EXISTS ${verificationEvents} (
+    verification_run_id UUID, discovery_run_id UUID, profile_id UInt64, cm_artist UInt64,
+    account_ids Array(UInt64), candidate_url String, updated_at DateTime64(3, 'UTC'),
+    identity_status LowCardinality(String), evidence_json String, error String
+  ) ENGINE = MergeTree ORDER BY (profile_id, discovery_run_id, candidate_url, updated_at)`);
+  await sql(`CREATE VIEW IF NOT EXISTS ${verificationLookup} AS
+    SELECT profile_id, discovery_run_id, candidate_url,
+      latest.1 AS cm_artist, latest.2 AS account_ids, latest.3 AS identity_status,
+      latest.4 AS evidence_json, latest.5 AS error,
+      latest.6 AS verification_run_id, latest.7 AS updated_at
+    FROM (
+      SELECT profile_id, discovery_run_id, candidate_url,
+        argMax(tuple(cm_artist, account_ids, identity_status, evidence_json, error,
+          verification_run_id, updated_at), updated_at) AS latest
+      FROM ${verificationEvents}
+      GROUP BY profile_id, discovery_run_id, candidate_url
+    )`);
 }
 
 export function validatePlayers(players, { allowMissingArtist = false } = {}) {
@@ -284,6 +309,137 @@ export async function processQueue({ players, save, search, workers = 4, shouldS
   return { stopped: stopped || shouldStop(), finished };
 }
 
+async function fetchPublicPage(inputUrl) {
+  if (!isAllowedPublicProfileUrl(inputUrl)) throw new Error('Only public Instagram and Linktree pages can be fetched.');
+  let current = inputUrl;
+  for (let redirectCount = 0; redirectCount <= 3; redirectCount++) {
+    const response = await fetch(current, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ProfileEvidenceCheck/1.0)', Accept: 'text/html' },
+      redirect: 'manual',
+      signal: AbortSignal.timeout(15000),
+    });
+    if ([301, 302, 303, 307, 308].includes(response.status)) {
+      const location = response.headers.get('location');
+      if (!location) throw new Error(`Public page redirect from ${current} had no destination.`);
+      current = new URL(location, current).href;
+      if (!isAllowedPublicProfileUrl(current)) throw new Error('Public page redirected outside Instagram or Linktree.');
+      continue;
+    }
+    if (!response.ok) throw new Error(`Public page HTTP ${response.status} for ${current}.`);
+    const type = response.headers.get('content-type') ?? '';
+    if (!type.toLowerCase().includes('text/html')) throw new Error(`Public page was not HTML (${current}).`);
+    const body = await response.text();
+    if (body.length > 5_000_000) throw new Error(`Public page exceeded the 5 MB verification limit (${current}).`);
+    return { url: current, html: body };
+  }
+  throw new Error(`Too many public page redirects from ${inputUrl}.`);
+}
+
+async function verifyCandidate(candidate, catalogAccounts) {
+  const page = await fetchPublicPage(candidate.candidate_url);
+  const extracted = bioMusicLinks(page.html);
+  const direct = directMusicLinks(extracted).map(url => ({ sourceUrl: page.url, url }));
+  const linktrees = linktreeUrls(extracted).slice(0, 3);
+  const errors = [];
+  for (const linktree of linktrees) {
+    try {
+      const linkedPage = await fetchPublicPage(linktree);
+      direct.push(...directMusicLinks(bioMusicLinks(linkedPage.html))
+        .map(url => ({ sourceUrl: linkedPage.url, url })));
+    } catch (error) {
+      errors.push(`${linktree}: ${error.message}`);
+    }
+  }
+  const result = verifyMusicLinkEvidence({ links: direct, catalogAccounts });
+  return {
+    ...result,
+    evidence: result.evidence.map(item => ({
+      ...item,
+      instagramUrl: candidate.candidate_url,
+    })),
+    ...(errors.length ? { linktreeErrors: errors } : {}),
+    checkedPages: [page.url, ...linktrees],
+  };
+}
+
+async function verifyCandidates() {
+  const option = cliArgs.find(arg => arg.startsWith('--run-id='));
+  const discoveryRunId = option?.slice('--run-id='.length);
+  if (!/^[0-9a-f-]{36}$/i.test(discoveryRunId ?? '')) {
+    throw new Error('Verification requires --run-id=<discovery UUID>; no paid provider is called.');
+  }
+  const verificationRunId = randomUUID();
+  await setup();
+  const discovered = await select(`SELECT toString(profile_id) AS profile_id,
+      toString(latest.1) AS cm_artist, latest.2 AS account_ids,
+      latest.3 AS status, latest.4 AS instagram_urls
+    FROM (
+      SELECT profile_id, argMax(tuple(cm_artist, account_ids, status, instagram_urls), updated_at) AS latest
+      FROM ${events} WHERE run_id=${quote(discoveryRunId)} GROUP BY profile_id
+    )
+    WHERE status='candidates_found' AND notEmpty(instagram_urls)
+    ORDER BY profile_id`);
+  if (!discovered.length) throw new Error('No saved Instagram candidates found for that discovery run.');
+  const allAccountIds = [...new Set(discovered.flatMap(row => row.account_ids.map(String)))];
+  const catalogById = new Map();
+  for (let start = 0; start < allAccountIds.length; start += 1000) {
+    const ids = allAccountIds.slice(start, start + 1000).join(',');
+    for (const account of await select(`SELECT toString(id) AS account_id, platform, account_url
+      FROM new_vertical.account FINAL WHERE id IN (${ids})`)) {
+      catalogById.set(String(account.account_id), account);
+    }
+  }
+  const directory = `generated-artifacts/musician-instagram-verification-${verificationRunId}`;
+  await fs.mkdir(directory, { recursive: false });
+  await fs.writeFile(`${directory}/manifest.json`, JSON.stringify({
+    verificationRunId, discoveryRunId, createdAt: new Date().toISOString(),
+    method: 'Public Instagram bio and Linktree link inspection; exact Spotify/Apple Music artist ID comparison.',
+    paidProvidersCalled: false, discoveryHistoryModified: false, profiles: discovered.length,
+  }, null, 2), { flag: 'wx' });
+  const saved = [];
+  for (const row of discovered) {
+    const accountIds = row.account_ids.map(String);
+    const accounts = accountIds.map(id => catalogById.get(id)).filter(Boolean);
+    for (const candidateUrl of row.instagram_urls) {
+      let identityStatus = 'insufficient', evidence = {}, error = '';
+      const candidate = { ...row, candidate_url: candidateUrl };
+      try {
+        const result = await verifyCandidate(candidate, accounts);
+        identityStatus = result.identityStatus;
+        evidence = result;
+      } catch (failure) {
+        error = failure.message;
+        evidence = { method: 'public-page-link-inspection', checkedPages: [candidateUrl], matches: [] };
+      }
+      const eventRow = {
+        verification_run_id: verificationRunId, discovery_run_id: discoveryRunId,
+        profile_id: row.profile_id, cm_artist: row.cm_artist, account_ids: accountIds,
+        candidate_url: candidateUrl, updated_at: stamp(), identity_status: identityStatus,
+        evidence_json: JSON.stringify(evidence), error,
+      };
+      await insert(verificationEvents, [eventRow]);
+      saved.push({
+        profile_id: row.profile_id, cm_artist: row.cm_artist, account_ids: accountIds,
+        candidate_url: candidateUrl, identity_status: identityStatus, evidence, error,
+      });
+      console.log(JSON.stringify({ verificationRunId, profileId: row.profile_id,
+        candidateUrl, identityStatus, error }));
+    }
+  }
+  const csv = [['profile_id', 'cm_artist', 'account_ids', 'candidate_url', 'identity_status', 'evidence_json', 'error'],
+    ...saved.map(row => [row.profile_id, row.cm_artist, row.account_ids.join(' | '), row.candidate_url,
+      row.identity_status, JSON.stringify(row.evidence), row.error])];
+  await fs.writeFile(`${directory}/${verificationRunId}.csv`,
+    csv.map(row => row.map(value => `"${String(value ?? '').replaceAll('"', '""')}"`).join(',')).join('\n') + '\n',
+    { flag: 'wx' });
+  await fs.writeFile(`${directory}/summary.json`, JSON.stringify({
+    verificationRunId, discoveryRunId, candidates: saved.length,
+    counts: Object.fromEntries(['verified', 'conflicting', 'insufficient'].map(status =>
+      [status, saved.filter(row => row.identity_status === status).length])),
+    verificationLookup,
+  }, null, 2), { flag: 'wx' });
+}
+
 async function run() {
   const accepted = JSON.parse(await fs.readFile(`${directory}/accepted.json`, 'utf8'));
   const { runId } = accepted;
@@ -384,5 +540,6 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   if (command === 'prepare') await prepare();
   else if (command === 'run') await run();
   else if (command === 'status') await report(JSON.parse(await fs.readFile(`${directory}/accepted.json`, 'utf8')));
-  else throw new Error('Usage: musician-instagram-research.mjs prepare | run | status [--tiers=1,2,3,4,5] [--latest-snapshot] [--workers=5] [--rerun-no-candidates] [--run-id=UUID]');
+  else if (command === 'verify') await verifyCandidates();
+  else throw new Error('Usage: musician-instagram-research.mjs prepare | run | status | verify --run-id=DISCOVERY_UUID [--tiers=1,2,3,4,5] [--latest-snapshot] [--workers=5] [--rerun-no-candidates]');
 }
