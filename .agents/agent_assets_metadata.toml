@@ -350,3 +350,17 @@ mtime_ms = 1794250793542
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/10436bfe-659a-4329-ac42-07d628730280/604083ea-ce75-4bfc-beff-79871213a797"
 storage_version_token = "1794250808278380"
 content_type = "text/csv"
+
+[[outputs]]
+id = "HukTRUKntMfqjr3ub-7G4"
+uri = "file://scripts/INSTAGRAM_SOURCE_POLICY_VALIDATION.md"
+type = "text"
+title = "Offline Policy Validation Plan"
+description = "Implemented test-only rule, safeguards, unresolved settings, and proposed criteria before any real-data pilot. No live changes or paid calls."
+logical_id = "6a0561f6-b335-42b8-9eca-efbafa06e3bb"
+content_hash = "sha256:25597e29d031c9c47c6446f2ab3e1a68f63faae38bad2a33878f7f7809508b6f"
+size = 7370
+mtime_ms = 1794252683996
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/6a0561f6-b335-42b8-9eca-efbafa06e3bb/ac737439-79e8-474d-b379-30b799031fa5"
+storage_version_token = "1794252795757381"
+content_type = "text/markdown"

@@ -5,6 +5,10 @@
 This draft changes no current decision, threshold, coverage count, export or stored link.
 It authorizes no searches, paid tests, imports or full reruns.
 
+An isolated offline contract harness and proposed validation checklist are now
+available in [INSTAGRAM_SOURCE_POLICY_VALIDATION.md](./INSTAGRAM_SOURCE_POLICY_VALIDATION.md).
+This does not approve or enable the proposed production policy.
+
 ## Goal
 
 Recognize real artist accounts without accepting another artist, label, festival,
