@@ -8,7 +8,9 @@ import {createLiveTransport} from './instagram-pilot-live-transport.mjs';
 import {createCatalogAlbumLookup} from './catalog-album-evidence.mjs';
 import {catalogReferences} from './musician-instagram-matching.mjs';
 
-const output='generated-artifacts/instagram-bulk-shadow-2026-11-09-approved-50';
+const newBatch=process.argv.includes('--approved-250');
+const batchApproval=Object.freeze({runId:'instagram-tiers-1-5-approved-250-usd20',maxArtists:250,maxSpendCents:2000});
+const output=newBatch?'generated-artifacts/instagram-bulk-shadow-approved-250-usd20':'generated-artifacts/instagram-bulk-shadow-2026-11-09-approved-50';
 const lockPath='generated-artifacts/instagram-original-pilot-budget.lock';
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const save=(p,value)=>fs.writeFile(p,JSON.stringify(value,null,2),{flag:'wx'});
@@ -66,8 +68,11 @@ async function select(query){
   return(await r.json()).data;
 }
 
-export function buildShadowManifest(rows,accounts,snapshotAt,audit){
-  if(!rows.length||rows.length>50||audit.reservedCents+500>1000)throw Error('Empty/oversized cohort or insufficient original budget.');
+export function buildShadowManifest(rows,accounts,snapshotAt,audit,approval){
+  if(approval&&(approval.runId!==batchApproval.runId||approval.maxArtists!==250||approval.maxSpendCents!==2000))
+    throw Error('Unknown separate batch authorization.');
+  const maxArtists=approval?.maxArtists??50,maxSpendCents=approval?.maxSpendCents??500;
+  if(!rows.length||rows.length>maxArtists||(!approval&&audit.reservedCents+500>1000))throw Error('Empty/oversized cohort or insufficient original budget.');
   const excluded=new Set(audit.entries.flatMap(e=>e.profileIds));
   const artists=rows.map(row=>{
     const a=accounts.filter(a=>String(a.profile_id)===String(row.profile_id));
@@ -80,8 +85,9 @@ export function buildShadowManifest(rows,accounts,snapshotAt,audit){
       ||a.some(a=>a.platform==='instagram'))throw Error('Cohort identity/reference/history changed; no paid launch.');
     return artist;
   });
-  const manifest={run_allowed:true,authorization:{approved:true,approvedBy:'user',maxSpendCents:500,
-    purpose:'One up-to-50-artist research-only workflow pilot, five workers; no imports or experimental acceptance.',
+  const manifest={run_allowed:true,authorization:{approved:true,approvedBy:'user',maxSpendCents,
+    ...(approval?{separateBatchApproval:{...approval}}:{}),
+    purpose:`One up-to-${maxArtists}-artist research-only batch, five workers; no imports or experimental acceptance.`,
     priorReservedCents:audit.reservedCents,originalPilotCapCents:1000,snapshotAt,
     historicalReservationsFingerprint:audit.fingerprint},
     artists,proposed_limits:{artist_workers:5,eligible_artists_before_prerequisite_fixes:artists.length,
@@ -91,15 +97,15 @@ export function buildShadowManifest(rows,accounts,snapshotAt,audit){
       public_spotify_oembed_requests_total:artists.length,public_official_or_linkhub_page_requests_total:artists.length*2,
       public_music_page_requests_per_artist:2,public_http_requests_total:artists.length*3,
       global_concurrent_provider_requests:5,per_request_timeout_seconds:25,per_artist_wall_time_seconds:180,
-      job_wall_time_minutes:15,jev_max_input_tokens_per_request:6000,jev_max_output_tokens_per_request:1000},
-    selection:{method:'Current global tiers; deterministic profile hash; up to ten per tier; linked Spotify, no catalog Instagram, no uncertain saved discovery or prior pilot admission.',
+      job_wall_time_minutes:approval?60:15,jev_max_input_tokens_per_request:6000,jev_max_output_tokens_per_request:1000},
+    selection:{method:'Current global tiers; deterministic profile hash balanced across available tiers; linked Spotify, no catalog Instagram, no uncertain saved discovery or prior pilot admission. Previously processed pilot results retained without repeat calls.',
       experimentalAcceptanceEnabled:false,claimsAllowed:false,fullTierRerun:false}};
   pilotPreflight(manifest);return manifest;
 }
 
 async function prepare(){
   const audit=await reconcileReservations();
-  if(audit.reservedCents+500>1000)throw Error('Original pilot budget cannot accommodate the approved cap.');
+  if(!newBatch&&audit.reservedCents+500>1000)throw Error('Original pilot budget cannot accommodate the approved cap.');
   const excluded=[...new Set(audit.entries.flatMap(e=>e.profileIds))];
   if(excluded.some(id=>!/^\d+$/.test(id)))throw Error('Invalid historical profile identity.');
   const [snapshot]=await select(`SELECT toString(max(computed_at)) snapshot_at,
@@ -121,14 +127,14 @@ async function prepare(){
     AND p.id NOT IN (SELECT profile_id FROM poc_new_verticals.musician_instagram_discovery_events
       GROUP BY profile_id HAVING argMax(status,updated_at) NOT IN ('candidates_found','no_candidates'))
     ${excluded.length?`AND p.id NOT IN (${excluded.join(',')})`:''}
-    ORDER BY tier,cityHash64(toString(p.id)) LIMIT 10 BY tier`;
+    ${newBatch?"ORDER BY row_number() OVER (PARTITION BY tier ORDER BY cityHash64(toString(p.id))),tier LIMIT 250":"ORDER BY tier,cityHash64(toString(p.id)) LIMIT 10 BY tier"}`;
   const rows=await select(query);
   if(!rows.length||rows.some(r=>!/^\d+$/.test(String(r.profile_id))))throw Error('No valid eligible cohort.');
   const accounts=await select(`SELECT toString(l.profile_id) profile_id,toString(l.account_id) account_id,
     a.platform,a.account_url FROM new_vertical.l_profile_account AS l FINAL
     INNER JOIN (SELECT id,platform,account_url FROM new_vertical.account FINAL WHERE is_active=1) a ON a.id=l.account_id
     WHERE l.disconnected_at IS NULL AND l.profile_id IN (${rows.map(r=>r.profile_id).join(',')})`);
-  const manifest=buildShadowManifest(rows,accounts,snapshot.snapshot_at,audit);
+  const manifest=buildShadowManifest(rows,accounts,snapshot.snapshot_at,audit,newBatch?batchApproval:undefined);
   await fs.mkdir(output,{recursive:false});
   await save(`${output}/reservation-reconciliation.json`,audit);
   await save(`${output}/approved-manifest.json`,manifest);
@@ -136,7 +142,8 @@ async function prepare(){
   await save(`${output}/preflight.json`,pilotPreflight(manifest));
   console.log(JSON.stringify({prepared:true,artists:rows.length,
     tiers:Object.fromEntries([1,2,3,4,5].map(t=>[t,rows.filter(r=>Number(r.tier)===t).length])),
-    priorReservedUsd:audit.reservedCents/100,approvedCapUsd:5,remainingOriginalAfterMaxAllocationUsd:(500-audit.reservedCents)/100,
+    priorReservedUsd:audit.reservedCents/100,approvedCapUsd:manifest.authorization.maxSpendCents/100,
+    separateAuthorization:newBatch,
     output,paidCalls:0}));
 }
 async function run(){
@@ -145,7 +152,8 @@ async function run(){
   const receipt=await read(`${output}/manifest-receipt.json`);
   if(hash(JSON.stringify(manifest))!==receipt.sha256)throw Error('Frozen manifest changed; no paid launch.');
   if((await reconcileReservations()).fingerprint!==audit.fingerprint)throw Error('Reservation history changed; no paid launch.');
-  if(manifest.authorization?.maxSpendCents!==500||manifest.artists.length>50
+  if(manifest.authorization?.maxSpendCents!==(newBatch?2000:500)||manifest.artists.length>(newBatch?250:50)
+    ||(newBatch&&JSON.stringify(manifest.authorization.separateBatchApproval)!==JSON.stringify(batchApproval))
     ||manifest.artists.some(a=>a.bucket!=='automatic_shadow_cohort'))throw Error('Unexpected approved scope.');
   const keys=Object.fromEntries(['SERPERDEV_API_KEY','SCRAPECREATORS_API_KEY','OPENROUTER_API_KEY'].map(k=>{
     if(!process.env[k])throw Error(`Missing secret: ${k}`);return[k,process.env[k]];
@@ -153,8 +161,9 @@ async function run(){
   const lock=await fs.open(lockPath,'wx');
   let journal;
   try{
-    await lock.writeFile(JSON.stringify({output,priorReservedCents:audit.reservedCents,maxAdditionalCents:500,
-      originalCapCents:1000,at:new Date().toISOString()}));await lock.sync();
+    await lock.writeFile(JSON.stringify({output,priorReservedCents:audit.reservedCents,
+      maxAdditionalCents:manifest.authorization.maxSpendCents,separateAuthorization:newBatch,
+      at:new Date().toISOString()}));await lock.sync();
     await fs.mkdir(`${output}/responses`);
     journal=await fs.open(`${output}/results.jsonl`,'wx');
     const base=createLiveTransport({keys,responseDir:`${output}/responses`,

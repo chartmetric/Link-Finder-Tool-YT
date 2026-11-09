@@ -392,3 +392,31 @@ mtime_ms = 1794255187762
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/0066d6dd-9779-4225-9389-f7d10d77b74f/56e80265-80e0-4961-8df3-c2d62ebc6f03"
 storage_version_token = "1794255379165533"
 content_type = "text/csv"
+
+[[outputs]]
+id = "6khb-zh1Wd9aXDWYJGZDq"
+uri = "file://generated-artifacts/instagram-bulk-shadow-approved-250-usd20/artist-research-results.csv"
+type = "table"
+title = "250-artist Instagram research results"
+description = "Artist IDs, tiers, candidate URLs and outcomes. Research only; not approved for import."
+logical_id = "b7cda222-462c-4547-b848-1935af50b890"
+content_hash = "sha256:008fa40a6b6c22e011bb4b58820c099dd053d9682c750f233876f3dc963cd00a"
+size = 122691
+mtime_ms = 1794260378390
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/b7cda222-462c-4547-b848-1935af50b890/fb3ffbdb-1d4c-4f0e-b190-5e8c6fe5b155"
+storage_version_token = "1794260399635839"
+content_type = "text/csv"
+
+[[outputs]]
+id = "sECGRL1Gj17EUW4SjLVeo"
+uri = "file://generated-artifacts/instagram-bulk-shadow-approved-250-usd20/candidate-evidence.csv"
+type = "table"
+title = "Candidate verification details"
+description = "465 candidate inspections with verifier decisions, scores and reasons for holding links."
+logical_id = "4efab7ba-b20d-41d9-99c3-f2d270764ff0"
+content_hash = "sha256:f37816627b6bf95e2091a1f146861871460ebbf7dffe1c3a2651c4838bd891c3"
+size = 88884
+mtime_ms = 1794260378394
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/4efab7ba-b20d-41d9-99c3-f2d270764ff0/034a334e-7363-4e37-bcf2-6e93cf6cccb4"
+storage_version_token = "1794260400305067"
+content_type = "text/csv"

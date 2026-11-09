@@ -12,10 +12,17 @@ export const pilotReservationsCents = Object.freeze({
 
 /** An exclusive, fsynced journal makes any previous admission non-replayable. */
 export async function createPilotBudget({ manifest, journalPath, transport, mode }) {
+  // A separately approved research batch does not expand the original $10 pilot.
+  const batch=manifest.authorization?.separateBatchApproval;
+  const separateBatchAuthorized=batch?.runId==='instagram-tiers-1-5-approved-250-usd20'
+    &&batch.maxArtists===250&&batch.maxSpendCents===2000
+    &&manifest.artists.length<=250&&manifest.selection?.claimsAllowed===false
+    &&manifest.selection?.experimentalAcceptanceEnabled===false&&manifest.selection?.fullTierRerun===false;
   const live = mode === 'live' && transport?.live === true && transport.fixture !== true
     && manifest.authorization?.approved === true && manifest.run_allowed === true
     && Number.isInteger(manifest.authorization.maxSpendCents)
-    && manifest.authorization.maxSpendCents > 0 && manifest.authorization.maxSpendCents <= 1000;
+    && manifest.authorization.maxSpendCents > 0
+    && manifest.authorization.maxSpendCents <= (separateBatchAuthorized?2000:1000);
   if ((!live && (mode !== 'fixture' || transport?.fixture !== true)) || typeof transport?.dispatch !== 'function') {
     throw new Error('Live execution is disabled. Only an explicitly injected fixture transport is permitted.');
   }

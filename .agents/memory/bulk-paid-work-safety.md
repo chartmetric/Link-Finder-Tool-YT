@@ -73,3 +73,13 @@ can lose identities or undercount previously reserved work.
 **How to apply:** Recover identities only from explicit archived bindings,
 preserve failed/uncertain reservations, and block on unreadable or unbound
 history. Keep conservative reservations separate from provider-reported charges.
+
+A newly approved batch budget is a separate authorization, not a reset or
+increase of an older pilot's ceiling.
+
+**Why:** The user authorized a larger research batch after the original pilot
+had already incurred reservations; combining the allowances would obscure
+which work each approval covered.
+
+**How to apply:** Freeze each batch's scope and ceiling separately, retain all
+historical reservations, and keep uncertain calls non-replayable across batches.

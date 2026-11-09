@@ -14,6 +14,16 @@ test('bounded generic cohort freezes all caps and has no artist-specific regress
   assert.equal(m.artists[0].bucket,'automatic_shadow_cohort');
   assert.equal(m.selection.experimentalAcceptanceEnabled,false);assert.equal(m.selection.claimsAllowed,false);
 });
+test('separate 250-artist approval preserves original pilot cap and research-only restrictions',()=>{
+  const approval={runId:'instagram-tiers-1-5-approved-250-usd20',maxArtists:250,maxSpendCents:2000};
+  const m=buildShadowManifest([row],accounts,'2026-11-09 01:30:12',{...audit,reservedCents:732},approval);
+  assert.equal(m.authorization.maxSpendCents,2000);
+  assert.equal(m.authorization.originalPilotCapCents,1000);
+  assert.equal(m.selection.claimsAllowed,false);
+  assert.equal(m.proposed_limits.job_wall_time_minutes,60);
+  assert.throws(()=>buildShadowManifest([row],accounts,'2026-11-09 01:30:12',audit,{...approval,maxSpendCents:2001}));
+  assert.throws(()=>buildShadowManifest(Array(251).fill(row),accounts,'2026-11-09 01:30:12',audit,approval));
+});
 test('original budget, catalog identities, missing references, duplicates and prior admissions fail closed',()=>{
   for(const [rows,links,a] of [[[],accounts,audit],[[row],accounts,{...audit,reservedCents:501}],
     [[row],[],audit],[[row,row],accounts,audit],
