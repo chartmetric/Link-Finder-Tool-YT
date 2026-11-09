@@ -197,6 +197,76 @@ export interface MusicianInstagramResearchCoverage {
   generatedAt: string;
 }
 
+export interface MusicianInstagramRerunEligibility {
+  /** @minimum 0 */
+  count: number;
+  /**
+     * @minLength 64
+     * @maxLength 64
+     */
+  selectionToken: string;
+  generatedAt: string;
+}
+
+export interface StartMusicianInstagramRerun {
+  /** @pattern ^[0-9a-fA-F-]{36}$ */
+  requestId: string;
+  /**
+     * @minLength 64
+     * @maxLength 64
+     */
+  selectionToken: string;
+  /** @minimum 1 */
+  expectedCount: number;
+  paidAcknowledged: true;
+}
+
+export type MusicianInstagramRerunProfileStatus = typeof MusicianInstagramRerunProfileStatus[keyof typeof MusicianInstagramRerunProfileStatus];
+
+
+export const MusicianInstagramRerunProfileStatus = {
+  queued: 'queued',
+  running: 'running',
+  candidates_found: 'candidates_found',
+  no_candidates: 'no_candidates',
+  failed: 'failed',
+} as const;
+
+export interface MusicianInstagramRerunProfile {
+  profileId: string;
+  artist: string;
+  tier: number;
+  status: MusicianInstagramRerunProfileStatus;
+  instagramUrls: string[];
+  error: string;
+}
+
+export type MusicianInstagramRerunRunStatus = typeof MusicianInstagramRerunRunStatus[keyof typeof MusicianInstagramRerunRunStatus];
+
+
+export const MusicianInstagramRerunRunStatus = {
+  prepared: 'prepared',
+  running: 'running',
+  stop_requested: 'stop_requested',
+  stopped: 'stopped',
+  completed: 'completed',
+  needs_review: 'needs_review',
+} as const;
+
+export interface MusicianInstagramRerunRun {
+  /** @pattern ^[0-9a-fA-F-]{36}$ */
+  runId: string;
+  status: MusicianInstagramRerunRunStatus;
+  /** @minimum 0 */
+  count: number;
+  /** @minimum 0 */
+  finished: number;
+  stopRequested: boolean;
+  active: boolean;
+  paidAdmissionsOccurred: boolean;
+  profiles: MusicianInstagramRerunProfile[];
+}
+
 export interface IdentityMetadata {
   platform: string;
   handle: string;

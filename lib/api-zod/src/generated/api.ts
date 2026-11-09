@@ -136,6 +136,138 @@ export const GetMusicianInstagramResearchCoverageResponse = zod.object({
 
 
 /**
+ * @summary Count eligible completed no-match Instagram searches
+ */
+export const getMusicianInstagramRerunEligibilityResponseCountMin = 0;
+
+export const getMusicianInstagramRerunEligibilityResponseSelectionTokenMin = 64;
+export const getMusicianInstagramRerunEligibilityResponseSelectionTokenMax = 64;
+
+
+
+export const GetMusicianInstagramRerunEligibilityResponse = zod.object({
+  "count": zod.number().min(getMusicianInstagramRerunEligibilityResponseCountMin),
+  "selectionToken": zod.string().min(getMusicianInstagramRerunEligibilityResponseSelectionTokenMin).max(getMusicianInstagramRerunEligibilityResponseSelectionTokenMax),
+  "generatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Start a confirmed Serper-only Instagram no-match rerun
+ */
+export const startMusicianInstagramRerunBodyRequestIdRegExp = new RegExp('^[0-9a-fA-F-]{36}$');
+export const startMusicianInstagramRerunBodySelectionTokenMin = 64;
+export const startMusicianInstagramRerunBodySelectionTokenMax = 64;
+
+
+
+
+export const StartMusicianInstagramRerunBody = zod.object({
+  "requestId": zod.string().regex(startMusicianInstagramRerunBodyRequestIdRegExp),
+  "selectionToken": zod.string().min(startMusicianInstagramRerunBodySelectionTokenMin).max(startMusicianInstagramRerunBodySelectionTokenMax),
+  "expectedCount": zod.number().min(1),
+  "paidAcknowledged": zod.literal(true)
+})
+
+export const startMusicianInstagramRerunResponseRunIdRegExp = new RegExp('^[0-9a-fA-F-]{36}$');
+export const startMusicianInstagramRerunResponseCountMin = 0;
+
+export const startMusicianInstagramRerunResponseFinishedMin = 0;
+
+
+
+export const StartMusicianInstagramRerunResponse = zod.object({
+  "runId": zod.string().regex(startMusicianInstagramRerunResponseRunIdRegExp),
+  "status": zod.enum(['prepared', 'running', 'stop_requested', 'stopped', 'completed', 'needs_review']),
+  "count": zod.number().min(startMusicianInstagramRerunResponseCountMin),
+  "finished": zod.number().min(startMusicianInstagramRerunResponseFinishedMin),
+  "stopRequested": zod.boolean(),
+  "active": zod.boolean(),
+  "paidAdmissionsOccurred": zod.boolean(),
+  "profiles": zod.array(zod.object({
+  "profileId": zod.string(),
+  "artist": zod.string(),
+  "tier": zod.number(),
+  "status": zod.enum(['queued', 'running', 'candidates_found', 'no_candidates', 'failed']),
+  "instagramUrls": zod.array(zod.string()),
+  "error": zod.string()
+}))
+})
+
+
+/**
+ * @summary Read saved per-profile Instagram rerun outcomes
+ */
+export const getMusicianInstagramRerunPathRunIdRegExp = new RegExp('^[0-9a-fA-F-]{36}$');
+
+
+export const GetMusicianInstagramRerunParams = zod.object({
+  "runId": zod.coerce.string().regex(getMusicianInstagramRerunPathRunIdRegExp)
+})
+
+export const getMusicianInstagramRerunResponseRunIdRegExp = new RegExp('^[0-9a-fA-F-]{36}$');
+export const getMusicianInstagramRerunResponseCountMin = 0;
+
+export const getMusicianInstagramRerunResponseFinishedMin = 0;
+
+
+
+export const GetMusicianInstagramRerunResponse = zod.object({
+  "runId": zod.string().regex(getMusicianInstagramRerunResponseRunIdRegExp),
+  "status": zod.enum(['prepared', 'running', 'stop_requested', 'stopped', 'completed', 'needs_review']),
+  "count": zod.number().min(getMusicianInstagramRerunResponseCountMin),
+  "finished": zod.number().min(getMusicianInstagramRerunResponseFinishedMin),
+  "stopRequested": zod.boolean(),
+  "active": zod.boolean(),
+  "paidAdmissionsOccurred": zod.boolean(),
+  "profiles": zod.array(zod.object({
+  "profileId": zod.string(),
+  "artist": zod.string(),
+  "tier": zod.number(),
+  "status": zod.enum(['queued', 'running', 'candidates_found', 'no_candidates', 'failed']),
+  "instagramUrls": zod.array(zod.string()),
+  "error": zod.string()
+}))
+})
+
+
+/**
+ * @summary Stop queued searches in a running Instagram rerun
+ */
+export const stopMusicianInstagramRerunPathRunIdRegExp = new RegExp('^[0-9a-fA-F-]{36}$');
+
+
+export const StopMusicianInstagramRerunParams = zod.object({
+  "runId": zod.coerce.string().regex(stopMusicianInstagramRerunPathRunIdRegExp)
+})
+
+export const stopMusicianInstagramRerunResponseRunIdRegExp = new RegExp('^[0-9a-fA-F-]{36}$');
+export const stopMusicianInstagramRerunResponseCountMin = 0;
+
+export const stopMusicianInstagramRerunResponseFinishedMin = 0;
+
+
+
+export const StopMusicianInstagramRerunResponse = zod.object({
+  "runId": zod.string().regex(stopMusicianInstagramRerunResponseRunIdRegExp),
+  "status": zod.enum(['prepared', 'running', 'stop_requested', 'stopped', 'completed', 'needs_review']),
+  "count": zod.number().min(stopMusicianInstagramRerunResponseCountMin),
+  "finished": zod.number().min(stopMusicianInstagramRerunResponseFinishedMin),
+  "stopRequested": zod.boolean(),
+  "active": zod.boolean(),
+  "paidAdmissionsOccurred": zod.boolean(),
+  "profiles": zod.array(zod.object({
+  "profileId": zod.string(),
+  "artist": zod.string(),
+  "tier": zod.number(),
+  "status": zod.enum(['queued', 'running', 'candidates_found', 'no_candidates', 'failed']),
+  "instagramUrls": zod.array(zod.string()),
+  "error": zod.string()
+}))
+})
+
+
+/**
  * @summary List saved single-profile investigations, newest first
  */
 export const listProfileInvestigationsQueryPageDefault = 1;

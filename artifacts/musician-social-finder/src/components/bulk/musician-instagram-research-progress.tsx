@@ -1,11 +1,19 @@
-import { useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { CircleAlert, RefreshCw, Square } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   getGetMusicianInstagramResearchCoverageQueryKey,
+  getGetMusicianInstagramRerunQueryKey,
   useGetMusicianInstagramResearchCoverage,
+  getGetMusicianInstagramRerunEligibilityQueryKey,
+  useGetMusicianInstagramRerunEligibility,
+  useGetMusicianInstagramRerun,
+  useStartMusicianInstagramRerun,
+  useStopMusicianInstagramRerun,
   type MusicianInstagramResearchTier,
   type MusicianInstagramResearchHistoryDay,
 } from '@workspace/api-client-react';
+import { apiError, readStorage, writeStorage } from '@/lib/bulk';
 
 const fmt = (value: number) => value.toLocaleString();
 const pct = (value: number, total: number) => total > 0 ? `${(100 * value / total).toFixed(1)}%` : 'N/A';
@@ -60,6 +68,16 @@ function HistoryTable({ history }: { history: MusicianInstagramResearchHistoryDa
     </section>
   );
 }
+const RERUN_ID_KEY = 'bulk-musician-instagram-rerun:last-run';
+const RERUN_PENDING_KEY = 'bulk-musician-instagram-rerun:pending-request';
+
+const statusLabel: Record<string, string> = {
+  queued: 'Queued',
+  running: 'Searching',
+  candidates_found: 'Candidate found',
+  no_candidates: 'No candidate',
+  failed: 'Failed — review before retrying',
+};
 
 type CoverageView = 'urls' | 'resolved';
 
@@ -120,6 +138,29 @@ function LatestResearchSummary({ tiers }: { tiers: MusicianInstagramResearchTier
 
 export function MusicianInstagramResearchProgress() {
   const [view, setView] = useState<CoverageView>('urls');
+  const qc = useQueryClient();
+  const [runId, setRunId] = useState<string | null>(() => readStorage<string | null>(RERUN_ID_KEY, null));
+  const [pendingRequestId, setPendingRequestId] = useState<string | null>(() => readStorage<string | null>(RERUN_PENDING_KEY, null));
+  const [ackPaid, setAckPaid] = useState(false);
+  const eligibility = useGetMusicianInstagramRerunEligibility({
+    query: { queryKey: getGetMusicianInstagramRerunEligibilityQueryKey(), refetchOnMount: 'always', retry: false },
+  });
+  const rerun = useGetMusicianInstagramRerun(runId ?? '', {
+    query: {
+      queryKey: getGetMusicianInstagramRerunQueryKey(runId ?? ''),
+      enabled: !!runId,
+      refetchOnMount: 'always',
+      refetchInterval: query => query.state.data?.active ? 1500 : false,
+      retry: false,
+    },
+  });
+  const startRerun = useStartMusicianInstagramRerun();
+  const stopRerun = useStopMusicianInstagramRerun();
+  useEffect(() => { writeStorage(RERUN_ID_KEY, runId); }, [runId]);
+  useEffect(() => { writeStorage(RERUN_PENDING_KEY, pendingRequestId); }, [pendingRequestId]);
+  useEffect(() => {
+    if (rerun.data && pendingRequestId === rerun.data.runId) setPendingRequestId(null);
+  }, [rerun.data, pendingRequestId]);
   const q = useGetMusicianInstagramResearchCoverage({
     query: {
       queryKey: getGetMusicianInstagramResearchCoverageQueryKey(),
@@ -136,6 +177,35 @@ export function MusicianInstagramResearchProgress() {
   const snapshotLabel = data?.snapshotAt
     ? new Date(data.snapshotAt).toISOString().replace('T', ' ').replace('.000Z', ' UTC')
     : null;
+  const start = () => {
+    if (!eligibility.data || eligibility.data.count < 1 || !ackPaid || startRerun.isPending || pendingRequestId) return;
+    const requestId = crypto.randomUUID();
+    setPendingRequestId(requestId);
+    startRerun.mutate({
+      data: {
+        requestId,
+        selectionToken: eligibility.data.selectionToken,
+        expectedCount: eligibility.data.count,
+        paidAcknowledged: true,
+      },
+    }, {
+      onSuccess: run => {
+        setRunId(run.runId);
+        setPendingRequestId(null);
+        setAckPaid(false);
+        void qc.invalidateQueries({ queryKey: getGetMusicianInstagramRerunEligibilityQueryKey() });
+        void qc.invalidateQueries({ queryKey: getGetMusicianInstagramResearchCoverageQueryKey() });
+      },
+      onError: error => {
+        const status = (error as { status?: number }).status;
+        if (status === 400 || status === 409) setPendingRequestId(null);
+      },
+    });
+  };
+  const startError = startRerun.isError
+    ? apiError(startRerun.error, 'The start response was not confirmed.')
+    : '';
+  const blockNewRerun = !!rerun.data?.active || (rerun.data?.status === 'needs_review' && rerun.data.paidAdmissionsOccurred);
 
   return (
     <section className="blk-cov blk-ig" aria-labelledby="blk-ig-title" data-testid="section-instagram-research-progress">
@@ -210,6 +280,103 @@ export function MusicianInstagramResearchProgress() {
           </p>
         </>
       )}
+
+      <section className="blk-ig-rerun" aria-labelledby="blk-ig-rerun-title" data-testid="section-instagram-no-match-rerun">
+        <div className="blk-ig-rerun-head">
+          <div>
+            <div className="inv-kicker">Paid recheck / Instagram only</div>
+            <h3 id="blk-ig-rerun-title">Recheck completed no-match profiles</h3>
+          </div>
+          <button type="button" className="inv-retry" onClick={() => eligibility.refetch()} disabled={eligibility.isFetching} data-testid="button-refresh-rerun-eligibility">
+            <RefreshCw size={12} className={eligibility.isFetching ? 'inv-spin' : ''} /> {eligibility.isFetching ? 'Checking' : 'Refresh count'}
+          </button>
+        </div>
+        {eligibility.isLoading && <p role="status" className="blk-ig-message">Checking which completed no-match profiles are eligible…</p>}
+        {eligibility.isError && !eligibility.data && <p className="blk-ig-rerun-error" role="alert" data-testid="status-rerun-eligibility-error">
+          Eligibility is unavailable, not zero. No paid requests have started.
+        </p>}
+        {eligibility.data && (
+          <>
+            <p className="blk-ig-rerun-count" data-testid="text-rerun-eligible-count">
+              <strong>{fmt(eligibility.data.count)}</strong> eligible profiles
+              <span>Completed Serper searches with no Instagram candidate, still matching the saved artist identity and current Tier 1–3 catalog.</span>
+            </p>
+            {eligibility.isError && <p className="blk-ig-stale" role="status">The latest count refresh failed; the previous count may be stale.</p>}
+            {eligibility.data.count === 0 ? (
+              <p className="blk-ig-message">There are no eligible profiles to recheck.</p>
+            ) : (
+              <>
+                <div className="blk-ig-rerun-warning"><CircleAlert size={15} /><p>This starts paid Serper requests for Instagram only. Each eligible profile may be charged again. Existing profile and artist IDs are preserved. Results are unverified candidates, and a failed or uncertain request will not be replayed.</p></div>
+                <label className="blk-ig-rerun-ack">
+                  <input type="checkbox" checked={ackPaid} onChange={event => setAckPaid(event.target.checked)} data-testid="checkbox-ack-instagram-rerun" />
+                  I explicitly approve paid Serper requests for all {fmt(eligibility.data.count)} eligible profiles.
+                </label>
+                <div className="blk-ig-rerun-actions">
+                  <button type="button" className="inv-submit" disabled={!ackPaid || startRerun.isPending || !!pendingRequestId || blockNewRerun} onClick={start} data-testid="button-start-instagram-rerun">
+                    {startRerun.isPending ? 'Preparing rerun' : `Recheck ${fmt(eligibility.data.count)} profiles`}
+                  </button>
+                  {pendingRequestId && !runId && (
+                    <button type="button" className="blk-link" onClick={() => setRunId(pendingRequestId)} data-testid="button-check-pending-instagram-rerun">
+                      Check the previous start request
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </>
+        )}
+        {startError && (
+          <p className="blk-ig-rerun-error" role="alert" data-testid="status-instagram-rerun-start-error">
+            {startError} Do not start another rerun until you check the previous request status.
+          </p>
+        )}
+        {runId && (
+          <div className="blk-ig-rerun-run" data-testid="section-instagram-rerun-run">
+            <div className="blk-ig-rerun-run-head">
+              <div>
+                <strong>Rerun progress</strong>
+                {rerun.data && <span data-testid="text-instagram-rerun-status">
+                  {rerun.data.status === 'prepared' && rerun.data.active && rerun.data.profiles.length === 0 ? 'preparing selection' : rerun.data.status.replaceAll('_', ' ')} · {fmt(rerun.data.finished)} of {fmt(rerun.data.count)} finished
+                </span>}
+              </div>
+              {rerun.data?.active && (
+                <button type="button" className="blk-ig-stop" disabled={stopRerun.isPending} onClick={() => stopRerun.mutate({ runId }, {
+                  onSuccess: saved => qc.setQueryData(getGetMusicianInstagramRerunQueryKey(runId), saved),
+                })} data-testid="button-stop-instagram-rerun">
+                  <Square size={12} /> {stopRerun.isPending ? 'Stopping' : 'Stop queued searches'}
+                </button>
+              )}
+            </div>
+            {rerun.isLoading && <p role="status" className="blk-ig-message">Loading saved rerun outcomes…</p>}
+            {rerun.isError && <p className="blk-ig-rerun-error" role="alert" data-testid="status-instagram-rerun-load-error">
+              Saved rerun status is unavailable. Failed or uncertain work is not automatically replayed.
+            </p>}
+            {stopRerun.isError && <p className="blk-ig-rerun-error" role="alert">The stop state could not be confirmed. Requests already sent may still complete.</p>}
+            {rerun.data?.status === 'needs_review' && <p className="blk-ig-stale" role="status">Some outcomes need review. Do not rerun uncertain profiles automatically.</p>}
+            {rerun.data?.status === 'needs_review' && !rerun.data.paidAdmissionsOccurred && <p className="blk-ig-message" role="status">Preparation stopped before any paid search was admitted. Refresh eligibility before starting a new run.</p>}
+            {rerun.data?.status === 'stopped' && <p className="blk-ig-message" role="status">Queued profiles were left untouched. In-flight requests may still have completed.</p>}
+            {rerun.data && (
+              <ul className="blk-ig-rerun-list" aria-label="Per-profile rerun outcomes">
+                {rerun.data.profiles.map(profile => (
+                  <li key={profile.profileId} data-testid={`row-instagram-rerun-profile-${profile.profileId}`}>
+                    <div><strong>{profile.artist}</strong><small>Tier {profile.tier} · profile {profile.profileId}</small></div>
+                    <span className={`blk-ig-outcome status-${profile.status}`} data-testid={`text-instagram-rerun-outcome-${profile.profileId}`}>
+                      {profile.status === 'running' && !rerun.data.active ? 'Unknown after interruption — review' : profile.status === 'queued' && !rerun.data.active ? 'Not started — review run' : statusLabel[profile.status] ?? profile.status}
+                    </span>
+                    {profile.instagramUrls.length > 0 && <small className="blk-ig-profile-urls">{profile.instagramUrls.map(url => <a key={url} href={url} target="_blank" rel="noreferrer">{url}</a>)}</small>}
+                    {profile.error && <small className="blk-ig-profile-error" role="alert">{profile.error}</small>}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {pendingRequestId === runId && rerun.isError && (rerun.error as { status?: number }).status === 404 && (
+              <button type="button" className="blk-link" onClick={() => { setPendingRequestId(null); setRunId(null); }} data-testid="button-clear-unaccepted-instagram-rerun">
+                Confirm no run was saved
+              </button>
+            )}
+          </div>
+        )}
+      </section>
     </section>
   );
 }

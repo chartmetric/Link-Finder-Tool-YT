@@ -40,12 +40,15 @@ import type {
   ListExistingProfilesParams,
   ListProfileInvestigationsParams,
   MusicianCoverage,
+  MusicianInstagramRerunEligibility,
+  MusicianInstagramRerunRun,
   MusicianInstagramResearchCoverage,
   ProfileInvestigationPage,
   ProfileSearchInput,
   ProfileSearchResponse,
   ProfileSuggestionApproval,
-  ProfileSuggestionApprovalResult
+  ProfileSuggestionApprovalResult,
+  StartMusicianInstagramRerun
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -408,6 +411,302 @@ export function useGetMusicianInstagramResearchCoverage<TData = Awaited<ReturnTy
 
 
 
+
+export const getGetMusicianInstagramRerunEligibilityUrl = () => {
+
+
+
+
+  return `/api/profiles/musician-instagram-rerun-eligibility`
+}
+
+/**
+ * @summary Count eligible completed no-match Instagram searches
+ */
+export const getMusicianInstagramRerunEligibility = async ( options?: Parameters<typeof customFetch>[1]): Promise<MusicianInstagramRerunEligibility> => {
+
+  return customFetch<MusicianInstagramRerunEligibility>(getGetMusicianInstagramRerunEligibilityUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMusicianInstagramRerunEligibilityQueryKey = () => {
+    return [
+    `/api/profiles/musician-instagram-rerun-eligibility`
+    ] as const;
+    }
+
+
+export const getGetMusicianInstagramRerunEligibilityQueryOptions = <TData = Awaited<ReturnType<typeof getMusicianInstagramRerunEligibility>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMusicianInstagramRerunEligibility>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMusicianInstagramRerunEligibilityQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMusicianInstagramRerunEligibility>>> = ({ signal }) => getMusicianInstagramRerunEligibility({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMusicianInstagramRerunEligibility>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMusicianInstagramRerunEligibilityQueryResult = NonNullable<Awaited<ReturnType<typeof getMusicianInstagramRerunEligibility>>>
+export type GetMusicianInstagramRerunEligibilityQueryError = ErrorType<void>
+
+
+/**
+ * @summary Count eligible completed no-match Instagram searches
+ */
+
+export function useGetMusicianInstagramRerunEligibility<TData = Awaited<ReturnType<typeof getMusicianInstagramRerunEligibility>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMusicianInstagramRerunEligibility>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMusicianInstagramRerunEligibilityQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getStartMusicianInstagramRerunUrl = () => {
+
+
+
+
+  return `/api/profiles/musician-instagram-reruns`
+}
+
+/**
+ * @summary Start a confirmed Serper-only Instagram no-match rerun
+ */
+export const startMusicianInstagramRerun = async (startMusicianInstagramRerun: StartMusicianInstagramRerun, options?: Parameters<typeof customFetch>[1]): Promise<MusicianInstagramRerunRun> => {
+
+  return customFetch<MusicianInstagramRerunRun>(getStartMusicianInstagramRerunUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(startMusicianInstagramRerun)
+  }
+);}
+
+
+
+
+
+export const getStartMusicianInstagramRerunMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startMusicianInstagramRerun>>, TError,{data: BodyType<StartMusicianInstagramRerun>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startMusicianInstagramRerun>>, TError,{data: BodyType<StartMusicianInstagramRerun>}, TContext> => {
+
+const mutationKey = ['startMusicianInstagramRerun'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startMusicianInstagramRerun>>, {data: BodyType<StartMusicianInstagramRerun>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  startMusicianInstagramRerun(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartMusicianInstagramRerunMutationResult = NonNullable<Awaited<ReturnType<typeof startMusicianInstagramRerun>>>
+    export type StartMusicianInstagramRerunMutationBody = BodyType<StartMusicianInstagramRerun>
+    export type StartMusicianInstagramRerunMutationError = ErrorType<void>
+
+    /**
+ * @summary Start a confirmed Serper-only Instagram no-match rerun
+ */
+export const useStartMusicianInstagramRerun = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startMusicianInstagramRerun>>, TError,{data: BodyType<StartMusicianInstagramRerun>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startMusicianInstagramRerun>>,
+        TError,
+        {data: BodyType<StartMusicianInstagramRerun>},
+        TContext
+      > => {
+      return useMutation(getStartMusicianInstagramRerunMutationOptions(options));
+    }
+
+export const getGetMusicianInstagramRerunUrl = (runId: string,) => {
+
+
+
+
+  return `/api/profiles/musician-instagram-reruns/${runId}`
+}
+
+/**
+ * @summary Read saved per-profile Instagram rerun outcomes
+ */
+export const getMusicianInstagramRerun = async (runId: string, options?: Parameters<typeof customFetch>[1]): Promise<MusicianInstagramRerunRun> => {
+
+  return customFetch<MusicianInstagramRerunRun>(getGetMusicianInstagramRerunUrl(runId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMusicianInstagramRerunQueryKey = (runId: string,) => {
+    return [
+    `/api/profiles/musician-instagram-reruns/${runId}`
+    ] as const;
+    }
+
+
+export const getGetMusicianInstagramRerunQueryOptions = <TData = Awaited<ReturnType<typeof getMusicianInstagramRerun>>, TError = ErrorType<void>>(runId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMusicianInstagramRerun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMusicianInstagramRerunQueryKey(runId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMusicianInstagramRerun>>> = ({ signal }) => getMusicianInstagramRerun(runId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: runId !== null && runId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMusicianInstagramRerun>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMusicianInstagramRerunQueryResult = NonNullable<Awaited<ReturnType<typeof getMusicianInstagramRerun>>>
+export type GetMusicianInstagramRerunQueryError = ErrorType<void>
+
+
+/**
+ * @summary Read saved per-profile Instagram rerun outcomes
+ */
+
+export function useGetMusicianInstagramRerun<TData = Awaited<ReturnType<typeof getMusicianInstagramRerun>>, TError = ErrorType<void>>(
+ runId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMusicianInstagramRerun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMusicianInstagramRerunQueryOptions(runId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getStopMusicianInstagramRerunUrl = (runId: string,) => {
+
+
+
+
+  return `/api/profiles/musician-instagram-reruns/${runId}/stop`
+}
+
+/**
+ * @summary Stop queued searches in a running Instagram rerun
+ */
+export const stopMusicianInstagramRerun = async (runId: string, options?: Parameters<typeof customFetch>[1]): Promise<MusicianInstagramRerunRun> => {
+
+  return customFetch<MusicianInstagramRerunRun>(getStopMusicianInstagramRerunUrl(runId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getStopMusicianInstagramRerunMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopMusicianInstagramRerun>>, TError,{runId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof stopMusicianInstagramRerun>>, TError,{runId: string}, TContext> => {
+
+const mutationKey = ['stopMusicianInstagramRerun'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof stopMusicianInstagramRerun>>, {runId: string}> = (props) => {
+          const {runId} = props ?? {};
+
+          return  stopMusicianInstagramRerun(runId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StopMusicianInstagramRerunMutationResult = NonNullable<Awaited<ReturnType<typeof stopMusicianInstagramRerun>>>
+
+    export type StopMusicianInstagramRerunMutationError = ErrorType<void>
+
+    /**
+ * @summary Stop queued searches in a running Instagram rerun
+ */
+export const useStopMusicianInstagramRerun = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopMusicianInstagramRerun>>, TError,{runId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof stopMusicianInstagramRerun>>,
+        TError,
+        {runId: string},
+        TContext
+      > => {
+      return useMutation(getStopMusicianInstagramRerunMutationOptions(options));
+    }
 
 export const getListProfileInvestigationsUrl = (params?: ListProfileInvestigationsParams,) => {
   const normalizedParams = new URLSearchParams();

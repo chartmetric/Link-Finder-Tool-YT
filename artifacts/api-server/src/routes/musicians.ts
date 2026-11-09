@@ -11,6 +11,13 @@ import {
   ListProfileInvestigationsResponse,
   GetMusicianCoverageResponse,
   GetMusicianInstagramResearchCoverageResponse,
+  GetMusicianInstagramRerunEligibilityResponse,
+  StartMusicianInstagramRerunBody,
+  StartMusicianInstagramRerunResponse,
+  GetMusicianInstagramRerunParams,
+  GetMusicianInstagramRerunResponse,
+  StopMusicianInstagramRerunParams,
+  StopMusicianInstagramRerunResponse,
 } from "@workspace/api-zod";
 import { findProfiles, parseKnownProfileUrl, resolveKnownProfileIdentity } from "../lib/musician-search";
 import { StartingProfileLookupError } from "../lib/starting-profile-lookup";
@@ -21,8 +28,15 @@ import {
 import { listProfileInvestigations, saveProfileInvestigation } from "../lib/profile-investigations";
 import { getMusicianCoverage, invalidateMusicianCoverage } from "../lib/musician-coverage";
 import { getMusicianInstagramResearchCoverage } from "../lib/musician-instagram-research-coverage";
+import {
+  getInstagramRerunEligibility,
+  startInstagramNoMatchRerun,
+  getInstagramRerunRun,
+  stopInstagramRerun,
+} from "../lib/musician-instagram-rerun";
 
 const router: IRouter = Router();
+const validUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 router.get("/profiles/musician-coverage", async (req, res): Promise<void> => {
   try {
@@ -39,6 +53,81 @@ router.get("/profiles/musician-instagram-research-coverage", async (req, res): P
   } catch (error) {
     req.log.error({ err: error }, "Musician Instagram research coverage failed");
     res.status(503).json({ error: "Instagram research statistics are unavailable. Please retry." });
+  }
+});
+
+router.get("/profiles/musician-instagram-rerun-eligibility", async (req, res): Promise<void> => {
+  try {
+    res.json(GetMusicianInstagramRerunEligibilityResponse.parse(await getInstagramRerunEligibility()));
+  } catch (error) {
+    req.log.error({ err: error }, "Instagram no-match rerun eligibility failed");
+    res.status(503).json({ error: "Eligible Instagram rerun profiles are unavailable. No paid work started." });
+  }
+});
+
+router.post("/profiles/musician-instagram-reruns", async (req, res): Promise<void> => {
+  const body = StartMusicianInstagramRerunBody.safeParse(req.body);
+  if (!body.success || !Number.isSafeInteger(body.data.expectedCount) || body.data.expectedCount < 1) {
+    res.status(400).json({ error: "Refresh eligibility and explicitly confirm paid requests before starting." });
+    return;
+  }
+  try {
+    res.json(StartMusicianInstagramRerunResponse.parse(await startInstagramNoMatchRerun(body.data)));
+  } catch (error) {
+    if (error instanceof Error && error.message === "ELIGIBILITY_CHANGED") {
+      res.status(409).json({ error: "The eligible profiles changed. Refresh the count and confirm again." });
+      return;
+    }
+    if (error instanceof Error && error.message === "NO_ELIGIBLE_PROFILES") {
+      res.status(409).json({ error: "No completed no-match profiles remain eligible. Refresh the count." });
+      return;
+    }
+    if (error instanceof Error && error.message === "EXPLICIT_PAID_ACK_REQUIRED") {
+      res.status(400).json({ error: "Explicitly acknowledge paid requests before starting." });
+      return;
+    }
+    if (error instanceof Error && error.message === "ANOTHER_RERUN_ACTIVE") {
+      res.status(409).json({ error: "Another Instagram rerun is still active. Review its saved outcomes before starting another." });
+      return;
+    }
+    req.log.error({ err: error }, "Instagram no-match rerun preparation failed");
+    res.status(503).json({ error: "The rerun could not be safely prepared. No automatic retry was made." });
+  }
+});
+
+router.get("/profiles/musician-instagram-reruns/:runId", async (req, res): Promise<void> => {
+  const params = GetMusicianInstagramRerunParams.safeParse(req.params);
+  if (!params.success || !validUuid.test(params.data.runId)) {
+    res.status(400).json({ error: "Invalid Instagram rerun ID." });
+    return;
+  }
+  try {
+    res.json(GetMusicianInstagramRerunResponse.parse(await getInstagramRerunRun(params.data.runId)));
+  } catch (error) {
+    if (error instanceof Error && error.message === "RUN_NOT_FOUND") {
+      res.status(404).json({ error: "Instagram rerun not found." });
+      return;
+    }
+    req.log.error({ err: error }, "Instagram rerun status failed");
+    res.status(503).json({ error: "Instagram rerun progress is unavailable." });
+  }
+});
+
+router.post("/profiles/musician-instagram-reruns/:runId/stop", async (req, res): Promise<void> => {
+  const params = StopMusicianInstagramRerunParams.safeParse(req.params);
+  if (!params.success || !validUuid.test(params.data.runId)) {
+    res.status(400).json({ error: "Invalid Instagram rerun ID." });
+    return;
+  }
+  try {
+    res.json(StopMusicianInstagramRerunResponse.parse(await stopInstagramRerun(params.data.runId)));
+  } catch (error) {
+    if (error instanceof Error && error.message === "RUN_NOT_ACTIVE") {
+      res.status(409).json({ error: "This rerun is not active on this server. Review saved outcomes before starting another run." });
+      return;
+    }
+    req.log.error({ err: error }, "Instagram rerun stop failed");
+    res.status(503).json({ error: "The stop state could not be confirmed. In-flight requests may still complete." });
   }
 });
 

@@ -76,6 +76,68 @@ paths:
                 $ref: "#/components/schemas/MusicianInstagramResearchCoverage"
         "503":
           description: Instagram research statistics unavailable
+  /profiles/musician-instagram-rerun-eligibility:
+    get:
+      operationId: getMusicianInstagramRerunEligibility
+      tags: [profile-search]
+      summary: Count eligible completed no-match Instagram searches
+      responses:
+        "200":
+          description: Exact current eligible cohort and confirmation token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MusicianInstagramRerunEligibility" }
+        "503": { description: Eligibility could not be calculated }
+  /profiles/musician-instagram-reruns:
+    post:
+      operationId: startMusicianInstagramRerun
+      tags: [profile-search]
+      summary: Start a confirmed Serper-only Instagram no-match rerun
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StartMusicianInstagramRerun" }
+      responses:
+        "200":
+          description: Saved rerun progress
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MusicianInstagramRerunRun" }
+        "400": { description: Paid confirmation or request input is invalid }
+        "409": { description: Eligible profiles changed; refresh before confirming }
+        "503": { description: Rerun could not be safely prepared }
+  /profiles/musician-instagram-reruns/{runId}:
+    get:
+      operationId: getMusicianInstagramRerun
+      tags: [profile-search]
+      summary: Read saved per-profile Instagram rerun outcomes
+      parameters:
+        - { name: runId, in: path, required: true, schema: { type: string, pattern: "^[0-9a-fA-F-]{36}$" } }
+      responses:
+        "200":
+          description: Saved rerun progress and per-profile outcomes
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MusicianInstagramRerunRun" }
+        "404": { description: Rerun not found }
+        "503": { description: Rerun status unavailable }
+  /profiles/musician-instagram-reruns/{runId}/stop:
+    post:
+      operationId: stopMusicianInstagramRerun
+      tags: [profile-search]
+      summary: Stop queued searches in a running Instagram rerun
+      parameters:
+        - { name: runId, in: path, required: true, schema: { type: string, pattern: "^[0-9a-fA-F-]{36}$" } }
+      responses:
+        "200":
+          description: Saved stop state and current per-profile outcomes
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MusicianInstagramRerunRun" }
+        "409": { description: Rerun is not active on this server }
+        "404": { description: Rerun not found }
+        "503": { description: Stop state could not be saved }
   /profiles/investigations:
     get:
       operationId: listProfileInvestigations
@@ -538,6 +600,47 @@ components:
         failedProfiles: { type: number, description: Distinct profiles with a failed attempt on this date; may overlap other outcome profile counts after retries. }
         failedAttempts: { type: number }
         inProgressAttempts: { type: number }
+    MusicianInstagramRerunEligibility:
+      type: object
+      required: [count, selectionToken, generatedAt]
+      properties:
+        count: { type: number, minimum: 0 }
+        selectionToken: { type: string, minLength: 64, maxLength: 64 }
+        generatedAt: { type: string, format: date-time }
+    StartMusicianInstagramRerun:
+      type: object
+      required: [requestId, selectionToken, expectedCount, paidAcknowledged]
+      properties:
+        requestId: { type: string, pattern: "^[0-9a-fA-F-]{36}$" }
+        selectionToken: { type: string, minLength: 64, maxLength: 64 }
+        expectedCount: { type: number, minimum: 1 }
+        paidAcknowledged: { type: boolean, const: true }
+    MusicianInstagramRerunProfile:
+      type: object
+      required: [profileId, artist, tier, status, instagramUrls, error]
+      properties:
+        profileId: { type: string }
+        artist: { type: string }
+        tier: { type: number }
+        status: { type: string, enum: [queued, running, candidates_found, no_candidates, failed] }
+        instagramUrls:
+          type: array
+          items: { type: string }
+        error: { type: string }
+    MusicianInstagramRerunRun:
+      type: object
+      required: [runId, status, count, finished, stopRequested, active, paidAdmissionsOccurred, profiles]
+      properties:
+        runId: { type: string, pattern: "^[0-9a-fA-F-]{36}$" }
+        status: { type: string, enum: [prepared, running, stop_requested, stopped, completed, needs_review] }
+        count: { type: number, minimum: 0 }
+        finished: { type: number, minimum: 0 }
+        stopRequested: { type: boolean }
+        active: { type: boolean }
+        paidAdmissionsOccurred: { type: boolean }
+        profiles:
+          type: array
+          items: { $ref: "#/components/schemas/MusicianInstagramRerunProfile" }
     ProfileInvestigation:
       type: object
       required: [id, knownProfileUrl, result]
