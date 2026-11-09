@@ -9,7 +9,14 @@
 export interface MusicianInstagramResearchTier {
   tier: number;
   totalProfiles: number;
+  /** Profiles whose latest research result is candidates found or no candidates. */
+  processedProfiles: number;
   profilesWithInstagramUrls: number;
+  /** Profiles whose latest research result contains candidate URLs. */
+  profilesWithResearchUrls: number;
   profilesWithNoSupportedMatch: number;
   profilesWithUrlOrNoSupportedMatch: number;
+  completedNoCandidateProfiles: number;
+  failedProfiles: number;
+  pendingProfiles: number;
 }

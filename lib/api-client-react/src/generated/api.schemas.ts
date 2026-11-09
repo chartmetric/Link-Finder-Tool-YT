@@ -130,13 +130,44 @@ export interface MusicianCoverage {
 export interface MusicianInstagramResearchTier {
   tier: number;
   totalProfiles: number;
+  /** Profiles whose latest research result is candidates found or no candidates. */
+  processedProfiles: number;
   profilesWithInstagramUrls: number;
+  /** Profiles whose latest research result contains candidate URLs. */
+  profilesWithResearchUrls: number;
   profilesWithNoSupportedMatch: number;
   profilesWithUrlOrNoSupportedMatch: number;
+  completedNoCandidateProfiles: number;
+  failedProfiles: number;
+  pendingProfiles: number;
+}
+
+export interface MusicianInstagramResearchHistoryDay {
+  date: string;
+  /** Distinct profiles with a dispatched attempt recorded on this date */
+  uniqueProfiles: number;
+  /** Distinct profiles with a dispatched attempt recorded on or before this date. */
+  cumulativeUniqueProfiles: number;
+  /** Distinct dispatched run/profile pairs recorded on this date. */
+  attempts: number;
+  /** Distinct profiles with a candidate result on this date; may overlap other outcome profile counts after retries. */
+  candidateProfiles: number;
+  candidateAttempts: number;
+  /** Candidate URLs returned across attempts recorded on this date. */
+  candidateUrls: number;
+  /** Distinct profiles with a completed no-candidate result on this date; may overlap other outcome profile counts after retries. */
+  noCandidateProfiles: number;
+  noCandidateAttempts: number;
+  /** Distinct profiles with a failed attempt on this date; may overlap other outcome profile counts after retries. */
+  failedProfiles: number;
+  failedAttempts: number;
+  inProgressAttempts: number;
 }
 
 export interface MusicianInstagramResearchCoverage {
   tiers: MusicianInstagramResearchTier[];
+  /** Daily results for dispatched run/profile attempts in the current global Tier 1-3 cohort. */
+  history: MusicianInstagramResearchHistoryDay[];
   generatedAt: string;
 }
 

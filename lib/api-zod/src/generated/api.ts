@@ -103,10 +103,29 @@ export const GetMusicianInstagramResearchCoverageResponse = zod.object({
   "tiers": zod.array(zod.object({
   "tier": zod.number(),
   "totalProfiles": zod.number(),
+  "processedProfiles": zod.number().describe('Profiles whose latest research result is candidates found or no candidates.'),
   "profilesWithInstagramUrls": zod.number(),
+  "profilesWithResearchUrls": zod.number().describe('Profiles whose latest research result contains candidate URLs.'),
   "profilesWithNoSupportedMatch": zod.number(),
-  "profilesWithUrlOrNoSupportedMatch": zod.number()
+  "profilesWithUrlOrNoSupportedMatch": zod.number(),
+  "completedNoCandidateProfiles": zod.number(),
+  "failedProfiles": zod.number(),
+  "pendingProfiles": zod.number()
 })),
+  "history": zod.array(zod.object({
+  "date": zod.coerce.date(),
+  "uniqueProfiles": zod.number().describe('Distinct profiles with a dispatched attempt recorded on this date'),
+  "cumulativeUniqueProfiles": zod.number().describe('Distinct profiles with a dispatched attempt recorded on or before this date.'),
+  "attempts": zod.number().describe('Distinct dispatched run\/profile pairs recorded on this date.'),
+  "candidateProfiles": zod.number().describe('Distinct profiles with a candidate result on this date; may overlap other outcome profile counts after retries.'),
+  "candidateAttempts": zod.number(),
+  "candidateUrls": zod.number().describe('Candidate URLs returned across attempts recorded on this date.'),
+  "noCandidateProfiles": zod.number().describe('Distinct profiles with a completed no-candidate result on this date; may overlap other outcome profile counts after retries.'),
+  "noCandidateAttempts": zod.number(),
+  "failedProfiles": zod.number().describe('Distinct profiles with a failed attempt on this date; may overlap other outcome profile counts after retries.'),
+  "failedAttempts": zod.number(),
+  "inProgressAttempts": zod.number()
+})).describe('Daily results for dispatched run\/profile attempts in the current global Tier 1-3 cohort.'),
   "generatedAt": zod.coerce.date()
 })
 

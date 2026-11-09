@@ -69,6 +69,7 @@ export * from './listProfileInvestigationsParams';
 export * from './musicianCoverage';
 export * from './musicianCoverageTier';
 export * from './musicianInstagramResearchCoverage';
+export * from './musicianInstagramResearchHistoryDay';
 export * from './musicianInstagramResearchTier';
 export * from './profileInvestigation';
 export * from './profileInvestigationPage';

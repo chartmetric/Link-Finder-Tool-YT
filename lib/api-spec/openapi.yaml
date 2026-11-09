@@ -479,22 +479,48 @@ components:
         generatedAt: { type: string, format: date-time }
     MusicianInstagramResearchTier:
       type: object
-      required: [tier, totalProfiles, profilesWithInstagramUrls, profilesWithNoSupportedMatch, profilesWithUrlOrNoSupportedMatch]
+      required: [tier, totalProfiles, processedProfiles, profilesWithInstagramUrls, profilesWithResearchUrls, profilesWithNoSupportedMatch, profilesWithUrlOrNoSupportedMatch, completedNoCandidateProfiles, failedProfiles, pendingProfiles]
       properties:
         tier: { type: number }
         totalProfiles: { type: number }
+        processedProfiles: { type: number, description: Profiles whose latest research result is candidates found or no candidates. }
         profilesWithInstagramUrls: { type: number }
+        profilesWithResearchUrls: { type: number, description: Profiles whose latest research result contains candidate URLs. }
         profilesWithNoSupportedMatch: { type: number }
         profilesWithUrlOrNoSupportedMatch: { type: number }
+        completedNoCandidateProfiles: { type: number }
+        failedProfiles: { type: number }
+        pendingProfiles: { type: number }
     MusicianInstagramResearchCoverage:
       type: object
-      required: [tiers, generatedAt]
+      required: [tiers, history, generatedAt]
       properties:
         tiers:
           type: array
           items:
             $ref: "#/components/schemas/MusicianInstagramResearchTier"
+        history:
+          type: array
+          description: Daily results for dispatched run/profile attempts in the current global Tier 1-3 cohort.
+          items:
+            $ref: "#/components/schemas/MusicianInstagramResearchHistoryDay"
         generatedAt: { type: string, format: date-time }
+    MusicianInstagramResearchHistoryDay:
+      type: object
+      required: [date, uniqueProfiles, cumulativeUniqueProfiles, attempts, candidateProfiles, candidateAttempts, candidateUrls, noCandidateProfiles, noCandidateAttempts, failedProfiles, failedAttempts, inProgressAttempts]
+      properties:
+        date: { type: string, format: date-time }
+        uniqueProfiles: { type: number, description: Distinct profiles with a dispatched attempt recorded on this date, regardless of retries. }
+        cumulativeUniqueProfiles: { type: number, description: Distinct profiles with a dispatched attempt recorded on or before this date. }
+        attempts: { type: number, description: Distinct dispatched run/profile pairs recorded on this date. }
+        candidateProfiles: { type: number, description: Distinct profiles with a candidate result on this date; may overlap other outcome profile counts after retries. }
+        candidateAttempts: { type: number }
+        candidateUrls: { type: number, description: Candidate URLs returned across attempts recorded on this date. }
+        noCandidateProfiles: { type: number, description: Distinct profiles with a completed no-candidate result on this date; may overlap other outcome profile counts after retries. }
+        noCandidateAttempts: { type: number }
+        failedProfiles: { type: number, description: Distinct profiles with a failed attempt on this date; may overlap other outcome profile counts after retries. }
+        failedAttempts: { type: number }
+        inProgressAttempts: { type: number }
     ProfileInvestigation:
       type: object
       required: [id, knownProfileUrl, result]

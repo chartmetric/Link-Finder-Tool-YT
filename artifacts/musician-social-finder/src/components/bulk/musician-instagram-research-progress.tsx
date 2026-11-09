@@ -4,10 +4,62 @@ import {
   getGetMusicianInstagramResearchCoverageQueryKey,
   useGetMusicianInstagramResearchCoverage,
   type MusicianInstagramResearchTier,
+  type MusicianInstagramResearchHistoryDay,
 } from '@workspace/api-client-react';
 
 const fmt = (value: number) => value.toLocaleString();
 const pct = (value: number, total: number) => total > 0 ? `${(100 * value / total).toFixed(1)}%` : 'N/A';
+const fmtHistoryDate = (value: string) => new Date(`${value.slice(0, 10)}T00:00:00`).toLocaleDateString();
+
+function HistoryTable({ history }: { history: MusicianInstagramResearchHistoryDay[] }) {
+  return (
+    <section className="blk-ig-history" aria-labelledby="blk-ig-history-title" data-testid="section-instagram-research-history">
+      <div className="blk-ig-history-head">
+        <h3 id="blk-ig-history-title">Search history · Tiers 1–3</h3>
+        <span>Most recent 90 days with saved attempts</span>
+      </div>
+      <p className="blk-ig-history-note">
+        Profiles are counted once per day and once cumulatively. Attempts are counted per run and profile, so retries remain visible. Outcome profile counts can overlap when a profile has different results across retries.
+      </p>
+      {history.length === 0 ? (
+        <p className="blk-ig-message" data-testid="text-instagram-research-history-empty">No dispatched search attempts are saved for this Tier 1–3 cohort yet.</p>
+      ) : (
+        <div className="blk-ig-history-scroll">
+          <table className="blk-ig-history-table">
+            <thead>
+              <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Unique profiles</th>
+                <th scope="col">Cumulative unique</th>
+                <th scope="col">Attempts</th>
+                <th scope="col">Candidates<br /><small>profiles / attempts</small></th>
+                <th scope="col">Candidate URLs</th>
+                <th scope="col">No candidate<br /><small>profiles / attempts</small></th>
+                <th scope="col">Failed<br /><small>profiles / attempts</small></th>
+                <th scope="col">In progress<br /><small>attempts</small></th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.map(day => (
+                <tr key={day.date} data-testid={`row-instagram-research-history-${day.date}`}>
+                  <th scope="row">{fmtHistoryDate(day.date)}</th>
+                  <td>{fmt(day.uniqueProfiles)}</td>
+                  <td>{fmt(day.cumulativeUniqueProfiles)}</td>
+                  <td>{fmt(day.attempts)}</td>
+                  <td>{fmt(day.candidateProfiles)} / {fmt(day.candidateAttempts)}</td>
+                  <td>{fmt(day.candidateUrls)}</td>
+                  <td>{fmt(day.noCandidateProfiles)} / {fmt(day.noCandidateAttempts)}</td>
+                  <td>{fmt(day.failedProfiles)} / {fmt(day.failedAttempts)}</td>
+                  <td>{fmt(day.inProgressAttempts)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
 
 type CoverageView = 'urls' | 'resolved';
 
@@ -36,6 +88,30 @@ function TierCard({ tier, view }: { tier: MusicianInstagramResearchTier; view: C
         )}
       </dl>
     </article>
+  );
+}
+
+function LatestResearchSummary({ tiers }: { tiers: MusicianInstagramResearchTier[] }) {
+  const tier1to3 = tiers.filter(tier => tier.tier <= 3);
+  const sum = (key: keyof Omit<MusicianInstagramResearchTier, 'tier'>) =>
+    tier1to3.reduce((total, tier) => total + tier[key], 0);
+  const totalProfiles = sum('totalProfiles');
+  const processedProfiles = sum('processedProfiles');
+  const profilesWithResearchUrls = sum('profilesWithResearchUrls');
+  const completedNoCandidateProfiles = sum('completedNoCandidateProfiles');
+  const failedProfiles = sum('failedProfiles');
+  const pendingProfiles = sum('pendingProfiles');
+
+  return (
+    <section className="blk-ig-latest" aria-labelledby="blk-ig-latest-title" data-testid="section-instagram-research-latest-state">
+      <h3 id="blk-ig-latest-title">Latest saved search state · Tiers 1–3</h3>
+      <div className="blk-ig-summary" aria-label="Latest Tier 1–3 Instagram research results">
+        <div><span>Profiles searched</span><strong data-testid="text-instagram-research-processed">{fmt(processedProfiles)}</strong><small>{pct(processedProfiles, totalProfiles)} of {fmt(totalProfiles)} current profiles</small></div>
+        <div><span>Have URL candidates</span><strong data-testid="text-instagram-research-urls">{fmt(profilesWithResearchUrls)}</strong><small>Latest result contains candidate URLs</small></div>
+        <div><span>Completed, no candidate</span><strong data-testid="text-instagram-research-no-candidates">{fmt(completedNoCandidateProfiles)}</strong><small>Latest search completed without a candidate</small></div>
+        <div><span>Failed / pending</span><strong data-testid="text-instagram-research-incomplete">{fmt(failedProfiles)} / {fmt(pendingProfiles)}</strong><small>Current latest saved result state</small></div>
+      </div>
+    </section>
   );
 }
 
@@ -104,6 +180,8 @@ export function MusicianInstagramResearchProgress() {
           <div className="blk-ig-tier-grid">
             {data.tiers.map(tier => <TierCard key={tier.tier} tier={tier} view={view} />)}
           </div>
+          <LatestResearchSummary tiers={data.tiers} />
+          <HistoryTable history={data.history} />
           <p className="blk-ig-foot" data-testid="text-instagram-research-definition">
             Each profile is counted once using its current-day global Tier 1–5 assignment. URL coverage includes catalog Instagram URLs and saved non-empty research URLs, which are candidates, not approved catalog links. The second view also counts completed searches with no candidate as a practical “no supported match,” not proof that no account exists. Failed and incomplete searches do not count.
           </p>

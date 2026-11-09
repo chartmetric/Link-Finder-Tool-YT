@@ -5,9 +5,12 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MusicianInstagramResearchHistoryDay } from './musicianInstagramResearchHistoryDay';
 import type { MusicianInstagramResearchTier } from './musicianInstagramResearchTier';
 
 export interface MusicianInstagramResearchCoverage {
   tiers: MusicianInstagramResearchTier[];
+  /** Daily results for dispatched run/profile attempts in the current global Tier 1-3 cohort. */
+  history: MusicianInstagramResearchHistoryDay[];
   generatedAt: Date;
 }
