@@ -66,15 +66,15 @@ const redact = (key, value) => {
 // Context is optional and bounded; absence leaves archived request bytes unchanged.
 export function boundedArtistContext(context) {
   if (context === undefined) return undefined;
-  if (!context || context.ownershipConfirmed !== false || !Array.isArray(context.items) || context.items.length > 8) {
+  if (!context || context.ownershipConfirmed !== false || !Array.isArray(context.items) || context.items.length > 16) {
     throw new Error('Invalid artist context; refusing an implicit fallback.');
   }
   const items = context.items.map(i => {
-    if (!['bio','country','genre','spotify_biography'].includes(i.kind) || typeof i.text !== 'string' || !i.source) {
+    if (!['bio','country','genre','spotify_biography','release'].includes(i.kind) || typeof i.text !== 'string' || !i.source) {
       throw new Error('Invalid artist context item.');
     }
     return { kind:i.kind, platform:i.platform, source:i.source, asOf:i.asOf, ageDays:i.ageDays,
-      stale:i.stale === true, text:i.text.slice(0,500) };
+      stale:i.stale === true, text:i.text.slice(0,300) };
   });
   return items.length ? { note:'Context only; not ownership evidence.', items } : undefined;
 }
@@ -258,4 +258,16 @@ export function createLiveTransport({ keys, responseDir, fetchImpl = fetch, publ
     }
     throw new Error('Unimplemented pilot provider kind.');
   }};
+}
+
+/** Drops lowest-priority context until the complete verifier request fits the frozen cap. */
+export function fitArtistContext(payload, maxBytes) {
+  const context = payload.artistContext;
+  if (!context?.items?.length) return payload;
+  const bytes = items => Buffer.byteLength(JSON.stringify(jevRequest({
+    ...payload, artistContext: items.length ? { ...context, items } : undefined })));
+  let items = [...context.items];
+  while (items.length && bytes(items) > maxBytes) items.pop();
+  const { artistContext, ...rest } = payload;
+  return items.length ? { ...rest, artistContext: { ...context, items } } : rest;
 }

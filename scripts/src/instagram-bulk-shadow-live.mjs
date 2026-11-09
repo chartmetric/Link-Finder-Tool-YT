@@ -7,6 +7,7 @@ import {runPilot,pilotPreflight} from './instagram-pilot-runner.mjs';
 import {createLiveTransport} from './instagram-pilot-live-transport.mjs';
 import {createCatalogAlbumLookup} from './catalog-album-evidence.mjs';
 import {catalogReferences} from './musician-instagram-matching.mjs';
+import {enrichManifest,attachMetadataContext} from './instagram-artist-metadata-overlay.mjs';
 
 const newBatch=process.argv.includes('--approved-250');
 const batchApproval=Object.freeze({runId:'instagram-tiers-1-5-approved-250-usd20',maxArtists:250,maxSpendCents:2000});
@@ -134,13 +135,18 @@ async function prepare(){
     a.platform,a.account_url FROM new_vertical.l_profile_account AS l FINAL
     INNER JOIN (SELECT id,platform,account_url FROM new_vertical.account FINAL WHERE is_active=1) a ON a.id=l.account_id
     WHERE l.disconnected_at IS NULL AND l.profile_id IN (${rows.map(r=>r.profile_id).join(',')})`);
-  const manifest=buildShadowManifest(rows,accounts,snapshot.snapshot_at,audit,newBatch?batchApproval:undefined);
+  const base=buildShadowManifest(rows,accounts,snapshot.snapshot_at,audit,newBatch?batchApproval:undefined);
+  // Generic, read-only catalog context for every selected artist; never ownership proof.
+  const overlay=await enrichManifest(base,{chunkSize:250,maxArtists:Math.max(250,rows.length)});
+  const manifest=attachMetadataContext(base,overlay);
+  pilotPreflight(manifest);
   await fs.mkdir(output,{recursive:false});
   await save(`${output}/reservation-reconciliation.json`,audit);
+  await save(`${output}/artist-context-evidence.json`,overlay);
   await save(`${output}/approved-manifest.json`,manifest);
   await save(`${output}/manifest-receipt.json`,{sha256:hash(JSON.stringify(manifest))});
   await save(`${output}/preflight.json`,pilotPreflight(manifest));
-  console.log(JSON.stringify({prepared:true,artists:rows.length,
+  console.log(JSON.stringify({prepared:true,artists:rows.length,artistsWithContext:manifest.artists.filter(a=>a.metadata_context).length,
     tiers:Object.fromEntries([1,2,3,4,5].map(t=>[t,rows.filter(r=>Number(r.tier)===t).length])),
     priorReservedUsd:audit.reservedCents/100,approvedCapUsd:manifest.authorization.maxSpendCents/100,
     separateAuthorization:newBatch,

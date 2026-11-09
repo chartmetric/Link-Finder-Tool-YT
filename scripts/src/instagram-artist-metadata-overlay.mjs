@@ -8,16 +8,16 @@ const digest=s=>createHash('sha256').update(s).digest('hex');
 const text=v=>typeof v==='string'?v:'';
 const unique=values=>[...new Set(values)];
 const numeric=v=>/^\d+$/.test(String(v));
-export function validateScope(manifest) {
+export function validateScope(manifest,maxArtists=250) {
   const artists=manifest.artists;
-  if(!Array.isArray(artists)||!artists.length||artists.length>250
+  if(!Array.isArray(artists)||!artists.length||artists.length>maxArtists
     ||artists.some(a=>!numeric(a.profile_id)||!numeric(a.cm_artist))
     ||new Set(artists.map(a=>String(a.profile_id))).size!==artists.length)
     throw Error('Invalid frozen artist scope.');
   return artists;
 }
-export function metadataQueries(manifest) {
-  const artists=validateScope(manifest),ids=artists.map(a=>a.profile_id).join(',');
+export function metadataQueries(manifest,maxArtists=250) {
+  const artists=validateScope(manifest,maxArtists),ids=artists.map(a=>a.profile_id).join(',');
   const cms=unique(artists.map(a=>String(a.cm_artist))).join(',');
   const spotifyIds=unique(artists.flatMap(a=>(a.accounts??[]).filter(x=>x.platform==='spotify')
     .map(x=>{try{return new URL(x.account_url).pathname.split('/').filter(Boolean).at(-1);}catch{return '';}})));
@@ -47,6 +47,17 @@ export function metadataQueries(manifest) {
         toString(fetched_at)),fetched_at) latest FROM new_vertical.profile_spotify
       WHERE profile_id IN (${ids}) ${spotifyIds.length?`OR account_id IN (${spotifyIds.map(id=>`'${id}'`).join(',')})`:''}
       GROUP BY account_id,profile_id`,
+    releases:`SELECT spotify_artist_id,track_name,album_name,toString(updated_at) source_updated_at FROM
+      (SELECT spotify_artist_id,track_name,any(album_name) album_name,max(popularity_score) pop,max(updated_at) updated_at
+       FROM new_vertical.spotify WHERE spotify_artist_id IN (${spotifyIds.length?spotifyIds.map(id=>`'${id}'`).join(','):"''"})
+       AND track_name!='' GROUP BY spotify_artist_id,track_name ORDER BY spotify_artist_id,pop DESC LIMIT 5 BY spotify_artist_id)`,
+    cmTracks:`SELECT toString(c.cm_artist) cm_artist,t.name track_name,toString(c.release_date) release_date,
+      toString(c.synced_at) source_updated_at FROM
+      (SELECT cm_artist,cm_track,max(release_date) release_date,min(track_rank) rank,max(synced_at) synced_at
+       FROM new_vertical.prioritised_artist_track_tier_cache WHERE cm_artist IN (${cms})
+       GROUP BY cm_artist,cm_track ORDER BY cm_artist,rank LIMIT 5 BY cm_artist) c
+      INNER JOIN (SELECT id,name FROM new_vertical.cm_track FINAL WHERE id IN
+        (SELECT cm_track FROM new_vertical.prioritised_artist_track_tier_cache WHERE cm_artist IN (${cms}))) t ON t.id=c.cm_track`,
     profileMetadata:`SELECT toString(profile_id) profile_id,
       argMax(tuple(ifNull(bio,''),ifNull(bio_source,''),ifNull(code2,''),ifNull(code2_source,''),
         ifNull(city,''),ifNull(city_source,''),ifNull(primary_language,''),ifNull(primary_language_source,''),
@@ -55,9 +66,9 @@ export function metadataQueries(manifest) {
   };
 }
 
-export function buildMetadataOverlay(manifest,data,collectedAt) {
-  const artists=validateScope(manifest);
-  const sourceNames=['catalogProfiles','accounts','snapshots','chartmetric','tags','spotify','profileMetadata'];
+export function buildMetadataOverlay(manifest,data,collectedAt,maxArtists=250) {
+  const artists=validateScope(manifest,maxArtists);
+  const sourceNames=['catalogProfiles','accounts','snapshots','chartmetric','tags','spotify','releases','cmTracks','profileMetadata'];
   if(sourceNames.some(k=>!Array.isArray(data[k])))throw Error('Missing catalog query response.');
   const packets=artists.map(a=>{
     const id=String(a.profile_id),cm=String(a.cm_artist);
@@ -96,6 +107,10 @@ export function buildMetadataOverlay(manifest,data,collectedAt) {
       chartmetric:cmRows[0]?{...cmRows[0],source:'new_vertical.cm_artist'}:null,
       tags:data.tags.filter(p=>p.cm_artist===cm).map(p=>({...p,table:'new_vertical.l_cm_artist_tag'})),
       spotifyMetadata:spotify,
+      releases:data.releases.filter(r=>accounts.some(x=>x.platform==='spotify'&&x.wasInFrozenBatch
+        &&x.account_url?.replace(/\/$/,'').endsWith(`/artist/${r.spotify_artist_id}`)))
+        .map(r=>({...r,source:'new_vertical.spotify',binding:'exact_linked_spotify_artist_id'})),
+      catalogTracks:data.cmTracks.filter(r=>r.cm_artist===cm).map(r=>({...r,source:'new_vertical.prioritised_artist_track_tier_cache + new_vertical.cm_track',binding:'exact_cm_artist'})),
       profileMetadata:metadata.map(p=>({...p,source:'new_vertical.profile_metadata_cache',
         warning:'Retain per-field source; model-derived or candidate-derived data is not independent ownership evidence.'})),
       missing: {spotifyBiography:!spotify.some(p=>p.usableAsContext&&text(p.latest[1]).trim()),
@@ -117,9 +132,15 @@ export function buildMetadataOverlay(manifest,data,collectedAt) {
 
 /** Converts only source-bound, current-account context for the verifier. Instagram
  * candidates and unbound profile/platform snapshots can never supply it. */
-export function artistContextFromPacket(packet,{staleAfterDays=365,maxItems=8}={}) {
+export function artistContextFromPacket(packet,{staleAfterDays=365,maxItems=16}={}) {
   const asOf=Date.parse(packet.collectedAt),items=[];
+  // Priority order: concrete music facts first, then supporting context and old bios.
   const age=date=>Number.isFinite(asOf)&&Number.isFinite(Date.parse(date))?Math.max(0,Math.floor((asOf-Date.parse(date))/864e5)):null;
+  const when=date=>Number.isFinite(asOf)&&Number.isFinite(Date.parse(date))?Math.max(0,Math.floor((asOf-Date.parse(date))/864e5)):null;
+  for(const r of packet.releases??[])items.push({kind:'release',platform:'spotify',source:r.source,asOf:r.source_updated_at,
+    ageDays:when(r.source_updated_at),stale:false,text:`${r.track_name}${r.album_name?` — ${r.album_name}`:''}`.slice(0,160)});
+  for(const r of packet.catalogTracks??[])items.push({kind:'release',platform:'chartmetric',source:r.source,asOf:r.source_updated_at,
+    ageDays:when(r.source_updated_at),stale:false,text:`${r.track_name}${r.release_date?` (${r.release_date.slice(0,10)})`:''}`.slice(0,160)});
   for(const s of packet.platformSnapshots)if(s.usableAsContext&&s.bio.trim()){
     const ageDays=age(s.snapshotDate);
     items.push({kind:'bio',platform:s.platform,source:s.source,asOf:s.snapshotDate,ageDays,
@@ -134,7 +155,19 @@ export function artistContextFromPacket(packet,{staleAfterDays=365,maxItems=8}={
     asOf:packet.chartmetric.source_updated_at,ageDays:age(packet.chartmetric.source_updated_at),stale:false,text:packet.chartmetric.code2});
   for(const t of packet.tags.filter(t=>t.tag_type==='genre'))items.push({kind:'genre',source:t.table,
     asOf:t.source_updated_at,ageDays:age(t.source_updated_at),stale:false,text:t.tag_slug});
+  const order={release:0,country:1,genre:2,bio:3,spotify_biography:3};
+  items.sort((a,b)=>order[a.kind]-order[b.kind]);
   return {ownershipConfirmed:false,items:items.slice(0,maxItems)};
+}
+/** Cohort-wide read-only enrichment. Works for any manifest; chunks keep queries bounded. */
+export async function enrichManifest(manifest,{query=select,now=()=>new Date().toISOString(),chunkSize=250,maxArtists=5000}={}) {
+  validateScope(manifest,maxArtists);
+  const collectedAt=now(),data={};
+  for(let i=0;i<manifest.artists.length;i+=chunkSize){
+    const queries=metadataQueries({...manifest,artists:manifest.artists.slice(i,i+chunkSize)},chunkSize);
+    for(const [key,sql] of Object.entries(queries))data[key]=[...(data[key]??[]),...await query(sql)];
+  }
+  return buildMetadataOverlay(manifest,data,collectedAt,maxArtists);
 }
 export function attachMetadataContext(manifest,overlay) {
   const byId=new Map(overlay.packets.map(p=>[p.profileId,p]));

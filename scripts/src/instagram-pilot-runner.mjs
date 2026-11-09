@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fitArtistContext } from './instagram-pilot-live-transport.mjs';
 import { catalogReferences, referenceUrl, instagramProfileUrl, hasCatalogCrossLink, assessInstagramCandidates } from './musician-instagram-matching.mjs';
 import { createPilotBudget } from './instagram-pilot-budget.mjs';
 import { musicEvidenceSources, resolveMusicEvidence } from './public-music-links.mjs';
@@ -120,8 +121,8 @@ export async function runPilot({ manifest, journalPath, transport, evaluateRegre
         const readableProfiles=profiles.filter(p=>p.identityComparison);
         if (profiles.length && !readableProfiles.length) throw new Error('No candidate had readable identity metadata; evidence retained.');
         if (readableProfiles.length) {
-          const decisions = await call('jev', { artist: artist.artist, catalogReference: scope.reference, profiles:readableProfiles,
-            ...(artist.metadata_context ? { artistContext: artist.metadata_context } : {}) });
+          const decisions = await call('jev', fitArtistContext({ artist: artist.artist, catalogReference: scope.reference, profiles:readableProfiles,
+            ...(artist.metadata_context ? { artistContext: artist.metadata_context } : {}) }, manifest.proposed_limits.jev_max_input_tokens_per_request));
           for (const p of profiles) p.jevVerification = decisions.find(d => instagramProfileUrl(d.url) === p.url)?.jevVerification;
         }
         const assessment = assessInstagramCandidates({ ...discovery, profiles }, artist);
