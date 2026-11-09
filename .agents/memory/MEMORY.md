@@ -17,3 +17,4 @@
 - [Coverage availability](coverage-availability.md) — full-platform coverage includes links, completed no-matches, or sourced absence, but not failed or incomplete searches.
 - [ScrapeCreators access states](scrapecreators-access-states.md) — Instagram 403/404 can be confirmed restricted-resource states; inspect the body, not just HTTP status.
 - [Ownership benchmark adjudication](ownership-benchmark-adjudication.md) — source review is independent of model judgments, not necessarily multi-human or held-out calibration.
+- [Verification evidence audits](verification-evidence-audits.md) — archived decisions cannot be attributed to newer reconstructed inputs; separate source paths, ownership and acceptance.

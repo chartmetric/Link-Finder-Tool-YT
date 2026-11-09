@@ -1,0 +1,18 @@
+[
+  {"id":"exact-path-positive","evidence":"exact_path","verdict":"verified","score":0.95,"category":"positive_contract","expected":"supported"},
+  {"id":"direct-link-positive","evidence":"direct","verdict":"verified","score":0.95,"category":"positive_contract","expected":"supported"},
+  {"id":"reciprocal-positive","evidence":"reciprocal","verdict":"verified","score":0.95,"category":"positive_contract","expected":"supported"},
+  {"id":"name-only-even-with-model-approval","evidence":"missing","verdict":"verified","score":0.99,"category":"missing_evidence","expected":"needs_review"},
+  {"id":"unavailable-page","evidence":"unavailable","verdict":"uncertain","score":0.2,"category":"missing_evidence","expected":"needs_review"},
+  {"id":"shared-release","evidence":"multi_artist","verdict":"verified","score":0.99,"category":"ambiguous_association","expected":"needs_review"},
+  {"id":"different-credited-artist","evidence":"wrong_artist","verdict":"mismatch","score":0.01,"category":"wrong_identity","expected":"rejected"},
+  {"id":"different-artist-model-approval","evidence":"wrong_artist","verdict":"verified","score":0.99,"category":"wrong_identity","expected":"needs_review"},
+  {"id":"fan-links-exact-artist","evidence":"fan","verdict":"verified","score":0.99,"category":"related_entity","expected":"needs_review"},
+  {"id":"label-links-exact-artist","evidence":"label","verdict":"verified","score":0.99,"category":"related_entity","expected":"needs_review"},
+  {"id":"unbound-candidate-metadata","evidence":"unbound","verdict":"verified","score":0.99,"category":"missing_binding","expected":"needs_review"},
+  {"id":"exact-path-model-likely","evidence":"exact_path","verdict":"likely","score":0.42,"category":"model_disagreement","expected":"needs_review"},
+  {"id":"exact-path-model-mismatch","evidence":"exact_path","verdict":"mismatch","score":0.01,"category":"model_disagreement","expected":"rejected"},
+  {"id":"verified-below-numeric-gate","evidence":"exact_path","verdict":"verified","score":0.89,"category":"numeric_gate","expected":"needs_review"},
+  {"id":"numeric-boundary-positive","evidence":"exact_path","verdict":"verified","score":0.9,"category":"positive_contract","expected":"supported"},
+  {"id":"high-score-wrong-verdict","evidence":"exact_path","verdict":"likely","score":0.99,"category":"model_disagreement","expected":"needs_review"}
+]
