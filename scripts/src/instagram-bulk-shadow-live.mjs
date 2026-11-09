@@ -10,10 +10,12 @@ import {catalogReferences} from './musician-instagram-matching.mjs';
 import {enrichManifest,attachMetadataContext} from './instagram-artist-metadata-overlay.mjs';
 
 const secondBatch=process.argv.includes('--approved-250-second');
-const newBatch=process.argv.includes('--approved-250')||secondBatch;
+const thirdBatch=process.argv.includes('--approved-238-third');
+const newBatch=process.argv.includes('--approved-250')||secondBatch||thirdBatch;
+const batchMax=thirdBatch?238:250,batchCents=thirdBatch?1900:2000;
 // A second separately authorized batch gets its own run ID and archive; prior archives stay untouched.
-const batchApproval=Object.freeze({runId:secondBatch?'instagram-tiers-1-5-approved-250-usd20-second':'instagram-tiers-1-5-approved-250-usd20',maxArtists:250,maxSpendCents:2000});
-const output=secondBatch?'generated-artifacts/instagram-bulk-shadow-second-approved-250-usd20':newBatch?'generated-artifacts/instagram-bulk-shadow-approved-250-usd20':'generated-artifacts/instagram-bulk-shadow-2026-11-09-approved-50';
+const batchApproval=Object.freeze({runId:thirdBatch?'instagram-tiers-1-5-approved-238-usd19-third':secondBatch?'instagram-tiers-1-5-approved-250-usd20-second':'instagram-tiers-1-5-approved-250-usd20',maxArtists:batchMax,maxSpendCents:batchCents});
+const output=thirdBatch?'generated-artifacts/instagram-bulk-shadow-third-approved-238-usd19':secondBatch?'generated-artifacts/instagram-bulk-shadow-second-approved-250-usd20':newBatch?'generated-artifacts/instagram-bulk-shadow-approved-250-usd20':'generated-artifacts/instagram-bulk-shadow-2026-11-09-approved-50';
 const lockPath='generated-artifacts/instagram-original-pilot-budget.lock';
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const save=(p,value)=>fs.writeFile(p,JSON.stringify(value,null,2),{flag:'wx'});
@@ -72,7 +74,7 @@ async function select(query){
 }
 
 export function buildShadowManifest(rows,accounts,snapshotAt,audit,approval){
-  if(approval&&(approval.runId!==batchApproval.runId||approval.maxArtists!==250||approval.maxSpendCents!==2000))
+  if(approval&&(approval.runId!==batchApproval.runId||approval.maxArtists!==batchMax||approval.maxSpendCents!==batchCents))
     throw Error('Unknown separate batch authorization.');
   const maxArtists=approval?.maxArtists??50,maxSpendCents=approval?.maxSpendCents??500;
   if(!rows.length||rows.length>maxArtists||(!approval&&audit.reservedCents+500>1000))throw Error('Empty/oversized cohort or insufficient original budget.');
@@ -130,7 +132,7 @@ async function prepare(){
     AND p.id NOT IN (SELECT profile_id FROM poc_new_verticals.musician_instagram_discovery_events
       GROUP BY profile_id HAVING argMax(status,updated_at) NOT IN ('candidates_found','no_candidates'))
     ${excluded.length?`AND p.id NOT IN (${excluded.join(',')})`:''}
-    ${newBatch?"ORDER BY row_number() OVER (PARTITION BY tier ORDER BY cityHash64(toString(p.id))),tier LIMIT 250":"ORDER BY tier,cityHash64(toString(p.id)) LIMIT 10 BY tier"}`;
+    ${newBatch?`ORDER BY row_number() OVER (PARTITION BY tier ORDER BY cityHash64(toString(p.id))),tier LIMIT ${batchMax}`:"ORDER BY tier,cityHash64(toString(p.id)) LIMIT 10 BY tier"}`;
   const rows=await select(query);
   if(!rows.length||rows.some(r=>!/^\d+$/.test(String(r.profile_id))))throw Error('No valid eligible cohort.');
   const accounts=await select(`SELECT toString(l.profile_id) profile_id,toString(l.account_id) account_id,
@@ -160,7 +162,7 @@ async function run(){
   const receipt=await read(`${output}/manifest-receipt.json`);
   if(hash(JSON.stringify(manifest))!==receipt.sha256)throw Error('Frozen manifest changed; no paid launch.');
   if((await reconcileReservations()).fingerprint!==audit.fingerprint)throw Error('Reservation history changed; no paid launch.');
-  if(manifest.authorization?.maxSpendCents!==(newBatch?2000:500)||manifest.artists.length>(newBatch?250:50)
+  if(manifest.authorization?.maxSpendCents!==(newBatch?batchCents:500)||manifest.artists.length>(newBatch?batchMax:50)
     ||(newBatch&&JSON.stringify(manifest.authorization.separateBatchApproval)!==JSON.stringify(batchApproval))
     ||manifest.artists.some(a=>a.bucket!=='automatic_shadow_cohort'))throw Error('Unexpected approved scope.');
   const keys=Object.fromEntries(['SERPERDEV_API_KEY','SCRAPECREATORS_API_KEY','OPENROUTER_API_KEY'].map(k=>{
