@@ -266,3 +266,17 @@ mtime_ms = 1793990539886
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/c0d1d562-ce53-4e1b-9951-986cc73d7bfa/317efbfc-087a-4d39-95bc-00ffab69f607"
 storage_version_token = "1793990606783712"
 content_type = "text/csv"
+
+[[outputs]]
+id = "Gj3yDtSVtS81Ol9gn1a-e"
+uri = "file://scripts/INSTAGRAM_ACCEPTANCE_POLICY_DRAFT.md"
+type = "text"
+title = "Draft Instagram Acceptance Policy"
+description = "Proposal only: trusted-source and standard evidence routes, safeguards, and requirements before activation. No live rules or links changed."
+logical_id = "57a76c4f-3caa-434d-976a-f95f084e2b94"
+content_hash = "sha256:e2b3c7104b9be37c28509089fa866ac6de8284fda4d6f3a2c55ca40849fd10ea"
+size = 9294
+mtime_ms = 1794251079946
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/57a76c4f-3caa-434d-976a-f95f084e2b94/bc2860f0-22c2-43f4-a5e8-4b0d7623d636"
+storage_version_token = "1794251109552093"
+content_type = "text/markdown"

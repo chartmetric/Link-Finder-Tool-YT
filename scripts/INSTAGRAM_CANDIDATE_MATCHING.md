@@ -1,5 +1,9 @@
 # Artist Instagram candidate matching
 
+Proposed future acceptance rules are documented in
+[INSTAGRAM_ACCEPTANCE_POLICY_DRAFT.md](./INSTAGRAM_ACCEPTANCE_POLICY_DRAFT.md).
+That document is a draft only; it does not change the active rules below.
+
 `musician-instagram-research.mjs` now separates raw search hits from identity-supported research candidates. No existing ClickHouse rows are rewritten by this code change.
 
 ## Promotion policy
