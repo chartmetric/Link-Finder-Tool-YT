@@ -9,9 +9,11 @@ import {createCatalogAlbumLookup} from './catalog-album-evidence.mjs';
 import {catalogReferences} from './musician-instagram-matching.mjs';
 import {enrichManifest,attachMetadataContext} from './instagram-artist-metadata-overlay.mjs';
 
-const newBatch=process.argv.includes('--approved-250');
-const batchApproval=Object.freeze({runId:'instagram-tiers-1-5-approved-250-usd20',maxArtists:250,maxSpendCents:2000});
-const output=newBatch?'generated-artifacts/instagram-bulk-shadow-approved-250-usd20':'generated-artifacts/instagram-bulk-shadow-2026-11-09-approved-50';
+const secondBatch=process.argv.includes('--approved-250-second');
+const newBatch=process.argv.includes('--approved-250')||secondBatch;
+// A second separately authorized batch gets its own run ID and archive; prior archives stay untouched.
+const batchApproval=Object.freeze({runId:secondBatch?'instagram-tiers-1-5-approved-250-usd20-second':'instagram-tiers-1-5-approved-250-usd20',maxArtists:250,maxSpendCents:2000});
+const output=secondBatch?'generated-artifacts/instagram-bulk-shadow-second-approved-250-usd20':newBatch?'generated-artifacts/instagram-bulk-shadow-approved-250-usd20':'generated-artifacts/instagram-bulk-shadow-2026-11-09-approved-50';
 const lockPath='generated-artifacts/instagram-original-pilot-budget.lock';
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const save=(p,value)=>fs.writeFile(p,JSON.stringify(value,null,2),{flag:'wx'});

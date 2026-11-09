@@ -14,7 +14,7 @@ export const pilotReservationsCents = Object.freeze({
 export async function createPilotBudget({ manifest, journalPath, transport, mode }) {
   // A separately approved research batch does not expand the original $10 pilot.
   const batch=manifest.authorization?.separateBatchApproval;
-  const separateBatchAuthorized=batch?.runId==='instagram-tiers-1-5-approved-250-usd20'
+  const separateBatchAuthorized=['instagram-tiers-1-5-approved-250-usd20','instagram-tiers-1-5-approved-250-usd20-second'].includes(batch?.runId)
     &&batch.maxArtists===250&&batch.maxSpendCents===2000
     &&manifest.artists.length<=250&&manifest.selection?.claimsAllowed===false
     &&manifest.selection?.experimentalAcceptanceEnabled===false&&manifest.selection?.fullTierRerun===false;
