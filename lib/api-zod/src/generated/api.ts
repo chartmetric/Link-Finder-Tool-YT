@@ -106,8 +106,10 @@ export const GetMusicianInstagramResearchCoverageResponse = zod.object({
   "tier": zod.number(),
   "totalProfiles": zod.number(),
   "processedProfiles": zod.number().describe('Profiles whose latest research result is candidates found or no candidates.'),
-  "profilesWithInstagramUrls": zod.number(),
   "profilesWithResearchUrls": zod.number().describe('Profiles whose latest research result contains candidate URLs.'),
+  "profilesWithInstagramUrls": zod.number().describe('Unique profiles with a catalog Instagram URL or policy-supported research URL.'),
+  "profilesWithSupportedResearchUrls": zod.number().describe('Profiles without a catalog URL whose latest research carries catalog-reference-identity-v1 support for a saved URL. Not approved catalog links.'),
+  "profilesWithUnresolvedCandidates": zod.number().describe('Profiles without catalog or supported research URLs whose latest outcome is candidates_found or needs_review. Excluded from coverage.'),
   "profilesWithNoSupportedMatch": zod.number(),
   "profilesWithUrlOrNoSupportedMatch": zod.number(),
   "completedNoCandidateProfiles": zod.number(),
@@ -115,7 +117,7 @@ export const GetMusicianInstagramResearchCoverageResponse = zod.object({
   "pendingProfiles": zod.number(),
   "profilesWithCatalogInstagramUrls": zod.number().describe('Profiles with actual connected catalog Instagram URL evidence, counted once.'),
   "profilesWithResearchCandidates": zod.number().describe('Saved candidates_found outcomes with non-empty Instagram URLs, not approved catalog links. May overlap catalog links.'),
-  "profilesWithFailedOrIncompleteSearches": zod.number().describe('Profiles without a catalog URL, research candidate, or completed no-supported-match outcome. Includes failed, incomplete, and not-yet-searched profiles; excluded from coverage.')
+  "profilesWithFailedOrIncompleteSearches": zod.number().describe('Profiles without a catalog URL, supported research URL, unresolved candidate outcome, or completed no-supported-match outcome. Includes failed, incomplete, and not-yet-searched profiles; excluded from coverage.')
 })),
   "history": zod.array(zod.object({
   "date": zod.coerce.date(),

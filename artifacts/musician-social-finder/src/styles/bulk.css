@@ -343,6 +343,7 @@
 .blk-ig-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .blk-ig-legend i { width: 9px; height: 9px; border-radius: 2px; background: #d7e1e7; }
 .blk-ig-legend i.url, .blk-ig-segment.url { background: #176b62; }
+.blk-ig-legend i.research, .blk-ig-segment.research { background: #467fb2; }
 .blk-ig-legend i.no-candidate, .blk-ig-segment.no-candidate { background: #c9a643; }
 .blk-ig-tier-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
 .blk-ig-tier { min-width: 0; padding: 11px 12px; border: 1px solid #e1e9ed; border-radius: 9px; background: #f4faf8; }
@@ -400,6 +401,7 @@
 .dark .blk-ig-history-table thead th small { color: hsl(var(--muted-foreground)); }
 .dark .blk-ig-track { background: hsl(var(--muted)); }
 .dark .blk-ig-legend i.url, .dark .blk-ig-segment.url { background: hsl(var(--primary)); }
+.dark .blk-ig-legend i.research, .dark .blk-ig-segment.research { background: #82b4e0; }
 .dark .blk-ig-legend i.no-candidate, .dark .blk-ig-segment.no-candidate { background: #a3a537; }
 .dark .blk-ig-stale { color: #e7c56c; }
 .blk-ig-rerun { margin-top: 18px; padding: 16px; border: 1px solid #cbdde0; border-radius: 10px; background: #f7fbfa; }

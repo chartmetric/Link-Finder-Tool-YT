@@ -132,9 +132,14 @@ export interface MusicianInstagramResearchTier {
   totalProfiles: number;
   /** Profiles whose latest research result is candidates found or no candidates. */
   processedProfiles: number;
-  profilesWithInstagramUrls: number;
   /** Profiles whose latest research result contains candidate URLs. */
   profilesWithResearchUrls: number;
+  /** Unique profiles with a catalog Instagram URL or policy-supported research URL. */
+  profilesWithInstagramUrls: number;
+  /** Profiles without a catalog URL whose latest research carries catalog-reference-identity-v1 support for a saved URL. Not approved catalog links. */
+  profilesWithSupportedResearchUrls: number;
+  /** Profiles without catalog or supported research URLs whose latest outcome is candidates_found or needs_review. Excluded from coverage. */
+  profilesWithUnresolvedCandidates: number;
   profilesWithNoSupportedMatch: number;
   profilesWithUrlOrNoSupportedMatch: number;
   completedNoCandidateProfiles: number;
@@ -144,7 +149,7 @@ export interface MusicianInstagramResearchTier {
   profilesWithCatalogInstagramUrls: number;
   /** Saved candidates_found outcomes with non-empty Instagram URLs, not approved catalog links. May overlap catalog links. */
   profilesWithResearchCandidates: number;
-  /** Profiles without a catalog URL, research candidate, or completed no-supported-match outcome. Includes failed, incomplete, and not-yet-searched profiles; excluded from coverage. */
+  /** Profiles without a catalog URL, supported research URL, unresolved candidate outcome, or completed no-supported-match outcome. Includes failed, incomplete, and not-yet-searched profiles; excluded from coverage. */
   profilesWithFailedOrIncompleteSearches: number;
 }
 

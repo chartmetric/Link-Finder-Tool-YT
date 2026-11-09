@@ -9,6 +9,8 @@ type ResearchRow = {
   processed_profiles: number | string;
   profiles_with_instagram_urls: number | string;
   profiles_with_research_urls: number | string;
+  profiles_with_supported_research_urls: number | string;
+  profiles_with_unresolved_candidates: number | string;
   profiles_with_no_supported_match: number | string;
   profiles_with_url_or_no_supported_match: number | string;
   completed_no_candidate_profiles: number | string;
@@ -94,7 +96,7 @@ export const musicianInstagramResearchCoverageSql = `
   ),
   latest_lookup AS (
     SELECT profile_id,
-      argMax(tuple(status, instagram_urls), updated_at) AS outcome
+      argMax(tuple(status, instagram_urls, result_json), updated_at) AS outcome
     FROM poc_new_verticals.musician_instagram_discovery_events
     GROUP BY profile_id
   ),
@@ -104,21 +106,34 @@ export const musicianInstagramResearchCoverageSql = `
       t.assigned_tier AS tier,
       tupleElement(l.outcome, 1) AS research_status,
       tupleElement(l.outcome, 2) AS instagram_urls,
+      tupleElement(l.outcome, 3) AS result_json,
       coalesce(c.has_catalog_instagram_url, 0) AS has_catalog_instagram_url
     FROM tier_assignments AS t
     LEFT JOIN latest_lookup AS l ON toUInt64(t.profile) = l.profile_id
     LEFT JOIN catalog_instagram_profiles AS c ON toUInt64(t.profile) = c.profile_id
   ),
+  research_evidence AS (
+    SELECT *,
+      research_status = 'candidates_found'
+        AND JSONExtractString(result_json, 'candidateMatching', 'policy') = 'catalog-reference-identity-v1'
+        AND JSONExtractString(result_json, 'candidateMatching', 'status') = 'candidates_found'
+        AND arrayExists(url -> notEmpty(trim(url)) AND has(
+          JSONExtract(result_json, 'candidateMatching', 'urls', 'Array(String)'), url
+        ), instagram_urls) AS has_supported_research_url
+    FROM tier_results
+  ),
   profile_coverage AS (
     SELECT
       tier,
       research_status,
-      has_catalog_instagram_url,
       research_status = 'candidates_found' AND notEmpty(instagram_urls) AS has_research_url,
-      has_catalog_instagram_url
-        OR (research_status = 'candidates_found' AND notEmpty(instagram_urls)) AS has_instagram_url,
+      has_catalog_instagram_url,
+      NOT has_catalog_instagram_url AND has_supported_research_url AS supported_research_only,
+      has_catalog_instagram_url OR has_supported_research_url AS has_instagram_url,
+      NOT has_catalog_instagram_url AND NOT has_supported_research_url
+        AND research_status IN ('candidates_found', 'needs_review') AS unresolved_candidates,
       research_status = 'no_candidates' AND NOT has_catalog_instagram_url AS no_supported_match
-    FROM tier_results
+    FROM research_evidence
   )
   SELECT
     tier,
@@ -126,6 +141,8 @@ export const musicianInstagramResearchCoverageSql = `
     countIf(research_status IN ('candidates_found', 'no_candidates')) AS processed_profiles,
     countIf(has_instagram_url) AS profiles_with_instagram_urls,
     countIf(has_research_url) AS profiles_with_research_urls,
+    countIf(supported_research_only) AS profiles_with_supported_research_urls,
+    countIf(unresolved_candidates) AS profiles_with_unresolved_candidates,
     countIf(no_supported_match) AS profiles_with_no_supported_match,
     countIf(has_instagram_url OR no_supported_match) AS profiles_with_url_or_no_supported_match,
     countIf(research_status = 'no_candidates') AS completed_no_candidate_profiles,
@@ -133,7 +150,7 @@ export const musicianInstagramResearchCoverageSql = `
     countIf(research_status IN ('queued', 'running')) AS pending_profiles,
     countIf(has_catalog_instagram_url) AS profiles_with_catalog_instagram_urls,
     countIf(has_research_url) AS profiles_with_research_candidates,
-    countIf(NOT has_instagram_url AND NOT no_supported_match) AS profiles_with_failed_or_incomplete_searches
+    countIf(NOT has_instagram_url AND NOT no_supported_match AND NOT unresolved_candidates) AS profiles_with_failed_or_incomplete_searches
   FROM profile_coverage
   GROUP BY tier
   ORDER BY tier
@@ -321,6 +338,8 @@ export function musicianInstagramResearchCoverageResponse(
       processedProfiles: asCount(row?.processed_profiles),
       profilesWithInstagramUrls: asCount(row?.profiles_with_instagram_urls),
       profilesWithResearchUrls: asCount(row?.profiles_with_research_urls),
+      profilesWithSupportedResearchUrls: asCount(row?.profiles_with_supported_research_urls),
+      profilesWithUnresolvedCandidates: asCount(row?.profiles_with_unresolved_candidates),
       profilesWithNoSupportedMatch: asCount(row?.profiles_with_no_supported_match),
       profilesWithUrlOrNoSupportedMatch: asCount(row?.profiles_with_url_or_no_supported_match),
       completedNoCandidateProfiles: asCount(row?.completed_no_candidate_profiles),

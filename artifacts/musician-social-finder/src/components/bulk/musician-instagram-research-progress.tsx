@@ -84,7 +84,8 @@ const statusLabel: Record<string, string> = {
 type CoverageView = 'urls' | 'resolved';
 
 function TierCard({ tier, view }: { tier: MusicianInstagramResearchTier; view: CoverageView }) {
-  const urlPct = tier.totalProfiles ? 100 * tier.profilesWithInstagramUrls / tier.totalProfiles : 0;
+  const catalogPct = tier.totalProfiles ? 100 * tier.profilesWithCatalogInstagramUrls / tier.totalProfiles : 0;
+  const researchPct = tier.totalProfiles ? 100 * tier.profilesWithSupportedResearchUrls / tier.totalProfiles : 0;
   const noMatchPct = tier.totalProfiles ? 100 * tier.profilesWithNoSupportedMatch / tier.totalProfiles : 0;
   const covered = view === 'urls'
     ? tier.profilesWithInstagramUrls
@@ -97,18 +98,21 @@ function TierCard({ tier, view }: { tier: MusicianInstagramResearchTier; view: C
         <strong data-testid={`text-instagram-coverage-tier-${tier.tier}-percent`}>{pct(covered, tier.totalProfiles)}</strong>
         <span>{fmt(covered)} of {fmt(tier.totalProfiles)} profiles</span>
       </div>
-      <div className="blk-ig-track" role="img" aria-label={`Tier ${tier.tier}: ${fmt(covered)} of ${fmt(tier.totalProfiles)} profiles ${view === 'urls' ? 'have an Instagram URL' : 'have an Instagram URL or no supported match'}`}>
-        <span className="blk-ig-segment url" style={{ width: `${urlPct}%` }} />
+      <div className="blk-ig-track" role="img" aria-label={`Tier ${tier.tier}: ${fmt(covered)} of ${fmt(tier.totalProfiles)} profiles ${view === 'urls' ? 'have a catalog or identity-supported research URL' : 'have a catalog or identity-supported research URL or no supported match'}`}>
+        <span className="blk-ig-segment url" style={{ width: `${catalogPct}%` }} />
+        <span className="blk-ig-segment research" style={{ width: `${researchPct}%` }} />
         {view === 'resolved' && <span className="blk-ig-segment no-candidate" style={{ width: `${noMatchPct}%` }} />}
       </div>
       <dl className="blk-ig-tier-stats">
-        <div><dt>Instagram URL</dt><dd data-testid={`text-instagram-coverage-tier-${tier.tier}-urls`}>{fmt(tier.profilesWithInstagramUrls)}</dd></div>
-        <div><dt>Catalog links</dt><dd data-testid={`text-instagram-coverage-tier-${tier.tier}-catalog`}>{fmt(tier.profilesWithCatalogInstagramUrls)}</dd></div>
-        <div><dt>Research candidates</dt><dd data-testid={`text-instagram-coverage-tier-${tier.tier}-candidates`}>{fmt(tier.profilesWithResearchCandidates)}</dd></div>
+        <div><dt>Catalog URL</dt><dd data-testid={`text-instagram-coverage-tier-${tier.tier}-catalog`}>{fmt(tier.profilesWithCatalogInstagramUrls)}</dd></div>
+        <div><dt>Supported research only</dt><dd data-testid={`text-instagram-coverage-tier-${tier.tier}-research`}>{fmt(tier.profilesWithSupportedResearchUrls)}</dd></div>
+        <div><dt>Catalog or supported URL</dt><dd data-testid={`text-instagram-coverage-tier-${tier.tier}-urls`}>{fmt(tier.profilesWithInstagramUrls)}</dd></div>
+        <div><dt>Unresolved · not covered</dt><dd data-testid={`text-instagram-coverage-tier-${tier.tier}-unresolved`}>{fmt(tier.profilesWithUnresolvedCandidates)}</dd></div>
+        <div><dt>Raw research candidates</dt><dd data-testid={`text-instagram-coverage-tier-${tier.tier}-candidates`}>{fmt(tier.profilesWithResearchCandidates)}</dd></div>
         <div><dt>No supported match</dt><dd data-testid={`text-instagram-coverage-tier-${tier.tier}-no-match`}>{fmt(tier.profilesWithNoSupportedMatch)}</dd></div>
         <div><dt>Failed searches</dt><dd>{fmt(tier.failedProfiles)}</dd></div>
         <div><dt>Pending searches</dt><dd>{fmt(tier.pendingProfiles)}</dd></div>
-        <div><dt>Unresolved / not searched</dt><dd data-testid={`text-instagram-coverage-tier-${tier.tier}-incomplete`}>{fmt(tier.profilesWithFailedOrIncompleteSearches)}</dd></div>
+        <div><dt>Other incomplete / not searched</dt><dd data-testid={`text-instagram-coverage-tier-${tier.tier}-incomplete`}>{fmt(tier.profilesWithFailedOrIncompleteSearches)}</dd></div>
       </dl>
     </article>
   );
@@ -238,7 +242,7 @@ export function MusicianInstagramResearchProgress() {
       <div className="blk-cov-head">
         <div>
           <div className="inv-kicker">Coverage / Instagram · Tiers 1–5</div>
-          <h2 id="blk-ig-title">Instagram URL coverage</h2>
+          <h2 id="blk-ig-title">Instagram URL evidence coverage</h2>
         </div>
         <div className="blk-ig-head-actions">
           {data && <span className="blk-cov-time inv-mono" data-testid="text-instagram-research-updated">
@@ -285,20 +289,21 @@ export function MusicianInstagramResearchProgress() {
 
           <div className="blk-ig-toggle" role="group" aria-label="Instagram coverage view">
             <button type="button" onClick={() => setView('urls')} aria-pressed={view === 'urls'} data-testid="button-instagram-view-urls">
-              Has Instagram URL
+              Catalog or supported URL
             </button>
             <button type="button" onClick={() => setView('resolved')} aria-pressed={view === 'resolved'} data-testid="button-instagram-view-resolved">
-              URL or no supported match
+              Include no supported match
             </button>
           </div>
           <p className="blk-ig-view-description">
             {view === 'urls'
-              ? 'Profiles with an existing catalog Instagram URL or a saved research URL candidate.'
-              : 'Profiles with an Instagram URL or a completed search that found no supported match.'}
+              ? 'Profiles with a catalog Instagram URL or identity-supported research URL. Raw search hits do not count.'
+              : 'Catalog or identity-supported research URLs, plus completed searches that found no supported match. Unresolved candidates do not count.'}
           </p>
 
           <div className="blk-ig-legend" aria-label="Coverage bar legend">
-            <span><i className="url" /> Instagram URL</span>
+            <span><i className="url" /> Catalog URL</span>
+            <span><i className="research" /> Supported research only</span>
             {view === 'resolved' && <span><i className="no-candidate" /> No supported match</span>}
           </div>
           <div className="blk-ig-tier-grid">
@@ -307,7 +312,7 @@ export function MusicianInstagramResearchProgress() {
           <LatestResearchSummary tiers={data.tiers} />
           <HistoryTable history={data.history} />
           <p className="blk-ig-foot" data-testid="text-instagram-research-definition">
-            Each profile is counted once using its global Tier 1–5 assignment from the single tier snapshot shown above. URL coverage includes catalog Instagram URLs and saved non-empty research URLs, which are candidates, not approved catalog links. Catalog links and research candidates may overlap, but coverage counts each profile once. The second view also counts completed searches with no candidate as a practical “no supported match,” not proof that no account exists. Failed, incomplete, and not-yet-searched outcomes do not add coverage.
+            Each profile is counted once using its global Tier 1–5 assignment from the single tier snapshot shown above. Catalog URLs take priority; supported research only counts profiles without one. Research URLs must carry saved catalog-reference-identity-v1 matching evidence for that URL; they are not approved catalog links. Legacy raw hits and needs-review outcomes are shown separately as unresolved, not coverage. Raw research candidate totals may overlap catalog and supported URLs and are not additional coverage. The second view also counts completed searches with no candidate as a practical “no supported match,” not proof that no account exists. Failed, incomplete, and not-yet-searched outcomes do not add coverage.
           </p>
         </>
       )}

@@ -556,13 +556,21 @@ components:
         generatedAt: { type: string, format: date-time }
     MusicianInstagramResearchTier:
       type: object
-      required: [tier, totalProfiles, processedProfiles, profilesWithInstagramUrls, profilesWithResearchUrls, profilesWithNoSupportedMatch, profilesWithUrlOrNoSupportedMatch, completedNoCandidateProfiles, failedProfiles, pendingProfiles, profilesWithCatalogInstagramUrls, profilesWithResearchCandidates, profilesWithFailedOrIncompleteSearches]
+      required: [tier, totalProfiles, processedProfiles, profilesWithInstagramUrls, profilesWithResearchUrls, profilesWithNoSupportedMatch, profilesWithUrlOrNoSupportedMatch, completedNoCandidateProfiles, failedProfiles, pendingProfiles, profilesWithCatalogInstagramUrls, profilesWithResearchCandidates, profilesWithFailedOrIncompleteSearches, profilesWithSupportedResearchUrls, profilesWithUnresolvedCandidates]
       properties:
         tier: { type: number }
         totalProfiles: { type: number }
         processedProfiles: { type: number, description: Profiles whose latest research result is candidates found or no candidates. }
-        profilesWithInstagramUrls: { type: number }
         profilesWithResearchUrls: { type: number, description: Profiles whose latest research result contains candidate URLs. }
+        profilesWithInstagramUrls:
+          type: number
+          description: Unique profiles with a catalog Instagram URL or policy-supported research URL.
+        profilesWithSupportedResearchUrls:
+          type: number
+          description: Profiles without a catalog URL whose latest research carries catalog-reference-identity-v1 support for a saved URL. Not approved catalog links.
+        profilesWithUnresolvedCandidates:
+          type: number
+          description: Profiles without catalog or supported research URLs whose latest outcome is candidates_found or needs_review. Excluded from coverage.
         profilesWithNoSupportedMatch: { type: number }
         profilesWithUrlOrNoSupportedMatch: { type: number }
         completedNoCandidateProfiles: { type: number }
@@ -576,7 +584,7 @@ components:
           description: Saved candidates_found outcomes with non-empty Instagram URLs, not approved catalog links. May overlap catalog links.
         profilesWithFailedOrIncompleteSearches:
           type: number
-          description: Profiles without a catalog URL, research candidate, or completed no-supported-match outcome. Includes failed, incomplete, and not-yet-searched profiles; excluded from coverage.
+          description: Profiles without a catalog URL, supported research URL, unresolved candidate outcome, or completed no-supported-match outcome. Includes failed, incomplete, and not-yet-searched profiles; excluded from coverage.
     MusicianInstagramResearchCoverage:
       type: object
       required: [tiers, history, generatedAt, snapshotAt, snapshotStatus]
