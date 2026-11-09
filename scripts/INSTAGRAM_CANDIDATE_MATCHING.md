@@ -136,6 +136,52 @@ The historical lookup view still contains old raw candidates. **Do not treat `st
 
 All live ingestion must go through `account_links/claims.record` and the normal claim resolver, never direct writes to live account/profile-link tables. That external ingestion interface is not implemented by this research script.
 
+## Offline legacy export quarantine
+
+Use the separate offline audit, **not** the research `status` command (which saves run metadata):
+
+```sh
+node scripts/src/musician-instagram-legacy-audit.mjs \
+  generated-artifacts/musician-instagram-legacy-audit-UNIQUE
+```
+
+The output directory must not already exist. The audit reads local `musician-instagram-*`
+archives under `generated-artifacts`, including historical CSVs, saved-research projections,
+full pilot source excerpts and their frozen identity context. It does not query ClickHouse,
+read credentials, dispatch providers, prepare/replay searches, modify original files or submit claims.
+It checks SHA-256 hashes before and after, and records every input, disposition and parsing limitation.
+Diagnostic outcomes and context files are inventoried but never treated as import evidence.
+Future audit directories with the `musician-instagram-legacy-audit-` prefix are excluded.
+
+Outputs:
+
+- `audit-report.html` / `audit-report.json`: labeled audit, file inventory, hashes, limits,
+  and original Frankelly Bello, Gula Mın 76 and Rooby Jeantal occurrences.
+- `WITHHELD-UNRESOLVED-NOT-FOR-IMPORT.csv`: source record, exact IDs, original URL strings
+  and withholding reasons. Rows may overlap across files; totals are not unique artists.
+- `snapshot-assessments-NOT-FOR-IMPORT.jsonl`: local candidate assessments and source references.
+- `safe-candidates-REQUIRES-CLAIM-RESOLUTION.csv`: only full original results with a valid,
+  identity-bound saved policy, matching saved status/URLs and reproducible evidence under the
+  existing matching **and** research-export helpers. A header-only file explicitly means zero
+  eligible candidates, never account absence.
+
+All historical CSVs remain withheld as direct ingestion sources, even if a policy label is
+present: labels without the original metadata/JEV evidence are insufficient. The comprehensive
+snapshot is a partial projection, not full `result_json`; its omitted policy/provenance is not
+invented. Projected candidates can be examined locally but cannot become safe candidates.
+Known-answer handles remain evaluation notes, not discovered results. Original exports are not
+renamed or deleted; consumers must honor the explicit quarantine report.
+
+Unsafe integer JSON tokens are retained as decimal strings before parsing, and CSV IDs never
+pass through floating-point conversion. Import identifier columns as **text** when viewing
+CSVs in spreadsheet software to avoid that software rounding the original digits.
+This audit makes no claims about unavailable archives or the current database. Any eventual
+live ingestion still needs separate authorization, `account_links/claims.record`, and normal resolution.
+
+```sh
+node --test scripts/src/musician-instagram-legacy-audit.test.mjs
+```
+
 ## Validation
 
 Run without network calls, paid searches or database writes:

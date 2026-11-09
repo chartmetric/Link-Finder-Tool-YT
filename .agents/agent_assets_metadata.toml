@@ -280,3 +280,73 @@ mtime_ms = 1794251079946
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/57a76c4f-3caa-434d-976a-f95f084e2b94/bc2860f0-22c2-43f4-a5e8-4b0d7623d636"
 storage_version_token = "1794251109552093"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "iwRva65QU4IPMF6o_IoRq"
+uri = "file://generated-artifacts/musician-instagram-legacy-audit-2026-11-09/audit-report.html"
+type = "html"
+title = "Legacy Instagram audit — withheld / unresolved"
+description = "Read-only audit of 29 unchanged archived files, including Frankelly Bello, Gula Mın 76 and Rooby Jeantal. Zero eligible safe candidates; no provider calls, database changes or claims."
+logical_id = "372814a8-239f-423f-b42f-bbf19c1662ad"
+content_hash = "sha256:e2d48fbfe273d14e6d0a02d74cd4fe2301438d1460b85191106c2f34666dc86f"
+size = 23241
+mtime_ms = 1794250721638
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/372814a8-239f-423f-b42f-bbf19c1662ad/054fa84c-e976-4f1d-9f3b-29989ec0e074"
+storage_version_token = "1794250770257426"
+content_type = "text/html"
+
+[[outputs]]
+id = "fheoTrBcZh53b4LAVyYZ-"
+uri = "file://generated-artifacts/musician-instagram-legacy-audit-2026-11-09/safe-candidates-REQUIRES-CLAIM-RESOLUTION.csv"
+type = "table"
+title = "Safe candidate export — zero eligible rows"
+description = "Intentionally header-only. No legacy candidate met the saved-policy and full-evidence requirements. Any future live ingestion requires account_links/claims.record and normal resolution."
+logical_id = "ed132130-cb42-49a6-98b3-08514a4b8c60"
+content_hash = "sha256:d705d2c2cf0f9c3a2f9a10408aebb84f3462aa67e42e9b57011b09ab3e467f38"
+size = 191
+mtime_ms = 1794250705834
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/ed132130-cb42-49a6-98b3-08514a4b8c60/ee3eb09e-3b0c-4dc2-9772-9cf982c8f10f"
+storage_version_token = "1794250770891518"
+content_type = "text/csv"
+
+[[outputs]]
+id = "oYxJAzoHthlFUc2N8jJZr"
+uri = "file://generated-artifacts/musician-instagram-legacy-audit-2026-11-09/WITHHELD-NOT-FOR-IMPORT-part-1.csv"
+type = "table"
+title = "Withheld legacy rows — part 1 of 3"
+description = "NOT FOR IMPORT. Download-sized part of the unchanged detailed audit. Original identifier digits and URL strings are preserved; import identifier columns as text when viewing in spreadsheets."
+logical_id = "b557732f-c469-4c64-ae9b-17dcc065c58f"
+content_hash = "sha256:f48920210b01b78c0bebda7d129e81d5bc532323e3137b00349a34354c1ce47e"
+size = 73400542
+mtime_ms = 1794250792898
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/b557732f-c469-4c64-ae9b-17dcc065c58f/1843e4c7-0b09-4849-bc75-c1e92a7534c6"
+storage_version_token = "1794250805719613"
+content_type = "text/csv"
+
+[[outputs]]
+id = "OAZC7GR7-P3Z9J_KcfDKq"
+uri = "file://generated-artifacts/musician-instagram-legacy-audit-2026-11-09/WITHHELD-NOT-FOR-IMPORT-part-2.csv"
+type = "table"
+title = "Withheld legacy rows — part 2 of 3"
+description = "NOT FOR IMPORT. Download-sized part of the unchanged detailed audit. Original identifier digits and URL strings are preserved; import identifier columns as text when viewing in spreadsheets."
+logical_id = "84e9dedf-d55b-4bc7-99a3-852e2edb7e0a"
+content_hash = "sha256:a986821d05d499b0c9fd5fa5126221d70c3e7b32a3891a04c6f35b8d146eac51"
+size = 73400351
+mtime_ms = 1794250793422
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/84e9dedf-d55b-4bc7-99a3-852e2edb7e0a/05d4e5a1-15fd-4717-aa03-0859211014a9"
+storage_version_token = "1794250807130497"
+content_type = "text/csv"
+
+[[outputs]]
+id = "BMBFhV4MJVDDVIMS7rcQl"
+uri = "file://generated-artifacts/musician-instagram-legacy-audit-2026-11-09/WITHHELD-NOT-FOR-IMPORT-part-3.csv"
+type = "table"
+title = "Withheld legacy rows — part 3 of 3"
+description = "NOT FOR IMPORT. Download-sized part of the unchanged detailed audit. Original identifier digits and URL strings are preserved; import identifier columns as text when viewing in spreadsheets."
+logical_id = "10436bfe-659a-4329-ac42-07d628730280"
+content_hash = "sha256:032f28ddbf6b38485ba2ad88aee4200d096292e00f7f53a1f9677043e2c7a233"
+size = 16800941
+mtime_ms = 1794250793542
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/10436bfe-659a-4329-ac42-07d628730280/604083ea-ce75-4bfc-beff-79871213a797"
+storage_version_token = "1794250808278380"
+content_type = "text/csv"
