@@ -437,9 +437,12 @@ components:
           items: { $ref: "#/components/schemas/BulkCoveragePlatform" }
     BulkTypeCoverage:
       type: object
-      required: [profileType, buckets]
+      required: [profileType, unrankedProfiles, buckets]
       properties:
         profileType: { $ref: "#/components/schemas/BulkProfileType" }
+        unrankedProfiles:
+          type: number
+          description: Current active profiles of this type whose latest global tier rating is not between 1 and 5.
         buckets:
           type: array
           items: { $ref: "#/components/schemas/BulkCoverageBucket" }

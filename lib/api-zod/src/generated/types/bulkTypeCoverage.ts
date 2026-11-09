@@ -10,5 +10,7 @@ import type { BulkProfileType } from './bulkProfileType';
 
 export interface BulkTypeCoverage {
   profileType: BulkProfileType;
+  /** Current active profiles of this type whose latest global tier rating is not between 1 and 5. */
+  unrankedProfiles: number;
   buckets: BulkCoverageBucket[];
 }

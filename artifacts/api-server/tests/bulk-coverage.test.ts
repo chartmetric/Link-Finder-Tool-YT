@@ -12,6 +12,7 @@ test("coverage returns every cohort and bucket even for empty populations", () =
   const result = coverageResponse([], "2026-10-27T00:00:00Z");
   assert.deepEqual(result.types.map(type => type.profileType), ["brand", "creator", "artist"]);
   for (const type of result.types) {
+    assert.equal(type.unrankedProfiles, 0);
     assert.equal(type.buckets.length, 3);
     assert.ok(type.buckets.every(bucket => bucket.total === 0 && bucket.covered === 0
       && bucket.investigated === 0 && bucket.uncoveredInvestigated === 0
@@ -28,13 +29,18 @@ test("coverage preserves real counts without crossing cohorts or tier groups", (
     investigated: 10, uncoveredInvestigated: 7,
     allPlatformsCoveredProfiles: 6, profilesWithActiveLinks: 8,
     profilesWithLinkCandidates: 4, fullyResolvedProfiles: 3,
-    profilesWithLinksOrFullyResolved: 6, likely_only: 2, needs_review: 1,
+    profilesWithLinksOrFullyResolved: 6, unrankedProfiles: 2,
+    likely_only: 2, needs_review: 1,
     no_match: 1, explicit_absence: 1, provider_failure: 1, unresolved: 1,
   };
   const result = coverageResponse([
     { ...base, profileType: "brand", group: "all", platform: "TikTok", total: 900, covered: 3 },
-    { ...base, profileType: "artist", group: "tiers_1_3", platform: "YouTube", total: 100, covered: 1, allPlatformsCoveredProfiles: 4, profilesWithActiveLinks: 3 },
+    { ...base, profileType: "artist", group: "all", platform: "YouTube", total: 120, covered: 2, unrankedProfiles: 0 },
+    { ...base, profileType: "artist", group: "tiers_1_3", platform: "YouTube", total: 100, covered: 1, allPlatformsCoveredProfiles: 4, profilesWithActiveLinks: 3, unrankedProfiles: 99 },
   ]);
+  assert.equal(result.types[0].unrankedProfiles, 2);
+  assert.equal(result.types[2].unrankedProfiles, 0);
+  assert.equal(result.types[1].unrankedProfiles, 0);
   assert.equal(result.types[0].buckets[2].total, 900);
   assert.equal(result.types[0].buckets[2].covered, 3);
   assert.equal(result.types[0].buckets[2].profilesWithLinkCandidates, 4);

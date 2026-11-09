@@ -124,6 +124,10 @@ export function CoveragePanel({ kind }: { kind: ProfileKind }) {
         <ul className="blk-cov-grid">
           {GROUPS.map(g => <Donut key={g.group} id={g.group} label={g.label(m.plural)} bucket={type.buckets.find(b => b.group === g.group)} metric={metric} />)}
         </ul>
+        <p className="blk-cov-unranked" data-testid="text-coverage-unranked-count">
+          <strong>No tier rating: {fmt(type.unrankedProfiles)} {m.plural.toLowerCase()}</strong>
+          <span>Counted in All, not in the tier-specific groups.</span>
+        </p>
         {metric === 'all_platforms' && <>
           <div className="blk-cov-breakdown-head">
             <h3>What still lacks identity confirmation?</h3>

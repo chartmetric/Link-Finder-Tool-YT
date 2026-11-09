@@ -105,6 +105,7 @@ test("coverage SQL counts and pages share active, latest, platform-specific evid
   const brand = result.types.find(t => t.profileType === "brand")!;
   const all = brand.buckets.find(b => b.group === "all")!;
   assert.equal(all.total, 9); // excludes deleted and reclassified IDs
+  assert.equal(brand.unrankedProfiles, 2); // current brand IDs 4 and 10 have no tier rating
   assert.equal(all.covered, 1);
   assert.equal(all.allPlatformsCoveredProfiles, 2); // adds ID 2, whose YouTube search completed with no supported match
   assert.equal(all.profilesWithActiveLinks, 8); // active links are a catalog count, independent of search status

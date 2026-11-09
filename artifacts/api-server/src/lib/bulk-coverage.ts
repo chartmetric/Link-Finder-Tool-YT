@@ -25,6 +25,7 @@ type CoverageRow = {
   profilesWithActiveLinks: number;
   profilesWithLinkCandidates: number; fullyResolvedProfiles: number;
   profilesWithLinksOrFullyResolved: number;
+  unrankedProfiles: number;
   investigated: number; uncoveredInvestigated: number;
 } & Record<BulkCoverageState, number>;
 
@@ -200,6 +201,11 @@ WITH snapshots AS (
     t.tier AS tier
   FROM memberships m
   LEFT JOIN tiers t ON t.profile = m.id AND t.profile_type = m.sourceType
+), unranked_profile_counts AS (
+  SELECT profileType, uniqExactIf(profileId, ifNull(tier, 0) NOT BETWEEN 1 AND 5) AS unrankedProfiles
+  FROM scoped
+  WHERE \`group\` = 'all'
+  GROUP BY profileType
 ), platform_evidence AS (
   SELECT s.profileId AS profileId, s.profileName AS profileName, s.profileType AS profileType,
     s.\`group\` AS \`group\`, s.tier AS tier, p.resolved AS resolved,
@@ -286,6 +292,7 @@ SELECT p.profileType AS profileType, p.\`group\` AS \`group\`, p.platform AS pla
   any(q.profilesWithLinkCandidates) AS profilesWithLinkCandidates,
   any(q.fullyResolvedProfiles) AS fullyResolvedProfiles,
   any(q.profilesWithLinksOrFullyResolved) AS profilesWithLinksOrFullyResolved,
+  any(u.unrankedProfiles) AS unrankedProfiles,
   countIf(p.investigated = 1) AS investigated,
   countIf(p.investigated = 1 AND p.resolved = 0) AS uncoveredInvestigated,
   ${COVERAGE_STATES.map(state => `countIf(evidenceState = '${state}') AS ${state}`).join(",\n  ")}
@@ -294,6 +301,7 @@ LEFT JOIN coverage_profile_counts q
   ON q.profileType = p.profileType AND q.\`group\` = p.\`group\`
 LEFT JOIN catalog_link_counts l
   ON l.profileType = p.profileType AND l.\`group\` = p.\`group\`
+LEFT JOIN unranked_profile_counts u ON u.profileType = p.profileType
 GROUP BY p.profileType, p.\`group\`, p.platform FORMAT JSON`;
 
 export function coverageResponse(rows: CoverageRow[], generatedAt = new Date().toISOString()): BulkCoverage {
@@ -301,6 +309,7 @@ export function coverageResponse(rows: CoverageRow[], generatedAt = new Date().t
     platforms: [...COVERAGE_PLATFORMS], generatedAt,
     types: kinds.map(profileType => ({
       profileType,
+      unrankedProfiles: Number(rows.find(row => row.profileType === profileType && row.group === "all")?.unrankedProfiles ?? 0),
       buckets: groups.map(group => {
         const matching = rows.filter(row => row.profileType === profileType && row.group === group);
         const row = matching[0];

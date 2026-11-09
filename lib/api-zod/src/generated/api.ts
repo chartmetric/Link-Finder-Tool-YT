@@ -14,6 +14,7 @@ import * as zod from 'zod';
 export const GetBulkCoverageResponse = zod.object({
   "types": zod.array(zod.object({
   "profileType": zod.enum(['brand', 'creator', 'artist']),
+  "unrankedProfiles": zod.number().describe('Current active profiles of this type whose latest global tier rating is not between 1 and 5.'),
   "buckets": zod.array(zod.object({
   "group": zod.enum(['tiers_1_3', 'tiers_1_5', 'all']),
   "total": zod.number(),
