@@ -518,3 +518,17 @@ mtime_ms = 1794270128014
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/c49c85dd-b88c-4d61-89a1-b7a96ba6b189/123fe6da-79f2-448c-9280-f10e51d8a5f0"
 storage_version_token = "1794270147684204"
 content_type = "text/csv"
+
+[[outputs]]
+id = "HDV9AgPzOnvYytvJtvbr2"
+uri = "file://generated-artifacts/saved-verification-fixes-approved-usd1/artist-instagram-rerun-findings.csv"
+type = "table"
+title = "Verification rerun — results and metadata"
+description = "All 20 saved candidate evaluations and 20 control comparisons, with original/new scores and verdicts, acceptance blockers, exact checker evidence and metadata, request fingerprints, and provider-reported costs. No candidates were accepted; original catalog records and results are unchanged."
+logical_id = "5625e3a6-1a5c-4ee6-8c7d-2805d7d86a1e"
+content_hash = "sha256:728acdf40a8ca7fef149bf8b5da350c2d5f6c0365d70a95b950f0884248b71dd"
+size = 165937
+mtime_ms = 1794271911823
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/5625e3a6-1a5c-4ee6-8c7d-2805d7d86a1e/50ea0155-1240-4450-b9b9-17065200a3ce"
+storage_version_token = "1794271932632780"
+content_type = "text/csv"
