@@ -22,7 +22,62 @@ const date=value=>typeof value==='string'&&/^\d{4}-\d\d-\d\dT/.test(value)&&Numb
 const forbidden=new Set(['expectedArtistOwned','stratum','evidenceIds','labelEvidence','labelProvenance',
   'independentlyRechecked','category','review','adjudication','labelTier','freshness',
   'ownershipFreshness','currentAdjudication','reviews','validUntil','validityReason',
-  'reviewedAt','reviewer','supersedes','acquisition','approval','scopeReference','spendingReference']);
+  'reviewedAt','reviewer','supersedes','acquisition','approval','scopeReference','spendingReference',
+  'currentReviews','disagreements',
+  'reviewerId','rationale','reviewStatus','reviewHistory','activeReviews']);
+const strata=['artist_owned','wrong_person','brand','label','festival','venue','fan'];
+const differs=(a,b)=>a.expectedArtistOwned!==b.expectedArtistOwned||a.stratum!==b.stratum;
+
+function validateSourceDecision(labels,c) {
+  assert.equal(typeof c.expectedArtistOwned,'boolean');
+  assert.ok(strata.includes(c.stratum));
+  assert.equal(c.expectedArtistOwned,c.stratum==='artist_owned');
+  assert.ok(Array.isArray(c.evidenceIds)&&c.evidenceIds.length);
+  const proof=c.evidenceIds.map(id=>{
+    const e=labels.evidence[id];assert.ok(e,`Missing evidence ${id}`);
+    assert.ok(date(e.observedAt),'Evidence observation time required');
+    assert.equal(new URL(e.sourceUrl).protocol,'https:');
+    assert.ok(e.review&&e.sourceKind);
+    assert.match(e.bodySha256??e.archiveSha256,/^[a-f0-9]{64}$/);
+    return e;
+  });
+  assert.ok(proof.some(e=>[e.sourceUrl,...(e.selectedLinks??[])].some(u=>canonical(u)===c.url)),
+    'Evidence does not bind to candidate account');
+  if(c.expectedArtistOwned) {
+    assert.ok(proof.some(e=>e.sourceKind==='first_party_artist_site'&&
+      e.selectedLinks?.some(u=>new URL(u).hostname==='open.spotify.com'&&new URL(u).pathname.startsWith('/artist/'))));
+  }
+}
+
+function validateTargetDecision(labels,decision,url,target) {
+  if(decision.expectedArtistOwned) {
+    assert.ok(decision.evidenceIds.some(id=>labels.evidence[id].selectedLinks?.some(
+      u=>canonical(u)===target)),'Gold proof does not bind to target music ID');
+  }
+  if(decision.stratum==='wrong_person') {
+    const owner=decision.evidenceIds.map(id=>labels.evidence[id]).find(e=>
+      e.selectedLinks?.some(u=>canonical(u)===url));
+    assert.ok(owner?.selectedLinks.some(u=>new URL(u).hostname==='open.spotify.com'&&
+      canonical(u)!==target),'Wrong-person proof requires distinct music ID');
+  }
+}
+
+// Two designated reviewer histories, not votes. A revision must explicitly
+// supersede that reviewer's immediately preceding decision; array order alone
+// or a newer observation timestamp cannot silently resolve a disagreement.
+export function resolveOwnershipReviews(c) {
+  const primary=c.reviews.primary.at(-1)??null,second=c.reviews.second.at(-1)??null;
+  const activeReviews={primary,second};
+  const reviewStatus=!primary||!second?'missing_review'
+    :differs(primary,second)?'conflicting_reviews'
+      :primary.expectedArtistOwned===null?'unresolved_review':'agreed';
+  const disagreements=c.reviews.primary.flatMap(a=>c.reviews.second.filter(b=>differs(a,b)).map(b=>({
+    primary:structuredClone(a),second:structuredClone(b),
+    active:a.id===primary?.id&&b.id===second?.id,
+  })));
+  return {reviewStatus,activeReviews:structuredClone(activeReviews),
+    reviewHistory:structuredClone(c.reviews),disagreements};
+}
 
 export function assertBlindInput(value) {
   if(!value||typeof value!=='object')return;
@@ -33,32 +88,55 @@ export function assertBlindInput(value) {
 }
 
 export function validateAdjudications(labels,{checkFreshness=true}={}) {
-  assert.equal(labels.version,1);
+  assert.equal(labels.version,2);
   const ids=new Set(),pairs=new Set();
   for(const c of labels.cases) {
     assert.ok(!ids.has(c.id),'Duplicate case ID');ids.add(c.id);
     const pair=`${c.profileId}:${canonical(c.url)}`;
     assert.ok(!pairs.has(pair),'Duplicate artist/account pair');pairs.add(pair);
     assert.equal(c.url,canonical(c.url));
-    assert.equal(typeof c.expectedArtistOwned,'boolean');
     assert.equal(typeof c.savedExactLinkEligible,'boolean');
-    assert.ok(['artist_owned','wrong_person','brand','label','festival','venue','fan'].includes(c.stratum));
-    assert.equal(c.expectedArtistOwned,c.stratum==='artist_owned');
-    assert.ok(c.evidenceIds.length);
-    const proof=c.evidenceIds.map(id=>{
-      const e=labels.evidence[id];assert.ok(e,`Missing evidence ${id}`);
-      assert.ok(date(e.observedAt),'Evidence observation time required');
-      assert.equal(new URL(e.sourceUrl).protocol,'https:');
-      assert.ok(e.review&&e.sourceKind);
-      assert.match(e.bodySha256??e.archiveSha256,/^[a-f0-9]{64}$/);
-      return e;
-    });
-    assert.ok(proof.some(e=>[e.sourceUrl,...(e.selectedLinks??[])].some(u=>canonical(u)===c.url)),
-      'Evidence does not bind to candidate account');
-    if(c.expectedArtistOwned) {
-      assert.ok(proof.some(e=>e.sourceKind==='first_party_artist_site'&&
-        e.selectedLinks.some(u=>new URL(u).hostname==='open.spotify.com'&&new URL(u).pathname.startsWith('/artist/'))));
+    validateSourceDecision(labels,c);
+    assert.ok(c.reviews&&Object.keys(c.reviews).length===2,'Two designated review slots required');
+    const reviewIds=new Set(),reviewerIds=[];
+    for(const slot of ['primary','second']) {
+      const history=c.reviews[slot];
+      assert.ok(Array.isArray(history),'Review histories must be arrays, empty when missing');
+      let previous=null;
+      for(const review of history) {
+        assert.ok(typeof review.id==='string'&&review.id.trim()&&!reviewIds.has(review.id),
+          'Review IDs must be unique within a case');reviewIds.add(review.id);
+        assert.ok(typeof review.reviewerId==='string'&&review.reviewerId.trim(),'Reviewer ID required');
+        assert.ok(!previous||review.reviewerId===previous.reviewerId,'Revisions must retain reviewer identity');
+        assert.equal(review.supersedes,previous?.id??null,'Revision must supersede the preceding review');
+        assert.ok(typeof review.rationale==='string'&&review.rationale.trim(),'Review rationale required');
+        assert.ok(review.observedAt===null||date(review.observedAt),'Review observation time must be explicit');
+        assert.ok(review.reviewedAt===null||date(review.reviewedAt),'Review time must be explicit');
+        if(previous?.reviewedAt&&review.reviewedAt)assert.ok(
+          Date.parse(review.reviewedAt)>=Date.parse(previous.reviewedAt),'Revision predates preceding review');
+        if(review.expectedArtistOwned===null) {
+          assert.equal(review.stratum,null,'Unresolved review cannot assign a stratum');
+          assert.ok(Array.isArray(review.evidenceIds)&&review.evidenceIds.every(id=>labels.evidence[id]),
+            'Unresolved review evidence must exist');
+        } else validateSourceDecision(labels,{...review,url:c.url});
+        previous=review;
+      }
+      if(previous)reviewerIds.push(previous.reviewerId);
     }
+    assert.equal(new Set(reviewerIds).size,reviewerIds.length,'Second review must be a distinct reviewer');
+  }
+  assert.ok(Array.isArray(labels.disagreements),'Explicit disagreements ledger required');
+  const disputedPairs=new Set();
+  for(const dispute of labels.disagreements) {
+    const c=labels.cases.find(c=>c.id===dispute.caseId);
+    const primary=c?.reviews.primary.find(r=>r.id===dispute.primaryReviewId);
+    const second=c?.reviews.second.find(r=>r.id===dispute.secondReviewId);
+    assert.ok(primary&&second,'Disagreement must reference both recorded reviews of the same case');
+    assert.ok(differs(primary,second),'Disagreement ledger cannot contradict agreeing decisions');
+    const key=JSON.stringify([dispute.caseId,dispute.primaryReviewId,dispute.secondReviewId]);
+    assert.ok(!disputedPairs.has(key),'Duplicate disagreement');disputedPairs.add(key);
+    assert.ok(typeof dispute.rationale==='string'&&dispute.rationale.trim(),'Disagreement rationale required');
+    assert.ok(dispute.recordedAt===null||date(dispute.recordedAt),'Disagreement record time must be explicit');
   }
   for(const c of labels.uncertain) {
     assert.equal(c.expectedArtistOwned,null,'Uncertain cases must remain unscored');
@@ -67,7 +145,7 @@ export function validateAdjudications(labels,{checkFreshness=true}={}) {
     if(c.url)assert.ok(!pairs.has(`${c.profileId}:${canonical(c.url)}`),'Uncertain case also in gold');
   }
   if(checkFreshness)validateFreshness(labels,c=>validateAdjudications(
-    {...labels,cases:[c],uncertain:[]},{checkFreshness:false}));
+    {...labels,cases:[c],uncertain:[],disagreements:[]},{checkFreshness:false}));
 }
 
 // Only input descriptors enter this function, never the evaluator fixture.
@@ -124,29 +202,30 @@ export function assembleOwnershipSuite(labels,requests,legacy,{asOf=new Date().t
     return {...r,candidates:body.state.candidates.map(c=>{
       const matches=labels.cases.filter(l=>l.requestId===r.id&&l.profileId===r.profileId&&l.url===c.url);
       assert.equal(matches.length,1,'Every input requires exactly one separate adjudication');
-      const label=matches[0];assert.ok(!used.has(label.id));used.add(label.id);
-      const assertTargetBinding=answer=>{
-        if(answer.expectedArtistOwned) {
-          assert.ok(answer.evidenceIds.some(id=>labels.evidence[id].selectedLinks?.some(
-            u=>canonical(u)===body.state.knownProfileUrl)),'Gold proof does not bind to target music ID');
-        }
-        if(answer.stratum==='wrong_person') {
-          const owner=answer.evidenceIds.map(id=>labels.evidence[id]).find(e=>
-            e.selectedLinks?.some(u=>canonical(u)===c.url));
-          assert.ok(owner?.selectedLinks.some(u=>new URL(u).hostname==='open.spotify.com'&&
-            canonical(u)!==body.state.knownProfileUrl),'Wrong-person proof requires distinct music ID');
-        }
-      };
-      assertTargetBinding(label);
-      for(const review of labels.freshness.reviews.filter(r=>r.caseId===label.id&&r.action==='re_adjudicated')) {
-        assertTargetBinding(review.adjudication);
+      const original=matches[0];assert.ok(!used.has(original.id));used.add(original.id);
+      const governance=resolveOwnershipReviews(original),agreed=governance.reviewStatus==='agreed';
+      const label={...original,...governance,
+        expectedArtistOwned:agreed?governance.activeReviews.primary.expectedArtistOwned:null,
+        stratum:agreed?governance.activeReviews.primary.stratum:null,
+        evidenceIds:agreed?[...new Set(Object.values(governance.activeReviews).flatMap(v=>v.evidenceIds))]:original.evidenceIds};
+      // Check each recorded decision against the frozen target, including past
+      // revisions. Reviewer disagreement does not waive source-binding checks.
+      for(const decision of [original,...Object.values(original.reviews).flat()]) {
+        validateTargetDecision(labels,decision,c.url,body.state.knownProfileUrl);
       }
-      const freshness=ownershipFreshness(labels,label,{asOf});
-      return {...label,category:'known_answer',labelTier:'source_adjudicated',ownershipFreshness:freshness};
+      for(const review of labels.freshness.reviews.filter(r=>r.caseId===original.id&&r.action==='re_adjudicated')) {
+        for(const decision of [review.adjudication,...Object.values(review.adjudication.reviews??{}).flat()]) {
+          validateTargetDecision(labels,decision,c.url,body.state.knownProfileUrl);
+        }
+      }
+      const freshness=ownershipFreshness(labels,original,{asOf});
+      return {...label,category:agreed?'known_answer':'quarantined',
+        labelTier:agreed?'two_reviewer_source_adjudicated':'unresolved_source_review',ownershipFreshness:freshness};
     })};
   });
   assert.equal(used.size,labels.cases.length,'Orphan adjudication');
-  return {version:1,run_allowed:false,preparationOnly:true,
+  const candidates=frozen.flatMap(r=>r.candidates),scored=candidates.filter(c=>c.category==='known_answer');
+  return {version:2,run_allowed:false,preparationOnly:true,
     threshold:{verdict:'verified',minimumIdentityProbability:0.9,unchanged:true},
     limits:{paidCallsAllowedNow:0,newSearchesAllowedNow:0,importsAllowedNow:0,automaticRetries:0},
     labelStandard:labels.standard,requests:frozen,evidence:labels.evidence,uncertain:labels.uncertain,
@@ -155,11 +234,21 @@ export function assembleOwnershipSuite(labels,requests,legacy,{asOf=new Date().t
       byStatus:Object.fromEntries(['historical_only','stale','expired','current'].map(status=>[
         status,frozen.flatMap(r=>r.candidates).filter(c=>c.ownershipFreshness.status===status).length])),
       newCollectionRequiresScopeAndSpendingApproval:true,automaticRefreshAllowed:false},
+    reviewPolicy:labels.reviewPolicy,
+    quarantined:candidates.filter(c=>c.category==='quarantined'),
+    recordedDisagreements:structuredClone(labels.disagreements),
+    disagreements:candidates.flatMap(c=>c.disagreements.map(d=>({caseId:c.id,...d,
+      record:structuredClone(labels.disagreements.find(record=>record.caseId===c.id&&
+        record.primaryReviewId===d.primary.id&&record.secondReviewId===d.second.id)??null)}))),
+    reviewCounts:{total:candidates.length,agreed:scored.length,
+      missingReviews:candidates.filter(c=>c.reviewStatus==='missing_review').length,
+      conflictingReviews:candidates.filter(c=>c.reviewStatus==='conflicting_reviews').length,
+      unresolvedReviews:candidates.filter(c=>c.reviewStatus==='unresolved_review').length},
     legacyUserConfirmedOnly:legacy.labels,absenceAssertions:legacy.absenceAssertions,
-    counts:{artistAccountPairs:used.size,distinctTargetArtists:new Set(labels.cases.map(c=>c.profileId)).size,
-      distinctAccounts:new Set(labels.cases.map(c=>c.url)).size,
-      confirmedArtistOwned:labels.cases.filter(c=>c.expectedArtistOwned).length,
-      confirmedNotArtistOwned:labels.cases.filter(c=>!c.expectedArtistOwned).length},
+    counts:{artistAccountPairs:scored.length,distinctTargetArtists:new Set(scored.map(c=>c.profileId)).size,
+      distinctAccounts:new Set(scored.map(c=>c.url)).size,
+      confirmedArtistOwned:scored.filter(c=>c.expectedArtistOwned).length,
+      confirmedNotArtistOwned:scored.filter(c=>!c.expectedArtistOwned).length},
     gateProvenance:'Historical exact-link eligibility from the archived 20-example evaluation and core preparation; not inferred from ownership labels or new grading-site proof. New public-only negatives have no music-ID link.',
     inputProvenance:'Three original baseline pairs preserved byte-for-byte. Two entity pairs reuse frozen questions/reference and source candidates, adding only raw public-site observations for new controls.',
     limitation:'Development convenience sample with reused controls and previously exposed grading evidence. Not a held-out or population sample. No population accuracy, probability calibration, production approval or full-rerun readiness claim.'};
@@ -195,7 +284,7 @@ export async function prepareOwnershipBenchmark({
       ...c.ownershipFreshness,automaticRefreshAllowed:false})));
   for(const r of requests)await save(`requests/${r.id}.json`,{request:r.body,inputSha256:r.inputSha256});
   console.log(JSON.stringify({prepared:true,...suite.counts,testedKnownAnswers:score.testedKnownAnswers,
-    byStratum:score.byStratum,paidCalls:0,imports:0,destination},null,2));
+    reviewCounts:suite.reviewCounts,byStratum:score.byStratum,paidCalls:0,imports:0,destination},null,2));
   return {suite,score,requests};
 }
 
@@ -208,10 +297,15 @@ export function scoreOwnershipBenchmark(suite,responses=[],{mode='historical',as
   const resolved={...suite,requests:suite.requests.map(r=>({...r,candidates:r.candidates.map(c=>{
     const freshness=ownershipFreshness(labels,c,{asOf});
     const a=freshness.currentAdjudication;
+    // A currency renewal is not a second ownership review. Current grading
+    // requires its own two-reviewer source decisions, never historical votes.
+    const currentReviews=resolveOwnershipReviews({reviews:a?.reviews??{primary:[],second:[]}});
+    const agreed=currentReviews.reviewStatus==='agreed';
+    const active=currentReviews.activeReviews.primary;
     return {...c,ownershipFreshness:freshness,...(mode==='current'?{
-      category:a?'known_answer':'stale_adjudication',
-      expectedArtistOwned:a?.expectedArtistOwned??null,stratum:a?.stratum??null,
-      evidenceIds:a?.evidenceIds??[],
+      currentReviews,category:agreed?'known_answer':a?'quarantined':'stale_adjudication',
+      expectedArtistOwned:agreed?active.expectedArtistOwned:null,stratum:agreed?active.stratum:null,
+      evidenceIds:agreed?[...new Set(Object.values(currentReviews.activeReviews).flatMap(r=>r.evidenceIds))]:[],
       // Frozen verifier inputs were not refreshed along with grading proof.
       savedExactLinkEligible:false,
     }:{})};
@@ -219,7 +313,8 @@ export function scoreOwnershipBenchmark(suite,responses=[],{mode='historical',as
   const score=scoreKnownAnswers(resolved,responses);
   return {...score,scoringBasis:mode==='historical'?'historical_observations':'current_re_adjudications',
     asOf,excludedFromCurrentOwnership:resolved.requests.flatMap(r=>r.candidates)
-      .filter(c=>c.ownershipFreshness.status!=='current').length,
+      .filter(c=>c.ownershipFreshness.status!=='current'||
+        (mode==='current'&&c.category!=='known_answer')).length,
     currentOwnershipClaimsAllowed:false,
     note:'Frozen inputs and historical exact-link gates never authorize a current ownership claim or import. Re-adjudication updates grading only; new collection or model evaluation requires separate scope and spending approval.'};
 }

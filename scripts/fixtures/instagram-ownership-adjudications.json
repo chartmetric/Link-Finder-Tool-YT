@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "freshness": {
     "version": 1,
     "defaultStatus": "historical_only",
@@ -7,7 +7,16 @@
     "newCollectionRequiresScopeAndSpendingApproval": true,
     "reviews": []
   },
-  "standard": "Single curator review of source facts, not verifier outputs. Previously exposed development examples; no claim of blinded multi-human adjudication, current ownership, threshold calibration or population accuracy.",
+  "standard": "Historical single-curator source decisions retained as proposals. Only agreement between two distinct recorded source reviewers enters benchmark totals. Missing, unresolved or conflicting reviews are quarantined; no model-score or majority resolution. Previously exposed development examples; no claim of blinded multi-human adjudication, current ownership, threshold calibration or population accuracy.",
+  "reviewPolicy": {
+    "slots": ["primary", "second"],
+    "agreementRequired": true,
+    "revisions": "Append to the same reviewer's history with supersedes naming the immediately preceding review ID. Compare only active decisions; preserve all earlier decisions and disagreements.",
+    "timestamps": "observedAt records the review's source observation time, not review or preparation time; null means unknown. Evidence records retain each original source observation time. reviewedAt is separately recorded and remains null for legacy reviews whose review time was not retained.",
+    "disagreements": "The separate disagreements ledger may record caseId, primaryReviewId, secondReviewId, rationale and recordedAt for a disputed pair. Preparation also detects unrecorded conflicts and explicitly reports each differing primary/second pair, retaining both decisions. Only a disagreement between active decisions quarantines a fully reviewed case; deleting a ledger entry cannot resolve conflict.",
+    "legacy": "legacy-source-curator identifies the original single-curator provenance, not a newly performed review. Empty second histories honestly record that no second review has been performed."
+  },
+  "disagreements": [],
   "evidence": {
     "aimee": {
       "sourceUrl": "https://www.aimeecarty.com/",
@@ -97,16 +106,46 @@
     }
   },
   "cases": [
-    {"id": "aimee-owned", "requestId": "aimee-pair", "profileId": "207595", "url": "https://www.instagram.com/aimee.carty_music/", "expectedArtistOwned": true, "stratum": "artist_owned", "evidenceIds": ["aimee"], "savedExactLinkEligible": true},
-    {"id": "aimee-fan", "requestId": "aimee-pair", "profileId": "207595", "url": "https://www.instagram.com/gigi.murin.en/", "expectedArtistOwned": false, "stratum": "fan", "evidenceIds": ["fan"], "savedExactLinkEligible": false},
-    {"id": "ernest-owned", "requestId": "ernest-pair", "profileId": "226788", "url": "https://www.instagram.com/ernest/", "expectedArtistOwned": true, "stratum": "artist_owned", "evidenceIds": ["ernest"], "savedExactLinkEligible": false},
-    {"id": "ernest-wrong-person", "requestId": "ernest-pair", "profileId": "226788", "url": "https://www.instagram.com/aimee.carty_music/", "expectedArtistOwned": false, "stratum": "wrong_person", "evidenceIds": ["ernest", "aimee"], "savedExactLinkEligible": false},
-    {"id": "format-owned", "requestId": "format-pair", "profileId": "35092", "url": "https://www.instagram.com/theformat/", "expectedArtistOwned": true, "stratum": "artist_owned", "evidenceIds": ["format"], "savedExactLinkEligible": false},
-    {"id": "format-wrong-person", "requestId": "format-pair", "profileId": "35092", "url": "https://www.instagram.com/ernest/", "expectedArtistOwned": false, "stratum": "wrong_person", "evidenceIds": ["format", "ernest"], "savedExactLinkEligible": false},
-    {"id": "frankelly-brand", "requestId": "frankelly-entities", "profileId": "302463", "url": "https://www.instagram.com/goldenlegendscymbals/", "expectedArtistOwned": false, "stratum": "brand", "evidenceIds": ["brand"], "savedExactLinkEligible": false},
-    {"id": "frankelly-label", "requestId": "frankelly-entities", "profileId": "302463", "url": "https://www.instagram.com/subpop/", "expectedArtistOwned": false, "stratum": "label", "evidenceIds": ["label"], "savedExactLinkEligible": false},
-    {"id": "gula-festival", "requestId": "gula-entities", "profileId": "249317", "url": "https://www.instagram.com/gulagulafestival/", "expectedArtistOwned": false, "stratum": "festival", "evidenceIds": ["festival"], "savedExactLinkEligible": false},
-    {"id": "gula-venue", "requestId": "gula-entities", "profileId": "249317", "url": "https://www.instagram.com/fusebrussels/", "expectedArtistOwned": false, "stratum": "venue", "evidenceIds": ["venue"], "savedExactLinkEligible": false}
+    {
+      "id": "aimee-owned", "requestId": "aimee-pair", "profileId": "207595", "url": "https://www.instagram.com/aimee.carty_music/", "expectedArtistOwned": true, "stratum": "artist_owned", "evidenceIds": ["aimee"], "savedExactLinkEligible": true,
+      "reviews": {"primary": [{"id": "aimee-owned-primary-1", "reviewerId": "legacy-source-curator", "supersedes": null, "expectedArtistOwned": true, "stratum": "artist_owned", "evidenceIds": ["aimee"], "rationale": "Artist-titled first-party site links this Instagram and the exact target catalog artist ID.", "observedAt": "2026-11-09T18:46:39.500Z", "reviewedAt": null}], "second": []}
+    },
+    {
+      "id": "aimee-fan", "requestId": "aimee-pair", "profileId": "207595", "url": "https://www.instagram.com/gigi.murin.en/", "expectedArtistOwned": false, "stratum": "fan", "evidenceIds": ["fan"], "savedExactLinkEligible": false,
+      "reviews": {"primary": [{"id": "aimee-fan-primary-1", "reviewerId": "legacy-source-curator", "supersedes": null, "expectedArtistOwned": false, "stratum": "fan", "evidenceIds": ["fan"], "rationale": "Response-bound biography explicitly calls this exact account a Gigi Murin fan page, not Aimee's artist account.", "observedAt": "2026-11-06T18:40:59.599Z", "reviewedAt": null}], "second": []}
+    },
+    {
+      "id": "ernest-owned", "requestId": "ernest-pair", "profileId": "226788", "url": "https://www.instagram.com/ernest/", "expectedArtistOwned": true, "stratum": "artist_owned", "evidenceIds": ["ernest"], "savedExactLinkEligible": false,
+      "reviews": {"primary": [{"id": "ernest-owned-primary-1", "reviewerId": "legacy-source-curator", "supersedes": null, "expectedArtistOwned": true, "stratum": "artist_owned", "evidenceIds": ["ernest"], "rationale": "Artist-titled first-party site links this Instagram and the exact target catalog artist ID.", "observedAt": "2026-11-09T18:46:38.930Z", "reviewedAt": null}], "second": []}
+    },
+    {
+      "id": "ernest-wrong-person", "requestId": "ernest-pair", "profileId": "226788", "url": "https://www.instagram.com/aimee.carty_music/", "expectedArtistOwned": false, "stratum": "wrong_person", "evidenceIds": ["ernest", "aimee"], "savedExactLinkEligible": false,
+      "reviews": {"primary": [{"id": "ernest-wrong-person-primary-1", "reviewerId": "legacy-source-curator", "supersedes": null, "expectedArtistOwned": false, "stratum": "wrong_person", "evidenceIds": ["ernest", "aimee"], "rationale": "Aimee's artist site binds this account to a distinct music ID, not ERNEST's. Individual source observation times remain in evidence.", "observedAt": null, "reviewedAt": null}], "second": []}
+    },
+    {
+      "id": "format-owned", "requestId": "format-pair", "profileId": "35092", "url": "https://www.instagram.com/theformat/", "expectedArtistOwned": true, "stratum": "artist_owned", "evidenceIds": ["format"], "savedExactLinkEligible": false,
+      "reviews": {"primary": [{"id": "format-owned-primary-1", "reviewerId": "legacy-source-curator", "supersedes": null, "expectedArtistOwned": true, "stratum": "artist_owned", "evidenceIds": ["format"], "rationale": "Band-titled first-party site links this Instagram and the exact target catalog artist ID; a band counts as an artist identity.", "observedAt": "2026-11-09T18:46:39.166Z", "reviewedAt": null}], "second": []}
+    },
+    {
+      "id": "format-wrong-person", "requestId": "format-pair", "profileId": "35092", "url": "https://www.instagram.com/ernest/", "expectedArtistOwned": false, "stratum": "wrong_person", "evidenceIds": ["format", "ernest"], "savedExactLinkEligible": false,
+      "reviews": {"primary": [{"id": "format-wrong-person-primary-1", "reviewerId": "legacy-source-curator", "supersedes": null, "expectedArtistOwned": false, "stratum": "wrong_person", "evidenceIds": ["format", "ernest"], "rationale": "ERNEST's artist site binds this account to a distinct music ID, not The Format's. Individual source observation times remain in evidence.", "observedAt": null, "reviewedAt": null}], "second": []}
+    },
+    {
+      "id": "frankelly-brand", "requestId": "frankelly-entities", "profileId": "302463", "url": "https://www.instagram.com/goldenlegendscymbals/", "expectedArtistOwned": false, "stratum": "brand", "evidenceIds": ["brand"], "savedExactLinkEligible": false,
+      "reviews": {"primary": [{"id": "frankelly-brand-primary-1", "reviewerId": "legacy-source-curator", "supersedes": null, "expectedArtistOwned": false, "stratum": "brand", "evidenceIds": ["brand"], "rationale": "Manufacturer's site links its business account; artist endorsement is association, not artist ownership.", "observedAt": "2026-11-09T18:46:39.183Z", "reviewedAt": null}], "second": []}
+    },
+    {
+      "id": "frankelly-label", "requestId": "frankelly-entities", "profileId": "302463", "url": "https://www.instagram.com/subpop/", "expectedArtistOwned": false, "stratum": "label", "evidenceIds": ["label"], "savedExactLinkEligible": false,
+      "reviews": {"primary": [{"id": "frankelly-label-primary-1", "reviewerId": "legacy-source-curator", "supersedes": null, "expectedArtistOwned": false, "stratum": "label", "evidenceIds": ["label"], "rationale": "Record label homepage links its own account, not the target artist's.", "observedAt": "2026-11-09T19:09:43.908Z", "reviewedAt": null}], "second": []}
+    },
+    {
+      "id": "gula-festival", "requestId": "gula-entities", "profileId": "249317", "url": "https://www.instagram.com/gulagulafestival/", "expectedArtistOwned": false, "stratum": "festival", "evidenceIds": ["festival"], "savedExactLinkEligible": false,
+      "reviews": {"primary": [{"id": "gula-festival-primary-1", "reviewerId": "legacy-source-curator", "supersedes": null, "expectedArtistOwned": false, "stratum": "festival", "evidenceIds": ["festival"], "rationale": "Event listing explicitly binds the handle to the festival, not the similarly named musician.", "observedAt": "2026-11-09T18:45:11.788Z", "reviewedAt": null}], "second": []}
+    },
+    {
+      "id": "gula-venue", "requestId": "gula-entities", "profileId": "249317", "url": "https://www.instagram.com/fusebrussels/", "expectedArtistOwned": false, "stratum": "venue", "evidenceIds": ["venue"], "savedExactLinkEligible": false,
+      "reviews": {"primary": [{"id": "gula-venue-primary-1", "reviewerId": "legacy-source-curator", "supersedes": null, "expectedArtistOwned": false, "stratum": "venue", "evidenceIds": ["venue"], "rationale": "Venue homepage links its own account; archived event directory corroborates that Fuse is a club, not the musician.", "observedAt": "2026-11-09T19:10:06.737Z", "reviewedAt": null}], "second": []}
+    }
   ],
   "uncertain": [
     {"profileId": "209186", "artist": "Gin_Beatz", "url": "https://www.instagram.com/gin_beatz/", "expectedArtistOwned": null, "observedAt": null, "reason": "No independent ownership proof in reviewed sources. Observation time not established; do not substitute review time."},

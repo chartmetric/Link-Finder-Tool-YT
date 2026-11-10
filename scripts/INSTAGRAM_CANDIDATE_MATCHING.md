@@ -23,9 +23,9 @@ No new model evaluation is authorized or performed by this command.
 - `fixtures/instagram-known-answer-labels.json` retains the original three
   **user-confirmed-only** assertions. Their original observation times were not
   retained, so these remain explicitly unknown, not replaced by preparation time.
-- `fixtures/instagram-ownership-adjudications.json` contains ten separately
-  source-reviewed artist/account pairs: **three positives and seven negatives**,
-  across five target artists and eight distinct accounts. All gold sources have
+- `fixtures/instagram-ownership-adjudications.json` contains ten historical
+  single-curator proposals: **three positives and seven negatives**,
+  across five target artists and eight distinct accounts. All proposal sources have
   original observation times, source URLs, selected links/excerpts and source
   hashes. Historical packet paths/hashes remain available for provenance; selected
   evidence is committed so ordinary offline checks do not need ignored archives.
@@ -48,11 +48,59 @@ No new model evaluation is authorized or performed by this command.
 
 “Independent” means adjudication from documented source facts **rather than
 model verdicts, scores, catalog membership or exact music links alone**.
-This is single-curator source review, not two blinded human raters. Artist
+The committed decisions are single-curator source review, not two blinded human raters. Artist
 ownership means the artist's official account, including managed band accounts,
 not proof of who personally operates a login. Proof is historical, not a promise
 of current ownership. First-party identity is reviewed case by case here;
 this is not a general rule that any site linking two accounts proves ownership.
+
+#### Two-reviewer governance (fixture version 2)
+
+Each case keeps its original proposal and separate `reviews.primary` and
+`reviews.second` histories. Every review records a unique ID, reviewer ID,
+ownership decision (`true`, `false` or unresolved `null`), stratum, evidence IDs,
+rationale, source `observedAt`, review `reviewedAt`, and `supersedes`. Missing
+reviews are empty arrays, not inferred decisions. Unknown times remain explicit
+`null`; individual source observation times stay in the evidence records.
+The legacy curator identity is a provenance marker, not a newly performed review.
+
+Only two **distinct** reviewers agreeing on both ownership and stratum enter
+benchmark totals. Missing reviews, unresolved decisions and disagreements are
+quarantined with null effective ownership/stratum. The manifest retains each
+review history and explicitly lists differing decision pairs, both rationales
+and both sets of timestamps. Pairs involving superseded decisions are historical,
+not active conflicts. Model verdicts, probabilities, repeated revisions and
+majority inference never settle a disagreement.
+
+The fixture's separate `disagreements` ledger records an explicit dispute using
+`caseId`, `primaryReviewId`, `secondReviewId`, `rationale` and `recordedAt` (null
+if unknown). Entries must reference genuinely differing recorded decisions of
+the same case. Preparation preserves the ledger and also detects conflicts that
+have not yet been entered in it: omitting or deleting a dispute entry never makes
+conflicting reviews count as agreement.
+
+Currency renewals remain separate from ownership agreement. A current
+re-adjudication must carry its own `adjudication.reviews.primary` and
+`adjudication.reviews.second` histories using the same review format before it
+can enter current-mode totals. A single freshness curator cannot settle an
+ownership conflict. Current review evidence receives the same source/target
+binding and acquisition-approval checks as the renewal's proposed evidence.
+Historical reviewer decisions and freshness events remain preserved separately.
+
+Append revisions to the same reviewer's history, naming the immediately preceding
+review ID in `supersedes`; do not overwrite earlier decisions. Only the latest
+explicitly chained decision in each designated slot determines current agreement.
+Invalid chains, duplicate IDs, a shared reviewer across slots, missing rationales
+and omitted timestamps fail closed. Evidence and target bindings are checked
+even for quarantined cases and superseded decisions.
+
+No second reviews have been fabricated for the committed examples: currently all
+ten are quarantined as `missing_review`, and scored ownership totals are **zero**.
+The table above describes proposals, not agreed benchmark answers. The manifest's
+`reviewCounts`, `quarantined` and `disagreements` explain the exclusions; `counts`
+and scorecard known-answer/by-stratum totals include only agreed cases. Reviewer
+records and disagreements never enter verifier request packets. Synthetic second
+reviews in offline tests are test data only.
 
 The wrong-person controls have strong source attribution but different artist
 names. The harder near-name `belloo_official` correction stays in the original

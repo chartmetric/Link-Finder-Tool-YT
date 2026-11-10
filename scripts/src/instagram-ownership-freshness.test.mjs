@@ -6,14 +6,27 @@ import {validateAdjudications,assembleOwnershipSuite,buildOwnershipInputs,
   scoreOwnershipBenchmark,prepareOwnershipBenchmark} from './instagram-ownership-benchmark.mjs';
 
 const read=async name=>JSON.parse(await fs.readFile(`scripts/fixtures/${name}.json`,'utf8'));
-const labels=await read('instagram-ownership-adjudications');
+const committedLabels=await read('instagram-ownership-adjudications');
+const labels=structuredClone(committedLabels);
+// Synthetic reviewer agreement isolates currency behavior; never persist these
+// records as actual reviews of the committed single-curator proposals.
+for(const c of labels.cases)c.reviews.second=[{...structuredClone(c.reviews.primary[0]),
+  id:`${c.id}-synthetic-second`,reviewerId:'synthetic-second',
+  rationale:'Synthetic source agreement for freshness fixture.'}];
 const legacy=await read('instagram-known-answer-labels');
 const requests=await buildOwnershipInputs(await read('instagram-ownership-inputs'),await read('instagram-ownership-snapshots'));
 const asOf='2026-11-10T00:00:00.000Z';
+function currentAnswer(decision) {
+  return {...decision,reviews:Object.fromEntries(['primary','second'].map(slot=>[slot,[{
+    id:`current-${slot}`,reviewerId:`synthetic-current-${slot}`,supersedes:null,
+    ...structuredClone(decision),observedAt:null,reviewedAt:asOf,
+    rationale:'Synthetic current source decision, not a real additional review.',
+  }]]))};
+}
 const review={id:'review-a',caseId:'aimee-owned',supersedes:null,action:'re_adjudicated',
   reviewedAt:asOf,reviewer:'Offline fixture curator',reason:'Re-reviewed committed source facts only.',
   validUntil:'2026-11-12T00:00:00.000Z',validityReason:'Synthetic test window, not a production policy.',
-  adjudication:{expectedArtistOwned:true,stratum:'artist_owned',evidenceIds:['aimee']}};
+  adjudication:currentAnswer({expectedArtistOwned:true,stratum:'artist_owned',evidenceIds:['aimee']})};
 const append=(data,r,evidence={})=>appendOwnershipReview(data,{review:r,evidence},validateAdjudications);
 const responses=suite=>suite.requests.map(r=>({requestId:r.id,inputSha256:r.inputSha256,
   decisions:r.candidates.map(c=>({url:c.url,verdict:'verified',sameIdentityProbability:0.99}))}));
@@ -72,14 +85,35 @@ test('stale notice preserves positive label; renewal explicitly supersedes the n
 test('a changed identity is explicit new adjudication, never an edit to original answers',()=>{
   const evidence={replacement:{...labels.evidence.brand,
     selectedLinks:[labels.cases[0].url],acquisition:{kind:'existing_archive',archiveReference:'fixture://archived-proof'}}};
-  const updated=append(labels,{...review,adjudication:{
-    expectedArtistOwned:false,stratum:'brand',evidenceIds:['replacement']}},evidence);
+  const updated=append(labels,{...review,adjudication:currentAnswer({
+    expectedArtistOwned:false,stratum:'brand',evidenceIds:['replacement']})},evidence);
   const suite=assembleOwnershipSuite(updated,requests,legacy,{asOf});
   assert.equal(suite.requests[0].candidates[0].expectedArtistOwned,true);
   const current=scoreOwnershipBenchmark(suite,responses(suite),{mode:'current',asOf});
   assert.equal(current.rows[0].expectedArtistOwned,false);
   assert.equal(current.wronglyAcceptedKnownNegatives,1);
   assert.equal(scoreOwnershipBenchmark(suite,responses(suite),{asOf}).wronglyAcceptedKnownNegatives,7);
+});
+
+test('freshness renewal cannot bypass missing or conflicting ownership reviews',()=>{
+  const {reviews,...singleDecision}=review.adjudication;
+  const cases=[
+    {adjudication:singleDecision,expectedStatus:'missing_review'},
+    {adjudication:{...review.adjudication,reviews:{
+      primary:reviews.primary,second:[{...reviews.second[0],expectedArtistOwned:false,stratum:'fan',
+        rationale:'Synthetic current ownership disagreement.'}]}},expectedStatus:'conflicting_reviews'},
+  ];
+  for(const {adjudication,expectedStatus} of cases) {
+    const updated=append(committedLabels,{...review,adjudication});
+    const suite=assembleOwnershipSuite(updated,requests,legacy,{asOf});
+    assert.equal(scoreOwnershipBenchmark(suite,responses(suite),{asOf}).knownAnswers,0);
+    const score=scoreOwnershipBenchmark(suite,responses(suite),{mode:'current',asOf});
+    assert.equal(score.knownAnswers,0);
+    assert.equal(score.excludedFromCurrentOwnership,10);
+    assert.equal(score.rows[0].category,'quarantined');
+    assert.equal(score.rows[0].expectedArtistOwned,null);
+    assert.equal(score.rows[0].currentReviews.reviewStatus,expectedStatus);
+  }
 });
 
 test('new sources require acquisition provenance and separate prior scope/spending approvals',()=>{

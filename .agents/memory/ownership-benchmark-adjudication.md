@@ -52,3 +52,14 @@ evidence-collection budget or a universal validity window.
 current grading; retain historical answers separately. Renewing grading evidence
 does not renew frozen verifier inputs or authorize new collection. Even a
 zero-cost source refresh needs separate scope and spending approval.
+
+A two-reviewer requirement is an exclusion policy, not evidence that a second
+review has happened. Do not manufacture agreement by copying the original curator,
+using verifier scores, or counting revisions as additional votes.
+
+**Why:** The historical source decisions were made by a single curator; changing
+governance must not retroactively misrepresent their independence.
+
+**How to apply:** Keep missing second reviews explicit and unscored until a real,
+separately recorded reviewer decision is available. Governance changes alone do
+not authorize paid verification or threshold calibration.

@@ -32,8 +32,11 @@ export function validateFreshness(labels,validateProof) {
       assert.ok(text(r.validityReason),'Explain the chosen validity window; no automatic TTL');
       const a=r.adjudication;
       assert.ok(a&&Array.isArray(a.evidenceIds),'Re-adjudication requires source proof');
-      validateProof({...original,expectedArtistOwned:a.expectedArtistOwned,stratum:a.stratum,evidenceIds:a.evidenceIds});
-      for(const id of a.evidenceIds) {
+      validateProof({...original,expectedArtistOwned:a.expectedArtistOwned,stratum:a.stratum,evidenceIds:a.evidenceIds,
+        ...(a.reviews?{reviews:a.reviews}:{})});
+      const citedIds=[...new Set([...a.evidenceIds,
+        ...Object.values(a.reviews??{}).flat().flatMap(review=>review.evidenceIds)])];
+      for(const id of citedIds) {
         const e=labels.evidence[id];
         assert.ok(Date.parse(e.observedAt)<=Date.parse(r.reviewedAt),'Review cannot use future observations');
         if(!original.evidenceIds.includes(id)) {
