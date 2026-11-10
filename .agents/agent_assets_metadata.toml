@@ -462,3 +462,17 @@ mtime_ms = 1794262252102
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/c1185175-3e35-4c5d-a27f-feef641b6cee/577c257c-08ef-42fb-84f3-20b3ba2ec8a1"
 storage_version_token = "1794262278476077"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "NzGK1ZdOuCWe8nWKYaB74"
+uri = "file://generated-artifacts/instagram-bulk-latest-all-candidates.csv"
+type = "table"
+title = "Bulk findings — all artists and candidates"
+description = "250 artists: 12 completed before interruption plus 238 from the retry. Includes all 1,255 saved candidate–artist pairs, including uninspected candidates, and rows for artists with no saved candidates. Contains findings, scores, bios, search evidence, errors and outcome labels."
+logical_id = "b74dff33-d0ba-4716-a3b4-1ae566b8803d"
+content_hash = "sha256:a322178b3774f7fa45179beca2770f8d9614ae7f4a9b9e087e3c33d20dd1aa9a"
+size = 1449252
+mtime_ms = 1794269012730
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/b74dff33-d0ba-4716-a3b4-1ae566b8803d/45976eb9-b11f-4a0e-9579-eca4079ce3fa"
+storage_version_token = "1794269017366318"
+content_type = "text/csv"
