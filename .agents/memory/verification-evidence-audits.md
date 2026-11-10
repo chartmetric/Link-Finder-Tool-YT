@@ -3,6 +3,12 @@ name: Verification evidence audits
 description: Distinguish original verifier inputs from reconstructions and synthetic fixtures.
 ---
 
+Affiliation terms in a musician biography do not independently establish that the account is a label, management company or fan account.
+
+**Why:** Saved-batch reviews found musician self-descriptions mentioning label ownership held by the same vocabulary intended to screen out organizational accounts.
+
+**How to apply:** Separate what an account is from what its biography mentions. Assess its role using bound evidence, preserve historical decisions, and do not treat a favorable model answer as independently reviewed ownership.
+
 Do not attribute an archived model result to a request reconstructed with a newer serializer. Keep source-path availability, account ownership, model disagreement and application acceptance separate.
 
 **Why:** Historical completion packets can lack outgoing input bytes, while subsequent question changes and provenance repairs change both evidence interpretation and request size. A complete music-ID path does not establish how the historical model received it or prove that a wording repair fixes its score.

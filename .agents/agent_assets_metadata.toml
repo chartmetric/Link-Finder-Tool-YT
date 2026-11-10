@@ -658,3 +658,17 @@ mtime_ms = 1794278301354
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/a363197f-823f-43c6-b2e1-ab312915d2ba/b6a90270-8160-47a9-8493-c64a835b9a3e"
 storage_version_token = "1794278483987754"
 content_type = "text/csv"
+
+[[outputs]]
+id = "gB7t4bgpevb2_5ANpF1Ru"
+uri = "file://generated-artifacts/saved-bulk-approved-500-usd20/analysis/latest-500-artists.csv"
+type = "table"
+title = "Latest 500 artists — links and rejection reasons"
+description = "Exactly one row per artist in the latest completed batch, including all saved Instagram candidates, links supported for review, recorded AI answers and scores, evidence gaps, and why no candidate passed. Original scores and results are unchanged."
+logical_id = "ecf0781b-06a9-45e1-bb23-f6294c968799"
+content_hash = "sha256:c39a1390fb0622b9894b616007cd3ee13df9d518110b792826598ed1d23a0391"
+size = 176784
+mtime_ms = 1794278806438
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/ecf0781b-06a9-45e1-bb23-f6294c968799/f7f8595c-d137-4a4a-90eb-6d3690f09b1b"
+storage_version_token = "1794278884207130"
+content_type = "text/csv"
