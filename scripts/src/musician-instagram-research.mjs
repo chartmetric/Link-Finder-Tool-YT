@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assessInstagramCandidates, instagramSearchRequest, MATCHING_POLICY } from './musician-instagram-matching.mjs';
+import {checkCorrectionReadiness, launchCorrection, refuseCorrectionInResearch} from './instagram-correction-readiness.mjs';
 import {
   bioMusicLinks, directMusicLinks, isAllowedPublicProfileUrl,
   linktreeUrls, verifyMusicLinkEvidence,
@@ -442,6 +443,9 @@ async function verifyCandidates() {
 
 async function run() {
   const accepted = JSON.parse(await fs.readFile(`${directory}/accepted.json`, 'utf8'));
+  // This is a discovery-only executor, including --rerun-no-candidates.
+  // Do not let a future correction manifest reuse this unguarded paid loop.
+  refuseCorrectionInResearch(accepted);
   const { runId } = accepted;
   const workers = researchWorkers(process.argv.slice(3), accepted.workers ?? 4);
   const lock = await fs.open(`${directory}/${runId}.lock`, 'wx');
@@ -537,9 +541,18 @@ async function report(accepted) {
 }
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   const command = process.argv[2];
-  if (command === 'prepare') await prepare();
+  if (command === 'correction-readiness' || command === 'run-correction') {
+    const launchFile = process.argv[3];
+    if (!launchFile || process.argv.length !== 4) throw new Error('Correction commands require exactly one launch manifest.');
+    if (command === 'run-correction') await launchCorrection(launchFile);
+    else console.log(JSON.stringify(await checkCorrectionReadiness(launchFile), null, 2));
+  }
+  else if (cliArgs.includes('--attribution-correction')) {
+    throw new Error('Use run-correction <launch-manifest>; discovery flags cannot authorize attribution corrections.');
+  }
+  else if (command === 'prepare') await prepare();
   else if (command === 'run') await run();
   else if (command === 'status') await report(JSON.parse(await fs.readFile(`${directory}/accepted.json`, 'utf8')));
   else if (command === 'verify') await verifyCandidates();
-  else throw new Error('Usage: musician-instagram-research.mjs prepare | run | status | verify --run-id=DISCOVERY_UUID [--tiers=1,2,3,4,5] [--latest-snapshot] [--workers=5] [--rerun-no-candidates]');
+  else throw new Error('Usage: musician-instagram-research.mjs prepare | run | status | verify --run-id=DISCOVERY_UUID [--tiers=1,2,3,4,5] [--latest-snapshot] [--workers=5] [--rerun-no-candidates] | correction-readiness <launch-manifest> | run-correction <launch-manifest>');
 }

@@ -19,3 +19,4 @@
 - [Ownership benchmark adjudication](ownership-benchmark-adjudication.md) — source review is independent of model judgments, not necessarily multi-human or held-out calibration.
 - [Verification evidence audits](verification-evidence-audits.md) — archived decisions cannot be attributed to newer reconstructed inputs; separate source paths, ownership and acceptance.
 - [Systematic musician corrections](musician-correction-scope.md) — prioritize shared fixes and bounded bulk execution; no artist-specific work or prolonged individual probes.
+- [Correction rerun safety](correction-rerun-safety.md) — full musician attribution corrections need separately approved readiness; discovery reruns and diagnostic pilots are not correction executors.

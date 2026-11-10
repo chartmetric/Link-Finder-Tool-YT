@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { runPilot, pilotPreflight } from './instagram-pilot-runner.mjs';
 import { createLiveTransport } from './instagram-pilot-live-transport.mjs';
 import {createCatalogAlbumLookup} from './catalog-album-evidence.mjs';
+import {refuseCorrectionInResearch} from './instagram-correction-readiness.mjs';
 
 export function evaluateKnownCases(results, holdouts) {
   const cases = holdouts.cases.map(expected => {
@@ -54,6 +55,7 @@ export async function startApprovedPilot({ manifestPath, holdoutsPath, outputDir
   }
   const original = await fs.readFile(manifestPath, 'utf8');
   const manifest = JSON.parse(original);
+  refuseCorrectionInResearch(manifest);
   const cachedPackets=cacheDir ? await loadCompletedPilotCache(cacheDir) : [];
   const prior=cacheDir ? JSON.parse(await fs.readFile(join(cacheDir,'summary.json'),'utf8')) : undefined;
   const priorReservedCents=prior?.budget?.reservedSpendCents ?? 0;

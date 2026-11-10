@@ -69,7 +69,8 @@ export function scoreKnownAnswers(suite,responses=[]) {
         negatives:seen.filter(r=>!r.expectedArtistOwned).length,
         modelAcceptedNegatives:seen.filter(r=>!r.expectedArtistOwned&&r.modelAccepted).length}];
     })),
-    populationAccuracyClaim:false,thresholdCalibrated:false,productionApproved:false};
+    populationAccuracyClaim:false,thresholdCalibrated:false,productionApproved:false,
+    correctionRerunReady:false};
 }
 
 export async function prepareKnownAnswerBenchmark() {

@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import {refuseCorrectionInResearch} from './instagram-correction-readiness.mjs';
 
 export const paidKinds = new Set(['serper', 'scrapecreators_candidate', 'scrapecreators_reference', 'jev']);
 
@@ -12,6 +13,7 @@ export const pilotReservationsCents = Object.freeze({
 
 /** An exclusive, fsynced journal makes any previous admission non-replayable. */
 export async function createPilotBudget({ manifest, journalPath, transport, mode }) {
+  refuseCorrectionInResearch(manifest);
   // A separately approved research batch does not expand the original $10 pilot.
   const batch=manifest.authorization?.separateBatchApproval;
   const separateBatchAuthorized=['instagram-tiers-1-5-approved-250-usd20','instagram-tiers-1-5-approved-250-usd20-second','instagram-tiers-1-5-approved-238-usd19-third'].includes(batch?.runId)
