@@ -22,8 +22,10 @@ CREATE TABLE IF NOT EXISTS instagram_saved_batch_admissions (
 
 export async function openSavedBatchGate({pool,scope,scopeSha256,journalPath,transport}){
   scope=structuredClone(scope);
+  const cap=scope.authorization?.maxSpendCents;
   if(sha(JSON.stringify(scope))!==scopeSha256||scope.authorization?.approved!==true
-    ||scope.authorization.maxSpendCents!==2000||scope.artists.length>500||scope.requests.length>1000
+    ||!Number.isInteger(cap)||cap<1||cap>2000||scope.artists.length>500||scope.requests.length>1000
+    ||scope.requests.length*2>cap
     ||scope.savedEvidenceOnly!==true||scope.liveLinkWrites!==false||scope.automaticRetries!==0
     ||transport?.live!==true)throw Error('Invalid separate saved-batch authorization.');
   const requests=new Map(scope.requests.map(r=>[r.key,r]));
@@ -44,7 +46,7 @@ export async function openSavedBatchGate({pool,scope,scopeSha256,journalPath,tra
       await c.query('BEGIN');await c.query("SET LOCAL lock_timeout='5s'");await c.query("SET LOCAL statement_timeout='10s'");
       const {rows}=await c.query('SELECT * FROM instagram_saved_batch_budgets WHERE id=$1 FOR UPDATE',[id]);
       const b=rows[0];
-      if(!b||b.scope_sha256!==scopeSha256||b.cap_cents!==2000)throw Error('Saved-batch approval is missing or changed.');
+      if(!b||b.scope_sha256!==scopeSha256||b.cap_cents!==cap)throw Error('Saved-batch approval is missing or changed.');
       const result=await work(c,b);await c.query('COMMIT');return result;
     }catch(e){await c.query('ROLLBACK').catch(()=>{});throw e;}finally{c.release();}
   }
@@ -86,7 +88,7 @@ export async function openSavedBatchGate({pool,scope,scopeSha256,journalPath,tra
     },
     stop(){stopped=true;},
     snapshot:()=>({budgetId:id,admitted,returned,reservedCents:lastReserved,reportedCostUsd:reportedCost,
-      maximumSpendCents:2000,stopped,originalPilotModified:false}),
+      maximumSpendCents:cap,stopped,originalPilotModified:false}),
     close:async()=>{stopped=true;await journal.close();},
   };
 }

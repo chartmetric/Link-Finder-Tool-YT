@@ -700,3 +700,31 @@ mtime_ms = 1794279841618
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/86394532-f943-4062-a1a7-142f19a12c86/4bd91db3-9fae-40b4-8c13-ae64f1cc54c4"
 storage_version_token = "1794280021965326"
 content_type = "text/csv"
+
+[[outputs]]
+id = "2ZLVno02nLGdWZWBvw9B3"
+uri = "file://generated-artifacts/saved-bulk-approved-500-usd20/contextual-paired-test-prepared/execution-48c/six-artist-comparison.csv"
+type = "table"
+title = "Six-artist test: side-by-side results"
+description = "Current versus fuller-metadata scores, verdicts, review outcomes, hold reasons and the metadata actually supplied."
+logical_id = "4f299c6d-1361-4ad3-8bcd-0c3a1ebe1c89"
+content_hash = "sha256:6b68b16601d58e4816230cd6b5b3bb37bc2be5a57364ccf6198db358d1498944"
+size = 17914
+mtime_ms = 1794280863654
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/4f299c6d-1361-4ad3-8bcd-0c3a1ebe1c89/f5d6c00d-b43a-440c-a2e9-e5e8d284070e"
+storage_version_token = "1794280957402550"
+content_type = "text/csv"
+
+[[outputs]]
+id = "ARNlxaJTe3FGJN7oZKRdi"
+uri = "file://generated-artifacts/saved-bulk-approved-500-usd20/contextual-paired-test-prepared/execution-48c/artist-instagram-findings.csv"
+type = "table"
+title = "All 24 verification checks"
+description = "Includes comparison accounts, complete supplied evidence, original fresh-response scores and reported charges. No live links changed."
+logical_id = "0a5f0942-d96b-47eb-8bdf-a43c58652499"
+content_hash = "sha256:fe95b14f87938afa7fb68450eb414d2d62a542d8a84d589a2cb15800301c06a8"
+size = 156181
+mtime_ms = 1794280838350
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/0a5f0942-d96b-47eb-8bdf-a43c58652499/a3476bf6-c7c4-4a9d-aaf8-4f51a28bf533"
+storage_version_token = "1794280958067296"
+content_type = "text/csv"
