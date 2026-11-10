@@ -39,3 +39,16 @@ source trust to the wrong artist's page.
 **How to apply:** Preserve the complete normalized website URL across acquisition,
 evidence joins and acceptance checks. Do not reuse account-specific URL cleanup
 to decide that two website observations are the same evidence source.
+
+No general current-ownership validity interval has been approved. Treat original
+ownership observations as historical-only rather than inventing a default TTL.
+Expiry and suspected handle reuse are uncertainty about currency, not evidence
+that the historical identity was wrong.
+
+**Why:** Handles can be repurposed, and this project has not authorized a periodic
+evidence-collection budget or a universal validity window.
+
+**How to apply:** Require an explicit, explained re-adjudication window for
+current grading; retain historical answers separately. Renewing grading evidence
+does not renew frozen verifier inputs or authorize new collection. Even a
+zero-cost source refresh needs separate scope and spending approval.

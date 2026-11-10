@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {scoreKnownAnswers,validateBenchmarkRequest} from './instagram-known-answer-benchmark.mjs';
+import {validateFreshness,ownershipFreshness,appendOwnershipReview} from './instagram-ownership-freshness.mjs';
 
 const inputFile='scripts/fixtures/instagram-ownership-inputs.json';
 const adjudicationFile='scripts/fixtures/instagram-ownership-adjudications.json';
@@ -19,7 +20,9 @@ const canonical=url=>{
 };
 const date=value=>typeof value==='string'&&/^\d{4}-\d\d-\d\dT/.test(value)&&Number.isFinite(Date.parse(value));
 const forbidden=new Set(['expectedArtistOwned','stratum','evidenceIds','labelEvidence','labelProvenance',
-  'independentlyRechecked','category','review','adjudication','labelTier']);
+  'independentlyRechecked','category','review','adjudication','labelTier','freshness',
+  'ownershipFreshness','currentAdjudication','reviews','validUntil','validityReason',
+  'reviewedAt','reviewer','supersedes','acquisition','approval','scopeReference','spendingReference']);
 
 export function assertBlindInput(value) {
   if(!value||typeof value!=='object')return;
@@ -29,7 +32,7 @@ export function assertBlindInput(value) {
   }
 }
 
-export function validateAdjudications(labels) {
+export function validateAdjudications(labels,{checkFreshness=true}={}) {
   assert.equal(labels.version,1);
   const ids=new Set(),pairs=new Set();
   for(const c of labels.cases) {
@@ -63,6 +66,8 @@ export function validateAdjudications(labels) {
     assert.ok(c.observedAt===null||date(c.observedAt));
     if(c.url)assert.ok(!pairs.has(`${c.profileId}:${canonical(c.url)}`),'Uncertain case also in gold');
   }
+  if(checkFreshness)validateFreshness(labels,c=>validateAdjudications(
+    {...labels,cases:[c],uncertain:[]},{checkFreshness:false}));
 }
 
 // Only input descriptors enter this function, never the evaluator fixture.
@@ -110,7 +115,7 @@ export async function buildOwnershipInputs(inputs,snapshots) {
   return requests;
 }
 
-export function assembleOwnershipSuite(labels,requests,legacy) {
+export function assembleOwnershipSuite(labels,requests,legacy,{asOf=new Date().toISOString()}={}) {
   validateAdjudications(labels);
   const used=new Set();
   const frozen=requests.map(({body,...r})=>{
@@ -120,17 +125,24 @@ export function assembleOwnershipSuite(labels,requests,legacy) {
       const matches=labels.cases.filter(l=>l.requestId===r.id&&l.profileId===r.profileId&&l.url===c.url);
       assert.equal(matches.length,1,'Every input requires exactly one separate adjudication');
       const label=matches[0];assert.ok(!used.has(label.id));used.add(label.id);
-      if(label.expectedArtistOwned) {
-        assert.ok(label.evidenceIds.some(id=>labels.evidence[id].selectedLinks?.some(
-          u=>canonical(u)===body.state.knownProfileUrl)),'Gold proof does not bind to target music ID');
+      const assertTargetBinding=answer=>{
+        if(answer.expectedArtistOwned) {
+          assert.ok(answer.evidenceIds.some(id=>labels.evidence[id].selectedLinks?.some(
+            u=>canonical(u)===body.state.knownProfileUrl)),'Gold proof does not bind to target music ID');
+        }
+        if(answer.stratum==='wrong_person') {
+          const owner=answer.evidenceIds.map(id=>labels.evidence[id]).find(e=>
+            e.selectedLinks?.some(u=>canonical(u)===c.url));
+          assert.ok(owner?.selectedLinks.some(u=>new URL(u).hostname==='open.spotify.com'&&
+            canonical(u)!==body.state.knownProfileUrl),'Wrong-person proof requires distinct music ID');
+        }
+      };
+      assertTargetBinding(label);
+      for(const review of labels.freshness.reviews.filter(r=>r.caseId===label.id&&r.action==='re_adjudicated')) {
+        assertTargetBinding(review.adjudication);
       }
-      if(label.stratum==='wrong_person') {
-        const owner=label.evidenceIds.map(id=>labels.evidence[id]).find(e=>
-          e.selectedLinks?.some(u=>canonical(u)===c.url));
-        assert.ok(owner?.selectedLinks.some(u=>new URL(u).hostname==='open.spotify.com'&&
-          canonical(u)!==body.state.knownProfileUrl),'Wrong-person proof requires distinct music ID');
-      }
-      return {...label,category:'known_answer',labelTier:'source_adjudicated'};
+      const freshness=ownershipFreshness(labels,label,{asOf});
+      return {...label,category:'known_answer',labelTier:'source_adjudicated',ownershipFreshness:freshness};
     })};
   });
   assert.equal(used.size,labels.cases.length,'Orphan adjudication');
@@ -138,6 +150,11 @@ export function assembleOwnershipSuite(labels,requests,legacy) {
     threshold:{verdict:'verified',minimumIdentityProbability:0.9,unchanged:true},
     limits:{paidCallsAllowedNow:0,newSearchesAllowedNow:0,importsAllowedNow:0,automaticRetries:0},
     labelStandard:labels.standard,requests:frozen,evidence:labels.evidence,uncertain:labels.uncertain,
+    sourceEvidenceIsHistorical:true,scoringBasis:'historical_observations',
+    freshness:{asOf,policy:labels.freshness,
+      byStatus:Object.fromEntries(['historical_only','stale','expired','current'].map(status=>[
+        status,frozen.flatMap(r=>r.candidates).filter(c=>c.ownershipFreshness.status===status).length])),
+      newCollectionRequiresScopeAndSpendingApproval:true,automaticRefreshAllowed:false},
     legacyUserConfirmedOnly:legacy.labels,absenceAssertions:legacy.absenceAssertions,
     counts:{artistAccountPairs:used.size,distinctTargetArtists:new Set(labels.cases.map(c=>c.profileId)).size,
       distinctAccounts:new Set(labels.cases.map(c=>c.url)).size,
@@ -150,24 +167,59 @@ export function assembleOwnershipSuite(labels,requests,legacy) {
 
 export async function prepareOwnershipBenchmark({
   destination='generated-artifacts/instagram-source-adjudicated-benchmark',
+  asOf=new Date().toISOString(),reviewFile,
 }={}) {
   assert.ok(destination.startsWith('generated-artifacts/')&&!destination.split('/').includes('..'),
     'Output must stay under ignored generated-artifacts');
   const files=[inputFile,adjudicationFile,legacyFile,snapshotFile];
   const texts=await Promise.all(files.map(f=>fs.readFile(f,'utf8')));
-  const [inputs,labels,legacy,snapshots]=texts.map(JSON.parse);
+  const [inputs,originalLabels,legacy,snapshots]=texts.map(JSON.parse);
+  const reviewText=reviewFile?await fs.readFile(reviewFile,'utf8'):null;
+  const labels=reviewText?appendOwnershipReview(originalLabels,JSON.parse(reviewText),validateAdjudications):originalLabels;
   const requests=await buildOwnershipInputs(inputs,snapshots);
-  const suite=assembleOwnershipSuite(labels,requests,legacy);
+  const suite=assembleOwnershipSuite(labels,requests,legacy,{asOf});
   suite.sources=files.map((file,i)=>({file,sha256:sha(texts[i])}));
-  const score=scoreKnownAnswers(suite);
+  if(reviewFile)suite.sources.push({file:reviewFile,sha256:sha(reviewText)});
+  const score=scoreOwnershipBenchmark(suite,[],{asOf});
   // Exclusive creation: never overwrite a previous run or copy a paid admission.
   await fs.mkdir('generated-artifacts',{recursive:true});
   await fs.mkdir(destination,{recursive:false});
   await fs.mkdir(`${destination}/requests`);
   const save=(file,data)=>fs.writeFile(`${destination}/${file}`,JSON.stringify(data,null,2),{flag:'wx'});
   await save('benchmark.json',suite);await save('offline-scorecard.json',score);
+  await save('current-ownership-scorecard.json',scoreOwnershipBenchmark(suite,[],{mode:'current',asOf}));
+  await save('adjudications.json',labels);
+  await save('re-adjudication-queue.json',suite.requests.flatMap(r=>r.candidates)
+    .filter(c=>c.ownershipFreshness.requiresReAdjudication)
+    .map(c=>({caseId:c.id,profileId:c.profileId,url:c.url,historicalExpectedArtistOwned:c.expectedArtistOwned,
+      ...c.ownershipFreshness,automaticRefreshAllowed:false})));
   for(const r of requests)await save(`requests/${r.id}.json`,{request:r.body,inputSha256:r.inputSha256});
   console.log(JSON.stringify({prepared:true,...suite.counts,testedKnownAnswers:score.testedKnownAnswers,
     byStratum:score.byStratum,paidCalls:0,imports:0,destination},null,2));
   return {suite,score,requests};
+}
+
+// Historical results stay reproducible. Current scoring uses only unexpired,
+// explicit re-adjudications, never a stale answer silently converted to false.
+export function scoreOwnershipBenchmark(suite,responses=[],{mode='historical',asOf=new Date().toISOString()}={}) {
+  assert.ok(['historical','current'].includes(mode),'Unknown scoring mode');
+  // Recompute at scoring time so a prepared suite cannot keep expired proof alive.
+  const labels={freshness:suite.freshness.policy};
+  const resolved={...suite,requests:suite.requests.map(r=>({...r,candidates:r.candidates.map(c=>{
+    const freshness=ownershipFreshness(labels,c,{asOf});
+    const a=freshness.currentAdjudication;
+    return {...c,ownershipFreshness:freshness,...(mode==='current'?{
+      category:a?'known_answer':'stale_adjudication',
+      expectedArtistOwned:a?.expectedArtistOwned??null,stratum:a?.stratum??null,
+      evidenceIds:a?.evidenceIds??[],
+      // Frozen verifier inputs were not refreshed along with grading proof.
+      savedExactLinkEligible:false,
+    }:{})};
+  })}))};
+  const score=scoreKnownAnswers(resolved,responses);
+  return {...score,scoringBasis:mode==='historical'?'historical_observations':'current_re_adjudications',
+    asOf,excludedFromCurrentOwnership:resolved.requests.flatMap(r=>r.candidates)
+      .filter(c=>c.ownershipFreshness.status!=='current').length,
+    currentOwnershipClaimsAllowed:false,
+    note:'Frozen inputs and historical exact-link gates never authorize a current ownership claim or import. Re-adjudication updates grading only; new collection or model evaluation requires separate scope and spending approval.'};
 }

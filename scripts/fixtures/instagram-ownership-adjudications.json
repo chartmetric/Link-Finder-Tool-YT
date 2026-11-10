@@ -1,5 +1,12 @@
 {
   "version": 1,
+  "freshness": {
+    "version": 1,
+    "defaultStatus": "historical_only",
+    "automaticRefreshAllowed": false,
+    "newCollectionRequiresScopeAndSpendingApproval": true,
+    "reviews": []
+  },
   "standard": "Single curator review of source facts, not verifier outputs. Previously exposed development examples; no claim of blinded multi-human adjudication, current ownership, threshold calibration or population accuracy.",
   "evidence": {
     "aimee": {

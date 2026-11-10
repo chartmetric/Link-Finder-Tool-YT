@@ -65,7 +65,89 @@ observation times stay unknown. Gula's artist-level absence assertion remains
 separate and unscored; it cannot turn every candidate into a gold negative.
 Failed/challenged public sources never become evidence of account absence.
 
-### Input isolation and gate reporting
+### Freshness and re-adjudication (offline only)
+
+Instagram handles can change hands. The original `cases`, `evidence`, source
+timestamps and hashes are historical observations, not timeless ownership facts.
+They must not be edited to make a new answer appear to have been observed earlier.
+All existing cases default to **historical_only**. No arbitrary default TTL or
+current-ownership approval has been assigned to these observations.
+
+`freshness.reviews` is an append-only chain per case:
+
+- `historical_only`: no effective review; not eligible for current grading.
+- `stale`: an explicit notice of suspected handle reuse or other invalidation.
+  This is not a wrong-person label or proof of account absence.
+- `current`: an explicit re-adjudication with source-bound evidence and a
+  reviewer-chosen, explained `validUntil` window.
+- `expired`: at or after `validUntil`. The old answer is retained, but excluded
+  from current grading rather than flipped to a negative.
+
+Prepare a reproducible point-in-time report with `--as-of=<UTC timestamp>`.
+The normal historical scorecard still scores the original observations.
+`current-ownership-scorecard.json` excludes historical-only, stale and expired
+answers from both positive and negative totals. `re-adjudication-queue.json`
+lists those cases separately, with reasons and historical answers. Scoring via
+`scoreOwnershipBenchmark(suite, responses, {mode: 'current', asOf})` recalculates
+expiry at scoring time (defaults to now), not merely preparation time.
+
+To flag a case, create a local JSON proposal, for example:
+
+```json
+{
+  "review": {
+    "id": "aimee-handle-review",
+    "caseId": "aimee-owned",
+    "supersedes": null,
+    "action": "stale",
+    "reviewedAt": "2026-11-10T00:00:00.000Z",
+    "reviewer": "curator",
+    "reason": "Possible handle reuse; current ownership needs source review."
+  }
+}
+```
+
+```sh
+node scripts/src/instagram-known-answer-benchmark.mjs --independent \
+  --as-of=2026-11-10T00:00:00.000Z \
+  --review-file=generated-artifacts/local-review.json \
+  --output=generated-artifacts/ownership-review-proposal
+node --test scripts/src/instagram-ownership-freshness.test.mjs
+```
+
+This only validates and exports a proposal. It never fetches sources, calls a
+model, edits the committed fixture or overwrites an earlier output. Inspect the
+exported `adjudications.json` and its scorecards before manually adopting its
+appended records in the fixture. Keep every original case, evidence record and
+earlier review unchanged. Later reviews must name the latest review's ID in
+`supersedes`, including when renewing after expiry or staleness.
+
+For a source-backed new decision use `action: "re_adjudicated"` and add:
+
+- `validUntil`: explicit UTC expiry later than `reviewedAt`;
+- `validityReason`: why this observation/review supports that validity window;
+- `adjudication`: `{ "expectedArtistOwned": true, "stratum": "artist_owned",
+  "evidenceIds": ["aimee"] }` (or a separately evidenced negative).
+
+Re-reviewing archived facts does not change their observation dates or imply a
+fresh source fetch. A changed answer requires explicit new adjudication, not a
+stale flag. New evidence goes in the proposal's `evidence` object under **new**
+IDs, with the same URL, observation, hash and source-binding requirements as
+original proof. It must declare either `acquisition: { "kind": "existing_archive",
+"archiveReference": "..." }`, or `acquisition: { "kind": "new_collection",
+"approval": { "scopeReference": "...", "spendingReference": "...",
+"approvedAt": "<UTC timestamp>", "maxSpendUsd": 0 } }`. Both separate approvals
+must already exist before collection, including for zero-cost public reads.
+Approval references record an authorization; this offline tool does not grant
+permission or execute collection. No automatic refresh, retry or paid run exists.
+
+Fresh grading proof is **not** inserted into the frozen verifier inputs. Current
+scorecards therefore never promote their historical exact-link gates into
+current evidence or authorize current-ownership claims/imports. Historical
+scorecards explicitly identify their historical basis. Any new collection or
+new model evaluation still needs separately approved scope and spending.
+
+### Input isolation and gate reporting (historical)
 
 Input construction receives only source snapshots/descriptors, never grading
 labels. Three existing baseline pairs are preserved byte-for-byte; the brand

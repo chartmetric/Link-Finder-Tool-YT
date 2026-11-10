@@ -160,6 +160,9 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
   if(process.argv.includes('--independent')) {
     const {prepareOwnershipBenchmark}=await import('./instagram-ownership-benchmark.mjs');
     const flag=process.argv.find(a=>a.startsWith('--output='));
-    await prepareOwnershipBenchmark({destination:flag?.slice('--output='.length)});
+    const asOf=process.argv.find(a=>a.startsWith('--as-of='));
+    const review=process.argv.find(a=>a.startsWith('--review-file='));
+    await prepareOwnershipBenchmark({destination:flag?.slice('--output='.length),
+      asOf:asOf?.slice('--as-of='.length),reviewFile:review?.slice('--review-file='.length)});
   } else await prepareKnownAnswerBenchmark();
 }

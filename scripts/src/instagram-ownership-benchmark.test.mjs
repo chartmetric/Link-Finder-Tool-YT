@@ -64,7 +64,8 @@ test('labels, provenance reviews and grading artist-site proof never enter verif
     assert.ok(!text.includes('EVALUATOR_ONLY_SENTINEL'));
     for(const id of ['aimee','ernest','format'])assert.ok(!text.includes(labels.evidence[id].bodySha256));
   }
-  for(const key of ['expectedArtistOwned','labelEvidence','review','stratum']) {
+  for(const key of ['expectedArtistOwned','labelEvidence','review','stratum','ownershipFreshness',
+    'currentAdjudication','validUntil','reviewer','approval']) {
     assert.throws(()=>assertBlindInput({state:{candidates:[{[key]:'hidden'}]}}),/Evaluator field/);
   }
 });
