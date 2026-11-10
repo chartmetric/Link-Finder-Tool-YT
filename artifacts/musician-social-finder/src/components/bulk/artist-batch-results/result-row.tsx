@@ -1,6 +1,6 @@
 import { ChevronDown, ExternalLink } from 'lucide-react';
 import type { ArtistResultRow } from '@workspace/api-client-react';
-import { fmtScore, statusTone } from './model';
+import { fmtScore, statusTone, inspectionNotes } from './model';
 import { RowDetail } from './row-detail';
 
 function UrlCell({ kind, url }: { kind: 'Verified' | 'Candidate'; url: string | null }) {
@@ -24,7 +24,8 @@ export function ResultRow({ row, open, onToggle }: { row: ArtistResultRow; open:
         <UrlCell kind="Verified" url={row.verifiedUrl} />
         <UrlCell kind="Candidate" url={row.candidateUrl} />
         <div className="abr-dec">
-          <b className={`abr-status tone-${statusTone(row.status)}`}>{row.status === 'metadata_failed' ? 'metadata unavailable' : row.status.replace(/_/g, ' ')}</b>
+          <b className={`abr-status tone-${statusTone(row.status)}`}>{row.status === 'metadata_failed' ? 'metadata unavailable' : row.status === 'positive_review_suggestion' ? 'positive suggestion · review only' : row.status.replace(/_/g, ' ')}</b>
+          {inspectionNotes[row.status] && <span>{inspectionNotes[row.status]}</span>}
           <span className="inv-mono" title="Uncalibrated model identity score, not a probability">score {fmtScore(row.score)}</span>
           {row.verdict && <span className="abr-verdict">{row.verdict}</span>}
         </div>

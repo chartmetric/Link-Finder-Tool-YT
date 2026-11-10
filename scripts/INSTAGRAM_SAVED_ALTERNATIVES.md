@@ -90,10 +90,45 @@ claimed budget cannot be reopened, including after a crash or lost commit
 acknowledgement. Review uncertain admissions before approving any subsequent
 paid work; a fresh run is not an automatic recovery mechanism.
 
+## Read-only batch results import
+
+Prepare a UI archive from a runner output directory (not the approval file):
+
+```
+node scripts/src/import-saved-alternatives.mjs generated-artifacts/new-alternative-run generated-artifacts/new-alternative-ui
+```
+
+The output directory must be new. The importer uses only local files and never
+loads provider credentials, starts a run, discovers URLs, or accepts links.
+It reads `scope.json`, `admissions.jsonl`, `outcomes.jsonl`, `summary.json` and
+the exact raw metadata/model response archives when present. A missing final
+summary is explicitly shown as the last durable checkpoint; torn journals,
+conflicting final summaries and mismatched identities fail rather than being
+silently repaired. Missing raw response files are labelled unavailable, never
+reconstructed. An interrupted checkpoint's budget may precede newer admissions;
+the journaled reservation total is shown separately and is not a complete bill.
+
+Publish the prepared directory using the existing additive publisher described
+in `scripts/SAVED_VERIFICATION_UI_ARCHIVES.md` (substitute the new UI directory
+in the final command). Publication stores immutable review documents in App
+Storage and preserves previous batches. It is not a paid execution approval.
+The archive identity includes the scope and checkpoint hashes so later durable
+observations do not overwrite earlier ones.
+
+Open **Bulk → Artists → Saved artist batch results**. Each saved candidate
+retains its own status, original evidence, journaled requests and completion
+receipts. Frozen saved snippets/context are labelled available, not necessarily
+sent. A journaled admission is not a completed provider receipt. Positive
+suggestions remain review-only with no verified link. Filters preserve the six
+distinct candidate/no-candidate states; parent spending details stay at batch
+level. With no journal event, the displayed date is explicitly the source
+checkpoint file's modification time, not an invented approval/dispatch time.
+
 ## Offline verification
 
 ```
 node --test scripts/src/instagram-saved-alternatives.test.mjs \
+  scripts/src/import-saved-alternatives.test.mjs \
   scripts/src/instagram-next-saved-batch.test.mjs \
   scripts/src/instagram-saved-batch-gate.test.mjs \
   scripts/src/instagram-likely-review-policy.test.mjs

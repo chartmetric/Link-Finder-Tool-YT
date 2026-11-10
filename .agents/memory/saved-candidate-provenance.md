@@ -65,3 +65,15 @@ that corroboration. This was an input omission, not a score-threshold failure.
 shared-handle safeguards. Audit saved input completeness without relabeling old
 model answers or claiming the omitted evidence would necessarily change them.
 New paid checks need their own approval; never rewrite frozen scopes.
+
+Treat imported interrupted and final saved-alternative observations as immutable
+snapshots, not updates to the same published document.
+
+**Why:** A final summary can arrive after an interrupted checkpoint has already
+been reviewed. Replacing that archive would change the evidence behind the
+earlier review, while refusing every later snapshot would hide the final result.
+
+**How to apply:** Preserve earlier observations when importing later checkpoints.
+Identify the scope and observation separately, and label spending from an
+interrupted checkpoint as an observation that can precede newer admissions,
+not as a reconciled invoice or permission to resume.

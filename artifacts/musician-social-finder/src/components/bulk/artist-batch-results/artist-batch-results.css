@@ -16,7 +16,7 @@
 .abr-summary { margin-top: 12px; padding: 12px; border: 1px solid #e1e9ed; border-radius: 10px; background: #f6f9fa; }
 .abr-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px 12px; }
 .abr-stats dt { font-size: 9px; text-transform: uppercase; letter-spacing: .1em; color: var(--subtle); }
-.abr-stats dd { font-size: 15px; font-weight: 700; color: var(--ink); }
+.abr-stats dd { font-size: 15px; font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
 .abr-explain { margin-top: 10px; font-size: 11px; line-height: 1.6; color: #4a6177; }
 .abr-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; margin-top: 14px; }
 .abr-controls .blk-ig-toggle { margin-top: 0; }
@@ -34,7 +34,7 @@
 .abr-url a { display: inline-flex; align-items: center; gap: 4px; font: 600 11px var(--app-font-mono); color: var(--blue); overflow-wrap: anywhere; word-break: break-all; }
 .abr-url.k-verified a { color: #1f6048; text-decoration: underline; }
 .abr-url.k-candidate a { text-decoration: underline dotted; }
-.abr-dec { display: flex; flex-direction: column; gap: 3px; font-size: 10px; color: #4a6177; }
+.abr-dec { display: flex; flex-direction: column; gap: 3px; font-size: 10px; color: #4a6177; overflow-wrap: anywhere; }
 .abr-status { align-self: flex-start; font: 700 9px var(--app-font-mono); text-transform: uppercase; letter-spacing: .06em; padding: 3px 7px; border-radius: 4px; background: #edf0f2; color: #5d6d7f; }
 .abr-status.tone-ok { background: #dff3e8; color: #1f6048; } .abr-status.tone-warn { background: #fbf0d9; color: #85601a; } .abr-status.tone-bad { background: #fbe8e8; color: #ad434a; }
 .abr-verdict { overflow-wrap: anywhere; }

@@ -2,7 +2,8 @@ import type { BulkBrandRun, ArtistResultBatch, ArtistResultRow } from "@workspac
 
 export type BatchDocument = { batch: ArtistResultBatch; rows: ArtistResultRow[] };
 export const artistResultFilters = ["all", "verified", "review", "not_inspected", "metadata_failed", "no_candidate", "controls",
-  "research_supported", "held", "skipped", "partial_failure", "shared_handle"] as const;
+  "research_supported", "held", "skipped", "partial_failure", "shared_handle",
+  "uninspected", "unavailable", "inconclusive", "unsupported", "positive_review_suggestion", "no_saved_candidate"] as const;
 export function csvCell(value: unknown) {
   let text = value == null ? "" : String(value);
   if (/^[\s]*[=+\-@]/.test(text)) text = `'${text}`;
@@ -34,10 +35,10 @@ export function summarizeRows(rows: ArtistResultRow[]) {
   return { artistCount: new Set(targets.map(r => r.profileId)).size,
     candidateCount: new Set(targets.filter(r => r.candidateUrl).map(r => `${r.profileId}:${r.candidateUrl}`)).size,
     rowCount: rows.length, verifiedCount: targets.filter(r => r.verifiedUrl).length,
-    reviewCount: targets.filter(r => r.status === "review").length,
-    notInspectedCount: targets.filter(r => ["not_inspected", "held", "skipped"].includes(r.status)).length,
+    reviewCount: targets.filter(r => ["review", "positive_review_suggestion"].includes(r.status)).length,
+    notInspectedCount: targets.filter(r => ["not_inspected", "held", "skipped", "uninspected"].includes(r.status)).length,
     metadataFailedCount: targets.filter(r => r.status === "metadata_failed").length,
-    noCandidateCount: targets.filter(r => r.status === "no_candidate").length };
+    noCandidateCount: targets.filter(r => ["no_candidate", "no_saved_candidate"].includes(r.status)).length };
 }
 export function normalizeExportDocument(doc: BatchDocument): BatchDocument {
   const rows = doc.rows.map(row => row.fields.some(f => f.label === "Candidate status"

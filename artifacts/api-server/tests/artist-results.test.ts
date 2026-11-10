@@ -88,6 +88,36 @@ test("metadata-unavailable filtering preserves the original CSV wording and arch
   assert.match(resultCsv(normalized), /Candidate — metadata unavailable/);
   assert.equal(JSON.stringify(doc), before);
 });
+test("saved-alternative inspection states survive storage normalization, filtering and CSV without accepting links", () => {
+  const doc = nativeArtistDocument(run);
+  const statuses = ["uninspected", "unavailable", "inconclusive", "unsupported", "positive_review_suggestion", "no_saved_candidate"];
+  doc.rows = statuses.map((status, i) => ({ ...doc.rows[0], id: `alternative:${i}`, profileId: "1", status,
+    candidateUrl: status === "no_saved_candidate" ? null : `https://www.instagram.com/alt_${i}/`,
+    verifiedUrl: null, comparisonType: null,
+    fields: [{ label: "Candidate inspection status", value: status, group: "decision" as const },
+      { label: "Captured candidate metadata receipt (JSON)", value: '{"available":false}', group: "metadata" as const }] }));
+  doc.batch.details = [{ label: "Original parent spending checkpoint (JSON)", value: '{"maximumSpendCents":20,"reservedCents":4}', group: "provenance" }];
+  doc.batch.metrics = [{ label: "Parent approved ceiling", value: "$0.20" }];
+  const normalized = normalizeExportDocument(doc);
+  assert.deepEqual(normalized.rows.map(r => r.status), statuses);
+  assert.equal(normalized.batch.verifiedCount, 0);
+  assert.equal(normalized.batch.reviewCount, 1);
+  assert.equal(normalized.batch.notInspectedCount, 1);
+  assert.equal(normalized.batch.metadataFailedCount, 0); // unavailable is not silently converted to metadata_failed
+  assert.equal(normalized.batch.noCandidateCount, 1);
+  for (const status of statuses) {
+    assert.equal(GetArtistResultRowsParams.safeParse({ batchId: "x", offset: "0", pageSize: "25", searchTerm: "q:", resultFilter: status }).success, true);
+    const page = paginateResults(normalized, 0, 25, "", status);
+    assert.equal(page.total, 1);
+    assert.equal(GetArtistResultRowsResponse.parse(page).rows[0].status, status);
+  }
+  assert.equal(paginateResults(normalized, 0, 25, "instagram.com/alt_3/", "unsupported").total, 1);
+  const csv = resultCsv(normalized);
+  for (const status of statuses) assert.ok(csv.includes(status));
+  assert.match(csv, /Parent approved ceiling/);
+  assert.match(csv, /maximumSpendCents/);
+  assert.deepEqual(normalized.batch.details, doc.batch.details);
+});
 test("recheck filters, batch provenance and CSV preserve research-only distinctions", () => {
   const doc = nativeArtistDocument(run);
   const statuses = ["research_supported", "held", "skipped", "partial_failure", "shared_handle"];

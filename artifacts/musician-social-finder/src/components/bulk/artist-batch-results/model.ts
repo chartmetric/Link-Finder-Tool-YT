@@ -6,10 +6,11 @@ export const GROUPS: { key: ArtistResultFieldGroup; label: string; note: string 
   { key: 'decision', label: 'Decision', note: 'Outcome, uncalibrated model identity scores and thresholds. Not accepted is not proof of a wrong account or an absent link.' },
   { key: 'metadata', label: 'Metadata', note: 'Profile metadata. Labels show whether it was actually sent to the model or merely available.' },
   { key: 'provenance', label: 'Provenance', note: 'Where, when and how this row was produced. Captures may be stale.' },
-  { key: 'raw', label: 'Raw', note: 'Every remaining original CSV column, verbatim.' },
+  { key: 'raw', label: 'Raw', note: 'Remaining original CSV columns or retained JSON checkpoint fields. No evidence is reconstructed.' },
 ];
 export type ResultFilter = 'all' | 'verified' | 'review' | 'not_inspected' | 'metadata_failed' | 'no_candidate' | 'controls'
-  | 'research_supported' | 'held' | 'skipped' | 'partial_failure' | 'shared_handle';
+  | 'research_supported' | 'held' | 'skipped' | 'partial_failure' | 'shared_handle'
+  | 'uninspected' | 'unavailable' | 'inconclusive' | 'unsupported' | 'positive_review_suggestion' | 'no_saved_candidate';
 export const FILTERS: { key: ResultFilter; label: string }[] = [
   { key: 'all', label: 'All' }, { key: 'verified', label: 'Verified' }, { key: 'review', label: 'Review' },
   { key: 'not_inspected', label: 'Not inspected' }, { key: 'metadata_failed', label: 'Metadata unavailable' },
@@ -17,6 +18,9 @@ export const FILTERS: { key: ResultFilter; label: string }[] = [
   { key: 'research_supported', label: 'Research supported' }, { key: 'held', label: 'Held without call' },
   { key: 'skipped', label: 'Skipped / incomplete' }, { key: 'partial_failure', label: 'Partial failures' },
   { key: 'shared_handle', label: 'Shared-handle holds' },
+  { key: 'uninspected', label: 'Uninspected in run' }, { key: 'unavailable', label: 'Unavailable evidence' },
+  { key: 'inconclusive', label: 'Inconclusive' }, { key: 'unsupported', label: 'Unsupported' },
+  { key: 'positive_review_suggestion', label: 'Positive suggestion only' }, { key: 'no_saved_candidate', label: 'No saved candidate' },
 ];
 
 export type Tag = { text: string; tone: 'sent' | 'avail' | 'stale' | 'old' | 'new' | 'control' };
@@ -44,5 +48,13 @@ export const statusTone = (s: string) => {
   if (l.includes('verif')) return 'ok'; if (l.includes('fail')) return 'bad';
   if (l.includes('review')) return 'warn'; if (l.includes('no_candidate') || l.includes('no candidate')) return 'muted';
   return 'neutral';
+};
+export const inspectionNotes: Record<string, string> = {
+  uninspected: 'No completed inspection in this run. The saved URL is preserved.',
+  unavailable: 'Completed provider receipt could not supply usable evidence. This does not prove the account is absent.',
+  inconclusive: 'Captured evidence or an uncertain outcome does not resolve identity. No automatic retry.',
+  unsupported: 'An identity conflict, model mismatch or unsupported complete request was recorded. This does not mean the account is missing.',
+  positive_review_suggestion: 'Review-only suggestion. Not verified ownership; no link was accepted.',
+  no_saved_candidate: 'No URL was saved in the approved scope. This does not prove no account exists.',
 };
 export type Row = ArtistResultRow;

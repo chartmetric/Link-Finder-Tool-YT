@@ -61,7 +61,7 @@ export const GetArtistResultRowsParams = zod.object({
   "offset": zod.coerce.number().min(getArtistResultRowsPathOffsetMin),
   "pageSize": zod.coerce.number().min(1).max(getArtistResultRowsPathPageSizeMax),
   "searchTerm": zod.coerce.string().max(getArtistResultRowsPathSearchTermMax).describe('Prefix the search with q:; q: alone means no search.'),
-  "resultFilter": zod.enum(['all', 'verified', 'review', 'not_inspected', 'metadata_failed', 'no_candidate', 'controls', 'research_supported', 'held', 'skipped', 'partial_failure', 'shared_handle'])
+  "resultFilter": zod.enum(['all', 'verified', 'review', 'not_inspected', 'metadata_failed', 'no_candidate', 'controls', 'research_supported', 'held', 'skipped', 'partial_failure', 'shared_handle', 'uninspected', 'unavailable', 'inconclusive', 'unsupported', 'positive_review_suggestion', 'no_saved_candidate'])
 })
 
 export const GetArtistResultRowsResponse = zod.object({
