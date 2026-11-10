@@ -1162,3 +1162,59 @@ mtime_ms = 1794347379759
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/9c4f6de7-0bd8-4ce9-baea-3e34510cae6c/ddb70cc9-bbfc-4f10-a3d9-65ab1acd8f5b"
 storage_version_token = "1794347387717885"
 content_type = "text/csv"
+
+[[outputs]]
+id = "w4_6RDJhXrVAk6Mwlx-9a"
+uri = "file://generated-artifacts/next-saved-500-account-context-following-usd20/execution/likely-matches.csv"
+type = "table"
+title = "Likely matches — 236 artists"
+description = "Review suggestions with artist names, Instagram links, and metadata used."
+logical_id = "0acd4b0a-80a0-4f39-b695-7e0bb84e306b"
+content_hash = "sha256:bc2e67d78cf66dcb6a815dc1a62fecefb93e1054ab219a986461984ae58a9a8b"
+size = 1689278
+mtime_ms = 1794350839847
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/0acd4b0a-80a0-4f39-b695-7e0bb84e306b/59c1bb69-a26c-49c9-9a51-c5ac81394e0c"
+storage_version_token = "1794350866308848"
+content_type = "text/csv"
+
+[[outputs]]
+id = "txZvWFnFOSCZOujLo9bSZ"
+uri = "file://generated-artifacts/next-saved-500-account-context-following-usd20/execution/checked-not-accepted.csv"
+type = "table"
+title = "Checked but not accepted — 235 artists"
+description = "Checked candidates that did not pass, including ownership conflicts and supporting metadata."
+logical_id = "f4bf67f5-9172-4c5d-be8f-781a032d2b3e"
+content_hash = "sha256:338a0d81c259fb423ad8c1d51966f5bfbc29c889f4b5a76e8c82837c592be9dd"
+size = 1709119
+mtime_ms = 1794350839863
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/f4bf67f5-9172-4c5d-be8f-781a032d2b3e/d0c6c42a-25f4-4d07-88d1-c13845ac1be8"
+storage_version_token = "1794350867002446"
+content_type = "text/csv"
+
+[[outputs]]
+id = "QZVSRoQ5W1-OBHL02Jrbx"
+uri = "file://generated-artifacts/next-saved-500-account-context-following-usd20/execution/artist-instagram-findings.csv"
+type = "table"
+title = "Full findings — all 500 artists"
+description = "All outcomes, saved candidates, and metadata used, including 29 incomplete checks."
+logical_id = "c6cb2380-6564-4911-9a60-59744202a672"
+content_hash = "sha256:84f211b38c03a00ad20b1c4050ffed5f9b8a3a5cb7492540060334c1325120b4"
+size = 3485892
+mtime_ms = 1794350839819
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/c6cb2380-6564-4911-9a60-59744202a672/36621242-9945-4758-a3fd-f83f948fee3a"
+storage_version_token = "1794350867668956"
+content_type = "text/csv"
+
+[[outputs]]
+id = "s-s5kDM6NBQooFBPke0A0"
+uri = "file://generated-artifacts/next-saved-500-account-context-following-usd20/execution/all-saved-candidates.csv"
+type = "table"
+title = "All saved candidates — 1,877 links"
+description = "Every saved candidate across the 500 artists, including alternatives not checked."
+logical_id = "944ef19a-7f0a-4a48-aa9c-2f81b06945bf"
+content_hash = "sha256:d12763a8232f52cc5b10793aa3c850d1aba603c36b75dea2af21d41aed66b39b"
+size = 570190
+mtime_ms = 1794350839871
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/944ef19a-7f0a-4a48-aa9c-2f81b06945bf/9c44af08-5916-4465-8ada-bfb5b6a7c0ac"
+storage_version_token = "1794350868316272"
+content_type = "text/csv"
