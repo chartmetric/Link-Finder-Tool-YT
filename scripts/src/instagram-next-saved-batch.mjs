@@ -2,11 +2,12 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {catalogReferences,instagramProfileUrl} from './musician-instagram-matching.mjs';
+import {instagramProfileUrl} from './musician-instagram-matching.mjs';
 import {jevRequest,fitArtistContext} from './instagram-pilot-live-transport.mjs';
 import {CORROBORATED_RUBRIC} from './instagram-ownership-rubric.mjs';
 import {normalizeInstagramProfile} from './instagram-link-capture.mjs';
 import {readSavedDiscovery,readVerifiedSavedSources} from './instagram-saved-source-export.mjs';
+import {catalogAccountContext} from './instagram-catalog-account-context.mjs';
 export const digest=v=>createHash('sha256').update(typeof v==='string'?v:JSON.stringify(v)).digest('hex');
 export async function prepareNextSavedBatch(dir,previous){
   const savedDiscovery=await readSavedDiscovery(dir),discovery=savedDiscovery.rows;
@@ -47,7 +48,8 @@ export async function prepareNextSavedBatch(dir,previous){
 export function enrichedRequest(target,candidate){
   assert.equal(candidate?.url,target.selected?.url,'Captured metadata must match the exact selected account.');
   assert.ok(instagramProfileUrl(candidate.url)===candidate.url,'Invalid captured account URL.');
-  const ref=catalogReferences(target.player)[0]??{platform:'catalog',url:`https://app.chartmetric.com/artist/${target.player.cm_artist}`};
+  const accountContext=catalogAccountContext(target.player,candidate.url);
+  const ref=accountContext.accounts[0]??{platform:'catalog',url:`https://app.chartmetric.com/artist/${target.player.cm_artist}`};
   const profile={url:target.selected.url,identityComparison:{status:'uncertain',reference:{platform:ref.platform,url:ref.url},candidate}};
   const payload=fitArtistContext({artist:target.artist,catalogReference:ref,profiles:[profile],
     artistContext:target.context,ownershipRubric:CORROBORATED_RUBRIC},6000);
@@ -59,6 +61,7 @@ export function enrichedRequest(target,candidate){
   body.state.catalogReferenceNote=ref.platform==='catalog'
     ?'This is an ID-bound catalog artist record, not a newly captured or artist-owned external profile.'
     :'Reference URL is frozen from the catalog; reference-page ownership and biography were not newly fetched.';
+  body.state.catalogAccountEvidence=accountContext;
   const bytes=Buffer.byteLength(JSON.stringify(body));if(bytes>6000)throw Error('Complete evidence exceeds 6000 bytes.');
   return {profile,body,bytes,sha256:digest(body)};
 }

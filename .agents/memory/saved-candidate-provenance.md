@@ -52,3 +52,16 @@ catalog supplied an account. A new provenance label cannot repair an unknown joi
 **How to apply:** Fail preparation closed when source provenance is absent. Keep
 the original evidence untouched and create a fresh read-only musician export;
 this still does not verify ownership or authorize paid provider work.
+
+Keep secondary catalog accounts available as contextual evidence even when a
+primary Spotify reference is selected. Exact public-handle reuse across platforms
+is supporting context, not an observed owner-declared link or automatic acceptance.
+
+**Why:** A user-confirmed missed match had a catalog TikTok handle identical to
+the Instagram candidate, but selecting Spotify as the sole reference withheld
+that corroboration. This was an input omission, not a score-threshold failure.
+
+**How to apply:** Preserve artist/account identity binding, inactive-account and
+shared-handle safeguards. Audit saved input completeness without relabeling old
+model answers or claiming the omitted evidence would necessarily change them.
+New paid checks need their own approval; never rewrite frozen scopes.

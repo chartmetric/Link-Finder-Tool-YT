@@ -840,3 +840,31 @@ mtime_ms = 1794329360158
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/f16f27a5-d5ae-481c-93f2-e3351cdc0f28/a037cdd3-b653-4dd6-95d4-976fd1d83a1c"
 storage_version_token = "1794329366007859"
 content_type = "text/csv"
+
+[[outputs]]
+id = "HsTsbM6nDZLdkO1ilTCRo"
+uri = "file://generated-artifacts/next-saved-500-usd20/catalog-account-context-reports/checked-not-accepted-missing-account-context.csv"
+type = "table"
+title = "20 unaccepted artists with omitted account context"
+description = "Saved decisions, metadata, omitted account references, and exact-handle support. Original decisions unchanged."
+logical_id = "fd11e929-f3c2-48dc-aef2-5df180554fa4"
+content_hash = "sha256:cb4d0349972e4e17f275b38e9ee3f4d13305497d66b2db45fb7f37d3cdea9a3c"
+size = 168164
+mtime_ms = 1794331832391
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/fd11e929-f3c2-48dc-aef2-5df180554fa4/65e2ff57-a620-4548-a0c6-79734d93c963"
+storage_version_token = "1794331843465544"
+content_type = "text/csv"
+
+[[outputs]]
+id = "GYunpvqffnVl1pZL1ExuT"
+uri = "file://generated-artifacts/next-saved-500-usd20/catalog-account-context-reports/all-500-account-context-audit.csv"
+type = "table"
+title = "All 500 artists — account evidence audit"
+description = "Complete offline audit of which saved catalog accounts were missing from verification inputs."
+logical_id = "6d673fd5-97f3-482c-a8d6-579426a681c1"
+content_hash = "sha256:165102adc33d87b40d4546b53ea7bf478dc9923aabfab4bb0ab1feb463828e45"
+size = 3399494
+mtime_ms = 1794331832383
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/6d673fd5-97f3-482c-a8d6-579426a681c1/078204b6-4a5c-45a3-a11e-498aaaa48651"
+storage_version_token = "1794331844360035"
+content_type = "text/csv"
