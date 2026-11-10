@@ -1,0 +1,238 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import {createHash,randomUUID} from 'node:crypto';
+import {execFileSync,fork} from 'node:child_process';
+import {setTimeout as delay} from 'node:timers/promises';
+import {savedBatchSchemaSql} from './instagram-saved-batch-gate.mjs';
+import {pilotBudgetSchemaSql} from './instagram-pilot-shared-budget.mjs';
+
+const enabled = process.env.INSTAGRAM_SAVED_BATCH_PG_INTEGRATION === '1';
+const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+
+// No DATABASE_URL: a private Unix socket, no TCP listeners, and fresh schemas
+// in a disposable server. Even opting in cannot reach application budgets.
+test('saved-batch PostgreSQL process safety', {
+  skip:enabled ? false : 'Set INSTAGRAM_SAVED_BATCH_PG_INTEGRATION=1 to run isolated PostgreSQL tests',
+  timeout:60000,
+}, async t => {
+  // Import only after opt-in, from the workspace that declares pg.
+  const {default:pg} = await import('pg');
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(),'saved-batch-pg-'));
+  const data = path.join(dir,'data'), port = 15484, user = os.userInfo().username;
+  const suffix = randomUUID().replaceAll('-','');
+  const schema = `test_saved_batch_${suffix}`, pilotSchema = `test_pilot_${suffix}`;
+  const children = [];
+  let started = false, pool, observer;
+  t.after(async () => {
+    for (const worker of children) {
+      if (worker.child.exitCode === null && worker.child.signalCode === null) worker.child.kill('SIGKILL');
+    }
+    await Promise.all(children.map(worker => worker.exit));
+    try {
+      if (pool) {
+        // Never drop/truncate any table outside these two freshly created schemas.
+        await pool.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE; DROP SCHEMA IF EXISTS ${pilotSchema} CASCADE`);
+      }
+    } finally {
+      await Promise.all([pool?.end(),observer?.end()]);
+      if (started) execFileSync('pg_ctl',['-D',data,'-m','immediate','-w','stop'],{stdio:'ignore'});
+      await fs.rm(dir,{recursive:true,force:true});
+    }
+  });
+  execFileSync('initdb',['-D',data,'-A','trust','-U',user,'--no-locale'],{stdio:'ignore'});
+  execFileSync('pg_ctl',['-D',data,'-l',path.join(dir,'postgres.log'),'-o',
+    `-k ${dir} -p ${port} -c listen_addresses='' -c fsync=on`,'-w','start'],{stdio:'ignore'});
+  started = true;
+  const connection = {host:dir,port,user,database:'postgres',
+    options:`-c search_path=${schema}`,connectionTimeoutMillis:5000};
+  pool = new pg.Pool({...connection,max:2});
+  observer = new pg.Pool({...connection,max:1});
+  await pool.query(`CREATE SCHEMA ${schema}; CREATE SCHEMA ${pilotSchema}`);
+  await pool.query(savedBatchSchemaSql);
+  // A sacrificial copy of the old pilot ledger, not an existing ledger or
+  // allowance. No pilot table is ever used for saved-batch coordination.
+  const pilot = await pool.connect();
+  try {
+    await pilot.query(`SET search_path=${pilotSchema}`);
+    await pilot.query(pilotBudgetSchemaSql);
+    await pilot.query("INSERT INTO instagram_pilot_ceilings VALUES ('test-original-pilot',1000,743)");
+    await pilot.query("INSERT INTO instagram_pilot_runs VALUES ('test-original-pilot','test-history',$1,1000,3)",[randomUUID()]);
+    await pilot.query("INSERT INTO instagram_pilot_reservations VALUES ('test-original-pilot','test-history','test-uncertain',3,'fixture','jev')");
+  } finally {
+    await pilot.query(`SET search_path=${schema}`);
+    pilot.release();
+  }
+  const pilotSnapshot = async () => {
+    const result = {};
+    for (const table of ['instagram_pilot_ceilings','instagram_pilot_runs','instagram_pilot_reservations']) {
+      result[table] = (await pool.query(`SELECT * FROM ${pilotSchema}.${table} ORDER BY 1,2`)).rows;
+    }
+    return result;
+  };
+  const originalPilot = await pilotSnapshot();
+  let sequence = 0;
+  async function seed(name) {
+    const body = {state:{artist:'Test-only artist'},questions:{}};
+    const scope = {
+      authorization:{approved:true,maxSpendCents:2000,budgetId:`test-${name}`},
+      artists:[{profile_id:'fixture'}],savedEvidenceOnly:true,liveLinkWrites:false,automaticRetries:0,
+      requests:['one','two'].map(key => ({key,profileId:'fixture',kind:'jev',body,
+        sha256:hash(body),bytes:Buffer.byteLength(JSON.stringify(body))})),
+    };
+    const frozen = {scope,scopeSha256:hash(scope)};
+    await pool.query('INSERT INTO instagram_saved_batch_budgets (id,scope_sha256,cap_cents) VALUES ($1,$2,2000)',
+      [scope.authorization.budgetId,frozen.scopeSha256]);
+    return frozen;
+  }
+  function launch(frozen, options = {}) {
+    const worker = `worker-${++sequence}`, messages = [], waiters = [];
+    const journal = path.join(dir,`${worker}.jsonl`), receipts = path.join(dir,'receipts.jsonl');
+    const child = fork(new URL('../fixtures/saved-batch-gate-process.mjs',import.meta.url),[],{
+      env:{PATH:process.env.PATH},execArgv:[],stdio:['ignore','ignore','pipe','ipc'],
+    });
+    let exited = false, stderr = '';
+    child.stderr.on('data',chunk => { stderr += chunk; });
+    const notify = () => { for (const resolve of waiters.splice(0)) resolve(); };
+    child.on('message',message => { messages.push(message); notify(); });
+    const exit = new Promise(resolve => {
+      child.once('error',error => { stderr += error.message; });
+      child.once('exit',(code,signal) => { exited = true; notify(); resolve({code,signal}); });
+    });
+    const result = {child,worker,journal,messages,exit,
+      go:() => child.send('go'),
+      async wait(phase) {
+        const deadline = Date.now()+10000;
+        while (!messages.some(message => message.phase === phase)) {
+          assert.ok(!exited,`${worker} exited before ${phase}: ${JSON.stringify(messages)} ${stderr}`);
+          assert.ok(Date.now()<deadline,`${worker} timed out before ${phase}: ${stderr}`);
+          await Promise.race([new Promise(resolve => waiters.push(resolve)),delay(20)]);
+        }
+      },
+    };
+    children.push(result);
+    child.send({connection:{...connection,application_name:worker},...frozen,...options,worker,journal,receipts});
+    return result;
+  }
+  async function run(frozen, options) {
+    const worker = launch(frozen,options);
+    await worker.wait('ready'); worker.go();
+    const status = await worker.exit;
+    assert.equal(status.code,0,JSON.stringify(worker.messages));
+    return worker;
+  }
+  const receipts = async () => (await fs.readFile(path.join(dir,'receipts.jsonl'),'utf8')
+    .catch(error => { if (error.code === 'ENOENT') return ''; throw error; }))
+    .trim().split('\n').filter(Boolean).map(JSON.parse);
+  const journal = async worker => (await fs.readFile(worker.journal,'utf8')).trim()
+    .split('\n').filter(Boolean).map(JSON.parse);
+  async function state(frozen, cents, admissions) {
+    const id = frozen.scope.authorization.budgetId;
+    const budget = (await pool.query('SELECT * FROM instagram_saved_batch_budgets WHERE id=$1',[id])).rows[0];
+    const rows = (await pool.query('SELECT * FROM instagram_saved_batch_admissions WHERE budget_id=$1',[id])).rows;
+    assert.equal(budget.reserved_cents,cents);
+    assert.equal(rows.length,admissions);
+    for (const row of rows) { assert.equal(row.cents,2); assert.equal(row.admission_key,'one'); }
+    assert.deepEqual(await pilotSnapshot(),originalPilot,'Original pilot ledger must remain unchanged');
+    return budget;
+  }
+  async function replayDenied(frozen) {
+    const before = await receipts();
+    const replay = await run(frozen);
+    assert.match(replay.messages.find(message => message.phase === 'error')?.message,/already claimed/);
+    assert.ok(!replay.messages.some(message => message.phase === 'claimed'));
+    assert.deepEqual(await receipts(),before);
+  }
+
+  await t.test('two processes actually waiting on the same row dispatch through only one owner',async () => {
+    const frozen = await seed('race'), before = (await receipts()).length;
+    const lock = await pool.connect();
+    const a = launch(frozen), b = launch(frozen);
+    try {
+      await lock.query('BEGIN');
+      await lock.query('SELECT * FROM instagram_saved_batch_budgets WHERE id=$1 FOR UPDATE',[frozen.scope.authorization.budgetId]);
+      await Promise.all([a.wait('ready'),b.wait('ready')]);
+      a.go(); b.go();
+      const deadline = Date.now()+10000;
+      while (true) {
+        const blocked = await observer.query(
+          "SELECT application_name FROM pg_stat_activity WHERE application_name=ANY($1::text[]) AND wait_event_type='Lock'",
+          [[a.worker,b.worker]]);
+        if (blocked.rows.length === 2) break;
+        assert.ok(Date.now()<deadline,'Both child processes must contend on a real PostgreSQL row lock');
+        await delay(20);
+      }
+      await lock.query('COMMIT');
+    } finally { await lock.query('ROLLBACK'); lock.release(); }
+    const exits = await Promise.all([a.exit,b.exit]);
+    assert.ok(exits.every(exit => exit.code === 0));
+    const winners = [a,b].filter(worker => worker.messages.some(message => message.phase === 'claimed'));
+    assert.equal(winners.length,1);
+    const loser = [a,b].find(worker => worker !== winners[0]);
+    assert.match(loser.messages.find(message => message.phase === 'error')?.message,/already claimed/);
+    const newReceipts = (await receipts()).slice(before);
+    assert.deepEqual(newReceipts,[{key:'one',worker:winners[0].worker}]);
+    assert.deepEqual((await journal(winners[0])).map(row => row.phase),['admitted','returned']);
+    assert.equal((await journal(loser)).length,0);
+    assert.ok((await state(frozen,2,1)).owner);
+    await replayDenied(frozen);
+  });
+
+  await t.test('a duplicate key hits the real unique constraint without another dispatch or reservation',async () => {
+    const frozen = await seed('duplicate-key'), before = (await receipts()).length;
+    const worker = await run(frozen,{keys:['one','one']});
+    assert.equal(worker.messages.find(message => message.phase === 'error')?.code,'23505');
+    assert.ok(worker.messages.some(message => message.phase === 'retry_blocked' && /stopped/.test(message.message)));
+    assert.equal((await receipts()).length,before+1);
+    assert.deepEqual((await journal(worker)).map(row => row.phase),['admitted','returned','stopped_no_retry']);
+    await state(frozen,2,1);
+    await replayDenied(frozen);
+  });
+
+  for (const commit of [1,2]) {
+    await t.test(`lost acknowledgement of ${commit === 1 ? 'claim' : 'reservation'} COMMIT never permits replay`,async () => {
+      const frozen = await seed(`lost-ack-${commit}`), before = await receipts();
+      const worker = await run(frozen,{loseAckAtCommit:commit});
+      assert.match(worker.messages.find(message => message.phase === 'error')?.message,/lost COMMIT acknowledgement/);
+      assert.deepEqual(await receipts(),before);
+      assert.deepEqual((await journal(worker)).map(row => row.phase),commit === 1 ? [] : ['stopped_no_retry']);
+      if (commit === 2) assert.ok(worker.messages.some(message => message.phase === 'retry_blocked'));
+      assert.ok((await state(frozen,commit === 2 ? 2 : 0,commit === 2 ? 1 : 0)).owner);
+      await replayDenied(frozen);
+      await state(frozen,commit === 2 ? 2 : 0,commit === 2 ? 1 : 0);
+    });
+  }
+
+  await t.test('a different valid scope hash cannot claim an existing unspent allowance',async () => {
+    const frozen = await seed('changed-scope'), before = await receipts();
+    const changedScope = structuredClone(frozen.scope);
+    changedScope.artists.push({profile_id:'another-fixture'});
+    const worker = await run({scope:changedScope,scopeSha256:hash(changedScope)});
+    assert.match(worker.messages.find(message => message.phase === 'error')?.message,/approval is missing or changed/);
+    assert.deepEqual(await receipts(),before);
+    assert.equal((await state(frozen,0,0)).owner,null);
+    const valid = await run(frozen);
+    assert.ok(valid.messages.some(message => message.phase === 'done'));
+    await state(frozen,2,1);
+  });
+
+  for (const afterDispatch of [false,true]) {
+    await t.test(`worker death ${afterDispatch ? 'after fake charge' : 'after reservation, before journal/dispatch'} preserves non-replayable work`,async () => {
+      const frozen = await seed(`death-${afterDispatch}`), before = (await receipts()).length;
+      const worker = launch(frozen,afterDispatch ? {dieAfterDispatch:true} : {pauseAfterReservation:true});
+      await worker.wait('ready'); worker.go();
+      if (!afterDispatch) {
+        await worker.wait('reservation_committed');
+        worker.child.kill('SIGKILL');
+      }
+      assert.equal((await worker.exit).signal,'SIGKILL');
+      assert.equal((await receipts()).length,before+(afterDispatch ? 1 : 0));
+      assert.deepEqual((await journal(worker)).map(row => row.phase),afterDispatch ? ['admitted'] : []);
+      const prior = await state(frozen,2,1);
+      await replayDenied(frozen);
+      assert.deepEqual(await state(frozen,2,1),prior);
+    });
+  }
+});
