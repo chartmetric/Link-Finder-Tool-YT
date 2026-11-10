@@ -23,6 +23,8 @@ export function supplementalFixture() {
         latest: [`Official Instagram: ${instagramUrl}`, player.artist, '', sourceAt, sourceAt]}],
       chartmetric: [{cm_artist: '2', code2: 'GB', source_updated_at: sourceAt}],
       tags: [],
+      releases: [],
+      cmTracks: [],
       spotify: [{profile_id: '1', account_id: 'AAAAAAAAAAAAAAAAAAAAAA',
         latest: [player.artist, `Official Instagram: ${instagramUrl}`, '', [], sourceAt]}],
       profileMetadata: [{profile_id: '1', latest: [

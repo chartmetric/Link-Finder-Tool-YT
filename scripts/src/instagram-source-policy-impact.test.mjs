@@ -281,11 +281,12 @@ test('CLI emits exclusive ignored outputs, exact input hash, no raw requests and
 test('offline dependency graph contains only allowlisted pure modules and Node local-file/hash builtins', async () => {
   const directory = path.dirname(fileURLToPath(import.meta.url));
   const modules = ['instagram-source-policy-impact.mjs', 'instagram-source-policy-impact-cli.mjs',
-    'instagram-source-policy-offline.mjs', 'musician-instagram-matching.mjs'];
+    'instagram-source-policy-offline.mjs', 'musician-instagram-matching.mjs',
+    'catalog-profile-identity.mjs', 'instagram-reference-links.mjs'];
   for (const name of modules) {
     const text = await fs.readFile(path.join(directory, name), 'utf8');
     for (const [, specifier] of text.matchAll(/from\s+['"]([^'"]+)['"]/g)) {
-      assert.ok(['node:crypto', 'node:fs/promises', 'node:path', 'node:url',
+      assert.ok(['node:crypto', 'node:fs/promises', 'node:path', 'node:url', 'node:assert/strict',
         ...modules.map(m => `./${m}`)].includes(specifier), specifier);
     }
     assert.doesNotMatch(text, /process\.env|fetch\s*\(|https?\.request|import\s*\(/);
