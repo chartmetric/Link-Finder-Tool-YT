@@ -70,3 +70,15 @@ with the artist.
 **How to apply:** Preserve search-source attribution and date uncertainty; do not
 describe search snippets as newly fetched posts. Any separately approved model
 evaluation must distinguish evidence delivery from ownership accuracy.
+
+Removing prior workflow identity labels is input hygiene, not evidence of
+improved recall. Keep source-resolution states and explicit ownership uncertainty
+separate from those prior identity judgments.
+
+**Why:** The previous two-artist label-removal experiment did not improve
+acceptance; a cleaner request alone does not demonstrate better decisions.
+
+**How to apply:** Exclude workflow identity status/reasons consistently across
+normal and compact inputs without rewriting archived requests or decisions.
+Do not infer permission for paid reruns, new ownership criteria, threshold
+changes or link imports from this hygiene rule.

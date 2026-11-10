@@ -136,9 +136,9 @@ export function jevRequest(payload) {
         ...(p.identityComparison.catalogConnections?.length ? {
           catalogConnections:p.identityComparison.catalogConnections,
         } : {}),
-        observedExactCatalogLinks: exactCatalogLinkEdges(reference,candidate,payload.catalogReference,p.url),
-        identityComparisonStatus:p.identityComparison.status,
-        identityComparisonReasons:(p.identityComparison.reasons ?? []).slice(0,4) };
+        // Prior workflow status/reasons are not source evidence. Omit them at
+        // construction time so normal and compact requests share this contract.
+        observedExactCatalogLinks: exactCatalogLinkEdges(reference,candidate,payload.catalogReference,p.url) };
     }) }, questions };
   const request=payload.ownershipRubric===OWNERSHIP_RUBRIC?withOwnershipRubric(body):body;
   if(payload.compactEvidence) {
@@ -177,9 +177,6 @@ export function jevRequest(payload) {
       if(candidate.catalogConnections?.length){
         candidate.catalogConnections=candidate.catalogConnections.map(({targetUrl,platform,accountId})=>({targetUrl,platform,accountId}));
       }
-      // These are previous internal judgments, not underlying source facts.
-      delete candidate.identityComparisonStatus;
-      delete candidate.identityComparisonReasons;
     }
   }
   if(payload.profiles.some(p=>p.identityComparison.catalogConnections?.length)){

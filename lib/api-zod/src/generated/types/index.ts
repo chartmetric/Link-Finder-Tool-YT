@@ -58,6 +58,8 @@ export * from './existingProfile';
 export * from './existingProfileAccount';
 export * from './existingProfilePage';
 export * from './getArtistResultRows200';
+export * from './getArtistResultRowsFilter';
+export * from './getArtistResultRowsParams';
 export * from './healthStatus';
 export * from './identityComparison';
 export * from './identityComparisonStatus';
