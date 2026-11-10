@@ -728,3 +728,31 @@ mtime_ms = 1794280838350
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/0a5f0942-d96b-47eb-8bdf-a43c58652499/a3476bf6-c7c4-4a9d-aaf8-4f51a28bf533"
 storage_version_token = "1794280958067296"
 content_type = "text/csv"
+
+[[outputs]]
+id = "lMaKkGUzlukNQnQD5oSq5"
+uri = "file://generated-artifacts/saved-bulk-approved-500-usd20/likely-review-comparison/all-500-artists.csv"
+type = "table"
+title = "All 500 artists: simpler review-rule comparison"
+description = "Artist names, original outcomes, proposed review links, unchanged candidate scores and verdicts, remaining holds, and available versus actually supplied metadata. These are not verified links."
+logical_id = "2380f5a9-ceed-44fa-b287-5bd2baf9385f"
+content_hash = "sha256:4459ce9d6abf080b5902e8cf2fb6b35c53a36cce776d5e147abd2044c5423294"
+size = 1077559
+mtime_ms = 1794281352194
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2380f5a9-ceed-44fa-b287-5bd2baf9385f/04d8026d-7806-4b3e-aca8-2f2ae9438988"
+storage_version_token = "1794281427476812"
+content_type = "text/csv"
+
+[[outputs]]
+id = "JSj4wLhslXcyRRszMS125"
+uri = "file://generated-artifacts/saved-bulk-approved-500-usd20/likely-review-comparison/all-candidates.csv"
+type = "table"
+title = "Every candidate and remaining conflict"
+description = "947 rows including missing-evidence entries and 10 comparison accounts. Includes Instagram URLs, bios, unchanged original scores, proposed review status, conflict details and saved metadata. No paid calls or live-link changes."
+logical_id = "9afd74aa-95c2-4252-a014-915b92851b7b"
+content_hash = "sha256:6cee7163ab2bde29a60a58187a38f346ae86a91e03090211482e32aec1160894"
+size = 1774767
+mtime_ms = 1794281352202
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/9afd74aa-95c2-4252-a014-915b92851b7b/4dbf33ef-92d6-4178-bbb4-86d69d323bfa"
+storage_version_token = "1794281428363105"
+content_type = "text/csv"
