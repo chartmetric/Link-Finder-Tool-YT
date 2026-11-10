@@ -14,6 +14,7 @@
     "instagram:correction-readiness": "node ./src/musician-instagram-research.mjs correction-readiness",
     "instagram:run-correction": "node ./src/musician-instagram-research.mjs run-correction",
     "test:instagram-readiness": "node --test src/instagram-correction-readiness.test.mjs",
+    "test:instagram-source-only": "node --test src/instagram-verifier-source-only.test.mjs src/instagram-alternate-source-only.test.mjs src/instagram-alternate-verifier.test.mjs src/instagram-jev-label-ablation.test.mjs src/instagram-20-answer-check.test.mjs",
     "test:instagram-pilot-budget": "node --test src/instagram-pilot-shared-budget.test.mjs src/instagram-pilot-runner.test.mjs src/instagram-pilot-live.test.mjs src/instagram-20-answer-check.test.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

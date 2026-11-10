@@ -91,3 +91,16 @@ acceptance; a cleaner request alone does not demonstrate better decisions.
 normal and compact inputs without rewriting archived requests or decisions.
 Do not infer permission for paid reruns, new ownership criteria, threshold
 changes or link imports from this hygiene rule.
+
+Historical "facts-only" ablations are not the current source-only contract:
+their intentional source-field omissions must remain reproducible. A newly
+assembled baseline is not an archived historical baseline.
+
+**Why:** Reusing an old ablation to build fresh inputs removes resolution and
+unknown-ownership evidence along with workflow labels, confounding the hygiene
+change with a different evidence set.
+
+**How to apply:** Give fresh source-only construction a separate, field-specific
+path. Frozen transports must verify and preserve admitted bytes, not sanitize
+them after hashing. Label synthetic historical-contract fixtures as synthetic,
+not as archived captures.

@@ -5,6 +5,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
+import {withoutWorkflowJudgments} from './instagram-source-only-decision.mjs';
 
 const source='generated-artifacts/instagram-provenance-diagnostic-2026-11-06';
 const output='generated-artifacts/instagram-alternate-verifier-2026-11-06';
@@ -24,8 +25,8 @@ const schema={type:'object',additionalProperties:false,required:['candidates'],p
   }},
 }};
 
-// Remove only prior application judgments. Observed names, URLs and path edges
-// remain byte-for-byte identical; do not turn "unassessed" into "confirmed".
+// Historical facts-only ablation contract: also removed path status/ownership.
+// Retain for exact experiment reconstruction, not new source-only requests.
 export function factsOnlyDecision(decision) {
   const clean=structuredClone(decision);
   for(const candidate of clean.state.candidates) {
@@ -49,6 +50,12 @@ export function requestFor(decisionRequest) {
     ],
     response_format:{type:'json_schema',json_schema:{name:'artist_identity_comparison',strict:true,schema}},
   };
+}
+
+// New comparisons must not inherit workflow verdicts from saved decision state.
+// requestFor above remains the unchanged historical baseline formatter.
+export function sourceOnlyRequestFor(decisionRequest) {
+  return requestFor(withoutWorkflowJudgments(decisionRequest));
 }
 
 export function parseDecision(data,expectedUrls) {

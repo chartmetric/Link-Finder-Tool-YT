@@ -7,7 +7,7 @@ import {createHash} from 'node:crypto';
 import {jevRequest} from './instagram-pilot-live-transport.mjs';
 import {instagramProfileUrl,referenceUrl} from './musician-instagram-matching.mjs';
 import {correctedProfile} from './instagram-provenance-diagnostic.mjs';
-import {sourceFactsOnly} from './instagram-jev-label-ablation.mjs';
+import {withoutWorkflowJudgments} from './instagram-source-only-decision.mjs';
 import {OWNERSHIP_RUBRIC,withOwnershipRubric} from './instagram-ownership-rubric.mjs';
 import {createPilotBudget} from './instagram-pilot-budget.mjs';
 import {frozenJevTransport} from './instagram-frozen-jev.mjs';
@@ -20,6 +20,13 @@ const hash=x=>createHash('sha256').update(x).digest('hex');
 const save=(f,x)=>fs.writeFile(f,JSON.stringify(x,null,2),{flag:'wx'});
 const read=async f=>JSON.parse(await fs.readFile(f,'utf8'));
 const accepted=d=>d.verdict==='verified'&&d.sameIdentityProbability>=0.9;
+
+// Both are newly constructed inputs. "baseline" means unchanged questions,
+// not a replay of an archived, label-bearing baseline.
+export function answerCheckVariants(raw) {
+  const baseline=withoutWorkflowJudgments(raw);
+  return [['baseline',baseline],[OWNERSHIP_RUBRIC,withOwnershipRubric(baseline)]];
+}
 
 export function summarizeAnswerChecks(results) {
   return Object.fromEntries(['baseline',OWNERSHIP_RUBRIC].map(variant=>{
@@ -119,7 +126,7 @@ async function prepare(){
       const pair=keys.slice(j,j+2).map(key=>pool.get(key));assert.ok(pair.every(Boolean));
       const raw=jevRequest({artist:target.artist,catalogReference:target.reference,profiles:pair.map(c=>correctedProfile(target,c))});
       pair.forEach((p,i)=>{if(p.candidateMetadata.searchEvidence)raw.state.candidates[i].candidate.searchEvidence=p.candidateMetadata.searchEvidence;});
-      const baseline=sourceFactsOnly(raw);
+      const variants=answerCheckVariants(raw);
       const pairLabels=pair.map((p,i)=>{
         const key=keys[j+i],positive=key===id;
         const proof=positive?positiveProofs.get(id):relatedProofs[key]??{
@@ -133,9 +140,8 @@ async function prepare(){
           evidenceQuality:p.candidateMetadata.searchEvidence?'saved_search_snippet':'saved_profile_metadata'};
         examples.push(e);return e;
       });
-      for(const variant of ['baseline',OWNERSHIP_RUBRIC]){
-        const body=variant==='baseline'?baseline:withOwnershipRubric(baseline);
-        assert.deepEqual(body.state,baseline.state);
+      for(const [variant,body] of variants){
+        assert.deepEqual(body.state,variants[0][1].state);
         assert.ok(Buffer.byteLength(JSON.stringify(body))<=6000,`Over limit: ${id}/${j}/${variant}`);
         requests.push({id:`${id}-${j/2}-${variant}`,profileId:id,variant,body,inputSha256:hash(JSON.stringify(body)),examples:pairLabels});
       }

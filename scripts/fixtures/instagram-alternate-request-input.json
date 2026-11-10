@@ -1,0 +1,80 @@
+{
+  "fixtureKind": "synthetic_not_a_historical_capture",
+  "request": {
+    "model": "typesafe/jev-1.13",
+    "state": {
+      "artist": "Fixture Artist",
+      "knownProfileUrl": "https://open.spotify.com/artist/0123456789ABCDEFGHIJKL",
+      "candidates": [
+        {
+          "url": "https://www.instagram.com/fixture_artist/",
+          "identityComparisonStatus": "likely",
+          "identityComparisonReasons": ["PRIOR_WORKFLOW_POSITIVE"],
+          "observedExactCatalogLinks": [
+            {"source": "instagram_profile_bio_link", "targetUrl": "https://open.spotify.com/artist/0123456789ABCDEFGHIJKL"}
+          ],
+          "reference": {
+            "url": "https://open.spotify.com/artist/0123456789ABCDEFGHIJKL",
+            "bio": "Saved text containing the words likely and mismatch",
+            "musicLinkPath": {
+              "status": "unresolved",
+              "ownershipAssessment": "unassessed",
+              "sourceUrl": "https://example.invalid/reference",
+              "pages": []
+            }
+          },
+          "candidate": {
+            "url": "https://www.instagram.com/fixture_artist/",
+            "displayName": "Fixture Artist",
+            "bio": "Artist, not a fan page",
+            "externalUrls": ["https://example.invalid/artist"],
+            "unresolvedExternalLinks": ["https://example.invalid/unresolved"],
+            "musicLinkPath": {
+              "sourceUrl": "https://example.invalid/artist",
+              "status": "unresolved",
+              "ownershipAssessment": "unassessed",
+              "pages": [
+                {
+                  "sourceUrl": "https://example.invalid/artist",
+                  "musicTargets": ["https://open.spotify.com/album/AAAAAAAAAAAAAAAAAAAAAA"],
+                  "creditedArtistUrls": ["https://open.spotify.com/artist/0123456789ABCDEFGHIJKL"],
+                  "relatedArtistUrls": [],
+                  "status": "partial",
+                  "reason": "Destination could not be fully resolved"
+                }
+              ],
+              "catalogAlbumLinks": [
+                {
+                  "source": "frozen_catalog",
+                  "albumId": "fixture-album",
+                  "status": "exact_catalog_artist",
+                  "reason": "Exact frozen artist ID",
+                  "checkedAt": "2026-11-01",
+                  "artistRows": [["fixture-album", "fixture-artist", 0, "2020-01-01"]]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "url": "https://www.instagram.com/fixture_control/",
+          "identityComparisonStatus": "mismatch",
+          "identityComparisonReasons": ["PRIOR_WORKFLOW_NEGATIVE"],
+          "observedExactCatalogLinks": [],
+          "reference": {"url": "https://open.spotify.com/artist/0123456789ABCDEFGHIJKL"},
+          "candidate": {
+            "url": "https://www.instagram.com/fixture_control/",
+            "bio": "Unknown",
+            "externalUrls": []
+          }
+        }
+      ]
+    },
+    "questions": {
+      "candidate_0_same_identity": {"type": "noul", "instructions": "Require artist ownership; missing evidence stays unknown.", "criteria": {"true": "Same artist", "false": "Different artist"}},
+      "candidate_0_verdict": {"type": "choice", "instructions": "Classify ownership.", "criteria": {"verified": "Supported", "likely": "Plausible", "uncertain": "Unknown", "mismatch": "Different"}},
+      "candidate_1_same_identity": {"type": "noul", "instructions": "Require artist ownership; missing evidence stays unknown.", "criteria": {"true": "Same artist", "false": "Different artist"}},
+      "candidate_1_verdict": {"type": "choice", "instructions": "Classify ownership.", "criteria": {"verified": "Supported", "likely": "Plausible", "uncertain": "Unknown", "mismatch": "Different"}}
+    }
+  }
+}

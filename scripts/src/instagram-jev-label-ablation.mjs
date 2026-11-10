@@ -14,6 +14,8 @@ const read=async f=>JSON.parse(await fs.readFile(f,'utf8'));
 const save=(f,x)=>fs.writeFile(f,JSON.stringify(x,null,2),{flag:'wx'});
 
 export function sourceFactsOnly(request) {
+  // Frozen historical ablation, NOT the current source-only input contract.
+  // Removing path/album status here is intentional for that old comparison.
   const clean=factsOnlyDecision(request);
   for(const c of clean.state.candidates) for(const meta of [c.reference,c.candidate]) {
     for(const link of meta?.musicLinkPath?.catalogAlbumLinks??[]) delete link.status;

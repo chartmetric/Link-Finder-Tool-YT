@@ -1,4 +1,7 @@
 // Reusable bounded transport for frozen-input experiments, never imports links.
+// Deliberately not a sanitizer: a historical baseline may contain workflow
+// labels. New source-only inputs must be constructed before hashing, never
+// rewritten by the transport after admission.
 import fs from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {answersFrom} from './instagram-jev-label-ablation.mjs';
