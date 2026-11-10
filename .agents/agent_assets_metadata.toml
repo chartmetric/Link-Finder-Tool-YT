@@ -476,3 +476,17 @@ mtime_ms = 1794269012730
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/b74dff33-d0ba-4716-a3b4-1ae566b8803d/45976eb9-b11f-4a0e-9579-eca4079ce3fa"
 storage_version_token = "1794269017366318"
 content_type = "text/csv"
+
+[[outputs]]
+id = "bwI6BwzLAXLIFMjk4DoQh"
+uri = "file://generated-artifacts/artist-instagram-findings.csv"
+type = "table"
+title = "Artist names and Instagram links"
+description = "Simplified CSV: artist name, verified Instagram link, candidate Instagram link, candidate status and confidence first. Includes all 250 artists and 1,255 candidate–artist pairs. Verified-link cells are blank because no candidate passed the full acceptance gate."
+logical_id = "2b62c679-cc50-47e7-91c4-45b04cef4822"
+content_hash = "sha256:ea324ecedea48f88c9a6b5bb71538e28a335c2838c28c42fa2fd55aefd0a1e56"
+size = 204059
+mtime_ms = 1794269063622
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2b62c679-cc50-47e7-91c4-45b04cef4822/28cfec44-4ccc-40a7-9b51-a2b3e9dab0b4"
+storage_version_token = "1794269069858383"
+content_type = "text/csv"
