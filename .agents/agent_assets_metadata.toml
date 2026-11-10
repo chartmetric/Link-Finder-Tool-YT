@@ -490,3 +490,31 @@ mtime_ms = 1794269063622
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2b62c679-cc50-47e7-91c4-45b04cef4822/28cfec44-4ccc-40a7-9b51-a2b3e9dab0b4"
 storage_version_token = "1794269069858383"
 content_type = "text/csv"
+
+[[outputs]]
+id = "RtGYHsAjQNE7Nne_ME8XA"
+uri = "file://generated-artifacts/latest-250-candidate-audit-reviewed/unused-support-review.csv"
+type = "table"
+title = "Priority review — 9 candidates with unused evidence"
+description = "Artist names and Instagram links first, followed by saved scores, blockers, source-attributed evidence and cautions. These are review candidates, not newly verified links."
+logical_id = "6a9b7bd6-4847-4800-af40-5c3a531ca815"
+content_hash = "sha256:0adac53a5b022a5b08a988e2afe553e137c1595560a89f11ff657cb67c979156"
+size = 24766
+mtime_ms = 1794270128018
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/6a9b7bd6-4847-4800-af40-5c3a531ca815/f11ca32c-bbc6-40d7-b110-afa4badb5260"
+storage_version_token = "1794270146948289"
+content_type = "text/csv"
+
+[[outputs]]
+id = "_R5hFfGnJ4WLX6hrxDFcY"
+uri = "file://generated-artifacts/latest-250-candidate-audit-reviewed/all-candidates-audit.csv"
+type = "table"
+title = "Full audit — all 250 artists and 1,255 candidates"
+description = "Every candidate, including uninspected accounts and failed lookups, plus rows for artists with no saved candidates. Includes exact blockers, unchecked links, evidence sources and original request hashes."
+logical_id = "c49c85dd-b88c-4d61-89a1-b7a96ba6b189"
+content_hash = "sha256:d1ff62004d741f1b7667876c6de966a4568081c31dc2e77e7fb56f80f6e97b1c"
+size = 1394731
+mtime_ms = 1794270128014
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/c49c85dd-b88c-4d61-89a1-b7a96ba6b189/123fe6da-79f2-448c-9280-f10e51d8a5f0"
+storage_version_token = "1794270147684204"
+content_type = "text/csv"
