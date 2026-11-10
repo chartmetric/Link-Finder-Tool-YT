@@ -1092,3 +1092,31 @@ mtime_ms = 1794346399419
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2b0ef199-d4b4-4414-9c56-c4778b992a37/a9896190-d166-4658-b0bf-6d88522e9643"
 storage_version_token = "1794346407249747"
 content_type = "text/csv"
+
+[[outputs]]
+id = "EVkQrLuqdooO2sJymRMlI"
+uri = "file://generated-artifacts/next-saved-500-account-context-usd20/execution-age-restriction-continuation/reviewed-after-ghita-adriano-matches.csv"
+type = "table"
+title = "Updated reviewed matches — 250 artists"
+description = "Includes Ghita Adriano as a user-reported correct match. Original model score and verdict remain unchanged in separate review fields."
+logical_id = "ff6fb1af-0d30-47e2-bb99-8b72b96c8127"
+content_hash = "sha256:f344329175eabdf6dd73011c7ac2457d7a72b25a4c9b8bae01514b1e9ff53388"
+size = 1771641
+mtime_ms = 1794346527623
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/ff6fb1af-0d30-47e2-bb99-8b72b96c8127/b09bc3a1-43c5-4ed6-ba1a-b0e89cc1801d"
+storage_version_token = "1794346535375980"
+content_type = "text/csv"
+
+[[outputs]]
+id = "MMcs1xn8lQsJB_XS-_WID"
+uri = "file://generated-artifacts/next-saved-500-account-context-usd20/execution-age-restriction-continuation/reviewed-after-ghita-adriano-checked-not-accepted.csv"
+type = "table"
+title = "Updated checked but not accepted — 223 artists"
+description = "Ghita Adriano removed from this list following your correction. Previous false-positive corrections retained."
+logical_id = "7c83495c-b2cf-4972-9f2b-adc22521f0a2"
+content_hash = "sha256:2e81a5eabf7b1d4a7dc0ca3b14e82b871669ec671de2c7f8e6c31be7d54aa380"
+size = 1600428
+mtime_ms = 1794346527715
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/7c83495c-b2cf-4972-9f2b-adc22521f0a2/54aff4a5-1b74-4a0f-b626-5a57262668f9"
+storage_version_token = "1794346536082624"
+content_type = "text/csv"

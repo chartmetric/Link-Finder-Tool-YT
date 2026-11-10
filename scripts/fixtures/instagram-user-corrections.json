@@ -3,6 +3,19 @@
   "note": "User-reported artist/account corrections, not independently source-adjudicated benchmark labels. Never include these grading conclusions in verifier inputs.",
   "corrections": [
     {
+      "artist": "Ghita Adriano",
+      "profileId": "3887368",
+      "cmArtist": "4946551",
+      "candidateInstagramUrl": "https://www.instagram.com/ghitaadriano/",
+      "reviewSource": "explicit_user_statement",
+      "review": "false_negative",
+      "userStatement": "False negative",
+      "ownershipLabelTier": "user_correction",
+      "independentlySourceAdjudicated": false,
+      "appliesTo": "saved_batch_review_exports",
+      "liveLinkChanged": false
+    },
+    {
       "artist": "Faux Moon",
       "profileId": "290930",
       "cmArtist": "14285862",
