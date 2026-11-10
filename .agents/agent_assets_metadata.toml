@@ -630,3 +630,31 @@ mtime_ms = 1794275064118
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/10ffacde-9ad5-4c53-b9e6-9c6f1adcb6fe/d8ce0b50-5c4a-4ecb-8bc2-a6b8b46d4f69"
 storage_version_token = "1794276433452544"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "S0tgGrEnYA4pcpUMa9kbU"
+uri = "file://generated-artifacts/saved-bulk-approved-500-usd20/execution-paid/artist-summary.csv"
+type = "table"
+title = "500-artist recheck — summary"
+description = "One row per artist, with the outcome, links supported for review, completed checks and evidence gaps. No live links changed; an unmatched saved candidate does not prove an artist has no Instagram account."
+logical_id = "c67af35e-3ab6-4349-a83c-bcdd4ef1e2a9"
+content_hash = "sha256:1f5dd2a0fe65491d026ca7733c550c04d67bf707df92626e5aaf5e3b94ceb7e9"
+size = 31873
+mtime_ms = 1794278428926
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/c67af35e-3ab6-4349-a83c-bcdd4ef1e2a9/c2ae40ad-80b4-41d6-9b3b-8edcc86309e7"
+storage_version_token = "1794278483321171"
+content_type = "text/csv"
+
+[[outputs]]
+id = "pecJAOHTyScHfCitnU_ut"
+uri = "file://generated-artifacts/saved-bulk-approved-500-usd20/execution-paid/artist-instagram-findings.csv"
+type = "table"
+title = "Full findings — candidates and metadata"
+description = "All 947 findings rows, including 814 completed checks, comparison accounts, held candidates and missing saved evidence. Includes artist names, Instagram links, scores, decisions, reasons, provenance and exact metadata supplied."
+logical_id = "a363197f-823f-43c6-b2e1-ab312915d2ba"
+content_hash = "sha256:eb5cdd3e8b8e241a58680cb557d60727f430cc141718e20072fc6dfaf6b72ce6"
+size = 2448950
+mtime_ms = 1794278301354
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/a363197f-823f-43c6-b2e1-ab312915d2ba/b6a90270-8160-47a9-8493-c64a835b9a3e"
+storage_version_token = "1794278483987754"
+content_type = "text/csv"
