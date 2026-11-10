@@ -1,6 +1,7 @@
 // This gate supports research candidates only. Live links must still be recorded
 // as claims and processed by the external resolver; nothing here writes claims.
 export const MATCHING_POLICY = 'catalog-reference-identity-v1';
+import { declaredInstagramLinks } from './instagram-reference-links.mjs';
 
 export function instagramProfileUrl(value) {
   try {
@@ -70,10 +71,46 @@ function metadataMatches(metadata, url, normalize) {
 export function hasCatalogCrossLink(reference, candidate, url, catalog) {
   // Compare parsed URL identities, never partial handles or substrings of IDs.
   const urls = text => String(text ?? '').match(/https:\/\/[^\s<>"']+/g) ?? [];
-  return [...urls(reference.bio), ...(reference.externalUrls ?? [])]
+  return declaredInstagramLinks(reference.bio).some(link => link.url === url)
+    || [...urls(reference.bio), ...(reference.externalUrls ?? [])]
     .some(value => instagramProfileUrl(value.replace(/[),;]+$/, '')) === url)
     || [...urls(candidate.bio), ...(candidate.externalUrls ?? [])]
       .some(value => referenceUrl(value.replace(/[),;]+$/, ''), catalog.platform) === catalog.url);
+}
+
+/** Candidate-declared links to ANY frozen, current catalog account. These
+ * establish a source path, not artist ownership; the model gate still applies.
+ * Never promote profile/platform snapshots to account-bound ownership evidence. */
+export function catalogConnectionEvidence(candidate, player = {}) {
+  const sourceUrl = instagramProfileUrl(candidate?.url);
+  if (!sourceUrl) return [];
+  const ids = new Set((player.account_ids ?? []).map(String));
+  const canonical = (value, platform) => {
+    if (platform !== 'twitter') return referenceUrl(value, platform);
+    try {
+      const u = new URL(value);
+      if (u.protocol !== 'https:' || u.username || u.password || u.port
+        || !['twitter.com','www.twitter.com','x.com','www.x.com'].includes(u.hostname)
+        || !/^\/[a-z0-9_]{1,15}\/?$/i.test(u.pathname)) return null;
+      return `https://x.com/${u.pathname.split('/')[1].toLowerCase()}`;
+    } catch { return null; }
+  };
+  const direct = candidate.directExternalUrls
+    ?? (candidate.externalLinkEvidence ? [] : candidate.externalUrls ?? []);
+  const observed = [...direct, ...(String(candidate.bio ?? '').match(/https:\/\/[^\s<>"']+/g) ?? [])];
+  const edges = [];
+  for (const account of player.accounts ?? []) {
+    if (!ids.has(String(account.account_id)) || account.disconnected_at || account.is_active === false || account.is_active === 0
+      || (account.profile_id !== undefined && String(account.profile_id) !== String(player.profile_id))) continue;
+    const platform = String(account.platform ?? '').toLowerCase();
+    const target = canonical(account.account_url, platform);
+    if (!target || !observed.some(value => canonical(value.replace(/[),;]+$/, ''), platform) === target)) continue;
+    if (!edges.some(e => e.targetUrl === target)) edges.push({
+      sourceUrl, targetUrl:target, platform, accountId:String(account.account_id),
+      source:'instagram_declared_link_to_frozen_catalog_account',
+    });
+  }
+  return edges;
 }
 
 function assess(profile, player, references) {
@@ -92,14 +129,17 @@ function assess(profile, player, references) {
   const relatedEntity = /\b(festival|record label|fan ?page|fan account|tribute)\b/i.test(
     `${text} ${comparison?.candidate?.bio ?? ''}`);
   if (relatedEntity) return { url, status: 'needs_review', reason: 'Possible label, festival, fan or related account; artist ownership is not established.' };
-  const linked = catalog && candidateBound && hasCatalogCrossLink(comparison.reference, comparison.candidate, url, catalog);
+  const linked = catalog && candidateBound && (hasCatalogCrossLink(comparison.reference, comparison.candidate, url, catalog)
+    || catalogConnectionEvidence(comparison.candidate, player).length > 0);
   if (!fullNamePresent(player.artist, text) && !linked) {
     return { url, status: 'rejected', reason: 'The account name does not identify this artist and no catalog-bound cross-link supports it.' };
   }
   if (!catalog || !candidateBound) {
     return { url, status: 'needs_review', reason: 'Missing identity metadata bound to both this Instagram account and a linked catalog reference.' };
   }
-  if (!linked) return { url, status: 'needs_review', reason: 'No exact cross-link between the candidate and the linked catalog reference; name similarity is insufficient.' };
+  if (!linked) return { url, status: 'needs_review', reason: 'No exact cross-link between the candidate and the linked catalog reference; name similarity is insufficient.'
+    + (comparison.candidate.unresolvedExternalLinks?.length
+      ? ` ${comparison.candidate.unresolvedExternalLinks.length} external link(s) are unsupported by the bounded resolver; this is missing evidence, not a mismatch.` : '') };
   if (comparison.status !== 'likely' || jev?.verdict !== 'verified'
     || !Number.isFinite(jev.sameIdentityProbability) || jev.sameIdentityProbability < 0.9 || jev.sameIdentityProbability > 1) {
     return { url, status: 'needs_review', reason: 'A catalog-bound cross-link exists, but high-confidence identity verification is missing or inconclusive.' };

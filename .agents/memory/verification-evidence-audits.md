@@ -19,3 +19,18 @@ must not become authorization for attribution corrections or imports.
 **How to apply:** Require an explicit scored benchmark record for quality
 readiness. Keep research-only workflow completion, candidate discovery,
 source-supported attribution and claims eligibility as separate results.
+
+Preserve explicit account declarations and exact alternate-platform catalog
+paths ahead of general metadata when fitting verifier requests. A path to the
+artist's frozen YouTube, X or TikTok account need not pass through Spotify.
+Profile/platform snapshots remain contextual even when they name a handle.
+
+**Why:** Bulk-run reviews exposed plausible accounts held because the verifier
+received only a Spotify reference, while corroborating catalog links and saved
+declarations were unused or dropped to fit duplicated question text. Finding
+candidates and delivering their evidence are separate success criteria.
+
+**How to apply:** Normalize compatibility Unicode in platform-labeled handles;
+keep provenance and age; deduplicate prompts before omitting low-priority facts.
+Record omissions and hold explicitly if essential evidence cannot fit. Do not
+claim archived decisions improved without a separately approved model rerun.

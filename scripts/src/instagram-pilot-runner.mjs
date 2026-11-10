@@ -2,9 +2,9 @@ import fs from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fitArtistContext } from './instagram-pilot-live-transport.mjs';
-import { catalogReferences, referenceUrl, instagramProfileUrl, hasCatalogCrossLink, assessInstagramCandidates } from './musician-instagram-matching.mjs';
+import { catalogReferences, referenceUrl, instagramProfileUrl, hasCatalogCrossLink, catalogConnectionEvidence, assessInstagramCandidates } from './musician-instagram-matching.mjs';
 import { createPilotBudget } from './instagram-pilot-budget.mjs';
-import { musicEvidenceSources, resolveMusicEvidence } from './public-music-links.mjs';
+import { musicEvidenceSources, musicPageUrl, resolveMusicEvidence } from './public-music-links.mjs';
 
 export function pilotPreflight(manifest) {
   if (!Number.isInteger(manifest.proposed_limits.artist_workers) || manifest.proposed_limits.artist_workers < 1
@@ -98,6 +98,9 @@ export async function runPilot({ manifest, journalPath, transport, evaluateRegre
             profiles.push({...p,metadataLookupError:error.message});
             continue; // A restricted/unreadable neighbour must not discard readable candidates.
           }
+          candidate.unresolvedExternalLinks=(candidate.directExternalUrls??candidate.externalUrls??[])
+            .filter(url=>!musicPageUrl(url)&&!catalogConnectionEvidence(
+              {...candidate,directExternalUrls:[url]},artist).length);
           const publicLimit=Math.min(4,manifest.proposed_limits.public_music_page_requests_per_artist??1);
           const remainingPages=publicLimit-(evidence.musicPagesAttempted??0);
           if (instagramProfileUrl(candidate.url)===p.url && musicEvidenceSources(candidate).length
@@ -114,22 +117,27 @@ export async function runPilot({ manifest, journalPath, transport, evaluateRegre
             candidate.externalLinkEvidence = hub;
             candidate.externalUrls = [...new Set([...(candidate.externalUrls??[]),...hub.externalUrls])];
           }
-          const linked = hasCatalogCrossLink(reference, candidate, p.url, scope.reference);
+          const connections = catalogConnectionEvidence(candidate, artist);
+          const linked = hasCatalogCrossLink(reference, candidate, p.url, scope.reference) || connections.length > 0;
           profiles.push({ ...p, identityComparison: { reference, candidate, status: linked ? 'likely' : 'uncertain',
+            ...(connections.length ? {catalogConnections:connections} : {}),
             score: linked ? 60 : 0, reasons: linked ? ['Exact catalog account cross-link'] : ['No exact cross-link'] } });
         }
         const readableProfiles=profiles.filter(p=>p.identityComparison);
         if (profiles.length && !readableProfiles.length) throw new Error('No candidate had readable identity metadata; evidence retained.');
         if (readableProfiles.length) {
-          const decisions = await call('jev', fitArtistContext({ artist: artist.artist, catalogReference: scope.reference, profiles:readableProfiles,
-            ...(artist.metadata_context ? { artistContext: artist.metadata_context } : {}) }, manifest.proposed_limits.jev_max_input_tokens_per_request));
+          const payload = fitArtistContext({ artist: artist.artist, catalogReference: scope.reference, profiles:readableProfiles,
+            ...(artist.metadata_context ? { artistContext: artist.metadata_context } : {}) }, manifest.proposed_limits.jev_max_input_tokens_per_request);
+          evidence.contextDelivery = payload.contextDelivery;
+          const decisions = await call('jev', payload);
           for (const p of profiles) p.jevVerification = decisions.find(d => instagramProfileUrl(d.url) === p.url)?.jevVerification;
         }
         const assessment = assessInstagramCandidates({ ...discovery, profiles }, artist);
         // Invalid or truncated candidates cannot turn into a completed absence.
         if (!profiles.length && discoveryAttempts.some(a=>a.profiles.length)) assessment.status = 'needs_review';
         await record({ profileId: id, ...assessment, uninspectedCandidates: Math.max(0, unique.length - selected.length),
-          rawResult: { ...discovery, profiles }, discoveryAttempts, fixtureOnly: true, approvedCatalogLinks: false });
+          rawResult: { ...discovery, profiles }, discoveryAttempts, contextDelivery:evidence.contextDelivery,
+          fixtureOnly: true, approvedCatalogLinks: false });
       } catch (error) { await record({ profileId: id, status: 'needs_review', reason: error.message,
         partialEvidence: evidence, fixtureOnly: true }); }
     }

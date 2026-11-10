@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
+import {declaredInstagramLinks} from './instagram-reference-links.mjs';
 
 const digest=s=>createHash('sha256').update(s).digest('hex');
 const text=v=>typeof v==='string'?v:'';
@@ -143,12 +144,16 @@ export function artistContextFromPacket(packet,{staleAfterDays=365,maxItems=16}=
     ageDays:when(r.source_updated_at),stale:false,text:`${r.track_name}${r.release_date?` (${r.release_date.slice(0,10)})`:''}`.slice(0,160)});
   for(const s of packet.platformSnapshots)if(s.usableAsContext&&s.bio.trim()){
     const ageDays=age(s.snapshotDate);
+    const account=packet.linkedAccounts?.find(a=>a.platform===s.platform&&a.wasInFrozenBatch);
     items.push({kind:'bio',platform:s.platform,source:s.source,asOf:s.snapshotDate,ageDays,
-      stale:ageDays===null||ageDays>staleAfterDays,text:s.bio});
+      sourceUrl:account?.account_url,
+      binding:s.binding,stale:ageDays===null||ageDays>staleAfterDays,text:s.bio});
   }
   for(const s of packet.spotifyMetadata)if(s.usableAsContext&&text(s.latest[1]).trim()){
     const ageDays=age(s.latest[4]);
     items.push({kind:'spotify_biography',platform:'spotify',source:s.source,asOf:s.latest[4],ageDays,
+      binding:s.binding,accountId:s.account_id,
+      sourceUrl:`https://open.spotify.com/artist/${s.account_id}`,
       stale:ageDays===null||ageDays>staleAfterDays,text:s.latest[1]});
   }
   if(text(packet.chartmetric?.code2).trim())items.push({kind:'country',source:'new_vertical.cm_artist',
@@ -156,7 +161,8 @@ export function artistContextFromPacket(packet,{staleAfterDays=365,maxItems=16}=
   for(const t of packet.tags.filter(t=>t.tag_type==='genre'))items.push({kind:'genre',source:t.table,
     asOf:t.source_updated_at,ageDays:age(t.source_updated_at),stale:false,text:t.tag_slug});
   const order={release:0,country:1,genre:2,bio:3,spotify_biography:3};
-  items.sort((a,b)=>order[a.kind]-order[b.kind]);
+  const priority=i=>['bio','spotify_biography'].includes(i.kind)&&declaredInstagramLinks(i.text).length?-1:order[i.kind];
+  items.sort((a,b)=>priority(a)-priority(b));
   return {ownershipConfirmed:false,items:items.slice(0,maxItems)};
 }
 /** Cohort-wide read-only enrichment. Works for any manifest; chunks keep queries bounded. */

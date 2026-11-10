@@ -33,6 +33,12 @@ export function musicPageUrl(value) {
     if (u.protocol !== 'https:' || u.username || u.password || u.port) return null;
     const spotify = spotifyContent(u.href);
     if (spotify) return spotify.embedUrl;
+    if (u.hostname === 'social.tunecore.com' && u.pathname === '/linkShare') {
+      const ids=u.searchParams.getAll('linkid');
+      if(ids.length!==1 || !/^[A-Za-z0-9_-]{1,100}$/.test(ids[0])
+        || [...u.searchParams.keys()].some(key=>key!=='linkid') || u.hash) return null;
+      return `${u.origin}/linkShare?${new URLSearchParams({linkid:ids[0]})}`;
+    }
     const parts = u.pathname.split('/').filter(Boolean);
     const slug = /^[A-Za-z0-9._-]{1,120}$/;
     const oneOrTwo = parts.length >= 1 && parts.length <= 2 && parts.every(part => slug.test(part));
@@ -172,7 +178,7 @@ export function parsePublicMusicPage(sourceUrl, html, {status=200,location}={}) 
   const targets = [];
   const host=new URL(sourceUrl).hostname;
   const linktree=host==='linktr.ee';
-  const landingHost=['komi.io','lnk.to','hyperfollow.com','distrokid.com','paa.ge','bfan.link'].includes(host)
+  const landingHost=['komi.io','lnk.to','hyperfollow.com','distrokid.com','paa.ge','bfan.link','social.tunecore.com'].includes(host)
     || host.endsWith('.komi.io') || host.endsWith('.lnk.to');
   const addTarget=(value,kind,service)=>{
     if(!value || value.startsWith('#')) return;

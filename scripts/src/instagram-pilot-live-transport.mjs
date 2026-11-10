@@ -5,6 +5,7 @@ import { instagramSearchCandidates } from './instagram-search-clues.mjs';
 import { musicPageUrl, parsePublicMusicPage } from './public-music-links.mjs';
 import { safeMusicFetch } from './safe-music-fetch.mjs';
 import { contextSignals } from './instagram-context-signals.mjs';
+import { declaredInstagramLinks } from './instagram-reference-links.mjs';
 import { OWNERSHIP_RUBRIC, withOwnershipRubric } from './instagram-ownership-rubric.mjs';
 
 const MODEL = 'typesafe/jev-1.13';
@@ -54,6 +55,9 @@ function exactCatalogLinkEdges(reference,candidate,catalog,candidateUrl) {
       exact.push({source:'catalog_profile_link_to_instagram',targetUrl:candidateUrl});
     }
   }
+  for(const link of declaredInstagramLinks(reference.bio)) {
+    if(link.url===candidateUrl)exact.push({source:'catalog_profile_declared_instagram',targetUrl:candidateUrl});
+  }
   return [...new Map(exact.map(edge=>[`${edge.source}:${edge.targetUrl}`,edge])).values()].slice(0,4);
 }
 
@@ -74,8 +78,10 @@ export function boundedArtistContext(context) {
     if (!['bio','country','genre','spotify_biography','release'].includes(i.kind) || typeof i.text !== 'string' || !i.source) {
       throw new Error('Invalid artist context item.');
     }
+    if(i.text.length>16000)throw new Error('Artist context item exceeds bounded parsing limit.');
     return { kind:i.kind, platform:i.platform, source:i.source, asOf:i.asOf, ageDays:i.ageDays,
-      stale:i.stale === true, text:i.text.slice(0,300) };
+      sourceUrl:i.sourceUrl,accountId:i.accountId,binding:i.binding,
+      stale:i.stale === true, text:i.text };
   });
   return items.length ? { note:'Context only; not ownership evidence.', items } : undefined;
 }
@@ -102,6 +108,7 @@ export function jevRequest(payload) {
   const meta = m => ({ platform: m.platform, url: m.url, urlAliases: m.urlAliases,
     displayName: m.displayName?.slice(0,160), bio: m.bio?.slice(0,700),
     externalUrls: (m.directExternalUrls ?? (m.externalLinkEvidence ? [] : m.externalUrls))?.slice(0,10),
+    ...(m.unresolvedExternalLinks?.length ? {unresolvedExternalLinks:m.unresolvedExternalLinks.slice(0,10)} : {}),
     musicLinkPath: m.externalLinkEvidence ? {
       status:m.externalLinkEvidence.status,
       sourceUrl:m.externalLinkEvidence.sourceUrl,
@@ -120,15 +127,64 @@ export function jevRequest(payload) {
     } : undefined });
   const body = { model: MODEL, state: { artist: payload.artist, knownProfileUrl: payload.catalogReference.url,
     ...(artistContext ? { artistContext } : {}),
+    ...(payload.contextDelivery ? {contextDelivery:payload.contextDelivery} : {}),
     candidates: payload.profiles.map(p => {
       const reference = p.identityComparison.reference;
       const candidate = p.identityComparison.candidate;
       return { url: p.url, reference: meta(reference), candidate: meta(candidate),
+        ...(p.identityComparison.catalogConnections?.length ? {
+          catalogConnections:p.identityComparison.catalogConnections,
+        } : {}),
         observedExactCatalogLinks: exactCatalogLinkEdges(reference,candidate,payload.catalogReference,p.url),
         identityComparisonStatus:p.identityComparison.status,
         identityComparisonReasons:(p.identityComparison.reasons ?? []).slice(0,4) };
     }) }, questions };
-  return payload.ownershipRubric===OWNERSHIP_RUBRIC?withOwnershipRubric(body):body;
+  const request=payload.ownershipRubric===OWNERSHIP_RUBRIC?withOwnershipRubric(body):body;
+  if(payload.compactEvidence) {
+    // Share identity rules once; context cautions are also retained in the
+    // compact context note. Do not delete source evidence to fit the request.
+    const shared={};
+    for(const [key,question] of Object.entries(request.questions)){
+      const type=key.endsWith('_same_identity')?'same_identity':'verdict';
+      const rules=question.instructions.replace(contextNote,'')
+        .replace(/candidates\[\d+\]/g,'the candidate');
+      shared[type]=rules;
+      question.instructions=`For ${key.split('_').slice(0,2).join('_')}, apply state.evidenceRules.${type}.`;
+    }
+    request.state.evidenceRules=shared;
+    // Deduplicate repeated provenance and explanatory notes without removing
+    // declarations or exact account targets.
+    if(request.state.artistContext){
+      const context=request.state.artistContext,declarations=[];
+      context.note='Context only, not ownership proof. Missing signals are not negative; saved declarations may be stale or account-ambiguous.';
+      for(const signals of context.candidateSignals){
+        delete signals.note;
+        const bio=signals.otherPlatformBioLinksToCandidate;
+        if(bio.sources?.length){
+          bio.sourceIndexes=bio.sources.map(source=>{
+            let index=declarations.findIndex(s=>JSON.stringify(s)===JSON.stringify(source));
+            if(index<0){index=declarations.length;declarations.push(source);}
+            return index;
+          });
+          delete bio.sources;
+        }
+        delete bio.note;
+      }
+      if(declarations.length)context.declarations=declarations;
+    }
+    for(const candidate of request.state.candidates){
+      if(candidate.catalogConnections?.length){
+        candidate.catalogConnections=candidate.catalogConnections.map(({targetUrl,platform,accountId})=>({targetUrl,platform,accountId}));
+      }
+      // These are previous internal judgments, not underlying source facts.
+      delete candidate.identityComparisonStatus;
+      delete candidate.identityComparisonReasons;
+    }
+  }
+  if(payload.profiles.some(p=>p.identityComparison.catalogConnections?.length)){
+    request.state.catalogConnectionRules='catalogConnections are exact observed Instagram links to other current, frozen catalog accounts for this artist. They can supply the identity connection without a Spotify link. They do not prove ownership alone; apply all ownership, contradiction and related-entity checks.';
+  }
+  return request;
 }
 
 export function createLiveTransport({ keys, responseDir, fetchImpl = fetch, publicFetchImpl = safeMusicFetch, cachedPackets=[],catalogAlbumLookup }) {
@@ -265,14 +321,32 @@ export function createLiveTransport({ keys, responseDir, fetchImpl = fetch, publ
   }};
 }
 
-/** Drops lowest-priority context until the complete verifier request fits the frozen cap. */
+/** Deduplicate first, then omit only non-critical context with an audit trail.
+ * Critical declarations and catalog paths must fit or the request is held. */
 export function fitArtistContext(payload, maxBytes) {
   const context = payload.artistContext;
-  if (!context?.items?.length) return payload;
-  const bytes = items => Buffer.byteLength(JSON.stringify(jevRequest({
-    ...payload, artistContext: items.length ? { ...context, items } : undefined })));
-  let items = [...context.items];
-  while (items.length && bytes(items) > maxBytes) items.pop();
-  const { artistContext, ...rest } = payload;
-  return items.length ? { ...rest, artistContext: { ...context, items } } : rest;
+  const connections=payload.profiles.some(p=>p.identityComparison.catalogConnections?.length);
+  if (!context?.items?.length && !connections) return payload;
+  if(!Number.isInteger(maxBytes)||maxBytes<1)throw new Error('Invalid evidence byte cap.');
+  const original=context?.items??[];
+  const protectedItems=new Set(original.filter(i=>['bio','spotify_biography'].includes(i.kind)
+    &&declaredInstagramLinks(i.text).length));
+  // Labeled account declarations are never dropped. Ordinary release/context
+  // items may be omitted, but their omission is recorded with the decision.
+  let items=[...original];
+  const build=compactEvidence=>({...payload,compactEvidence,
+    ...(context?{artistContext:{...context,items}}:{}),
+    contextDelivery:{originalItems:original.length,retainedItems:items.length,
+      omittedItems:original.length-items.length,protectedDeclarations:protectedItems.size}});
+  let fitted=build(false);
+  const bytes=p=>Buffer.byteLength(JSON.stringify(jevRequest(p)));
+  if(bytes(fitted)<=maxBytes)return fitted;
+  fitted=build(true);
+  while(bytes(fitted)>maxBytes){
+    const index=items.findLastIndex(i=>!protectedItems.has(i));
+    if(index<0)throw new Error('Required catalog connection/declaration evidence exceeds request cap; no dispatch or silent evidence loss.');
+    items.splice(index,1);
+    fitted=build(true);
+  }
+  return fitted;
 }
