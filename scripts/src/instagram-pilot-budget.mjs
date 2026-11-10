@@ -1,5 +1,7 @@
 import fs from 'node:fs/promises';
 import {refuseCorrectionInResearch} from './instagram-correction-readiness.mjs';
+import {createHash} from 'node:crypto';
+import {connectPilotCoordinator} from './instagram-pilot-shared-budget.mjs';
 
 export const paidKinds = new Set(['serper', 'scrapecreators_candidate', 'scrapecreators_reference', 'jev']);
 
@@ -12,7 +14,7 @@ export const pilotReservationsCents = Object.freeze({
 });
 
 /** An exclusive, fsynced journal makes any previous admission non-replayable. */
-export async function createPilotBudget({ manifest, journalPath, transport, mode }) {
+export async function createPilotBudget({ manifest, journalPath, transport, mode, sharedCoordinator }) {
   refuseCorrectionInResearch(manifest);
   // A separately approved research batch does not expand the original $10 pilot.
   const batch=manifest.authorization?.separateBatchApproval;
@@ -56,6 +58,22 @@ export async function createPilotBudget({ manifest, journalPath, transport, mode
   const allowed = new Set(manifest.artists.filter(a => a.reference_preflight?.readiness === 'reference_usable'
     && a.source_identity_matches).map(a => String(a.profile_id)));
   const journal = await fs.open(journalPath, 'wx'); // Never resume/replay a previous journal.
+  let coordinator, claim, sharedBudget;
+  if (live && !separateBatchAuthorized) {
+    try {
+      coordinator = sharedCoordinator ?? await connectPilotCoordinator();
+      // Legacy frozen scopes get a stable identity, not a new random run on
+      // every invocation/journal. Reusing that scope is permanently excluded.
+      const runId = manifest.authorization.runId
+        ?? `scope-${createHash('sha256').update(JSON.stringify(manifest)).digest('hex')}`;
+      claim = await coordinator.claim({...manifest.authorization, runId});
+      sharedBudget = claim.shared;
+    } catch (error) {
+      await journal.close();
+      await coordinator?.close?.();
+      throw error;
+    }
+  }
   const counts = { paid: 0, scrapecreators: 0, byKind: {}, byArtist: {},
     reservedSpendCents: 0, maxSpendCents: live ? manifest.authorization.maxSpendCents : null,
     reusedCompletedPackets: 0 };
@@ -100,7 +118,18 @@ export async function createPilotBudget({ manifest, journalPath, transport, mode
           || (kind.startsWith('scrapecreators_') && counts.scrapecreators >= limits.scrapecreators_requests_total)) {
           throw new Error('Pilot request cap reached; no dispatch.');
         }
-        await append({ phase: 'admitted', profileId, kind, key, reserveCents, cachedReceipt, at: new Date().toISOString() });
+        if (coordinator) {
+          try {
+            sharedBudget = await coordinator.reserve({...claim, key, cents: reserveCents, profileId, kind});
+          } catch (error) {
+            stopped = 'Shared admission unavailable or ceiling reached; no automatic replay.';
+            throw error;
+          }
+        }
+        // Shared commit precedes local journal and dispatch. A failed local write
+        // still consumes the shared reservation; never refund uncertain work.
+        await append({ phase: 'admitted', profileId, kind, key, reserveCents, cachedReceipt,
+          sharedBudget, at: new Date().toISOString() });
         counts.reservedSpendCents += reserveCents;
         keys.add(key);
         counts.byKind[kind] = (counts.byKind[kind] ?? 0) + 1;
@@ -147,8 +176,13 @@ export async function createPilotBudget({ manifest, journalPath, transport, mode
   }
   return {
     request,
-    snapshot: () => structuredClone({ ...counts, stopped: stopped ?? null }),
+    snapshot: () => structuredClone({ ...counts, sharedBudget, stopped: stopped ?? null }),
     stop: reason => { stopped = reason; },
-    close: async () => { closed = true; await serial; await journal.close(); },
+    close: async () => {
+      closed = true; await serial;
+      try {
+        if (coordinator) sharedBudget = await coordinator.snapshot();
+      } finally { await journal.close(); await coordinator?.close?.(); }
+    },
   };
 }

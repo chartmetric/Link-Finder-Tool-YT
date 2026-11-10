@@ -15,6 +15,12 @@ Distributed coordination supplements ClickHouse; it must not replace the existin
 
 **How to apply:** All upgraded workers must share a transactional coordinator. Drain legacy workers before cutover; never silently fall back to advisory snapshots or local locks when the coordinator is unavailable.
 
+The original Instagram pilot ceiling must be cut over from a reviewed set of historical admission journals, never a single script's cumulative summary.
+
+**Why:** Separate verification experiments historically carried their own prior-reservation checkpoints. A locally correct summary does not prove that another process has not already reserved the remaining allowance.
+
+**How to apply:** Drain old experiment processes before seeding the shared ledger, include uncertain admissions, and permanently exclude historical run identities. Do not infer a seed from a hardcoded checkpoint or reset an existing ceiling. See `scripts/INSTAGRAM_PILOT_BUDGET.md` for the deliberate operator cutover; deploying code alone must not authorize new spending.
+
 Tests must isolate transactional coordination as well as HTTP providers.
 
 **Why:** A fetch-only mock no longer contains a bulk-run test once claims use PostgreSQL; such a test can create real development leases even while every provider and ClickHouse request is mocked.

@@ -143,7 +143,6 @@ async function prepare(){
   }
   assert.equal(examples.length,20);assert.equal(new Set(examples.map(e=>e.id)).size,20);assert.equal(requests.length,20);
   const previous=await archive(`${research}/summary.json`);
-  assert.equal(Math.round(previous.cumulativeConservativeReservationUsd*100),353);
   return {sources,examples,requests,previous};
 }
 
@@ -155,7 +154,9 @@ async function main(){
       requestsBytes:p.requests.map(r=>({id:r.id,bytes:Buffer.byteLength(JSON.stringify(r.body))}))},null,2));return;
   }
   await fs.mkdir(output,{recursive:false});await fs.mkdir(`${output}/responses`);
-  const manifest={run_allowed:true,authorization:{approved:true,approvedBy:'user',maxSpendCents:40,priorReservedCents:353,
+  const manifest={run_allowed:true,authorization:{approved:true,approvedBy:'user',maxSpendCents:40,
+    priorReservedCents:Math.round(p.previous.cumulativeConservativeReservationUsd*100),
+    runId:'instagram-20-answer-check-2026-11-09',
     source:'User approved assembling 20 known-answer examples and comparing current and revised verification rules. Overall turn cap $0.50 including $0.10 reference research.',
     noImports:true},sources:p.sources,examples:p.examples,
     design:{artistAccountPairs:20,distinctTargetArtists:5,correctExamples:5,incorrectExamples:15,
@@ -194,10 +195,10 @@ async function main(){
   }finally{
     await budget.close();const b=budget.snapshot();
     await save(`${output}/summary.json`,{results,byVariant:summarizeAnswerChecks(results),budget:b,
-      completed:results.length===20,cumulativeConservativeReservationUsd:(353+b.reservedSpendCents)/100,
-      remainingOriginalBudgetUsd:(1000-353-b.reservedSpendCents)/100,
+      completed:results.length===20,cumulativeConservativeReservationUsd:b.sharedBudget.reservedSpendCents/100,
+      remainingOriginalBudgetUsd:(b.sharedBudget.maxSpendCents-b.sharedBudget.reservedSpendCents)/100,
       reportedCostUsd:results.reduce((s,r)=>s+r.reportedCostUsd,0),newSearches:0,newMetadataCalls:0,
-      newPublicRequests:0,newDatabaseQueries:0,claims:0,databaseWrites:0,defaultPolicyChanged:false,
+      newPublicRequests:0,newDatabaseQueries:0,claims:0,databaseWrites:0,coordinationWrites:true,defaultPolicyChanged:false,
       fullRerunStarted:false,populationAccuracyClaim:false});
   }
 }

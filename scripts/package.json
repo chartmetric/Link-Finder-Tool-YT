@@ -10,10 +10,14 @@
     "instagram:correction-readiness": "node ./src/musician-instagram-research.mjs correction-readiness",
     "instagram:run-correction": "node ./src/musician-instagram-research.mjs run-correction",
     "test:instagram-readiness": "node --test src/instagram-correction-readiness.test.mjs",
+    "test:instagram-pilot-budget": "node --test src/instagram-pilot-shared-budget.test.mjs src/instagram-pilot-runner.test.mjs src/instagram-pilot-live.test.mjs src/instagram-20-answer-check.test.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@types/node": "catalog:",
     "tsx": "catalog:"
+  },
+  "dependencies": {
+    "pg": "^8.22.0"
   }
 }

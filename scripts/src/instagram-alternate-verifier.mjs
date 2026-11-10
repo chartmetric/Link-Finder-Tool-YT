@@ -1,3 +1,4 @@
+import {claimFixedPilotRun} from './instagram-pilot-shared-budget.mjs';
 // One-shot comparison only: no search, metadata, claims, or production decisions.
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -134,9 +135,11 @@ async function main() {
     noDiscovery:true,noMetadata:true,noDatabaseWrites:true,noClaims:true,
     limitation:'Alternative scores are self-reported, not calibrated against JEV. Labels are provisional catalog positives.'});
   const journal=await fs.open(`${destination}/admissions.jsonl`,'wx');
+  let shared;
   let admitted=0;const results=[];
   const append=async row=>{await journal.write(`${JSON.stringify({...row,at:new Date().toISOString()})}\n`);await journal.sync();};
   try {
+    shared=await claimFixedPilotRun({runId:path.basename(destination),priorReservedCents:priorCents,maxSpendCents:24});
     for(const c of cases) for(let repeat=1;repeat<=2;repeat++) {
       const key=`${c.profileId}-${repeat}`;
       const body=JSON.stringify(c.body);
@@ -145,6 +148,7 @@ async function main() {
       await save(`${destination}/${key}-request.json`,{request:c.body,stateSha256:c.stateSha256,
         originalStateSha256:c.originalStateSha256,
         sourceRequestSha256:c.sourceRequestSha256,requestSha256:hash(body)});
+      await shared.reserve({key,cents:reserveCents,profileId:c.profileId,kind:'alternate_verifier'});
       await append({phase:'admitted',key,reserveCents,requestSha256:hash(body)});
       admitted++;
       try {
@@ -178,10 +182,13 @@ async function main() {
     }
   } finally {
     await journal.close();
+    let sharedBudget;
+    try { sharedBudget=await shared?.snapshot(); } finally { await shared?.close(); }
     await save(`${destination}/summary.json`,{results,admitted,factsOnly,completed:results.length===4,
       conservativeNewReservationUsd:admitted*reserveCents/100,
-      cumulativeConservativeReservationUsd:(priorCents+admitted*reserveCents)/100,
-      remainingOriginalBudgetUsd:(1000-priorCents-admitted*reserveCents)/100,
+      sharedBudget,coordinationWrites:true,
+      cumulativeConservativeReservationUsd:sharedBudget?sharedBudget.reservedSpendCents/100:null,
+      remainingOriginalBudgetUsd:sharedBudget?(sharedBudget.maxSpendCents-sharedBudget.reservedSpendCents)/100:null,
       reportedCostUsd:results.reduce((s,r)=>s+r.reportedCostUsd,0),
       newSearches:0,newMetadataCalls:0,claims:0,databaseWrites:0,fullRerunStarted:false});
   }

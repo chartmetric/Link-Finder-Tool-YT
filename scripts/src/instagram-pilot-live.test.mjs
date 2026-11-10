@@ -6,6 +6,7 @@ import path from 'node:path';
 import {createLiveTransport,jevRequest,cachedPacketFor,serperQuery} from './instagram-pilot-live-transport.mjs';
 import {evaluateKnownCases,parseApprovedCap,loadCompletedPilotCache} from './instagram-pilot-live.mjs';
 import {createPilotBudget} from './instagram-pilot-budget.mjs';
+import {memoryPilotCoordinator} from '../fixtures/pilot-memory-coordinator.mjs';
 
 async function temp(t) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(),'ig-live-'));
@@ -16,6 +17,40 @@ const keys = {SERPERDEV_API_KEY:'fixture',SCRAPECREATORS_API_KEY:'fixture',OPENR
 const candidate = {url:'https://www.instagram.com/example/',externalUrls:[],bio:'musician'};
 const reference = {url:'https://open.spotify.com/artist/0123456789ABCDEFGHIJKL',platform:'spotify'};
 const req = (kind,payload={}) => ({profileId:'1',key:`1:${kind}:0`,kind,payload,signal:new AbortController().signal});
+
+test('separately approved batches retain their own cap without bypassing original-pilot admission for other scopes',async t=>{
+  const dir=await temp(t);
+  const manifest={run_allowed:true,
+    authorization:{approved:true,maxSpendCents:2000,
+      separateBatchApproval:{runId:'instagram-tiers-1-5-approved-250-usd20',maxArtists:250,maxSpendCents:2000}},
+    selection:{claimsAllowed:false,experimentalAcceptanceEnabled:false,fullTierRerun:false},
+    artists:[{profile_id:'1',source_identity_matches:true,reference_preflight:{readiness:'reference_usable'}}],
+    proposed_limits:{serper_requests_total:1,serper_requests_per_artist:1,
+      scrapecreators_requests_total:0,instagram_candidate_metadata_per_artist:0,reference_metadata_per_artist:0,
+      jev_requests_total:0,jev_requests_per_artist:0,paid_http_requests_total:1,
+      public_spotify_oembed_requests_total:0,public_official_or_linkhub_page_requests_total:0,
+      public_music_page_requests_per_artist:1,global_concurrent_provider_requests:1,per_request_timeout_seconds:1,
+      jev_max_input_tokens_per_request:6000,jev_max_output_tokens_per_request:1000}};
+  let claims=0,dispatches=0;
+  const sharedCoordinator={async claim(){claims++;throw Error('Fixture shared checkpoint unavailable');}};
+  const transport={live:true,dispatch:async()=>{dispatches++;return {};}};
+  const budget=await createPilotBudget({manifest,journalPath:path.join(dir,'separate.jsonl'),mode:'live',
+    transport,sharedCoordinator});
+  await budget.request({profileId:'1',kind:'serper',key:'separate-admission'});
+  await budget.close();
+  assert.equal(claims,0);assert.equal(dispatches,1);
+  assert.equal(budget.snapshot().maxSpendCents,2000);
+  assert.equal(budget.snapshot().sharedBudget,undefined);
+  for(const invalid of ['unknown-batch','claims-enabled']){
+    const m=structuredClone(manifest);
+    m.authorization.maxSpendCents=1000;
+    if(invalid==='unknown-batch')m.authorization.separateBatchApproval.runId='unknown';
+    else m.selection.claimsAllowed=true;
+    await assert.rejects(createPilotBudget({manifest:m,journalPath:path.join(dir,`${invalid}.jsonl`),
+      mode:'live',transport,sharedCoordinator}),/checkpoint unavailable/);
+  }
+  assert.equal(claims,2);assert.equal(dispatches,1);
+});
 
 test('live transport uses fixed Serper endpoint and preserves blind query and raw evidence',async t=>{
   const dir = await temp(t);
@@ -179,7 +214,7 @@ test('dollar reservations are serialized, durable, and never refunded after unce
       per_request_timeout_seconds:20,jev_max_input_tokens_per_request:6000,jev_max_output_tokens_per_request:1000}};
   let calls=0;
   const journalPath=path.join(dir,'admissions.jsonl');
-  const budget=await createPilotBudget({manifest,journalPath,mode:'live',transport:{live:true,dispatch:async()=>{
+  const budget=await createPilotBudget({manifest,journalPath,mode:'live',sharedCoordinator:memoryPilotCoordinator(),transport:{live:true,dispatch:async()=>{
     calls++;const rows=(await fs.readFile(journalPath,'utf8')).trim().split('\n').map(JSON.parse);
     assert.equal(rows[0].reserveCents,1);throw new Error('network failure');
   }}});
@@ -253,7 +288,8 @@ test('JEV budget measures the outgoing request, not larger archived discovery ev
     calls++;assert.ok(Buffer.byteLength(options.body)<=6000);
     return Response.json({usage:{cost:0.0001},answers:{candidate_0_same_identity:{noul:0.96},candidate_0_verdict:{choice:'verified'}}});
   }});
-  const budget=await createPilotBudget({manifest,journalPath:path.join(dir,'admissions.jsonl'),transport,mode:'live'});
+  const budget=await createPilotBudget({manifest,journalPath:path.join(dir,'admissions.jsonl'),transport,mode:'live',
+    sharedCoordinator:memoryPilotCoordinator()});
   const payload={artist:'Example Artist',catalogReference:reference,profiles:[{url:candidate.url,
     archivedSearchEvidence:'x'.repeat(7000),identityComparison:{reference,candidate}}]};
   assert.ok(Buffer.byteLength(JSON.stringify(payload))>6000);

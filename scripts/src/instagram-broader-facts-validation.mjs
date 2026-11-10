@@ -1,3 +1,4 @@
+import {claimFixedPilotRun} from './instagram-pilot-shared-budget.mjs';
 // Historical saved-evidence diagnostic only. Never creates claims or live links.
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -181,15 +182,18 @@ async function main() {
     limitation:'Historical convenience sample, provisional catalog positives; no population accuracy or JEV equivalence claim.',
     cases:prepared.cases.map(({body,...c})=>c),sources:prepared.sources,blocked:prepared.blocked});
   const journal=await fs.open(`${destination}/admissions.jsonl`,'wx');
+  let shared;
   const append=async r=>{await journal.write(JSON.stringify({...r,at:new Date().toISOString()})+'\n');await journal.sync();};
   const results=[];let admitted=0;
   try {
+    shared=await claimFixedPilotRun({runId:path.basename(destination),priorReservedCents:priorCents,maxSpendCents:maxCalls*reserveCents});
     for(const c of prepared.cases) {
       const body=JSON.stringify(c.body);
       assert.equal(hash(body),c.requestSha256);
       assert.ok(admitted<maxCalls);
       checkPrice(model,Buffer.byteLength(body));
       await save(`${destination}/${c.key}-request.json`,{request:c.body,requestSha256:c.requestSha256});
+      await shared.reserve({key:c.key,cents:reserveCents,profileId:c.profileId,kind:'alternate_verifier'});
       await append({phase:'admitted',key:c.key,reserveCents,requestSha256:c.requestSha256});
       admitted++;
       try {
@@ -220,10 +224,13 @@ async function main() {
     }
   }finally{
     await journal.close();
+    let sharedBudget;
+    try { sharedBudget=await shared?.snapshot(); } finally { await shared?.close(); }
     await save(`${destination}/summary.json`,{completed:results.length===maxCalls,admitted,results,
       blocked:prepared.blocked,conservativeNewReservationUsd:admitted*reserveCents/100,
-      cumulativeConservativeReservationUsd:(priorCents+admitted*reserveCents)/100,
-      remainingOriginalBudgetUsd:(1000-priorCents-admitted*reserveCents)/100,
+      sharedBudget,coordinationWrites:true,
+      cumulativeConservativeReservationUsd:sharedBudget?sharedBudget.reservedSpendCents/100:null,
+      remainingOriginalBudgetUsd:sharedBudget?(sharedBudget.maxSpendCents-sharedBudget.reservedSpendCents)/100:null,
       reportedCostUsd:results.reduce((s,r)=>s+r.reportedCostUsd,0),
       newSearches:0,newMetadataCalls:0,claims:0,databaseWrites:0,fullRerunStarted:false});
   }
