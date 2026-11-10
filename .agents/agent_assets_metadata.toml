@@ -1120,3 +1120,31 @@ mtime_ms = 1794346527715
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/7c83495c-b2cf-4972-9f2b-adc22521f0a2/54aff4a5-1b74-4a0f-b626-5a57262668f9"
 storage_version_token = "1794346536082624"
 content_type = "text/csv"
+
+[[outputs]]
+id = "XSvAmoknBVL4CdsODC5W6"
+uri = "file://generated-artifacts/next-saved-500-account-context-usd20/execution-age-restriction-continuation/reviewed-after-roger-somdboys-matches.csv"
+type = "table"
+title = "Updated reviewed matches — 251 artists"
+description = "Includes Roger SomdBoys as a user-reported correct match. Original model verdict and score preserved."
+logical_id = "0ce3e556-8b69-46bd-87d1-2ce5efd60bf4"
+content_hash = "sha256:533b617e0cf33fa6e6caf63d5f47ed83882eebb97945f8370f61dac2e1d512ae"
+size = 1780202
+mtime_ms = 1794346662247
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/0ce3e556-8b69-46bd-87d1-2ce5efd60bf4/84588fca-5512-46fd-9f9d-f1a6ddfe8bc1"
+storage_version_token = "1794346674016539"
+content_type = "text/csv"
+
+[[outputs]]
+id = "frcoRdnNNXArvlUr8SZ1k"
+uri = "file://generated-artifacts/next-saved-500-account-context-usd20/execution-age-restriction-continuation/reviewed-after-roger-somdboys-checked-not-accepted.csv"
+type = "table"
+title = "Updated checked but not accepted — 222 artists"
+description = "Roger SomdBoys removed following your correction. All earlier corrections retained."
+logical_id = "dc58149a-63a5-46d4-a65b-0675356aabe6"
+content_hash = "sha256:bc72b045e2c2c2e3dd5d8611d93fcd50c2c018c2e3e1dba9994087d8d8a0f091"
+size = 1592402
+mtime_ms = 1794346662279
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/dc58149a-63a5-46d4-a65b-0675356aabe6/9a9ef187-b750-4422-a16c-ca9a02f5a6ca"
+storage_version_token = "1794346674655489"
+content_type = "text/csv"

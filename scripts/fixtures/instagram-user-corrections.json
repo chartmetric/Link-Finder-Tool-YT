@@ -3,6 +3,19 @@
   "note": "User-reported artist/account corrections, not independently source-adjudicated benchmark labels. Never include these grading conclusions in verifier inputs.",
   "corrections": [
     {
+      "artist": "Roger SomdBoys",
+      "profileId": "253553",
+      "cmArtist": "4249877",
+      "candidateInstagramUrl": "https://www.instagram.com/rogersomdboysfc/",
+      "reviewSource": "explicit_user_statement",
+      "review": "false_negative",
+      "userStatement": "false negative",
+      "ownershipLabelTier": "user_correction",
+      "independentlySourceAdjudicated": false,
+      "appliesTo": "saved_batch_review_exports",
+      "liveLinkChanged": false
+    },
+    {
       "artist": "Ghita Adriano",
       "profileId": "3887368",
       "cmArtist": "4946551",
