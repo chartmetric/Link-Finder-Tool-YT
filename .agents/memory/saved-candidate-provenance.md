@@ -17,3 +17,14 @@ snippets separately from captured account facts; never copy a search title or
 snippet into an account display name or biography. If missing account details
 would require provider calls, disclose the evidence difference and obtain
 approval rather than silently expanding a saved-only run.
+
+Do not join a musician cohort to a similarly named catalog table by numeric
+profile ID alone. Confirm the profile/Chartmetric artist identity pair first.
+
+**Why:** Parallel catalog schemas can return plausible account rows for
+overlapping numeric IDs even when their profile records belong to a different
+identity model. A nonempty account query is not validation of that join.
+
+**How to apply:** Reuse the musician metadata query builder's source model,
+freeze the returned profile and account bindings, and reject identity mismatches
+before any provider admission. Do not silently substitute another catalog model.

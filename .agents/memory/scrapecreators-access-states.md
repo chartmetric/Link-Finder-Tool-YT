@@ -16,3 +16,16 @@ Skip confirmed restricted starting profiles and continue the batch; do not retry
 **How to apply:** Treat the individual profile as skipped, with downstream platforms unsearched and uncovered, rather than successful, absent, or a provider failure. Only explicit restriction evidence qualifies; historical bare HTTP codes cannot be safely reclassified. Other metadata failures still stop that profile's investigation.
 
 Source: https://docs.scrapecreators.com/ — introduction and October 18–19, 2026 contract notes.
+
+In a saved-candidate verification job, inspect retained profile fields even when
+the response flags private content as unavailable.
+
+**Why:** A completed response was HTTP 200 with `success: true`, an error flag
+and “Profile is private”, while also containing a username-bound display name
+and biography. The error flag alone did not mean that all profile metadata was
+unavailable.
+
+**How to apply:** Reuse only the actual, request-bound metadata already returned;
+do not refetch the account or attempt private-content access. Preserve the access
+restriction and incomplete-link uncertainty. This does not override the separate
+rule to skip restricted starting profiles in full investigations.

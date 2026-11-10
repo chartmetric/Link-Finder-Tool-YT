@@ -24,3 +24,4 @@
 - [Batch results review](batch-results-review.md) — expose every findings CSV field through progressive disclosure, with visible artist names and candidate versus accepted links.
 - [CLI dependency resolution](cli-package-resolution.md) — generated runners should use workspace-local helpers for dependencies declared only in that package.
 - [Saved candidate provenance](saved-candidate-provenance.md) — local recheck captures are not the full saved search pool; snippets are not captured account metadata.
+- [Paid batch continuation](paid-batch-continuation.md) — skip acknowledged server errors without retrying; retire unused allocations before continuing under the same spending cap.

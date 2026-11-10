@@ -1,6 +1,7 @@
 // Separate, explicitly approved saved-evidence batches. Never resets the pilot.
 import fs from 'node:fs/promises';
 import {createHash,randomUUID} from 'node:crypto';
+import {instagramProfileUrl} from './musician-instagram-matching.mjs';
 const sha=v=>createHash('sha256').update(v).digest('hex');
 export async function connectSavedBatchPool(){
   const {default:pg}=await import('pg');
@@ -23,22 +24,27 @@ CREATE TABLE IF NOT EXISTS instagram_saved_batch_admissions (
 export async function openSavedBatchGate({pool,scope,scopeSha256,journalPath,transport}){
   scope=structuredClone(scope);
   const cap=scope.authorization?.maxSpendCents;
+  const metadataMode=scope.savedEvidenceOnly===false&&scope.candidateMetadataFetchesApproved===true;
   if(sha(JSON.stringify(scope))!==scopeSha256||scope.authorization?.approved!==true
     ||!Number.isInteger(cap)||cap<1||cap>2000||scope.artists.length>500||scope.requests.length>1000
     ||scope.requests.length*2>cap
-    ||scope.savedEvidenceOnly!==true||scope.liveLinkWrites!==false||scope.automaticRetries!==0
+    ||(scope.savedEvidenceOnly!==true&&!metadataMode)||scope.liveLinkWrites!==false||scope.automaticRetries!==0
     ||transport?.live!==true)throw Error('Invalid separate saved-batch authorization.');
   const requests=new Map(scope.requests.map(r=>[r.key,r]));
   if(requests.size!==scope.requests.length)throw Error('Duplicate frozen request key.');
   const artists=new Set(scope.artists.map(a=>String(a.profile_id)));
   for(const r of requests.values()){
-    if(!artists.has(String(r.profileId))||r.kind!=='jev'||r.bytes>6000||r.bytes<1
+    const candidate=scope.artists.find(a=>String(a.profile_id)===String(r.profileId));
+    const approvedKind=metadataMode?r.kind==='scrapecreators_candidate'
+      &&instagramProfileUrl(r.body?.url)===r.body?.url
+      &&candidate?.savedCandidateUrls?.includes(r.body.url):r.kind==='jev';
+    if(!artists.has(String(r.profileId))||!approvedKind||r.bytes>6000||r.bytes<1
       ||sha(JSON.stringify(r.body))!==r.sha256||Buffer.byteLength(JSON.stringify(r.body))!==r.bytes)
       throw Error('Unbound or oversized saved request.');
   }
   const owner=randomUUID(),id=scope.authorization.budgetId;
   const journal=await fs.open(journalPath,'wx');
-  let stopped=false,active=false,admitted=0,returned=0,lastReserved=0,reportedCost=0;
+  let stopped=false,active=false,admitted=0,returned=0,lastReserved=0,reportedCost=0,estimatedCost=0;
   const append=async row=>{await journal.write(JSON.stringify({...row,at:new Date().toISOString()})+'\n');await journal.sync();};
   async function transaction(work){
     const c=await pool.connect();
@@ -77,17 +83,21 @@ export async function openSavedBatchGate({pool,scope,scopeSha256,journalPath,tra
         const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{
           stopped=true;controller.abort();reject(Error('Timed-out request is uncertain; no retry.'));
         },25000);});
-        const result=await Promise.race([transport.dispatch({kind:'jev',key,
+        const result=await Promise.race([transport.dispatch({kind:r.kind,key,
           payload:{body:r.body,inputSha256:r.sha256},signal:controller.signal}),timeout]);
         if(!Number.isFinite(result.cost)||result.cost<0||result.cost>0.02)throw Error('Unknown or excessive reported cost.');
-        reportedCost+=result.cost;returned++;
-        await append({phase:'returned',key,reportedCost:result.cost});
+        const estimated=metadataMode||String(result.costBasis??'').startsWith('conservative_');
+        if(estimated)estimatedCost+=result.cost;else reportedCost+=result.cost;
+        returned++;
+        await append({phase:'returned',key,...(estimated?{estimatedCost:result.cost}:{reportedCost:result.cost})});
         return result;
       }catch(e){stopped=true;await append({phase:'stopped_no_retry',key}).catch(()=>{});throw e;}
       finally{clearTimeout(timer);active=false;}
     },
     stop(){stopped=true;},
-    snapshot:()=>({budgetId:id,admitted,returned,reservedCents:lastReserved,reportedCostUsd:reportedCost,
+    snapshot:()=>({budgetId:id,admitted,returned,reservedCents:lastReserved,
+      ...(metadataMode?{estimatedCostUsd:estimatedCost}:{reportedCostUsd:reportedCost,
+        ...(estimatedCost?{estimatedCostUsd:estimatedCost}:{})}),
       maximumSpendCents:cap,stopped,originalPilotModified:false}),
     close:async()=>{stopped=true;await journal.close();},
   };

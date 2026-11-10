@@ -82,3 +82,34 @@ test('tampered requests and unapproved scopes never claim a budget',async()=>{
   await assert.rejects(openSavedBatchGate({...g,journalPath:'/unused'}),/authorization/);
   assert.equal(g.row.owner,null);
 });
+test('candidate fetches require explicit approval and a frozen artist-owned candidate scope',async()=>{
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'saved-metadata-gate-')),f=fixture(48);
+  const url='https://www.instagram.com/example_artist/';
+  f.scope.savedEvidenceOnly=false;f.scope.candidateMetadataFetchesApproved=true;
+  f.scope.artists[0].savedCandidateUrls=[url];
+  f.scope.requests=f.scope.requests.map(r=>{const body={url};return {...r,kind:'scrapecreators_candidate',body,
+    sha256:hash(JSON.stringify(body)),bytes:Buffer.byteLength(JSON.stringify(body))};});
+  f.scopeSha256=hash(JSON.stringify(f.scope));f.row.scope_sha256=f.scopeSha256;
+  f.transport.dispatch=async r=>{assert.equal(r.kind,'scrapecreators_candidate');return {cost:0.02};};
+  let gate;
+  try{
+    const bad=structuredClone(f.scope);bad.candidateMetadataFetchesApproved=false;
+    await assert.rejects(openSavedBatchGate({...f,scope:bad,scopeSha256:hash(JSON.stringify(bad)),journalPath:path.join(dir,'unapproved')}),/authorization/);
+    const foreign=structuredClone(f.scope);foreign.artists[0].savedCandidateUrls=[];
+    await assert.rejects(openSavedBatchGate({...f,scope:foreign,scopeSha256:hash(JSON.stringify(foreign)),journalPath:path.join(dir,'foreign')}),/Unbound/);
+    gate=await openSavedBatchGate({...f,journalPath:path.join(dir,'approved')});
+    await gate.request('one');assert.equal(gate.snapshot().estimatedCostUsd,0.02);
+    assert.equal(gate.snapshot().reportedCostUsd,undefined);
+    await assert.rejects(gate.request('one'),/Duplicate/);
+  }finally{await gate?.close();await fs.rm(dir,{recursive:true,force:true});}
+});
+test('acknowledged verifier errors retain a reservation without inventing reported charges',async()=>{
+  const f=fixture(48),dir=await fs.mkdtemp(path.join(os.tmpdir(),'saved-known-error-'));
+  f.transport.dispatch=async()=>({cost:0.02,costBasis:'conservative_failed_verification_estimate',unavailable:true});
+  const gate=await openSavedBatchGate({...f,journalPath:path.join(dir,'admissions')});
+  try{
+    await gate.request('one');
+    assert.equal(gate.snapshot().reservedCents,2);assert.equal(gate.snapshot().estimatedCostUsd,0.02);
+    assert.equal(gate.snapshot().reportedCostUsd,0);
+  }finally{await gate.close();await fs.rm(dir,{recursive:true,force:true});}
+});

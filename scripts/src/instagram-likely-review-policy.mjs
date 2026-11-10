@@ -40,9 +40,17 @@ function observedSpotifyArtistLinks(candidate){
   return [...new Set(urls.map(u=>referenceUrl(u,'spotify')).filter(Boolean))];
 }
 export function likelyReviewSuggestion(profile,player,{sharedHandle=false,contradictoryPair=false}={}){
+  return evaluateReview(profile,player,{sharedHandle,contradictoryPair},false);
+}
+// Some saved-discovery artists have a bound catalog identity but no frozen
+// Spotify/YouTube/TikTok account. This is a review-only, catalog-context variant.
+export function catalogBoundReviewSuggestion(profile,player,options={}){
+  return evaluateReview(profile,player,options,true);
+}
+function evaluateReview(profile,player,{sharedHandle=false,contradictoryPair=false}={},allowCatalogReference){
   assertNoGradingInputs({profile,player});
   const url=instagramProfileUrl(profile?.url);
-  const result=(status,reason,evidence=[])=>({policy:LIKELY_REVIEW_POLICY,url,status,reason,evidence,
+  const result=(status,reason,evidence=[])=>({policy:allowCatalogReference?'catalog-bound-likely-review-v1':LIKELY_REVIEW_POLICY,url,status,reason,evidence,
     reviewSuggestion:status==='positive_review_suggestion',verified:false,liveLinkAccepted:false});
   if(!url)return result('incomplete_saved_evidence','invalid_instagram_url');
   const decision=profile.jevVerification;
@@ -51,7 +59,13 @@ export function likelyReviewSuggestion(profile,player,{sharedHandle=false,contra
     return result('incomplete_saved_evidence','missing_or_invalid_recorded_answer');
   const references=catalogReferences({...player,accounts:(player.accounts??[]).filter(a=>a.is_active!==false&&a.is_active!==0)});
   const c=profile.identityComparison;
-  if(!references.some(r=>bound(c?.reference,r.url,u=>referenceUrl(u,r.platform)))
+  const catalogUrl=`https://app.chartmetric.com/artist/${player.cm_artist}`;
+  const catalogBound=allowCatalogReference&&/^[1-9]\d*$/.test(String(player.cm_artist))
+    &&player.source_identity_matches===true
+    &&String(player.catalog_profile?.profile_id)===String(player.profile_id)
+    &&String(player.catalog_profile?.cm_artist)===String(player.cm_artist)
+    &&c?.reference?.url===catalogUrl;
+  if((!catalogBound&&!references.some(r=>bound(c?.reference,r.url,u=>referenceUrl(u,r.platform))))
     ||!bound(c?.candidate,url,instagramProfileUrl))
     return result('incomplete_saved_evidence','unbound_reference_or_account');
   if(sharedHandle)return result('unresolved_ownership_conflict','shared_handle_across_catalog_artists');
