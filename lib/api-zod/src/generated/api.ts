@@ -110,6 +110,90 @@ export const DownloadArtistResultCsvResponse = zod.unknown()
 
 
 /**
+ * @summary Read saved bulk pilot evidence without rerunning verification
+ */
+export const listArchivedBulkEvidenceQueryPageDefault = 1;
+
+
+
+export const ListArchivedBulkEvidenceQueryParams = zod.object({
+  "archive": zod.coerce.string().optional(),
+  "page": zod.coerce.number().min(1).default(listArchivedBulkEvidenceQueryPageDefault)
+})
+
+export const listArchivedBulkEvidenceResponseRecordsItemContextDeliveryOriginalItemsMin = 0;
+
+export const listArchivedBulkEvidenceResponseRecordsItemContextDeliveryRetainedItemsMin = 0;
+
+export const listArchivedBulkEvidenceResponseRecordsItemContextDeliveryOmittedItemsMin = 0;
+
+export const listArchivedBulkEvidenceResponseRecordsItemContextDeliveryProtectedDeclarationsMin = 0;
+
+export const listArchivedBulkEvidenceResponseRecordsItemContextDeliveryMatchedPostRecordsMin = 0;
+
+export const listArchivedBulkEvidenceResponseRecordsItemContextDeliveryRetainedPostRecordsMin = 0;
+
+export const listArchivedBulkEvidenceResponseRecordsItemContextDeliveryOmittedPostRecordsMin = 0;
+
+export const listArchivedBulkEvidenceResponseRecordsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const listArchivedBulkEvidenceResponseRecordsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const listArchivedBulkEvidenceResponseRecordsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const listArchivedBulkEvidenceResponseRecordsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const listArchivedBulkEvidenceResponseRecordsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const listArchivedBulkEvidenceResponseRecordsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const listArchivedBulkEvidenceResponseRecordsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
+
+
+export const ListArchivedBulkEvidenceResponse = zod.object({
+  "archives": zod.array(zod.string()),
+  "archive": zod.string().optional(),
+  "records": zod.array(zod.object({
+  "profileId": zod.string(),
+  "subject": zod.string().optional(),
+  "status": zod.string(),
+  "reason": zod.string().optional(),
+  "warning": zod.string().optional(),
+  "candidates": zod.array(zod.object({
+  "url": zod.string(),
+  "verdict": zod.string().optional(),
+  "sameIdentityProbability": zod.number().optional()
+})),
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(listArchivedBulkEvidenceResponseRecordsItemContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(listArchivedBulkEvidenceResponseRecordsItemContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(listArchivedBulkEvidenceResponseRecordsItemContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(listArchivedBulkEvidenceResponseRecordsItemContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(listArchivedBulkEvidenceResponseRecordsItemContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(listArchivedBulkEvidenceResponseRecordsItemContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(listArchivedBulkEvidenceResponseRecordsItemContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(listArchivedBulkEvidenceResponseRecordsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(listArchivedBulkEvidenceResponseRecordsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(listArchivedBulkEvidenceResponseRecordsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(listArchivedBulkEvidenceResponseRecordsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(listArchivedBulkEvidenceResponseRecordsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(listArchivedBulkEvidenceResponseRecordsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(listArchivedBulkEvidenceResponseRecordsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.'),
+  "deliverySource": zod.enum(['saved_result', 'archived_request', 'not_recorded'])
+})),
+  "page": zod.number(),
+  "hasMore": zod.boolean()
+})
+
+
+/**
  * @summary Evidence-backed platform resolution coverage for all bulk profile types
  */
 export const GetBulkCoverageResponse = zod.object({
@@ -402,6 +486,34 @@ export const ListProfileInvestigationsQueryParams = zod.object({
   "limit": zod.coerce.number().int().min(1).max(listProfileInvestigationsQueryLimitMax).default(listProfileInvestigationsQueryLimitDefault)
 })
 
+export const listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryOriginalItemsMin = 0;
+
+export const listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryRetainedItemsMin = 0;
+
+export const listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryOmittedItemsMin = 0;
+
+export const listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryProtectedDeclarationsMin = 0;
+
+export const listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryMatchedPostRecordsMin = 0;
+
+export const listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryRetainedPostRecordsMin = 0;
+
+export const listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryOmittedPostRecordsMin = 0;
+
+export const listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
 export const listProfileInvestigationsResponseInvestigationsItemResultProfilesItemConfidenceMin = 0;
 export const listProfileInvestigationsResponseInvestigationsItemResultProfilesItemConfidenceMax = 100;
 
@@ -423,6 +535,27 @@ export const ListProfileInvestigationsResponse = zod.object({
   "id": zod.string(),
   "knownProfileUrl": zod.string(),
   "result": zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(listProfileInvestigationsResponseInvestigationsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.'),
   "referenceProfile": zod.object({
   "platform": zod.string(),
   "handle": zod.string(),
@@ -563,6 +696,34 @@ export const SearchProfilesBody = zod.object({
   "methods": zod.array(zod.enum(['serper', 'tavily', 'gemini', 'jev', 'scrapecreators', 'socialcrawl'])).optional()
 })
 
+export const searchProfilesResponseContextDeliveryOriginalItemsMin = 0;
+
+export const searchProfilesResponseContextDeliveryRetainedItemsMin = 0;
+
+export const searchProfilesResponseContextDeliveryOmittedItemsMin = 0;
+
+export const searchProfilesResponseContextDeliveryProtectedDeclarationsMin = 0;
+
+export const searchProfilesResponseContextDeliveryMatchedPostRecordsMin = 0;
+
+export const searchProfilesResponseContextDeliveryRetainedPostRecordsMin = 0;
+
+export const searchProfilesResponseContextDeliveryOmittedPostRecordsMin = 0;
+
+export const searchProfilesResponseContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const searchProfilesResponseContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const searchProfilesResponseContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const searchProfilesResponseContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const searchProfilesResponseContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const searchProfilesResponseContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const searchProfilesResponseContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
 export const searchProfilesResponseProfilesItemConfidenceMin = 0;
 export const searchProfilesResponseProfilesItemConfidenceMax = 100;
 
@@ -580,6 +741,27 @@ export const searchProfilesResponseMethodsUsedItemDurationMsMin = 0;
 
 
 export const SearchProfilesResponse = zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(searchProfilesResponseContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(searchProfilesResponseContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(searchProfilesResponseContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(searchProfilesResponseContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(searchProfilesResponseContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(searchProfilesResponseContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(searchProfilesResponseContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(searchProfilesResponseContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(searchProfilesResponseContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(searchProfilesResponseContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(searchProfilesResponseContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(searchProfilesResponseContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(searchProfilesResponseContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(searchProfilesResponseContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.'),
   "referenceProfile": zod.object({
   "platform": zod.string(),
   "handle": zod.string(),
@@ -762,6 +944,90 @@ export const ListBulkBrandCandidatesResponse = zod.object({
 
 export const listBulkBrandRunsResponseRunsItemWorkersPerTypeMax = 20;
 
+export const listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryOriginalItemsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryRetainedItemsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryOmittedItemsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryProtectedDeclarationsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryMatchedPostRecordsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryRetainedPostRecordsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryOmittedPostRecordsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryOriginalItemsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryRetainedItemsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryOmittedItemsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryProtectedDeclarationsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryMatchedPostRecordsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryRetainedPostRecordsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryOmittedPostRecordsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryOriginalItemsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryRetainedItemsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryOmittedItemsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryProtectedDeclarationsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryMatchedPostRecordsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryRetainedPostRecordsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryOmittedPostRecordsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
 export const listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemConfidenceMin = 0;
 export const listBulkBrandRunsResponseRunsItemItemsItemResultProfilesItemConfidenceMax = 100;
 
@@ -797,6 +1063,50 @@ export const ListBulkBrandRunsResponse = zod.object({
   "stopRequested": zod.boolean(),
   "estimatedCostUsd": zod.number(),
   "items": zod.array(zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.'),
+  "partialEvidence": zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.')
+}).optional(),
   "candidate": zod.object({
   "profileId": zod.number(),
   "profileName": zod.string(),
@@ -828,6 +1138,27 @@ export const ListBulkBrandRunsResponse = zod.object({
   "checkedAt": zod.string()
 })),
   "result": zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(listBulkBrandRunsResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.'),
   "referenceProfile": zod.object({
   "platform": zod.string(),
   "handle": zod.string(),
@@ -1017,6 +1348,90 @@ export const StartBulkBrandRunBody = zod.object({
 
 export const startBulkBrandRunResponseWorkersPerTypeMax = 20;
 
+export const startBulkBrandRunResponseItemsItemContextDeliveryOriginalItemsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemContextDeliveryRetainedItemsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemContextDeliveryOmittedItemsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemContextDeliveryProtectedDeclarationsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemContextDeliveryMatchedPostRecordsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemContextDeliveryRetainedPostRecordsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemContextDeliveryOmittedPostRecordsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const startBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const startBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const startBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const startBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOriginalItemsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryRetainedItemsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOmittedItemsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryProtectedDeclarationsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryMatchedPostRecordsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryRetainedPostRecordsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOmittedPostRecordsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemResultContextDeliveryOriginalItemsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemResultContextDeliveryRetainedItemsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemResultContextDeliveryOmittedItemsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemResultContextDeliveryProtectedDeclarationsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemResultContextDeliveryMatchedPostRecordsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemResultContextDeliveryRetainedPostRecordsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemResultContextDeliveryOmittedPostRecordsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const startBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const startBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const startBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const startBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const startBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
 export const startBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMin = 0;
 export const startBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMax = 100;
 
@@ -1051,6 +1466,50 @@ export const StartBulkBrandRunResponse = zod.object({
   "stopRequested": zod.boolean(),
   "estimatedCostUsd": zod.number(),
   "items": zod.array(zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(startBulkBrandRunResponseItemsItemContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(startBulkBrandRunResponseItemsItemContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(startBulkBrandRunResponseItemsItemContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(startBulkBrandRunResponseItemsItemContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(startBulkBrandRunResponseItemsItemContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(startBulkBrandRunResponseItemsItemContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(startBulkBrandRunResponseItemsItemContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(startBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(startBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(startBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(startBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(startBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(startBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(startBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.'),
+  "partialEvidence": zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(startBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.')
+}).optional(),
   "candidate": zod.object({
   "profileId": zod.number(),
   "profileName": zod.string(),
@@ -1082,6 +1541,27 @@ export const StartBulkBrandRunResponse = zod.object({
   "checkedAt": zod.string()
 })),
   "result": zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(startBulkBrandRunResponseItemsItemResultContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(startBulkBrandRunResponseItemsItemResultContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(startBulkBrandRunResponseItemsItemResultContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(startBulkBrandRunResponseItemsItemResultContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(startBulkBrandRunResponseItemsItemResultContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(startBulkBrandRunResponseItemsItemResultContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(startBulkBrandRunResponseItemsItemResultContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(startBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(startBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(startBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(startBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(startBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(startBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(startBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.'),
   "referenceProfile": zod.object({
   "platform": zod.string(),
   "handle": zod.string(),
@@ -1241,6 +1721,90 @@ export const GetBulkBrandRunParams = zod.object({
 
 export const getBulkBrandRunResponseWorkersPerTypeMax = 20;
 
+export const getBulkBrandRunResponseItemsItemContextDeliveryOriginalItemsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemContextDeliveryRetainedItemsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemContextDeliveryOmittedItemsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemContextDeliveryProtectedDeclarationsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemContextDeliveryMatchedPostRecordsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemContextDeliveryRetainedPostRecordsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemContextDeliveryOmittedPostRecordsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const getBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const getBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const getBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const getBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOriginalItemsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryRetainedItemsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOmittedItemsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryProtectedDeclarationsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryMatchedPostRecordsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryRetainedPostRecordsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOmittedPostRecordsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemResultContextDeliveryOriginalItemsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemResultContextDeliveryRetainedItemsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemResultContextDeliveryOmittedItemsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemResultContextDeliveryProtectedDeclarationsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemResultContextDeliveryMatchedPostRecordsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemResultContextDeliveryRetainedPostRecordsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemResultContextDeliveryOmittedPostRecordsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const getBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const getBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const getBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const getBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const getBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
 export const getBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMin = 0;
 export const getBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMax = 100;
 
@@ -1275,6 +1839,50 @@ export const GetBulkBrandRunResponse = zod.object({
   "stopRequested": zod.boolean(),
   "estimatedCostUsd": zod.number(),
   "items": zod.array(zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(getBulkBrandRunResponseItemsItemContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(getBulkBrandRunResponseItemsItemContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(getBulkBrandRunResponseItemsItemContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(getBulkBrandRunResponseItemsItemContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(getBulkBrandRunResponseItemsItemContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(getBulkBrandRunResponseItemsItemContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(getBulkBrandRunResponseItemsItemContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(getBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(getBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(getBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(getBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(getBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(getBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(getBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.'),
+  "partialEvidence": zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(getBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.')
+}).optional(),
   "candidate": zod.object({
   "profileId": zod.number(),
   "profileName": zod.string(),
@@ -1306,6 +1914,27 @@ export const GetBulkBrandRunResponse = zod.object({
   "checkedAt": zod.string()
 })),
   "result": zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(getBulkBrandRunResponseItemsItemResultContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(getBulkBrandRunResponseItemsItemResultContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(getBulkBrandRunResponseItemsItemResultContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(getBulkBrandRunResponseItemsItemResultContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(getBulkBrandRunResponseItemsItemResultContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(getBulkBrandRunResponseItemsItemResultContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(getBulkBrandRunResponseItemsItemResultContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(getBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(getBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(getBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(getBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(getBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(getBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(getBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.'),
   "referenceProfile": zod.object({
   "platform": zod.string(),
   "handle": zod.string(),
@@ -1470,6 +2099,90 @@ export const ListBulkRunBatchesParams = zod.object({
 
 export const listBulkRunBatchesResponseRunsItemWorkersPerTypeMax = 20;
 
+export const listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryOriginalItemsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryRetainedItemsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryOmittedItemsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryProtectedDeclarationsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryMatchedPostRecordsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryRetainedPostRecordsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryOmittedPostRecordsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryOriginalItemsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryRetainedItemsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryOmittedItemsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryProtectedDeclarationsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryMatchedPostRecordsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryRetainedPostRecordsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryOmittedPostRecordsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryOriginalItemsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryRetainedItemsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryOmittedItemsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryProtectedDeclarationsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryMatchedPostRecordsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryRetainedPostRecordsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryOmittedPostRecordsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
 export const listBulkRunBatchesResponseRunsItemItemsItemResultProfilesItemConfidenceMin = 0;
 export const listBulkRunBatchesResponseRunsItemItemsItemResultProfilesItemConfidenceMax = 100;
 
@@ -1505,6 +2218,50 @@ export const ListBulkRunBatchesResponse = zod.object({
   "stopRequested": zod.boolean(),
   "estimatedCostUsd": zod.number(),
   "items": zod.array(zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.'),
+  "partialEvidence": zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.')
+}).optional(),
   "candidate": zod.object({
   "profileId": zod.number(),
   "profileName": zod.string(),
@@ -1536,6 +2293,27 @@ export const ListBulkRunBatchesResponse = zod.object({
   "checkedAt": zod.string()
 })),
   "result": zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(listBulkRunBatchesResponseRunsItemItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.'),
   "referenceProfile": zod.object({
   "platform": zod.string(),
   "handle": zod.string(),
@@ -1706,6 +2484,90 @@ export const StopBulkBrandRunBody = zod.object({
 
 export const stopBulkBrandRunResponseWorkersPerTypeMax = 20;
 
+export const stopBulkBrandRunResponseItemsItemContextDeliveryOriginalItemsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemContextDeliveryRetainedItemsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemContextDeliveryOmittedItemsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemContextDeliveryProtectedDeclarationsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemContextDeliveryMatchedPostRecordsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemContextDeliveryRetainedPostRecordsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemContextDeliveryOmittedPostRecordsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOriginalItemsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryRetainedItemsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOmittedItemsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryProtectedDeclarationsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryMatchedPostRecordsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryRetainedPostRecordsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOmittedPostRecordsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemResultContextDeliveryOriginalItemsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemResultContextDeliveryRetainedItemsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemResultContextDeliveryOmittedItemsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemResultContextDeliveryProtectedDeclarationsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemResultContextDeliveryMatchedPostRecordsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemResultContextDeliveryRetainedPostRecordsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemResultContextDeliveryOmittedPostRecordsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const stopBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
 export const stopBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMin = 0;
 export const stopBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMax = 100;
 
@@ -1740,6 +2602,50 @@ export const StopBulkBrandRunResponse = zod.object({
   "stopRequested": zod.boolean(),
   "estimatedCostUsd": zod.number(),
   "items": zod.array(zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(stopBulkBrandRunResponseItemsItemContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(stopBulkBrandRunResponseItemsItemContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(stopBulkBrandRunResponseItemsItemContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(stopBulkBrandRunResponseItemsItemContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(stopBulkBrandRunResponseItemsItemContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(stopBulkBrandRunResponseItemsItemContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(stopBulkBrandRunResponseItemsItemContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(stopBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(stopBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(stopBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(stopBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(stopBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(stopBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(stopBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.'),
+  "partialEvidence": zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(stopBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.')
+}).optional(),
   "candidate": zod.object({
   "profileId": zod.number(),
   "profileName": zod.string(),
@@ -1771,6 +2677,27 @@ export const StopBulkBrandRunResponse = zod.object({
   "checkedAt": zod.string()
 })),
   "result": zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(stopBulkBrandRunResponseItemsItemResultContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(stopBulkBrandRunResponseItemsItemResultContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(stopBulkBrandRunResponseItemsItemResultContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(stopBulkBrandRunResponseItemsItemResultContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(stopBulkBrandRunResponseItemsItemResultContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(stopBulkBrandRunResponseItemsItemResultContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(stopBulkBrandRunResponseItemsItemResultContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(stopBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(stopBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(stopBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(stopBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(stopBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(stopBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(stopBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.'),
   "referenceProfile": zod.object({
   "platform": zod.string(),
   "handle": zod.string(),
@@ -1941,6 +2868,90 @@ export const ResumeBulkBrandRunBody = zod.object({
 
 export const resumeBulkBrandRunResponseWorkersPerTypeMax = 20;
 
+export const resumeBulkBrandRunResponseItemsItemContextDeliveryOriginalItemsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemContextDeliveryRetainedItemsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemContextDeliveryOmittedItemsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemContextDeliveryProtectedDeclarationsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemContextDeliveryMatchedPostRecordsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemContextDeliveryRetainedPostRecordsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemContextDeliveryOmittedPostRecordsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOriginalItemsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryRetainedItemsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOmittedItemsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryProtectedDeclarationsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryMatchedPostRecordsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryRetainedPostRecordsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOmittedPostRecordsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemResultContextDeliveryOriginalItemsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemResultContextDeliveryRetainedItemsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemResultContextDeliveryOmittedItemsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemResultContextDeliveryProtectedDeclarationsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemResultContextDeliveryMatchedPostRecordsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemResultContextDeliveryRetainedPostRecordsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemResultContextDeliveryOmittedPostRecordsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin = 0;
+
+export const resumeBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin = 0;
+
 export const resumeBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMin = 0;
 export const resumeBulkBrandRunResponseItemsItemResultProfilesItemConfidenceMax = 100;
 
@@ -1975,6 +2986,50 @@ export const ResumeBulkBrandRunResponse = zod.object({
   "stopRequested": zod.boolean(),
   "estimatedCostUsd": zod.number(),
   "items": zod.array(zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(resumeBulkBrandRunResponseItemsItemContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(resumeBulkBrandRunResponseItemsItemContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(resumeBulkBrandRunResponseItemsItemContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(resumeBulkBrandRunResponseItemsItemContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(resumeBulkBrandRunResponseItemsItemContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(resumeBulkBrandRunResponseItemsItemContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(resumeBulkBrandRunResponseItemsItemContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(resumeBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(resumeBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(resumeBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(resumeBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(resumeBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(resumeBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(resumeBulkBrandRunResponseItemsItemContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.'),
+  "partialEvidence": zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(resumeBulkBrandRunResponseItemsItemPartialEvidenceContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.')
+}).optional(),
   "candidate": zod.object({
   "profileId": zod.number(),
   "profileName": zod.string(),
@@ -2006,6 +3061,27 @@ export const ResumeBulkBrandRunResponse = zod.object({
   "checkedAt": zod.string()
 })),
   "result": zod.object({
+  "contextDelivery": zod.object({
+  "originalItems": zod.number().min(resumeBulkBrandRunResponseItemsItemResultContextDeliveryOriginalItemsMin).optional(),
+  "retainedItems": zod.number().min(resumeBulkBrandRunResponseItemsItemResultContextDeliveryRetainedItemsMin).optional(),
+  "omittedItems": zod.number().min(resumeBulkBrandRunResponseItemsItemResultContextDeliveryOmittedItemsMin).optional(),
+  "protectedDeclarations": zod.number().min(resumeBulkBrandRunResponseItemsItemResultContextDeliveryProtectedDeclarationsMin).optional(),
+  "matchedPostRecords": zod.number().min(resumeBulkBrandRunResponseItemsItemResultContextDeliveryMatchedPostRecordsMin).optional(),
+  "retainedPostRecords": zod.number().min(resumeBulkBrandRunResponseItemsItemResultContextDeliveryRetainedPostRecordsMin).optional(),
+  "omittedPostRecords": zod.number().min(resumeBulkBrandRunResponseItemsItemResultContextDeliveryOmittedPostRecordsMin).optional(),
+  "candidatePostDiagnostics": zod.array(zod.object({
+  "url": zod.string(),
+  "diagnostics": zod.object({
+  "availableEvidence": zod.number().min(resumeBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsAvailableEvidenceMin).optional(),
+  "inspectedEvidence": zod.number().min(resumeBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsInspectedEvidenceMin).optional(),
+  "uninspectedEvidence": zod.number().min(resumeBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsUninspectedEvidenceMin).optional(),
+  "truncatedEvidence": zod.number().min(resumeBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsTruncatedEvidenceMin).optional(),
+  "matchedRecords": zod.number().min(resumeBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsMatchedRecordsMin).optional(),
+  "retainedRecords": zod.number().min(resumeBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsRetainedRecordsMin).optional(),
+  "omittedRecords": zod.number().min(resumeBulkBrandRunResponseItemsItemResultContextDeliveryCandidatePostDiagnosticsItemDiagnosticsOmittedRecordsMin).optional()
+}).describe('Saved bounded post-search diagnostics, not an ownership assessment.')
+})).optional().describe('Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.')
+}).optional().describe('Saved request-fitting audit only. Missing fields mean not recorded, never zero.'),
   "referenceProfile": zod.object({
   "platform": zod.string(),
   "handle": zod.string(),

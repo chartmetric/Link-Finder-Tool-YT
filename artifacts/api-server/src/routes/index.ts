@@ -3,6 +3,7 @@ import healthRouter from "./health";
 import musiciansRouter from "./musicians";
 import bulkBrandsRouter from "./bulk-brands";
 import artistResultsRouter from "./artist-results";
+import archivedBulkEvidenceRouter from "./archived-bulk-evidence";
 
 const router: IRouter = Router();
 
@@ -10,5 +11,6 @@ router.use(healthRouter);
 router.use(musiciansRouter);
 router.use(bulkBrandsRouter);
 router.use(artistResultsRouter);
+router.use(archivedBulkEvidenceRouter);
 
 export default router;

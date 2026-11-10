@@ -6,6 +6,7 @@ import { getNetConfidence } from '@/lib/net-confidence';
 import { KIND_META, kindOf, shortUrl } from '@/lib/bulk';
 import { platformSearchStatus, profileSearchStatus } from '@/lib/bulk-result-status';
 import { EvidenceLinks } from './evidence-links';
+import { EvidenceDelivery } from '@/components/evidence-delivery';
 
 export function BrandResult({ item, index }: { item: BulkBrandItem; index: number }) {
   const c = item.candidate;
@@ -62,8 +63,12 @@ export function BrandResult({ item, index }: { item: BulkBrandItem; index: numbe
         <details className="inv-alternatives blk-saved">
           <summary data-testid={`button-expand-${c.profileId}`}>{profiles.length} saved {profiles.length === 1 ? 'candidate' : 'candidates'} · est. ${item.result.estimatedCostUsd.toFixed(4)} <ChevronDown size={14} /></summary>
           {item.result.historySaveError && <div className="inv-save-warn" role="alert"><CircleAlert size={15} /><span>{item.result.historySaveError}</span></div>}
+          <EvidenceDelivery delivery={item.contextDelivery ?? item.result.contextDelivery ?? item.partialEvidence?.contextDelivery} />
           {profiles.length === 0 ? <div className="inv-no-platform">No candidates were saved for this profile.</div> : profiles.map((p, i) => <Candidate key={`${p.url}-${i}`} candidate={p} index={i} />)}
         </details>
+      )}
+      {!item.result && (item.contextDelivery || item.partialEvidence?.contextDelivery) && (
+        <EvidenceDelivery delivery={item.contextDelivery ?? item.partialEvidence?.contextDelivery} />
       )}
     </article>
   );

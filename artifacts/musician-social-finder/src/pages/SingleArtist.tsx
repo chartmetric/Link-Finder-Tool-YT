@@ -9,6 +9,9 @@ import { SiInstagram, SiSpotify, SiTiktok, SiYoutube } from 'react-icons/si';
 import { getGetMusicianCoverageQueryKey, getListProfileInvestigationsQueryKey, searchProfiles, type ProfileInvestigation, type ProfileMatch, type ProfileSearchResponse } from '@workspace/api-client-react';
 import { MusicianCoverage } from '@/components/musician-coverage';
 import { InvestigationHistory } from '@/components/investigation-history';
+import { EvidenceDelivery } from '@/components/evidence-delivery';
+import { ArchivedBulkEvidence } from '@/components/archived-bulk-evidence';
+import '@/components/evidence-delivery.css';
 import { PresetProfileLinks } from '@/components/preset-profile-links';
 import { ProfileUrlAliases } from '@/components/profile-url-aliases';
 import { isProfileUrl, normalizeProfileUrl } from '@/lib/profile-input';
@@ -386,6 +389,7 @@ export default function SingleArtist() {
           </div>}
 
           <InvestigationHistory page={historyPage} onPageChange={setHistoryPage} onOpen={openSaved} activeId={result?.historyId ? result.historyId : undefined} disabled={status === 'pending'} />
+          <ArchivedBulkEvidence />
 
           <div ref={resultRef} aria-live="polite">
             {status === 'pending' && (
@@ -418,6 +422,7 @@ export default function SingleArtist() {
                   <div className="inv-results-meta"><span className="inv-meta-pill" data-testid="text-searched-at">{new Date(result.searchedAt).toLocaleString()}</span></div>
                 </div>
                 {result.historySaveError ? <div className="inv-save-warn" role="alert" data-testid="status-history-save-error"><CircleAlert size={16} /><span><b>This search was not saved to history.</b> {result.historySaveError} The results below are still available in this session only.</span></div> : null}
+                {(result.historyId || result.contextDelivery) && <EvidenceDelivery delivery={result.contextDelivery} />}
                 {isText && <div className="inv-save-warn" role="note" data-testid="status-text-unverified"><CircleAlert size={16} /><span><b>Text search, session only.</b> These results lack known-account verification and are not saved in the shared URL history.</span></div>}
                 <div className="inv-summary">
                   {isText && textQuery ? <div className="inv-summary-lead"><span>Searched by text{textQuery.context ? ` / ${textQuery.context}` : ''}</span><h3 data-testid="text-result-subject">{textQuery.name}</h3><p data-testid="text-result-scope">Scope: {textScopeNames ? textScopeNames.join(', ') : 'All platforms (Instagram, TikTok, YouTube)'}</p></div> :

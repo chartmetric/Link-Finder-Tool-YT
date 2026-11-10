@@ -6,12 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { BulkBrandCandidate } from './bulkBrandCandidate';
+import type { BulkBrandItemPartialEvidence } from './bulkBrandItemPartialEvidence';
 import type { BulkBrandItemStage } from './bulkBrandItemStage';
 import type { BulkBrandItemStatus } from './bulkBrandItemStatus';
 import type { BulkPlatformOutcome } from './bulkPlatformOutcome';
 import type { ProfileSearchResponse } from './profileSearchResponse';
+import type { VerificationContextDelivery } from './verificationContextDelivery';
 
 export interface BulkBrandItem {
+  contextDelivery?: VerificationContextDelivery;
+  partialEvidence?: BulkBrandItemPartialEvidence;
   candidate: BulkBrandCandidate;
   /** Skipped means a confirmed restricted reference profile; no downstream searches or automatic retry. */
   status: BulkBrandItemStatus;

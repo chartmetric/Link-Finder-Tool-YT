@@ -104,3 +104,13 @@ change with a different evidence set.
 path. Frozen transports must verify and preserve admitted bytes, not sanitize
 them after hashing. Label synthetic historical-contract fixtures as synthetic,
 not as archived captures.
+
+Missing saved evidence-delivery counts mean unknown, never zero. Per-candidate
+scan diagnostics may be taken from original archived request packets, but must
+not be recomputed with today's matcher to describe a historical decision.
+
+**Why:** Older pilot archives predate omission diagnostics. A model hold does not
+tell us whether its request received all discovered post evidence.
+
+**How to apply:** Show unavailable counts explicitly; distinguish saved result
+audits from original request diagnostics and keep both separate from verdicts.

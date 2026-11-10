@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fitArtistContext } from './instagram-pilot-live-transport.mjs';
+import { postReleaseSignals } from './instagram-post-signals.mjs';
 import { catalogReferences, referenceUrl, instagramProfileUrl, hasCatalogCrossLink, catalogConnectionEvidence, assessInstagramCandidates } from './musician-instagram-matching.mjs';
 import { createPilotBudget } from './instagram-pilot-budget.mjs';
 import { musicEvidenceSources, musicPageUrl, resolveMusicEvidence } from './public-music-links.mjs';
@@ -142,7 +143,17 @@ export async function runPilot({ manifest, journalPath, transport, evaluateRegre
         if (readableProfiles.length) {
           const payload = fitArtistContext({ artist: artist.artist, catalogReference: scope.reference, profiles:readableProfiles,
             ...(artist.metadata_context ? { artistContext: artist.metadata_context } : {}) }, manifest.proposed_limits.jev_max_input_tokens_per_request);
-          evidence.contextDelivery = payload.contextDelivery;
+          // Save scan diagnostics separately from the dispatched payload. Do not
+          // change request bytes or reconstruct evidence for archived decisions.
+          evidence.contextDelivery = {
+            ...payload.contextDelivery,
+            candidatePostDiagnostics: readableProfiles.map(p => ({
+              url:p.url,
+              diagnostics:postReleaseSignals(payload.artistContext,p.identityComparison.candidate,
+                p.url===instagramProfileUrl(p.identityComparison.candidate.url)?p.discoveryEvidence??[]:[],
+                payload.postEvidenceLimit??3).diagnostics,
+            })),
+          };
           const decisions = await call('jev', payload);
           for (const p of profiles) p.jevVerification = decisions.find(d => instagramProfileUrl(d.url) === p.url)?.jevVerification;
         }

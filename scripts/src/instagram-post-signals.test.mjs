@@ -272,6 +272,9 @@ test('bulk fixture delivers first-search post evidence even when a second search
   assert.deepEqual(calls,['spotify_oembed','serper','serper','scrapecreators_candidate','jev']);
   assert.equal(decision.state.artistContext.candidateSignals[0].songTitlesInCandidatePosts.matches.length,1);
   assert.equal(results.results[0].contextDelivery.retainedPostRecords,1);
+  assert.equal(results.results[0].contextDelivery.candidatePostDiagnostics[0].url,url);
+  assert.equal(results.results[0].contextDelivery.candidatePostDiagnostics[0].diagnostics.retainedRecords,1);
+  assert.equal(results.results[0].contextDelivery.candidatePostDiagnostics[0].diagnostics.uninspectedEvidence,0);
   assert.deepEqual(results.results[0].urls,[]);
   assert.equal(results.results[0].approvedCatalogLinks,false);
 });

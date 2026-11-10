@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ArchivedBulkEvidencePage,
   BillingRecoveryInput,
   BulkBatchArchives,
   BulkBillingHealth,
@@ -36,6 +37,7 @@ import type {
   ExistingProfilePage,
   GetArtistResultRows200,
   HealthStatus,
+  ListArchivedBulkEvidenceParams,
   ListArtistResultBatches200,
   ListBulkBrandCandidatesParams,
   ListBulkBrandRuns200,
@@ -320,6 +322,90 @@ export function useDownloadArtistResultCsv<TData = Awaited<ReturnType<typeof dow
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getDownloadArtistResultCsvQueryOptions(batchId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListArchivedBulkEvidenceUrl = (params?: ListArchivedBulkEvidenceParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/investigations/bulk-evidence?${stringifiedParams}` : `/api/investigations/bulk-evidence`
+}
+
+/**
+ * @summary Read saved bulk pilot evidence without rerunning verification
+ */
+export const listArchivedBulkEvidence = async (params?: ListArchivedBulkEvidenceParams, options?: Parameters<typeof customFetch>[1]): Promise<ArchivedBulkEvidencePage> => {
+
+  return customFetch<ArchivedBulkEvidencePage>(getListArchivedBulkEvidenceUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListArchivedBulkEvidenceQueryKey = (params?: ListArchivedBulkEvidenceParams,) => {
+    return [
+    `/api/investigations/bulk-evidence`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListArchivedBulkEvidenceQueryOptions = <TData = Awaited<ReturnType<typeof listArchivedBulkEvidence>>, TError = ErrorType<void>>(params?: ListArchivedBulkEvidenceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listArchivedBulkEvidence>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListArchivedBulkEvidenceQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listArchivedBulkEvidence>>> = ({ signal }) => listArchivedBulkEvidence(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listArchivedBulkEvidence>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListArchivedBulkEvidenceQueryResult = NonNullable<Awaited<ReturnType<typeof listArchivedBulkEvidence>>>
+export type ListArchivedBulkEvidenceQueryError = ErrorType<void>
+
+
+/**
+ * @summary Read saved bulk pilot evidence without rerunning verification
+ */
+
+export function useListArchivedBulkEvidence<TData = Awaited<ReturnType<typeof listArchivedBulkEvidence>>, TError = ErrorType<void>>(
+ params?: ListArchivedBulkEvidenceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listArchivedBulkEvidence>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListArchivedBulkEvidenceQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

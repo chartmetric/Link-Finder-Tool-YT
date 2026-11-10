@@ -71,6 +71,23 @@ paths:
             text/csv:
               schema: { type: string }
         "404": { description: Batch not found }
+  /investigations/bulk-evidence:
+    get:
+      operationId: listArchivedBulkEvidence
+      summary: Read saved bulk pilot evidence without rerunning verification
+      parameters:
+        - { name: archive, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: number, minimum: 1, default: 1 } }
+      responses:
+        "200":
+          description: Read-only archived investigation evidence
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArchivedBulkEvidencePage" }
+        "400":
+          description: Invalid archive or page
+        "503":
+          description: Saved archive could not be read
   /bulk/coverage:
     get:
       operationId: getBulkCoverage
@@ -997,6 +1014,11 @@ components:
       type: object
       required: [candidate, status, platforms]
       properties:
+        contextDelivery: { $ref: "#/components/schemas/VerificationContextDelivery" }
+        partialEvidence:
+          type: object
+          properties:
+            contextDelivery: { $ref: "#/components/schemas/VerificationContextDelivery" }
         candidate: { $ref: "#/components/schemas/BulkBrandCandidate" }
         status: { type: string, enum: [queued, running, completed, failed, skipped], description: Skipped means a confirmed restricted reference profile; no downstream searches or automatic retry. }
         stage:
@@ -1334,9 +1356,70 @@ components:
         - title
         - url
         - snippet
+    ArchivedBulkEvidenceCandidate:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string }
+        verdict: { type: string }
+        sameIdentityProbability: { type: number }
+    ArchivedBulkEvidenceRecord:
+      type: object
+      required: [profileId, status, candidates, deliverySource]
+      properties:
+        profileId: { type: string }
+        subject: { type: string }
+        status: { type: string }
+        reason: { type: string }
+        warning: { type: string }
+        candidates: { type: array, items: { $ref: "#/components/schemas/ArchivedBulkEvidenceCandidate" } }
+        contextDelivery: { $ref: "#/components/schemas/VerificationContextDelivery" }
+        deliverySource: { type: string, enum: [saved_result, archived_request, not_recorded] }
+    ArchivedBulkEvidencePage:
+      type: object
+      required: [archives, records, page, hasMore]
+      properties:
+        archives: { type: array, items: { type: string } }
+        archive: { type: string }
+        records: { type: array, items: { $ref: "#/components/schemas/ArchivedBulkEvidenceRecord" } }
+        page: { type: number }
+        hasMore: { type: boolean }
+    PostEvidenceDiagnostics:
+      type: object
+      description: Saved bounded post-search diagnostics, not an ownership assessment.
+      properties:
+        availableEvidence: { type: number, minimum: 0 }
+        inspectedEvidence: { type: number, minimum: 0 }
+        uninspectedEvidence: { type: number, minimum: 0 }
+        truncatedEvidence: { type: number, minimum: 0 }
+        matchedRecords: { type: number, minimum: 0 }
+        retainedRecords: { type: number, minimum: 0 }
+        omittedRecords: { type: number, minimum: 0 }
+    CandidatePostDelivery:
+      type: object
+      required: [url, diagnostics]
+      properties:
+        url: { type: string }
+        diagnostics: { $ref: "#/components/schemas/PostEvidenceDiagnostics" }
+    VerificationContextDelivery:
+      type: object
+      description: Saved request-fitting audit only. Missing fields mean not recorded, never zero.
+      properties:
+        originalItems: { type: number, minimum: 0 }
+        retainedItems: { type: number, minimum: 0 }
+        omittedItems: { type: number, minimum: 0 }
+        protectedDeclarations: { type: number, minimum: 0 }
+        matchedPostRecords: { type: number, minimum: 0 }
+        retainedPostRecords: { type: number, minimum: 0 }
+        omittedPostRecords: { type: number, minimum: 0 }
+        candidatePostDiagnostics:
+          type: array
+          description: Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence.
+          items: { $ref: "#/components/schemas/CandidatePostDelivery" }
     ProfileSearchResponse:
       type: object
       properties:
+        contextDelivery: { $ref: "#/components/schemas/VerificationContextDelivery" }
         referenceProfile:
           $ref: "#/components/schemas/IdentityMetadata"
         historyId:

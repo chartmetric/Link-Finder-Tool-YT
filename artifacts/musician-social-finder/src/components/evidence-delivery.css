@@ -1,0 +1,40 @@
+.inv-delivery {
+  margin: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.inv-delivery h3, .inv-delivery h4 { margin: 0 0 6px; font-weight: 650; }
+.inv-delivery p { margin: 6px 0 12px; color: var(--subtle); }
+.inv-delivery .inv-delivery-status { color: var(--ink); font-weight: 550; }
+.inv-delivery dl { margin: 10px 0; }
+.inv-delivery dl > div { display: flex; gap: 12px; justify-content: space-between; }
+.inv-delivery dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: 650; }
+.inv-delivery-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.inv-delivery .inv-delivery-counts > div { display: block; }
+.inv-delivery-counts dd { font-size: 20px; }
+.inv-delivery-candidates summary { cursor: pointer; font-weight: 650; }
+.inv-delivery-candidate { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+.inv-delivery-candidate h4 { overflow-wrap: anywhere; }
+.inv-archive-body { padding: 0 20px 20px; font-size: 13px; line-height: 1.6; }
+.inv-archive-body select { display: block; max-width: 100%; margin: 8px 0 16px; padding: 8px; background: hsl(var(--card)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--border)); border-radius: 6px; }
+.inv-archive-record { border-top: 1px solid hsl(var(--border)); padding: 12px 0; overflow-wrap: anywhere; }
+.inv-archive-record summary { cursor: pointer; font-weight: 600; }
+.inv-archive-pages { display: flex; gap: 16px; align-items: center; }
+.inv-archive-pages .inv-retry { margin-top: 0; }
+.dark .inv-archive-body { color: hsl(var(--foreground)); background: hsl(var(--card)); }
+.dark .inv-delivery {
+  --ink: hsl(var(--foreground));
+  --paper: hsl(var(--card));
+  --line: hsl(var(--border));
+  --subtle: hsl(var(--muted-foreground));
+}
+@media (max-width: 600px) {
+  .inv-delivery { margin: 12px; padding: 12px; }
+  .inv-delivery-counts { grid-template-columns: 1fr; }
+  .inv-delivery dl > div { flex-wrap: wrap; gap: 0 12px; }
+}

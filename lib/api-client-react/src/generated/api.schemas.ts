@@ -362,6 +362,53 @@ export interface MusicianInstagramResearchNoCandidates {
   generatedAt: string;
 }
 
+/**
+ * Saved bounded post-search diagnostics, not an ownership assessment.
+ */
+export interface PostEvidenceDiagnostics {
+  /** @minimum 0 */
+  availableEvidence?: number;
+  /** @minimum 0 */
+  inspectedEvidence?: number;
+  /** @minimum 0 */
+  uninspectedEvidence?: number;
+  /** @minimum 0 */
+  truncatedEvidence?: number;
+  /** @minimum 0 */
+  matchedRecords?: number;
+  /** @minimum 0 */
+  retainedRecords?: number;
+  /** @minimum 0 */
+  omittedRecords?: number;
+}
+
+export interface CandidatePostDelivery {
+  url: string;
+  diagnostics: PostEvidenceDiagnostics;
+}
+
+/**
+ * Saved request-fitting audit only. Missing fields mean not recorded, never zero.
+ */
+export interface VerificationContextDelivery {
+  /** @minimum 0 */
+  originalItems?: number;
+  /** @minimum 0 */
+  retainedItems?: number;
+  /** @minimum 0 */
+  omittedItems?: number;
+  /** @minimum 0 */
+  protectedDeclarations?: number;
+  /** @minimum 0 */
+  matchedPostRecords?: number;
+  /** @minimum 0 */
+  retainedPostRecords?: number;
+  /** @minimum 0 */
+  omittedPostRecords?: number;
+  /** Per-candidate saved scan diagnostics; counts describe the bounded scan, not independent ownership evidence. */
+  candidatePostDiagnostics?: CandidatePostDelivery[];
+}
+
 export interface IdentityMetadata {
   platform: string;
   handle: string;
@@ -482,6 +529,7 @@ export interface SearchMethodUsage {
 }
 
 export interface ProfileSearchResponse {
+  contextDelivery?: VerificationContextDelivery;
   referenceProfile?: IdentityMetadata;
   /** Saved investigation identifier, present when single-profile history was persisted. */
   historyId?: string;
@@ -805,6 +853,10 @@ export interface BulkPlatformOutcome {
   checkedAt: string;
 }
 
+export type BulkBrandItemPartialEvidence = {
+  contextDelivery?: VerificationContextDelivery;
+};
+
 /**
  * Skipped means a confirmed restricted reference profile; no downstream searches or automatic retry.
  */
@@ -832,6 +884,8 @@ export const BulkBrandItemStage = {
 } as const;
 
 export interface BulkBrandItem {
+  contextDelivery?: VerificationContextDelivery;
+  partialEvidence?: BulkBrandItemPartialEvidence;
   candidate: BulkBrandCandidate;
   /** Skipped means a confirmed restricted reference profile; no downstream searches or automatic retry. */
   status: BulkBrandItemStatus;
@@ -1015,6 +1069,40 @@ export interface ProfileSuggestionApprovalResult {
   approvedAt: string;
 }
 
+export interface ArchivedBulkEvidenceCandidate {
+  url: string;
+  verdict?: string;
+  sameIdentityProbability?: number;
+}
+
+export type ArchivedBulkEvidenceRecordDeliverySource = typeof ArchivedBulkEvidenceRecordDeliverySource[keyof typeof ArchivedBulkEvidenceRecordDeliverySource];
+
+
+export const ArchivedBulkEvidenceRecordDeliverySource = {
+  saved_result: 'saved_result',
+  archived_request: 'archived_request',
+  not_recorded: 'not_recorded',
+} as const;
+
+export interface ArchivedBulkEvidenceRecord {
+  profileId: string;
+  subject?: string;
+  status: string;
+  reason?: string;
+  warning?: string;
+  candidates: ArchivedBulkEvidenceCandidate[];
+  contextDelivery?: VerificationContextDelivery;
+  deliverySource: ArchivedBulkEvidenceRecordDeliverySource;
+}
+
+export interface ArchivedBulkEvidencePage {
+  archives: string[];
+  archive?: string;
+  records: ArchivedBulkEvidenceRecord[];
+  page: number;
+  hasMore: boolean;
+}
+
 export type ListArtistResultBatches200 = {
   batches: ArtistResultBatch[];
   warnings: string[];
@@ -1026,6 +1114,14 @@ export type GetArtistResultRows200 = {
   total: number;
   /** @nullable */
   nextOffset: number | null;
+};
+
+export type ListArchivedBulkEvidenceParams = {
+archive?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
 };
 
 export type ListProfileInvestigationsParams = {

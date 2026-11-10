@@ -9,8 +9,10 @@ import type { IdentityMetadata } from './identityMetadata';
 import type { ProfileMatch } from './profileMatch';
 import type { SearchMethodUsage } from './searchMethodUsage';
 import type { SearchSource } from './searchSource';
+import type { VerificationContextDelivery } from './verificationContextDelivery';
 
 export interface ProfileSearchResponse {
+  contextDelivery?: VerificationContextDelivery;
   referenceProfile?: IdentityMetadata;
   /** Saved investigation identifier, present when single-profile history was persisted. */
   historyId?: string;

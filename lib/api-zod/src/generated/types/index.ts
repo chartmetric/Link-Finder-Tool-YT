@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './archivedBulkEvidenceCandidate';
+export * from './archivedBulkEvidencePage';
+export * from './archivedBulkEvidenceRecord';
+export * from './archivedBulkEvidenceRecordDeliverySource';
 export * from './artistResultBatch';
 export * from './artistResultBatchSource';
 export * from './artistResultRow';
@@ -22,6 +26,7 @@ export * from './bulkBrandCandidate';
 export * from './bulkBrandCandidateAccountsItem';
 export * from './bulkBrandCandidates';
 export * from './bulkBrandItem';
+export * from './bulkBrandItemPartialEvidence';
 export * from './bulkBrandItemStage';
 export * from './bulkBrandItemStatus';
 export * from './bulkBrandRun';
@@ -54,6 +59,7 @@ export * from './bulkRunPreparationMode';
 export * from './bulkRunPreparationStatus';
 export * from './bulkRunResumeInput';
 export * from './bulkTypeCoverage';
+export * from './candidatePostDelivery';
 export * from './existingProfile';
 export * from './existingProfileAccount';
 export * from './existingProfilePage';
@@ -65,6 +71,7 @@ export * from './identityMetadata';
 export * from './jevVerification';
 export * from './jevVerificationProbabilities';
 export * from './jevVerificationVerdict';
+export * from './listArchivedBulkEvidenceParams';
 export * from './listArtistResultBatches200';
 export * from './listBulkBrandCandidatesParams';
 export * from './listBulkBrandRuns200';
@@ -87,6 +94,7 @@ export * from './musicianInstagramResearchNoCandidate';
 export * from './musicianInstagramResearchNoCandidateOutcome';
 export * from './musicianInstagramResearchNoCandidates';
 export * from './musicianInstagramResearchTier';
+export * from './postEvidenceDiagnostics';
 export * from './profileInvestigation';
 export * from './profileInvestigationPage';
 export * from './profileMatch';
@@ -103,3 +111,4 @@ export * from './searchMethodUsage';
 export * from './searchMethodUsageStatus';
 export * from './searchSource';
 export * from './startMusicianInstagramRerun';
+export * from './verificationContextDelivery';
