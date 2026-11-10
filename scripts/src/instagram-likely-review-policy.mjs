@@ -47,6 +47,15 @@ export function likelyReviewSuggestion(profile,player,{sharedHandle=false,contra
 export function catalogBoundReviewSuggestion(profile,player,options={}){
   return evaluateReview(profile,player,options,true);
 }
+// Batch inspection state is separate from review/ownership status. A recorded
+// mismatch is unsupported, not an unavailable account or an uncertain verdict.
+export function savedCandidateInspection(decision){
+  if(decision.reviewSuggestion)return {status:'positive_review_suggestion',tryAlternative:false};
+  if(decision.status==='observed_identity_conflict'
+    ||(decision.status==='model_not_positive'&&decision.reason==='recorded_model_mismatch'))
+    return {status:'unsupported',tryAlternative:false};
+  return {status:'inconclusive',tryAlternative:true};
+}
 function evaluateReview(profile,player,{sharedHandle=false,contradictoryPair=false}={},allowCatalogReference){
   assertNoGradingInputs({profile,player});
   const url=instagramProfileUrl(profile?.url);

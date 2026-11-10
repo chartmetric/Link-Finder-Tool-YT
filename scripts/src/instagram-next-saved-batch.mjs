@@ -39,6 +39,8 @@ export async function prepareNextSavedBatch(dir,previous){
   return targets;
 }
 export function enrichedRequest(target,candidate){
+  assert.equal(candidate?.url,target.selected?.url,'Captured metadata must match the exact selected account.');
+  assert.ok(instagramProfileUrl(candidate.url)===candidate.url,'Invalid captured account URL.');
   const ref=catalogReferences(target.player)[0]??{platform:'catalog',url:`https://app.chartmetric.com/artist/${target.player.cm_artist}`};
   const profile={url:target.selected.url,identityComparison:{status:'uncertain',reference:{platform:ref.platform,url:ref.url},candidate}};
   const payload=fitArtistContext({artist:target.artist,catalogReference:ref,profiles:[profile],
@@ -53,6 +55,43 @@ export function enrichedRequest(target,candidate){
     :'Reference URL is frozen from the catalog; reference-page ownership and biography were not newly fetched.';
   const bytes=Buffer.byteLength(JSON.stringify(body));if(bytes>6000)throw Error('Complete evidence exceeds 6000 bytes.');
   return {profile,body,bytes,sha256:digest(body)};
+}
+
+// Freezing this object is preparation, not permission to execute. The caller
+// must supply a NEW explicit authorization; existing scopes are never amended.
+export function prepareSavedAlternativeScope(targets,authorization,{inspectAlternatives=false,expectedModel='typesafe/jev-1.13-20260917'}={}){
+  const scope={version:'saved-alternatives-v1',authorization:structuredClone(authorization),
+    inspectSavedAlternatives:inspectAlternatives,targets:structuredClone(targets),expectedModel,
+    savedEvidenceOnly:false,candidateMetadataFetchesApproved:true,newSearchesAllowed:false,
+    publicPageFetchingAllowed:false,liveLinkWrites:false,automaticRetries:0};
+  validateSavedAlternativeScope(scope);
+  return scope;
+}
+export function validateSavedAlternativeScope(scope){
+  const a=scope.authorization,targets=scope.targets;
+  assert.ok(scope.version==='saved-alternatives-v1'&&a?.approved===true
+    &&a.candidateMetadataFetchesApproved===true&&typeof a.budgetId==='string'&&a.budgetId.trim()
+    &&Number.isInteger(a.maxSpendCents)&&a.maxSpendCents>=1&&a.maxSpendCents<=2000
+    &&typeof scope.inspectSavedAlternatives==='boolean'
+    &&(!scope.inspectSavedAlternatives||a.savedAlternativesApproved===true)
+    &&scope.savedEvidenceOnly===false&&scope.candidateMetadataFetchesApproved===true
+    &&scope.newSearchesAllowed===false&&scope.publicPageFetchingAllowed===false
+    &&scope.liveLinkWrites===false&&scope.automaticRetries===0
+    &&typeof scope.expectedModel==='string'&&scope.expectedModel.length>0
+    &&Array.isArray(targets)&&targets.length>0&&targets.length<=500,'Invalid saved-alternative approval.');
+  const ids=new Set(),cms=new Set();
+  for(const t of targets){
+    const p=t.player,id=String(t.profileId);
+    assert.ok(p&&id===String(p.profile_id)&&!ids.has(id)&&!cms.has(String(p.cm_artist))
+      &&p.source_identity_matches===true&&String(p.catalog_profile?.profile_id)===id
+      &&String(p.catalog_profile?.cm_artist)===String(p.cm_artist)
+      &&/^[1-9]\d*$/.test(String(p.cm_artist)),'Unbound or duplicate saved artist.');
+    ids.add(id);cms.add(String(p.cm_artist));
+    assert.ok(Array.isArray(t.candidates)&&Array.isArray(p.savedCandidateUrls),'Missing frozen saved candidates.');
+    const urls=t.candidates.map(c=>c.url);
+    assert.ok(new Set(urls).size===urls.length&&urls.every(u=>instagramProfileUrl(u)===u)
+      &&digest(urls)===digest(p.savedCandidateUrls),'Unbound saved candidate scope.');
+  }
 }
 export function capturedInstagramTransport({apiKey,responseDir,fetchImpl=fetch,continueAcknowledgedServerErrors=false}){
   if(!apiKey)throw Error('Missing Instagram provider credential.');

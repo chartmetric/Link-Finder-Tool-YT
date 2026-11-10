@@ -28,3 +28,17 @@ identity model. A nonempty account query is not validation of that join.
 **How to apply:** Reuse the musician metadata query builder's source model,
 freeze the returned profile and account bindings, and reject identity mismatches
 before any provider admission. Do not silently substitute another catalog model.
+
+Inspecting saved alternatives requires a fresh explicit scope approval; never
+retrofit the option into an existing frozen or running scope. Give all artists a
+first-candidate turn before spending on second candidates. Metadata may be reused
+for an exact account, but an ownership assessment belongs to the artist/account
+pair and cannot be shared across artists.
+
+**Why:** The original enriched saved batch approved one candidate per artist.
+Alternatives change the paid allocation, and a shared handle does not establish
+which catalog artist owns the account.
+
+**How to apply:** Keep the total approved parent ceiling authoritative across all
+rounds and providers; preserve shared-handle conflicts and never automatically
+replay uncertain admissions.
