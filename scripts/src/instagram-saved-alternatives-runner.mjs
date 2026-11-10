@@ -2,7 +2,7 @@
 import {digest,enrichedRequest,validateSavedAlternativeScope} from './instagram-next-saved-batch.mjs';
 import {catalogBoundReviewSuggestion,savedCandidateInspection} from './instagram-likely-review-policy.mjs';
 
-export async function runSavedAlternatives({scope,gate,persist}){
+export async function runSavedAlternatives({scope,gate,persist,previousArtists=null}){
   scope=structuredClone(scope);
   validateSavedAlternativeScope(scope);
   const scopeSha256=digest(scope);
@@ -12,10 +12,28 @@ export async function runSavedAlternatives({scope,gate,persist}){
     if(!shared.has(c.url))shared.set(c.url,new Set());
     shared.get(c.url).add(String(t.profileId));
   }
-  const artists=scope.targets.map(t=>({artist:t.artist,profileId:t.profileId,cmArtist:t.player.cm_artist,
+  let artists=scope.targets.map(t=>({artist:t.artist,profileId:t.profileId,cmArtist:t.player.cm_artist,
     status:t.candidates.length?'uninspected':'no_saved_candidate',
     candidates:t.candidates.map(c=>({...c,status:'uninspected',reason:'not_inspected_within_approved_run'})),
     verified:false,liveLinkAccepted:false}));
+  const completedProfiles=new Set();
+  if(previousArtists){
+    if(!Array.isArray(previousArtists)||previousArtists.length!==artists.length)
+      throw Error('Continuation requires the complete frozen artist snapshot.');
+    for(let i=0;i<artists.length;i++){
+      const old=previousArtists[i],expected=artists[i];
+      if(old.profileId!==expected.profileId||old.cmArtist!==expected.cmArtist||old.artist!==expected.artist
+        ||digest(old.candidates.map(c=>c.url))!==digest(expected.candidates.map(c=>c.url)))
+        throw Error('Archived continuation artists do not match the frozen scope.');
+      if(old.candidates[0]?.status!=='uninspected')completedProfiles.add(old.profileId);
+      for(const c of old.candidates)if(c.metadata){
+        if(c.metadata.available&&c.metadata.candidate?.url!==c.url)
+          throw Error('Archived metadata is not bound to its candidate.');
+        captures.set(c.url,structuredClone(c.metadata));
+      }
+    }
+    artists=structuredClone(previousArtists);
+  }
   const eligible=scope.targets.map(t=>t.candidates.length>0);
   let stopReason=null,budgetExhausted=false,current=null;
   const affordable=()=>{
@@ -34,7 +52,7 @@ export async function runSavedAlternatives({scope,gate,persist}){
     outer:for(let round=0;round<rounds;round++){
       for(let i=0;i<scope.targets.length;i++){
         const t=scope.targets[i],artist=artists[i],c=artist.candidates[round];
-        if(!eligible[i]||!c)continue;
+        if(!eligible[i]||!c||completedProfiles.has(t.profileId))continue;
         current=null;
         let metadata=captures.get(c.url);
         if(!metadata){

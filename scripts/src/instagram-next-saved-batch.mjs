@@ -122,6 +122,10 @@ export function capturedInstagramTransport({apiKey,responseDir,fetchImpl=fetch,c
     if(response.status===401||response.status===402||/insufficient.{0,30}(?:credit|balance)|(?:no|not enough|out of).{0,20}credits?|credits?.{0,30}(?:exhausted|depleted)|invalid.{0,12}api.?key/i.test(message))
       throw Error('Provider funding or authentication failure; stopped without retry.');
     if(response.status===429||Number(data.errorStatus)===429)throw Error('Metadata provider rate limit; stopped without retry.');
+    if(response.status===403&&data.success===true&&data.age_restricted===true
+      &&typeof data.handle==='string'&&data.handle.toLowerCase()===endpoint.searchParams.get('handle').toLowerCase())
+      return {cost:0.02,costBasis:'conservative_metadata_estimate',available:false,
+        reason:'confirmed_age_restricted_profile_not_retried',httpStatus:403};
     if(continueAcknowledgedServerErrors&&response.status>=500&&response.status<=599)
       return {cost:0.02,costBasis:'conservative_metadata_estimate',available:false,
         reason:'acknowledged_provider_server_error_not_retried',httpStatus:response.status};

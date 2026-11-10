@@ -49,12 +49,19 @@ export async function openSavedBatchGate({pool,scope,scopeSha256,journalPath,tra
 
 // A distinct future approval, never an upgrade of a claimed/frozen stage scope.
 // Metadata and verification reserve against the SAME durable parent row.
-export async function openSavedAlternativeBatchGate({pool,scope,scopeSha256,journalPath,transport}){
+export async function openSavedAlternativeBatchGate({pool,scope,scopeSha256,journalPath,transport,priorMetadata=[]}){
   scope=structuredClone(scope);
   validateSavedAlternativeScope(scope);
   if(digest(scope)!==scopeSha256||transport?.live!==true)
     throw Error('Invalid alternative-batch authorization or transport.');
   const captures=new Map(),targets=new Map(scope.targets.map(t=>[String(t.profileId),t]));
+  for(const capture of priorMetadata){
+    const url=capture.candidate?.url;
+    if(capture.available!==true||instagramProfileUrl(url)!==url
+      ||!scope.targets.some(t=>t.candidates.some(c=>c.url===url))||captures.has(url))
+      throw Error('Invalid archived metadata binding.');
+    captures.set(url,structuredClone(capture));
+  }
   const resolve=spec=>{
     const t=targets.get(String(spec?.profileId)),url=spec?.url;
     if(!t||instagramProfileUrl(url)!==url||!t.candidates.some(c=>c.url===url)

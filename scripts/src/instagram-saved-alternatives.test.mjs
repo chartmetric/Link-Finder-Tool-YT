@@ -46,18 +46,46 @@ const metadata=u=>({cost:0.02,costBasis:'conservative_metadata_estimate',availab
   candidate:{url:u,displayName:'Captured artist',bio:'Captured bio',externalUrls:[]}});
 const answer=(verdict='uncertain')=>({cost:0.001,model:'typesafe/jev-1.13-20260917',
   answers:[{verdict,sameIdentityProbability:0.5}]});
-async function setup(t,scope,dispatch){
+async function setup(t,scope,dispatch,priorMetadata=[]){
   const dir=await fs.mkdtemp(path.join(os.tmpdir(),'saved-alternatives-'));
   const db=coordinator(scope),calls=[],snapshots=[];
   const transport={live:true,dispatch:async r=>{
     calls.push(structuredClone(r));return dispatch(r,calls.length);
   }};
   const gate=await openSavedAlternativeBatchGate({pool:db.pool,scope,scopeSha256:digest(scope),
-    transport,journalPath:path.join(dir,'journal')});
+    transport,journalPath:path.join(dir,'journal'),priorMetadata});
   t.after(async()=>{await gate.close();await fs.rm(dir,{recursive:true,force:true});});
   const run=()=>runSavedAlternatives({scope,gate,persist:async s=>snapshots.push(s)});
   return {dir,db,calls,snapshots,gate,run,transport};
 }
+test('approved continuation preserves completed rows and reuses exact-account metadata without paid replay',async t=>{
+  const scope=freeze([target(1,['shared']),target(2,['restricted']),target(3,['shared']),target(4,['fresh'])],
+    {alternatives:false});
+  let attempts=0;
+  const first=await setup(t,scope,r=>{
+    if(++attempts===3)throw Error('Confirmed restriction ended historical worker');
+    return r.kind==='scrapecreators_candidate'?metadata(r.payload.body.url):answer('likely');
+  });
+  const archived=await first.run();
+  assert.equal(archived.status,'stopped');
+  assert.equal(archived.artists[2].candidates[0].status,'uninspected');
+  const second=await setup(t,scope,r=>r.kind==='scrapecreators_candidate'
+    ?metadata(r.payload.body.url):answer('likely'),[metadata(url('shared'))]);
+  const resumed=await runSavedAlternatives({scope,gate:second.gate,previousArtists:archived.artists,persist:async()=>{}});
+  assert.equal(resumed.status,'completed');
+  assert.deepEqual(resumed.artists.slice(0,2),archived.artists.slice(0,2));
+  assert.equal(second.calls.length,3);
+  assert.equal(second.calls.filter(r=>r.kind==='scrapecreators_candidate').length,1);
+  assert.equal(second.calls[0].kind,'jev');
+  assert.equal(resumed.artists[2].candidates[0].reason,'shared_handle_across_catalog_artists');
+});
+test('continuation rejects changed artist identity before any admission',async t=>{
+  const scope=freeze([target(1,['one'])],{alternatives:false});
+  const f=await setup(t,scope,r=>r.kind==='scrapecreators_candidate'?metadata(r.payload.body.url):answer());
+  const old=[{artist:'Wrong artist',profileId:'1',cmArtist:'1',candidates:[{url:url('one'),status:'uninspected'}]}];
+  await assert.rejects(runSavedAlternatives({scope,gate:f.gate,previousArtists:old,persist:async()=>{}}),/do not match/);
+  assert.equal(f.calls.length,0);
+});
 test('round robin gives all first candidates a turn before saved alternatives; no discovery or imports',async t=>{
   const scope=freeze([target(1,['a1','a2','a3']),target(2,['b1','b2']),target(3,[])]);
   const f=await setup(t,scope,r=>r.kind==='scrapecreators_candidate'

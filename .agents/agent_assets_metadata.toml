@@ -994,3 +994,45 @@ mtime_ms = 1794339366947
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/effa2464-9ef2-4ae6-8c53-10f327e85053/b720ec82-0989-43f8-a740-450c4b48c8c6"
 storage_version_token = "1794339393713695"
 content_type = "text/csv"
+
+[[outputs]]
+id = "sn6HIK6zqniM2IpVAWt-z"
+uri = "file://generated-artifacts/next-saved-500-account-context-usd20/execution-age-restriction-continuation/likely-matches.csv"
+type = "table"
+title = "Likely matches — 251 artists"
+description = "Final batch review suggestions, including artist names, Instagram links, metadata used and reasons. Not verified ownership."
+logical_id = "2b857524-aa95-49e1-b21a-87cdc269bc21"
+content_hash = "sha256:a44faa1d00ec3e2b08bf4704f73eec2e9bcfe9b96ce7577ced53b122a28919a9"
+size = 1776483
+mtime_ms = 1794341710011
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2b857524-aa95-49e1-b21a-87cdc269bc21/ccca8477-582b-4dc9-a6d3-879fdc8495ff"
+storage_version_token = "1794341725806471"
+content_type = "text/csv"
+
+[[outputs]]
+id = "wHpcsEZ6xMyHwi6kgCqyN"
+uri = "file://generated-artifacts/next-saved-500-account-context-usd20/execution-age-restriction-continuation/checked-not-accepted.csv"
+type = "table"
+title = "Checked but not accepted — 222 artists"
+description = "Completed checks without a likely review suggestion, including supporting metadata and reasons."
+logical_id = "900feb18-ba17-40e3-9088-a4736c621fef"
+content_hash = "sha256:b0a4580f7aee2c8f44e0d63580c8f2ac023b27c3206561ab95f6193e0853929c"
+size = 1585964
+mtime_ms = 1794341710023
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/900feb18-ba17-40e3-9088-a4736c621fef/10dd2502-8f19-4547-9897-a7dbdc720666"
+storage_version_token = "1794341726512680"
+content_type = "text/csv"
+
+[[outputs]]
+id = "Z2IP7Etcrys3vm7qpbTqn"
+uri = "file://generated-artifacts/next-saved-500-account-context-usd20/execution-age-restriction-continuation/artist-instagram-findings.csv"
+type = "table"
+title = "Full results — 500 artists"
+description = "Final combined results, all saved candidate links, metadata used and reasons, including 27 artists with incomplete evidence."
+logical_id = "1065b750-4d78-462b-ac43-746fe261795b"
+content_hash = "sha256:81b1b879b90c882be1a463906d1c7d475f5961a1c60dccc370e6002f0afbc35b"
+size = 3448594
+mtime_ms = 1794341709979
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/1065b750-4d78-462b-ac43-746fe261795b/6e40080e-bd4b-4ce1-8866-08a26b24b645"
+storage_version_token = "1794341727143526"
+content_type = "text/csv"

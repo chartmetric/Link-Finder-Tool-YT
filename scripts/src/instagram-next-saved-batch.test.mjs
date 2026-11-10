@@ -57,5 +57,19 @@ test('metadata transport only fetches frozen Instagram handles, binds returned u
     const funding=capturedInstagramTransport({apiKey:'fixture',responseDir:dir,continueAcknowledgedServerErrors:true,
       fetchImpl:async()=>Response.json({message:'Insufficient credits'},{status:500})});
     await assert.rejects(funding.dispatch({...request,key:'server-funding'}),/funding/);
+    const ageRestricted=capturedInstagramTransport({apiKey:'fixture',responseDir:dir,fetchImpl:async()=>Response.json({
+      success:true,handle:'test_artist',age_restricted:true,message:'Profile is age restricted',credits_charged:0},{status:403})});
+    const restricted=await ageRestricted.dispatch({...request,key:'age-restricted'});
+    assert.equal(restricted.available,false);
+    assert.equal(restricted.reason,'confirmed_age_restricted_profile_not_retried');
+    for(const [key,data] of [
+      ['generic-403',{success:false,message:'Forbidden'}],
+      ['wrong-age-handle',{success:true,handle:'someone_else',age_restricted:true}],
+      ['age-funding',{success:true,handle:'test_artist',age_restricted:true,message:'Insufficient credits'}],
+    ]){
+      const denied=capturedInstagramTransport({apiKey:'fixture',responseDir:dir,
+        fetchImpl:async()=>Response.json(data,{status:403})});
+      await assert.rejects(denied.dispatch({...request,key}),/HTTP 403|funding/);
+    }
   }finally{await fs.rm(dir,{recursive:true,force:true});}
 });
