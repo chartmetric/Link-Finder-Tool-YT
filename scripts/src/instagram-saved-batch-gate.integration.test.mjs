@@ -8,6 +8,7 @@ import {execFileSync,fork} from 'node:child_process';
 import {setTimeout as delay} from 'node:timers/promises';
 import {savedBatchSchemaSql} from './instagram-saved-batch-gate.mjs';
 import {pilotBudgetSchemaSql} from './instagram-pilot-shared-budget.mjs';
+import {digest,enrichedRequest,prepareSavedAlternativeScope} from './instagram-next-saved-batch.mjs';
 
 const enabled = process.env.INSTAGRAM_SAVED_BATCH_PG_INTEGRATION === '1';
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -146,8 +147,7 @@ test('saved-batch PostgreSQL process safety', {
     assert.deepEqual(await receipts(),before);
   }
 
-  await t.test('two processes actually waiting on the same row dispatch through only one owner',async () => {
-    const frozen = await seed('race'), before = (await receipts()).length;
+  async function compete(frozen) {
     const lock = await pool.connect();
     const a = launch(frozen), b = launch(frozen);
     try {
@@ -172,9 +172,15 @@ test('saved-batch PostgreSQL process safety', {
     assert.equal(winners.length,1);
     const loser = [a,b].find(worker => worker !== winners[0]);
     assert.match(loser.messages.find(message => message.phase === 'error')?.message,/already claimed/);
+    return {winner:winners[0],loser};
+  }
+
+  await t.test('two processes actually waiting on the same row dispatch through only one owner',async () => {
+    const frozen = await seed('race'), before = (await receipts()).length;
+    const {winner,loser} = await compete(frozen);
     const newReceipts = (await receipts()).slice(before);
-    assert.deepEqual(newReceipts,[{key:'one',worker:winners[0].worker}]);
-    assert.deepEqual((await journal(winners[0])).map(row => row.phase),['admitted','returned']);
+    assert.deepEqual(newReceipts,[{key:'one',worker:winner.worker}]);
+    assert.deepEqual((await journal(winner)).map(row => row.phase),['admitted','returned']);
     assert.equal((await journal(loser)).length,0);
     assert.ok((await state(frozen,2,1)).owner);
     await replayDenied(frozen);
@@ -235,4 +241,176 @@ test('saved-batch PostgreSQL process safety', {
       assert.deepEqual(await state(frozen,2,1),prior);
     });
   }
+
+  await t.test('saved alternatives share one durable parent across metadata and generated verification',async t => {
+    const url = handle => `https://www.instagram.com/${handle}/`;
+    const spec = (kind,profileId='1',handle='shared') => ({kind,profileId,url:url(handle)});
+    const metadata = (id='1',handle='shared') => spec('scrapecreators_candidate',id,handle);
+    const verify = (id='1',handle='shared') => spec('jev',id,handle);
+    const keyFor = s => s.kind === 'jev'
+      ? 'verify-'+digest([s.profileId,s.url]) : 'metadata-'+digest(s.url);
+    async function seedAlternative(name,cap=10) {
+      const targets = ['1','2'].map(id => {
+        const candidates = (id === '1' ? ['shared','distinct'] : ['shared'])
+          .map(handle => ({url:url(handle),title:`Saved title ${id} ${handle}`,snippet:`Saved evidence ${id}`}));
+        return {profileId:id,artist:`Test artist ${id}`,sourceCapturedAt:'2026-11-10',
+          sourceArtistName:`Test artist ${id}`,candidates,context:{ownershipConfirmed:false,items:[]},
+          player:{profile_id:id,cm_artist:id,artist:`Test artist ${id}`,accounts:[],
+            source_identity_matches:true,catalog_profile:{profile_id:id,cm_artist:id},
+            savedCandidateUrls:candidates.map(c => c.url)}};
+      });
+      const scope = prepareSavedAlternativeScope(targets,{approved:true,budgetId:`test-alt-${name}`,
+        maxSpendCents:cap,candidateMetadataFetchesApproved:true,savedAlternativesApproved:true},
+        {inspectAlternatives:true});
+      const scopeSha256 = digest(scope);
+      await pool.query('INSERT INTO instagram_saved_batch_budgets (id,scope_sha256,cap_cents) VALUES ($1,$2,$3)',
+        [scope.authorization.budgetId,scopeSha256,cap]);
+      return {scope,scopeSha256};
+    }
+    async function alternativeState(frozen,specs) {
+      const id = frozen.scope.authorization.budgetId;
+      const budget = (await pool.query('SELECT * FROM instagram_saved_batch_budgets WHERE id=$1',[id])).rows[0];
+      const rows = (await pool.query(
+        'SELECT admission_key,profile_id,cents FROM instagram_saved_batch_admissions WHERE budget_id=$1 ORDER BY admission_key',
+        [id])).rows;
+      assert.ok(budget.owner,'The parent must remain permanently claimed');
+      assert.equal(budget.cap_cents,frozen.scope.authorization.maxSpendCents);
+      assert.equal(budget.scope_sha256,frozen.scopeSha256);
+      assert.equal(budget.reserved_cents,specs.length*2);
+      assert.ok(budget.reserved_cents<=budget.cap_cents);
+      assert.deepEqual(rows,specs.map(s => ({admission_key:keyFor(s),profile_id:s.profileId,cents:2}))
+        .sort((a,b) => a.admission_key.localeCompare(b.admission_key)));
+      assert.deepEqual(await pilotSnapshot(),originalPilot);
+      return {budget,rows};
+    }
+    async function remainsClosed(frozen,specs) {
+      const before = await alternativeState(frozen,specs);
+      await replayDenied(frozen);
+      assert.deepEqual(await alternativeState(frozen,specs),before,'Reopening must not refund or replenish the parent');
+    }
+    function assertJournalRequests(rows,calls) {
+      const admitted = rows.filter(row => row.phase === 'admitted');
+      assert.equal(admitted.length,calls.length);
+      for (const [index,row] of admitted.entries()) {
+        const call = calls[index],request = row.request;
+        assert.equal(row.key,call.key);
+        assert.equal(request.kind,call.kind);
+        assert.deepEqual(request.body,call.payload.body);
+        assert.equal(request.sha256,digest(request.body));
+        assert.equal(request.sha256,call.payload.inputSha256);
+      }
+    }
+
+    await t.test('competing alternative runners dispatch one shared metadata call and distinct artist verifications',async () => {
+      const frozen = await seedAlternative('race'), before = (await receipts()).length;
+      const {winner,loser} = await compete(frozen);
+      const calls = (await receipts()).slice(before);
+      const specs = [metadata(),verify(),verify('2'),metadata('1','distinct'),verify('1','distinct')];
+      assert.deepEqual(calls.map(c => c.key),specs.map(keyFor));
+      assert.ok(calls.every(c => c.worker === winner.worker));
+      assert.equal((await journal(loser)).length,0);
+      const rows = await journal(winner);
+      assert.deepEqual(rows.map(r => r.phase),specs.flatMap(() => ['admitted','returned']));
+      assertJournalRequests(rows,calls);
+      // The generated verification body must use completed account metadata,
+      // but keep separate catalog identity and historical search evidence.
+      for (const call of calls.filter(c => c.kind === 'jev')) {
+        const s = specs.find(s => keyFor(s) === call.key);
+        const target = frozen.scope.targets.find(t => t.profileId === s.profileId);
+        const selected = target.candidates.find(c => c.url === s.url);
+        const candidate = {url:s.url,displayName:'Test-only captured artist',
+          bio:'Test-only captured biography',externalUrls:[]};
+        assert.equal(JSON.stringify(call.payload.body),JSON.stringify(enrichedRequest({...target,selected},candidate).body));
+      }
+      assert.notEqual(calls[1].payload.inputSha256,calls[2].payload.inputSha256);
+      const result = winner.messages.find(m => m.phase === 'result').result;
+      assert.equal(result.status,'completed');
+      assert.equal(result.budget.reservedCents,10);
+      assert.equal(result.budget.estimatedCostUsd,0.04);
+      assert.equal(result.budget.reportedCostUsd,0.003);
+      await remainsClosed(frozen,specs);
+    });
+
+    for (const duplicate of ['metadata','verification']) {
+      await t.test(`duplicate ${duplicate} is rejected by PostgreSQL without another charge`,async () => {
+        const frozen = await seedAlternative(`duplicate-${duplicate}`), before = (await receipts()).length;
+        const specs = duplicate === 'metadata' ? [metadata()] : [metadata(),verify()];
+        const worker = await run(frozen,{specs:[...specs,duplicate === 'metadata' ? metadata('2') : verify()]});
+        assert.equal(worker.messages.find(m => m.phase === 'error')?.code,'23505');
+        assert.ok(worker.messages.some(m => m.phase === 'retry_blocked' && /stopped/.test(m.message)));
+        assert.equal((await receipts()).length,before+specs.length);
+        assert.deepEqual((await journal(worker)).map(r => r.phase),
+          [...specs.flatMap(() => ['admitted','returned']),'stopped_no_retry']);
+        await remainsClosed(frozen,specs);
+      });
+    }
+
+    await t.test('the database cap covers both providers even if a worker requests more than the runner allows',async () => {
+      const frozen = await seedAlternative('cap',8), before = (await receipts()).length;
+      const specs = [metadata(),verify(),verify('2'),metadata('1','distinct')];
+      const worker = await run(frozen,{specs:[...specs,verify('1','distinct')]});
+      assert.match(worker.messages.find(m => m.phase === 'error')?.message,/cap reached/);
+      assert.deepEqual((await receipts()).slice(before).map(c => c.key),specs.map(keyFor));
+      assert.ok(worker.messages.some(m => m.phase === 'retry_blocked'));
+      await remainsClosed(frozen,specs);
+      const beforeState = await alternativeState(frozen,specs), beforeReceipts = await receipts();
+      for (const change of ['cap','scope']) {
+        const scope = structuredClone(frozen.scope);
+        if (change === 'cap') scope.authorization.maxSpendCents = 10;
+        else scope.targets[0].candidates[0].title = 'Changed frozen search evidence';
+        const rejected = await run({scope,scopeSha256:digest(scope)});
+        assert.match(rejected.messages.find(m => m.phase === 'error')?.message,/approval is missing or changed/);
+      }
+      assert.deepEqual(await receipts(),beforeReceipts);
+      assert.deepEqual(await alternativeState(frozen,specs),beforeState);
+    });
+
+    await t.test('verification without a completed exact-account capture cannot reserve or dispatch',async () => {
+      const frozen = await seedAlternative('no-capture'), before = await receipts();
+      const worker = await run(frozen,{specs:[verify()]});
+      assert.match(worker.messages.find(m => m.phase === 'error')?.message,/exact-account completed metadata/);
+      assert.deepEqual(await receipts(),before);
+      await remainsClosed(frozen,[]);
+    });
+
+    // Claim, metadata admission and dynamically generated verifier admission are
+    // separate real commits. Each uncertain acknowledgement permanently fences replay.
+    for (const commit of [1,2,3]) {
+      await t.test(`lost alternative COMMIT acknowledgement at transaction ${commit} cannot replay`,async () => {
+        const frozen = await seedAlternative(`lost-ack-${commit}`), before = (await receipts()).length;
+        const worker = await run(frozen,{specs:[metadata(),verify()],loseAckAtCommit:commit});
+        assert.match(worker.messages.find(m => m.phase === 'error')?.message,/lost COMMIT acknowledgement/);
+        const specs = [metadata(),verify()].slice(0,commit-1);
+        const calls = (await receipts()).slice(before);
+        assert.deepEqual(calls.map(c => c.key),commit === 3 ? [keyFor(metadata())] : []);
+        assert.deepEqual((await journal(worker)).map(r => r.phase),
+          commit === 1 ? [] : commit === 2 ? ['stopped_no_retry'] : ['admitted','returned','stopped_no_retry']);
+        if (commit > 1) assert.ok(worker.messages.some(m => m.phase === 'retry_blocked'));
+        await remainsClosed(frozen,specs);
+      });
+    }
+
+    for (const kind of ['metadata','verification']) for (const afterDispatch of [false,true]) {
+      await t.test(`alternative worker death ${afterDispatch ? 'after fake charge' : 'after reservation before journal'} during ${kind} cannot replay`,async () => {
+        const frozen = await seedAlternative(`death-${kind}-${afterDispatch}`), before = (await receipts()).length;
+        const count = kind === 'metadata' ? 1 : 2, specs = [metadata(),verify()].slice(0,count);
+        const worker = launch(frozen,{specs,
+          ...(afterDispatch ? {dieAfterDispatch:true,dieAtDispatch:count}
+            : {pauseAfterReservation:true,pauseAtCommit:count+1})});
+        await worker.wait('ready'); worker.go();
+        if (!afterDispatch) {
+          await worker.wait('reservation_committed');
+          worker.child.kill('SIGKILL');
+        }
+        assert.equal((await worker.exit).signal,'SIGKILL');
+        const calls = (await receipts()).slice(before);
+        assert.deepEqual(calls.map(c => c.key),specs.slice(0,afterDispatch ? count : count-1).map(keyFor));
+        const rows = await journal(worker);
+        assert.deepEqual(rows.map(r => r.phase),
+          [...(count === 2 ? ['admitted','returned'] : []),...(afterDispatch ? ['admitted'] : [])]);
+        assertJournalRequests(rows,calls);
+        await remainsClosed(frozen,specs);
+      });
+    }
+  });
 });

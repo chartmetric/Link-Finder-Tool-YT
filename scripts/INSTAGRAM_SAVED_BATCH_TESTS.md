@@ -30,6 +30,18 @@ provider checks the admission journal before recording a dispatch. Uncertain
 reservations and owners must survive every restart attempt without another
 dispatch.
 
+The same isolated harness also exercises `openSavedAlternativeBatchGate` with
+real competing runner processes. One parent ceiling covers both synthetic
+metadata and verification charges. Shared account URLs get one metadata
+admission but separate artist-bound verification admissions, whose dynamically
+generated bodies and hashes must match the fsynced journal before dispatch.
+Tests reject duplicate metadata/verification keys via PostgreSQL's unique
+constraint, verification without completed metadata, requests beyond the
+combined ceiling, and attempts to reopen or increase a claimed parent's cap
+or change its frozen scope. Claim, metadata and verification commits each have
+lost-acknowledgement coverage; both provider phases have worker-death coverage
+before dispatch and after a durable synthetic charge receipt.
+
 Lost acknowledgements are deterministic client-side fault injection **after**
 PostgreSQL successfully commits, not a simulated database or a live network
 outage.
