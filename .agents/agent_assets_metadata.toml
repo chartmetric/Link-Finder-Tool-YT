@@ -1148,3 +1148,17 @@ mtime_ms = 1794346662279
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/dc58149a-63a5-46d4-a65b-0675356aabe6/9a9ef187-b750-4422-a16c-ca9a02f5a6ca"
 storage_version_token = "1794346674655489"
 content_type = "text/csv"
+
+[[outputs]]
+id = "GNSj3jgKVW2qr2gPUs_d9"
+uri = "file://generated-artifacts/next-saved-500-account-context-usd20/execution-age-restriction-continuation/reviewed-roger-account-corrected-matches.csv"
+type = "table"
+title = "Corrected reviewed matches — 251 artists"
+description = "Roger SomdBoys now points to @rogersomdboys, identified by you. The fan-club account and its model result are kept separately for reference."
+logical_id = "9c4f6de7-0bd8-4ce9-baea-3e34510cae6c"
+content_hash = "sha256:ca2a3d880acc785e5188ad3b4479f93417fd81cf1ab4f429d22f7191d75ee365"
+size = 1788043
+mtime_ms = 1794347379759
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/9c4f6de7-0bd8-4ce9-baea-3e34510cae6c/ddb70cc9-bbfc-4f10-a3d9-65ab1acd8f5b"
+storage_version_token = "1794347387717885"
+content_type = "text/csv"

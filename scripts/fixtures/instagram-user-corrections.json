@@ -8,8 +8,28 @@
       "cmArtist": "4249877",
       "candidateInstagramUrl": "https://www.instagram.com/rogersomdboysfc/",
       "reviewSource": "explicit_user_statement",
-      "review": "false_negative",
-      "userStatement": "false negative",
+      "review": "related_fan_account",
+      "userStatement": "okay ur right this is roger somdboys's ig account: https://www.instagram.com/rogersomdboys/?hl=en",
+      "supersededReviews": [
+        {
+          "review": "false_negative",
+          "userStatement": "false negative"
+        }
+      ],
+      "ownershipLabelTier": "user_correction",
+      "independentlySourceAdjudicated": false,
+      "appliesTo": "saved_batch_review_exports",
+      "liveLinkChanged": false
+    },
+    {
+      "artist": "Roger SomdBoys",
+      "profileId": "253553",
+      "cmArtist": "4249877",
+      "candidateInstagramUrl": "https://www.instagram.com/rogersomdboys/",
+      "sourceUrl": "https://www.instagram.com/rogersomdboys/?hl=en",
+      "reviewSource": "explicit_user_statement",
+      "review": "correct_match",
+      "userStatement": "okay ur right this is roger somdboys's ig account: https://www.instagram.com/rogersomdboys/?hl=en",
       "ownershipLabelTier": "user_correction",
       "independentlySourceAdjudicated": false,
       "appliesTo": "saved_batch_review_exports",
