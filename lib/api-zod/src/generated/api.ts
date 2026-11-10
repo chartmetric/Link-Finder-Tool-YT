@@ -11,6 +11,13 @@ import * as zod from 'zod';
 /**
  * @summary Read-only saved artist batches and diagnostic exports
  */
+export const listArtistResultBatchesResponseBatchesItemObservationScopeIdentityRegExp = new RegExp('^[a-f0-9]{24}$');
+
+
+export const listArtistResultBatchesResponseBatchesItemObservationParentBudgetIdRegExp = new RegExp('\\S');
+export const listArtistResultBatchesResponseBatchesItemObservationCheckpointIdentityRegExp = new RegExp('^[a-f0-9]{16}$');
+
+
 export const ListArtistResultBatchesResponse = zod.object({
   "batches": zod.array(zod.object({
   "id": zod.string(),
@@ -29,6 +36,12 @@ export const ListArtistResultBatchesResponse = zod.object({
   "reservedUsd": zod.number().nullable(),
   "reportedUsd": zod.number().nullable(),
   "explanation": zod.string(),
+  "observation": zod.object({
+  "scopeIdentity": zod.string().regex(listArtistResultBatchesResponseBatchesItemObservationScopeIdentityRegExp).describe('First 24 hexadecimal characters of the frozen scope SHA256, matching legacy archive identity.'),
+  "parentBudgetId": zod.string().min(1).regex(listArtistResultBatchesResponseBatchesItemObservationParentBudgetIdRegExp).describe('Exact recorded parent budget identity, not an authorization.'),
+  "checkpointIdentity": zod.string().regex(listArtistResultBatchesResponseBatchesItemObservationCheckpointIdentityRegExp).describe('First 16 hexadecimal characters of the saved result SHA256, matching legacy observation identity.'),
+  "kind": zod.enum(['final', 'checkpoint']).describe('Final means a matching final summary was present, regardless of run status. It does not indicate an invoice or authorize resume.')
+}).optional().describe('Read-only saved-alternatives observation identity. Groups snapshots for display only; never combines spending or authorizes work. Optional on batches for immutable legacy archives.'),
   "metrics": zod.array(zod.object({
   "label": zod.string(),
   "value": zod.string()
@@ -64,6 +77,13 @@ export const GetArtistResultRowsParams = zod.object({
   "resultFilter": zod.enum(['all', 'verified', 'review', 'not_inspected', 'metadata_failed', 'no_candidate', 'controls', 'research_supported', 'held', 'skipped', 'partial_failure', 'shared_handle', 'uninspected', 'unavailable', 'inconclusive', 'unsupported', 'positive_review_suggestion', 'no_saved_candidate'])
 })
 
+export const getArtistResultRowsResponseBatchObservationScopeIdentityRegExp = new RegExp('^[a-f0-9]{24}$');
+
+
+export const getArtistResultRowsResponseBatchObservationParentBudgetIdRegExp = new RegExp('\\S');
+export const getArtistResultRowsResponseBatchObservationCheckpointIdentityRegExp = new RegExp('^[a-f0-9]{16}$');
+
+
 export const GetArtistResultRowsResponse = zod.object({
   "batch": zod.object({
   "id": zod.string(),
@@ -82,6 +102,12 @@ export const GetArtistResultRowsResponse = zod.object({
   "reservedUsd": zod.number().nullable(),
   "reportedUsd": zod.number().nullable(),
   "explanation": zod.string(),
+  "observation": zod.object({
+  "scopeIdentity": zod.string().regex(getArtistResultRowsResponseBatchObservationScopeIdentityRegExp).describe('First 24 hexadecimal characters of the frozen scope SHA256, matching legacy archive identity.'),
+  "parentBudgetId": zod.string().min(1).regex(getArtistResultRowsResponseBatchObservationParentBudgetIdRegExp).describe('Exact recorded parent budget identity, not an authorization.'),
+  "checkpointIdentity": zod.string().regex(getArtistResultRowsResponseBatchObservationCheckpointIdentityRegExp).describe('First 16 hexadecimal characters of the saved result SHA256, matching legacy observation identity.'),
+  "kind": zod.enum(['final', 'checkpoint']).describe('Final means a matching final summary was present, regardless of run status. It does not indicate an invoice or authorize resume.')
+}).optional().describe('Read-only saved-alternatives observation identity. Groups snapshots for display only; never combines spending or authorizes work. Optional on batches for immutable legacy archives.'),
   "metrics": zod.array(zod.object({
   "label": zod.string(),
   "value": zod.string()

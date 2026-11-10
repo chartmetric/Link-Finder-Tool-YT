@@ -1,9 +1,26 @@
 import type { ArtistResultBatch } from '@workspace/api-client-react';
 
 export function alternativesObservation(batch: ArtistResultBatch) {
-  const identity = /^saved-alternatives-([a-f0-9]{24})-([a-f0-9]{16})$/.exec(batch.id);
-  if (batch.source !== 'diagnostic' || !identity) return null;
+  if (batch.source !== 'diagnostic') return null;
   const metric = (label: string) => batch.metrics?.find(m => m.label === label)?.value;
+  const structured = batch.observation;
+  if (structured !== undefined) {
+    // A malformed explicit identity must not silently regroup using older prose.
+    if (!structured || !/^[a-f0-9]{24}$/.test(structured.scopeIdentity)
+      || !/^[a-f0-9]{16}$/.test(structured.checkpointIdentity)
+      || typeof structured.parentBudgetId !== 'string' || !structured.parentBudgetId.trim()
+      || !['final', 'checkpoint'].includes(structured.kind)) return null;
+    return {
+      scope: structured.scopeIdentity, checkpoint: structured.checkpointIdentity,
+      parentBudget: structured.parentBudgetId, kind: structured.kind,
+      runKey: JSON.stringify([structured.scopeIdentity, structured.parentBudgetId]),
+      spending: metric('Spending observation'), dateSource: metric('Run date source'),
+    };
+  }
+  // Immutable older imports have no structured metadata. Preserve their exact
+  // identity and conservative provenance rules without rewriting the archive.
+  const identity = /^saved-alternatives-([a-f0-9]{24})-([a-f0-9]{16})$/.exec(batch.id);
+  if (!identity) return null;
   const recordedParent = metric('Parent budget identity');
   const parentBudget = recordedParent?.trim() ? recordedParent : undefined;
   const spending = metric('Spending observation');

@@ -19,6 +19,41 @@ export type ArtistResultBatchMetricsItem = {
   value: string;
 };
 
+/**
+ * Final means a matching final summary was present, regardless of run status. It does not indicate an invoice or authorize resume.
+ */
+export type ArtistResultObservationKind = typeof ArtistResultObservationKind[keyof typeof ArtistResultObservationKind];
+
+
+export const ArtistResultObservationKind = {
+  final: 'final',
+  checkpoint: 'checkpoint',
+} as const;
+
+/**
+ * Read-only saved-alternatives observation identity. Groups snapshots for display only; never combines spending or authorizes work. Optional on batches for immutable legacy archives.
+ */
+export interface ArtistResultObservation {
+  /**
+     * First 24 hexadecimal characters of the frozen scope SHA256, matching legacy archive identity.
+     * @pattern ^[a-f0-9]{24}$
+     */
+  scopeIdentity: string;
+  /**
+     * Exact recorded parent budget identity, not an authorization.
+     * @minLength 1
+     * @pattern \S
+     */
+  parentBudgetId: string;
+  /**
+     * First 16 hexadecimal characters of the saved result SHA256, matching legacy observation identity.
+     * @pattern ^[a-f0-9]{16}$
+     */
+  checkpointIdentity: string;
+  /** Final means a matching final summary was present, regardless of run status. It does not indicate an invoice or authorize resume. */
+  kind: ArtistResultObservationKind;
+}
+
 export type ArtistResultFieldGroup = typeof ArtistResultFieldGroup[keyof typeof ArtistResultFieldGroup];
 
 
@@ -55,6 +90,7 @@ export interface ArtistResultBatch {
   /** @nullable */
   reportedUsd: number | null;
   explanation: string;
+  observation?: ArtistResultObservation;
   metrics?: ArtistResultBatchMetricsItem[];
   details?: ArtistResultField[];
 }

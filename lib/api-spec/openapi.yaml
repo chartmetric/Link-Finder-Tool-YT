@@ -534,6 +534,8 @@ components:
         reservedUsd: { type: [number, "null"] }
         reportedUsd: { type: [number, "null"] }
         explanation: { type: string }
+        observation:
+          $ref: "#/components/schemas/ArtistResultObservation"
         metrics:
           type: array
           items:
@@ -546,6 +548,28 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ArtistResultField"
+    ArtistResultObservation:
+      type: object
+      description: Read-only saved-alternatives observation identity. Groups snapshots for display only; never combines spending or authorizes work. Optional on batches for immutable legacy archives.
+      required: [scopeIdentity, parentBudgetId, checkpointIdentity, kind]
+      properties:
+        scopeIdentity:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+          description: First 24 hexadecimal characters of the frozen scope SHA256, matching legacy archive identity.
+        parentBudgetId:
+          type: string
+          minLength: 1
+          pattern: '\S'
+          description: Exact recorded parent budget identity, not an authorization.
+        checkpointIdentity:
+          type: string
+          pattern: '^[a-f0-9]{16}$'
+          description: First 16 hexadecimal characters of the saved result SHA256, matching legacy observation identity.
+        kind:
+          type: string
+          enum: [final, checkpoint]
+          description: Final means a matching final summary was present, regardless of run status. It does not indicate an invoice or authorize resume.
     ArtistResultRow:
       type: object
       required: [id, artistName, profileId, candidateUrl, verifiedUrl, status, score, verdict, comparisonType, fields]

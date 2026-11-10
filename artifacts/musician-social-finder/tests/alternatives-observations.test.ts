@@ -63,3 +63,34 @@ test('finality comes from provenance, never status or date sorting', () => {
   const completed = final(), checkpoint = batch('c');
   assert.deepEqual(groupObservations([completed, checkpoint])[0].batches, [completed, checkpoint]);
 });
+
+test('structured identity takes precedence over labels, prose and archive ID', () => {
+  const observation = {
+    scopeIdentity: scope, parentBudgetId: 'approved-parent',
+    checkpointIdentity: 'f'.repeat(16), kind: 'final' as const,
+  };
+  const structured = batch('e', { id: 'renamed-archive', observation });
+  const legacy = batch('c');
+  assert.equal(alternativesObservation(structured)?.kind, 'final');
+  assert.equal(alternativesObservation(structured)?.checkpoint, observation.checkpointIdentity);
+  assert.deepEqual(groupObservations([legacy, structured])[0].batches, [legacy, structured]);
+  assert.equal(groupObservations([legacy, { ...structured, observation: {
+    ...observation, parentBudgetId: 'other-parent',
+  } }]).length, 2);
+  assert.equal(groupObservations([legacy, { ...structured, observation: {
+    ...observation, scopeIdentity: 'b'.repeat(24),
+  } }]).length, 2);
+  assert.equal(alternativesObservation({ ...structured, source: 'live' }), null);
+});
+
+test('malformed explicit metadata cannot fall back to conflicting legacy evidence', () => {
+  const valid = { scopeIdentity: scope, parentBudgetId: 'approved-parent',
+    checkpointIdentity: 'e'.repeat(16), kind: 'final' };
+  for (const observation of [null, {}, { ...valid, scopeIdentity: '' },
+    { ...valid, checkpointIdentity: 'bad' }, { ...valid, parentBudgetId: ' ' },
+    { ...valid, kind: 'completed' }]) {
+    const malformed = batch('e', { observation } as unknown as Partial<ArtistResultBatch>);
+    assert.equal(alternativesObservation(malformed), null);
+    assert.equal(groupObservations([batch('c'), malformed]).length, 2);
+  }
+});

@@ -154,6 +154,10 @@ export async function buildSavedAlternativesDocument(directory) {
     verifiedCount:0,reviewCount:count('positive_review_suggestion'),notInspectedCount:count('uninspected'),
     metadataFailedCount:0,noCandidateCount:count('no_saved_candidate'),
     reservedUsd:budget.reservedCents/100,reportedUsd:budget.reportedCostUsd??null,
+    observation:{
+      scopeIdentity:scopeSha256.slice(0,24),parentBudgetId:budget.budgetId,
+      checkpointIdentity:digest(result).slice(0,16),kind:summaryText?'final':'checkpoint',
+    },
     explanation:'Saved alternatives, review only. Importing and viewing never calls providers, discovers links or accepts links. Unavailable, unsupported, uninspected and no saved candidate are distinct; none proves an account is missing. One parent allowance covers every candidate and both providers. Reported model cost is separate from conservative metadata estimates and reservations.',
     metrics:[
       metric('Parent budget identity',budget.budgetId),metric('Parent approved ceiling',money(auth.maxSpendCents)),

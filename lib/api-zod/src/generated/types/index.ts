@@ -15,6 +15,8 @@ export * from './artistResultBatchMetricsItem';
 export * from './artistResultBatchSource';
 export * from './artistResultField';
 export * from './artistResultFieldGroup';
+export * from './artistResultObservation';
+export * from './artistResultObservationKind';
 export * from './artistResultRow';
 export * from './billingOutage';
 export * from './billingOutageProvider';

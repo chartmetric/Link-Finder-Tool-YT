@@ -8,6 +8,7 @@
 import type { ArtistResultBatchMetricsItem } from './artistResultBatchMetricsItem';
 import type { ArtistResultBatchSource } from './artistResultBatchSource';
 import type { ArtistResultField } from './artistResultField';
+import type { ArtistResultObservation } from './artistResultObservation';
 
 export interface ArtistResultBatch {
   id: string;
@@ -28,6 +29,7 @@ export interface ArtistResultBatch {
   /** @nullable */
   reportedUsd: number | null;
   explanation: string;
+  observation?: ArtistResultObservation;
   metrics?: ArtistResultBatchMetricsItem[];
   details?: ArtistResultField[];
 }

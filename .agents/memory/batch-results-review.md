@@ -19,3 +19,9 @@ successful recheck appear to have no likely matches when the user opened the CSV
 model and metadata-used fields aligned to the same observation. Preserve the
 historical records and expose their values separately; never silently update
 live-link ownership when correcting an export.
+
+Treat saved-run grouping as display-only identity, not a spending ledger or permission to resume.
+
+**Why:** Checkpoints repeat cumulative parent spending, and a final saved summary can describe a stopped run. Adding snapshots together or equating finality with successful completion would misrepresent the evidence.
+
+**How to apply:** Keep older archives immutable, preserve each observation's amounts and ordering, and use legacy identity inference only when structured metadata is absent—not to override malformed explicit metadata.
