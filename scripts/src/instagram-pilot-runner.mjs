@@ -82,10 +82,16 @@ export async function runPilot({ manifest, journalPath, transport, evaluateRegre
             || p.discoveryEvidence.some(e=>e.kind==='direct_profile'))) break;
         }
         if (!Array.isArray(discovery?.profiles)) throw new Error('Discovery response is incomplete.');
-        const unique = [...new Map(discoveryAttempts.flatMap(attempt=>attempt.profiles).flatMap(p => {
+        const discovered = new Map();
+        for(const p of discoveryAttempts.flatMap(attempt=>attempt.profiles)){
           const url = instagramProfileUrl(p.url);
-          return url ? [[url, { ...p, url }]] : [];
-        })).values()];
+          if(!url)continue;
+          const previous=discovered.get(url);
+          discovered.set(url,{...p,url,discoveryPriority:Math.max(previous?.discoveryPriority??0,p.discoveryPriority??0),
+            discoveryEvidence:[...new Map([...(previous?.discoveryEvidence??[]),...(p.discoveryEvidence??[])]
+              .map(e=>[JSON.stringify(e),e])).values()]});
+        }
+        const unique = [...discovered.values()];
         unique.sort((a, b) => Number(hasCatalogCrossLink(reference, { url: b.url }, b.url, scope.reference))
           - Number(hasCatalogCrossLink(reference, { url: a.url }, a.url, scope.reference))
           || (b.discoveryPriority ?? 0)-(a.discoveryPriority ?? 0));

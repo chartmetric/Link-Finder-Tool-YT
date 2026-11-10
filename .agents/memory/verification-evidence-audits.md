@@ -46,3 +46,15 @@ not an automatic identity adjudication.
 identify the aggregation rule, and report distinct artists, accounts and pairs.
 Never describe an offline source-policy acceptance as a fresh model result or a
 production-approved correction.
+
+Keep account-owned post clues distinct from third-party release mentions and
+related content, even when saved profile bios are incomplete. A release title
+or hashtag match supplies consistency context, never ownership proof.
+
+**Why:** The user requested recovery of omitted post evidence without weakening
+the ownership threshold or conflating fans, covers, mashups and collaborators
+with the artist.
+
+**How to apply:** Preserve search-source attribution and date uncertainty; do not
+describe search snippets as newly fetched posts. Any separately approved model
+evaluation must distinguish evidence delivery from ownership accuracy.

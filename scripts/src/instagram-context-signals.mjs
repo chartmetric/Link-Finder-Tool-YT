@@ -1,11 +1,12 @@
 // Deterministic comparison of saved catalog facts with one candidate account.
 // Output is support / contradiction / no_information; missing facts never count against an account.
 import {declaredInstagramLinks} from './instagram-reference-links.mjs';
+import {postReleaseSignals} from './instagram-post-signals.mjs';
 const norm=s=>String(s??'').normalize('NFKD').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 const handleOf=url=>{try{const u=new URL(url);return u.pathname.split('/').filter(Boolean)[0]?.toLowerCase()??'';}catch{return '';}};
 const titleOf=text=>text.replace(/\s\(\d{4}-\d{2}-\d{2}\)$/,'').split(' — ')[0];
 
-export function contextSignals(context,candidate,artist) {
+export function contextSignals(context,candidate,artist,discoveryEvidence=[],postEvidenceLimit=3) {
   const items=context?.items??[];
   const haystack=norm(`${candidate?.displayName??''} ${candidate?.bio??''}`);
   const titles=[...new Set(items.filter(i=>i.kind==='release').map(i=>titleOf(i.text)).filter(t=>norm(t).length>=5))];
@@ -24,6 +25,7 @@ export function contextSignals(context,candidate,artist) {
   const name=norm(artist);
   const nameHit=name.length>=3&&(` ${haystack} `.includes(` ${name} `)||norm(candidateHandle).replaceAll(' ','').includes(name.replaceAll(' ','')));
   return {
+    ...(discoveryEvidence.length?{songTitlesInCandidatePosts:postReleaseSignals(context,candidate,discoveryEvidence,postEvidenceLimit)}:{}),
     songTitlesInCandidateProfile:matched.length?{result:'support',titles:matched}:{result:'no_information',checkedTitles:titles.length},
     otherPlatformBioLinksToCandidate:linked.size?{result:'support',sources,
       note:'Saved declarations are context only; source binding and age do not establish current ownership.'}

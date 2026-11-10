@@ -39,7 +39,8 @@ export function instagramSearchCandidates(hits, artist) {
       // Retrieval priority only: this does NOT change identityComparison or verification scores.
       const nameMatchesHandle = fold(handle) === fold(artist) && fold(artist).length > 3;
       const priority = (kind === 'direct_profile' ? 20 : 0) + (nameMatchesHandle ? 100 : 0);
-      const evidence = {kind,sourceUrl:source.href,title:hit.title,snippet:hit.snippet,ownershipConfirmed:false};
+      const evidence = {kind,sourceUrl:source.href,title:hit.title,snippet:hit.snippet,
+        ...(hit.date?{date:hit.date}:{}),...(hit.observedAt?{observedAt:hit.observedAt}:{}),ownershipConfirmed:false};
       const existing = candidates.get(url);
       if (existing) {
         existing.discoveryEvidence.push(evidence);
