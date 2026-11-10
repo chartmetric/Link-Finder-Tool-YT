@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { GetArtistResultRowsParams, GetArtistResultRowsResponse, type BulkBrandRun } from "@workspace/api-zod";
-import { nativeArtistDocument, paginateResults, resultCsv, summarizeRows, normalizeExportDocument, type BatchDocument } from "../src/lib/artist-result-model";
+import { csvCell, nativeArtistDocument, paginateResults, resultCsv, summarizeRows, normalizeExportDocument, type BatchDocument } from "../src/lib/artist-result-model";
 
 const run = {
   id: "00000000-0000-4000-8000-000000000001", createdAt: "2026-11-09T10:00:00Z", status: "completed",
@@ -133,3 +133,82 @@ test("recheck filters, batch provenance and CSV preserve research-only distincti
   assert.match(resultCsv(normalized), /""budget"":""separate""/);
   assert.equal(GetArtistResultRowsResponse.parse({ ...normalized, total: 5, nextOffset: null }).batch.details?.length, 1);
 });
+
+for (const batchStatus of ["completed", "interrupted_checkpoint"]) {
+  test(`shared-handle ${batchStatus} rows preserve artist-bound evidence through display and export`, () => {
+    // Synthetic imported-document contract, not a provider capture or ownership claim.
+    const sharedUrl = "https://www.instagram.com/shared_synthetic/";
+    const metadata = JSON.stringify({ available: true, candidate: { url: sharedUrl, bio: "Shared synthetic bio" } });
+    const base = nativeArtistDocument(run);
+    const fields = (pid: string, inspected: boolean): BatchDocument["rows"][number]["fields"] => [
+      { label: "Artist name", value: `Artist ${pid}`, group: "identity" },
+      { label: "Profile ID", value: pid, group: "identity" },
+      { label: "Candidate Instagram link", value: inspected ? sharedUrl : "https://www.instagram.com/uninspected_synthetic/", group: "identity" },
+      { label: "Verified Instagram link", value: "", group: "identity" },
+      { label: "Candidate inspection status", value: inspected ? "inconclusive" : "uninspected", group: "decision" },
+      { label: "Captured candidate metadata receipt (JSON)", value: inspected ? metadata : "", group: "metadata" },
+      { label: "Recorded model answer (JSON)", value: inspected ? JSON.stringify({
+        verdict: pid === "101" ? "likely" : "mismatch", sameIdentityProbability: pid === "101" ? 0.91 : 0.12,
+        reason: `answer-for-${pid}`,
+      }) : "", group: "decision" },
+      { label: "Review-only suggestion (JSON)", value: inspected ? JSON.stringify({
+        url: sharedUrl, status: "unresolved_ownership_conflict", reason: "shared_handle_across_catalog_artists",
+        evidence: [`review-for-${pid}`], reviewSuggestion: false, verified: false, liveLinkAccepted: false,
+      }) : "", group: "decision" },
+      ...(inspected ? [
+        { label: "jev exact journaled request (JSON)", value: JSON.stringify({
+          state: { savedSearchEvidence: { url: sharedUrl }, catalogArtist: { profile_id: pid, cm_artist: pid },
+            syntheticRequest: `request-for-${pid}` },
+        }), group: "metadata" as const },
+        { label: "jev admission and completion receipt (JSON)", value: JSON.stringify({
+          admission: { key: `verify-${pid}`, profileId: pid }, completion: { key: `verify-${pid}`, phase: "returned" },
+        }), group: "provenance" as const },
+      ] : []),
+    ];
+    const doc: BatchDocument = {
+      batch: { ...base.batch, id: `synthetic-shared-${batchStatus}`, source: "diagnostic", status: batchStatus },
+      rows: [
+        { ...base.rows[0], id: "shared:101", artistName: "Artist 101", profileId: "101", candidateUrl: sharedUrl,
+          verifiedUrl: null, status: "inconclusive", score: 0.91, verdict: "likely", fields: fields("101", true) },
+        { ...base.rows[0], id: "shared:202", artistName: "Artist 202", profileId: "202", candidateUrl: sharedUrl,
+          verifiedUrl: null, status: "inconclusive", score: 0.12, verdict: "mismatch", fields: fields("202", true) },
+        { ...base.rows[0], id: "alternative:101", artistName: "Artist 101", profileId: "101",
+          candidateUrl: "https://www.instagram.com/uninspected_synthetic/", verifiedUrl: null, status: "uninspected",
+          score: null, verdict: null, fields: fields("101", false) },
+      ],
+    };
+    const before = structuredClone(doc);
+    const normalized = normalizeExportDocument(doc);
+    assert.equal(normalized.batch.status, batchStatus);
+    assert.equal(normalized.batch.artistCount, 2);
+    assert.equal(normalized.batch.candidateCount, 3); // Shared URL is two distinct artist/account pairs.
+    assert.equal(normalized.batch.rowCount, 3);
+    assert.equal(normalized.batch.verifiedCount, 0);
+    assert.equal(normalized.batch.reviewCount, 0);
+    assert.equal(normalized.batch.notInspectedCount, 1);
+    assert.deepEqual(normalized.rows, doc.rows);
+    const shared = paginateResults(normalized, 0, 1, sharedUrl, "all");
+    assert.equal(shared.total, 2);assert.equal(shared.nextOffset, 1);
+    for (const [index, expected] of doc.rows.slice(0, 2).entries()) {
+      const page = GetArtistResultRowsResponse.parse(paginateResults(normalized, index, 1, sharedUrl, "all"));
+      assert.deepEqual(page.rows, [expected]);
+      assert.equal(page.nextOffset, index === 0 ? 1 : null);
+      assert.deepEqual(paginateResults(normalized, 0, 25, expected.artistName, "inconclusive").rows, [expected]);
+      assert.equal(page.rows[0].fields.find(f => f.label === "Captured candidate metadata receipt (JSON)")!.value, metadata);
+      const other = expected.profileId === "101" ? "202" : "101";
+      assert.doesNotMatch(JSON.stringify(page.rows[0]), new RegExp(`(?:request|answer|review)-for-${other}`));
+    }
+    const alternative = GetArtistResultRowsResponse.parse(paginateResults(normalized, 0, 25, "", "uninspected"));
+    assert.deepEqual(alternative.rows, [doc.rows[2]]);
+    assert.equal(paginateResults(normalized, 0, 25, "", "verified").total, 0);
+    const csvLines = resultCsv(normalized).split("\r\n");
+    const labels = [...new Set(doc.rows.flatMap(row => row.fields.map(field => field.label)))];
+    assert.equal(csvLines.length, 5);
+    assert.equal(csvLines[0], labels.map(csvCell).join(","));
+    for (const [index, row] of doc.rows.entries()) {
+      const values = new Map(row.fields.map(field => [field.label, field.value]));
+      assert.equal(csvLines[index + 1], labels.map(label => csvCell(values.get(label))).join(","));
+    }
+    assert.deepEqual(doc, before);
+  });
+}
