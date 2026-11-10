@@ -88,3 +88,18 @@ test("metadata-unavailable filtering preserves the original CSV wording and arch
   assert.match(resultCsv(normalized), /Candidate — metadata unavailable/);
   assert.equal(JSON.stringify(doc), before);
 });
+test("recheck filters, batch provenance and CSV preserve research-only distinctions", () => {
+  const doc = nativeArtistDocument(run);
+  const statuses = ["research_supported", "held", "skipped", "partial_failure", "shared_handle"];
+  doc.rows = statuses.map((status, i) => ({ ...doc.rows[0], id: `fixture:${i}`, profileId: String(i), status,
+    verifiedUrl: null, comparisonType: null }));
+  doc.batch.details = [{ label: "Approval", value: '{"budget":"separate","limit":20}', group: "provenance" }];
+  doc.batch.metrics = [{ label: "Research-supported artists", value: "1" }];
+  const normalized = normalizeExportDocument(doc);
+  for (const filter of statuses) assert.equal(paginateResults(normalized, 0, 25, "", filter).total, 1);
+  assert.equal(normalized.batch.verifiedCount, 0);
+  assert.equal(normalized.batch.notInspectedCount, 2);
+  assert.match(resultCsv(normalized), /Batch \/ Research-supported artists/);
+  assert.match(resultCsv(normalized), /""budget"":""separate""/);
+  assert.equal(GetArtistResultRowsResponse.parse({ ...normalized, total: 5, nextOffset: null }).batch.details?.length, 1);
+});

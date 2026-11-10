@@ -14,6 +14,28 @@ export const ArtistResultBatchSource = {
   live: 'live',
 } as const;
 
+export type ArtistResultBatchMetricsItem = {
+  label: string;
+  value: string;
+};
+
+export type ArtistResultFieldGroup = typeof ArtistResultFieldGroup[keyof typeof ArtistResultFieldGroup];
+
+
+export const ArtistResultFieldGroup = {
+  identity: 'identity',
+  decision: 'decision',
+  metadata: 'metadata',
+  provenance: 'provenance',
+  raw: 'raw',
+} as const;
+
+export interface ArtistResultField {
+  label: string;
+  value: string;
+  group: ArtistResultFieldGroup;
+}
+
 export interface ArtistResultBatch {
   id: string;
   title: string;
@@ -33,24 +55,9 @@ export interface ArtistResultBatch {
   /** @nullable */
   reportedUsd: number | null;
   explanation: string;
+  metrics?: ArtistResultBatchMetricsItem[];
+  details?: ArtistResultField[];
 }
-
-export type ArtistResultRowFieldsItemGroup = typeof ArtistResultRowFieldsItemGroup[keyof typeof ArtistResultRowFieldsItemGroup];
-
-
-export const ArtistResultRowFieldsItemGroup = {
-  identity: 'identity',
-  decision: 'decision',
-  metadata: 'metadata',
-  provenance: 'provenance',
-  raw: 'raw',
-} as const;
-
-export type ArtistResultRowFieldsItem = {
-  label: string;
-  value: string;
-  group: ArtistResultRowFieldsItemGroup;
-};
 
 export interface ArtistResultRow {
   id: string;
@@ -67,7 +74,7 @@ export interface ArtistResultRow {
   verdict: string | null;
   /** @nullable */
   comparisonType: string | null;
-  fields: ArtistResultRowFieldsItem[];
+  fields: ArtistResultField[];
 }
 
 export type BulkCoverageGroup = typeof BulkCoverageGroup[keyof typeof BulkCoverageGroup];

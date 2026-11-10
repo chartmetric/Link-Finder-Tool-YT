@@ -28,7 +28,16 @@ export const ListArtistResultBatchesResponse = zod.object({
   "noCandidateCount": zod.number(),
   "reservedUsd": zod.number().nullable(),
   "reportedUsd": zod.number().nullable(),
-  "explanation": zod.string()
+  "explanation": zod.string(),
+  "metrics": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string()
+})).optional(),
+  "details": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string(),
+  "group": zod.enum(['identity', 'decision', 'metadata', 'provenance', 'raw'])
+})).optional()
 })),
   "warnings": zod.array(zod.string())
 })
@@ -52,7 +61,7 @@ export const GetArtistResultRowsParams = zod.object({
   "offset": zod.coerce.number().min(getArtistResultRowsPathOffsetMin),
   "pageSize": zod.coerce.number().min(1).max(getArtistResultRowsPathPageSizeMax),
   "searchTerm": zod.coerce.string().max(getArtistResultRowsPathSearchTermMax).describe('Prefix the search with q:; q: alone means no search.'),
-  "resultFilter": zod.enum(['all', 'verified', 'review', 'not_inspected', 'metadata_failed', 'no_candidate', 'controls'])
+  "resultFilter": zod.enum(['all', 'verified', 'review', 'not_inspected', 'metadata_failed', 'no_candidate', 'controls', 'research_supported', 'held', 'skipped', 'partial_failure', 'shared_handle'])
 })
 
 export const GetArtistResultRowsResponse = zod.object({
@@ -72,7 +81,16 @@ export const GetArtistResultRowsResponse = zod.object({
   "noCandidateCount": zod.number(),
   "reservedUsd": zod.number().nullable(),
   "reportedUsd": zod.number().nullable(),
-  "explanation": zod.string()
+  "explanation": zod.string(),
+  "metrics": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string()
+})).optional(),
+  "details": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string(),
+  "group": zod.enum(['identity', 'decision', 'metadata', 'provenance', 'raw'])
+})).optional()
 }),
   "rows": zod.array(zod.object({
   "id": zod.string(),

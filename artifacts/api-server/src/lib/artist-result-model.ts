@@ -1,16 +1,21 @@
 import type { BulkBrandRun, ArtistResultBatch, ArtistResultRow } from "@workspace/api-zod";
 
 export type BatchDocument = { batch: ArtistResultBatch; rows: ArtistResultRow[] };
-export const artistResultFilters = ["all", "verified", "review", "not_inspected", "metadata_failed", "no_candidate", "controls"] as const;
+export const artistResultFilters = ["all", "verified", "review", "not_inspected", "metadata_failed", "no_candidate", "controls",
+  "research_supported", "held", "skipped", "partial_failure", "shared_handle"] as const;
 export function csvCell(value: unknown) {
   let text = value == null ? "" : String(value);
   if (/^[\s]*[=+\-@]/.test(text)) text = `'${text}`;
   return `"${text.replaceAll('"', '""')}"`;
 }
 export function resultCsv(doc: BatchDocument) {
-  const labels = [...new Set(doc.rows.flatMap(r => r.fields.map(f => f.label)))];
+  const batchFields = [
+    ...(doc.batch.metrics ?? []).map(f => ({ label: `Batch / ${f.label}`, value: f.value })),
+    ...(doc.batch.details ?? []).map(f => ({ label: `Batch / ${f.label}`, value: f.value })),
+  ];
+  const labels = [...new Set([...doc.rows.flatMap(r => r.fields.map(f => f.label)), ...batchFields.map(f => f.label)])];
   return [labels.map(csvCell).join(","), ...doc.rows.map(row => {
-    const values = new Map(row.fields.map(f => [f.label, f.value]));
+    const values = new Map([...row.fields, ...batchFields].map(f => [f.label, f.value]));
     return labels.map(label => csvCell(values.get(label))).join(",");
   })].join("\r\n") + "\r\n";
 }
@@ -30,7 +35,7 @@ export function summarizeRows(rows: ArtistResultRow[]) {
     candidateCount: new Set(targets.filter(r => r.candidateUrl).map(r => `${r.profileId}:${r.candidateUrl}`)).size,
     rowCount: rows.length, verifiedCount: targets.filter(r => r.verifiedUrl).length,
     reviewCount: targets.filter(r => r.status === "review").length,
-    notInspectedCount: targets.filter(r => r.status === "not_inspected").length,
+    notInspectedCount: targets.filter(r => ["not_inspected", "held", "skipped"].includes(r.status)).length,
     metadataFailedCount: targets.filter(r => r.status === "metadata_failed").length,
     noCandidateCount: targets.filter(r => r.status === "no_candidate").length };
 }

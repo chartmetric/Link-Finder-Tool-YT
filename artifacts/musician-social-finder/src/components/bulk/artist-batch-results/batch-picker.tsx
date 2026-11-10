@@ -1,5 +1,6 @@
 import type { ArtistResultBatch } from '@workspace/api-client-react';
-import { usd } from './model';
+import { tryJson, usd } from './model';
+import { JsonValue } from './json-tree';
 
 export function BatchPicker({ batches, selected, onSelect }: { batches: ArtistResultBatch[]; selected: string | null; onSelect: (id: string) => void }) {
   return (
@@ -24,12 +25,20 @@ export function BatchSummary({ b }: { b: ArtistResultBatch }) {
   const stats: [string, number | string][] = [
     ['Artists', b.artistCount], ['Candidates', b.candidateCount], ['Rows', b.rowCount], ['Verified', b.verifiedCount],
     ['Review', b.reviewCount], ['Not inspected', b.notInspectedCount], ['Metadata unavailable', b.metadataFailedCount], ['No candidate', b.noCandidateCount],
-    ['Reserved', usd(b.reservedUsd)], ['Reported', usd(b.reportedUsd)],
+    ['Conservative reservation', usd(b.reservedUsd)], ['Provider reported', usd(b.reportedUsd)],
   ];
   return (
     <div className="abr-summary" data-testid={`summary-batch-${b.id}`}>
       <dl className="abr-stats">{stats.map(([k, v]) => <div key={k}><dt>{k}</dt><dd className="inv-mono">{typeof v === 'number' ? v.toLocaleString() : v}</dd></div>)}</dl>
       <p className="abr-explain">{b.explanation || 'No explanation was saved with this batch.'}</p>
+      {!!b.metrics?.length && <dl className="abr-stats">{b.metrics.map(m => <div key={m.label}><dt>{m.label}</dt><dd className="inv-mono">{m.value}</dd></div>)}</dl>}
+      {!!b.details?.length && <details className="abr-group">
+        <summary>Batch source, spending and control details</summary>
+        <dl className="abr-fields">{b.details.map(f => {
+          const parsed = tryJson(f.value);
+          return <div className="abr-field" key={f.label}><dt>{f.label}</dt><dd>{parsed !== undefined ? <JsonValue raw={f.value} parsed={parsed} /> : <span className="abr-val">{f.value}</span>}</dd></div>;
+        })}</dl>
+      </details>}
     </div>
   );
 }

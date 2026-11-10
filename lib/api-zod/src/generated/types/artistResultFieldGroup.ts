@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ArtistResultRowFieldsItemGroup = typeof ArtistResultRowFieldsItemGroup[keyof typeof ArtistResultRowFieldsItemGroup];
+export type ArtistResultFieldGroup = typeof ArtistResultFieldGroup[keyof typeof ArtistResultFieldGroup];
 
 
-export const ArtistResultRowFieldsItemGroup = {
+export const ArtistResultFieldGroup = {
   identity: 'identity',
   decision: 'decision',
   metadata: 'metadata',

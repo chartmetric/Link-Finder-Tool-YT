@@ -5,7 +5,9 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ArtistResultBatchMetricsItem } from './artistResultBatchMetricsItem';
 import type { ArtistResultBatchSource } from './artistResultBatchSource';
+import type { ArtistResultField } from './artistResultField';
 
 export interface ArtistResultBatch {
   id: string;
@@ -26,4 +28,6 @@ export interface ArtistResultBatch {
   /** @nullable */
   reportedUsd: number | null;
   explanation: string;
+  metrics?: ArtistResultBatchMetricsItem[];
+  details?: ArtistResultField[];
 }

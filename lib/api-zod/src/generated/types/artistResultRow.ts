@@ -5,7 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { ArtistResultRowFieldsItem } from './artistResultRowFieldsItem';
+import type { ArtistResultField } from './artistResultField';
 
 export interface ArtistResultRow {
   id: string;
@@ -22,5 +22,5 @@ export interface ArtistResultRow {
   verdict: string | null;
   /** @nullable */
   comparisonType: string | null;
-  fields: ArtistResultRowFieldsItem[];
+  fields: ArtistResultField[];
 }

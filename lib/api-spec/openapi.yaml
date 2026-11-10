@@ -41,7 +41,7 @@ paths:
         - { name: offset, in: path, required: true, schema: { type: number, minimum: 0 } }
         - { name: pageSize, in: path, required: true, schema: { type: number, minimum: 1, maximum: 50 } }
         - { name: searchTerm, in: path, required: true, description: "Prefix the search with q:; q: alone means no search.", schema: { type: string, maxLength: 122 } }
-        - { name: resultFilter, in: path, required: true, schema: { type: string, enum: [all, verified, review, not_inspected, metadata_failed, no_candidate, controls] } }
+        - { name: resultFilter, in: path, required: true, schema: { type: string, enum: [all, verified, review, not_inspected, metadata_failed, no_candidate, controls, research_supported, held, skipped, partial_failure, shared_handle] } }
       responses:
         "200":
           description: A page of frozen saved results; omitted evidence stays explicitly missing
@@ -534,6 +534,18 @@ components:
         reservedUsd: { type: [number, "null"] }
         reportedUsd: { type: [number, "null"] }
         explanation: { type: string }
+        metrics:
+          type: array
+          items:
+            type: object
+            required: [label, value]
+            properties:
+              label: { type: string }
+              value: { type: string }
+        details:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArtistResultField"
     ArtistResultRow:
       type: object
       required: [id, artistName, profileId, candidateUrl, verifiedUrl, status, score, verdict, comparisonType, fields]
@@ -550,12 +562,14 @@ components:
         fields:
           type: array
           items:
-            type: object
-            required: [label, value, group]
-            properties:
-              label: { type: string }
-              value: { type: string }
-              group: { type: string, enum: [identity, decision, metadata, provenance, raw] }
+            $ref: "#/components/schemas/ArtistResultField"
+    ArtistResultField:
+      type: object
+      required: [label, value, group]
+      properties:
+        label: { type: string }
+        value: { type: string }
+        group: { type: string, enum: [identity, decision, metadata, provenance, raw] }
     BulkCoverageGroup:
       type: string
       enum: [tiers_1_3, tiers_1_5, all]
