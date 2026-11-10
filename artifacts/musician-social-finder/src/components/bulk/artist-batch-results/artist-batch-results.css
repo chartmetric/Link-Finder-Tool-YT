@@ -3,6 +3,16 @@
 .abr-warn { margin-top: 8px; padding: 8px 10px; border-left: 3px solid #b8882c; border-radius: 4px; background: #fbf4e4; color: #6d4f15; font-size: 11px; }
 .abr-empty { color: #8291a1; font-style: italic; font-size: 11px; }
 .abr-batches { display: flex; gap: 8px; overflow-x: auto; margin-top: 12px; padding-bottom: 4px; }
+.abr-run-group { flex: 0 0 230px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.abr-run-group .abr-batch { flex: none; width: 100%; }
+.abr-run-heading, .abr-observation-note { font-size: 11px; line-height: 1.6; color: #4a6177; overflow-wrap: anywhere; }
+.abr-run-heading { display: flex; flex-direction: column; gap: 3px; padding: 8px; border-left: 2px solid #176b62; }
+.abr-observation-note { margin-top: 10px; }
+.abr-final-links { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+.abr-final-links button { white-space: normal; overflow-wrap: anywhere; text-align: left; }
+.abr-final-links button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.dark .abr-run-heading, .dark .abr-observation-note { color: hsl(var(--muted-foreground)); }
+.dark .abr-run-heading { border-color: hsl(var(--primary)); }
 .abr-batch { flex: 0 0 230px; display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 10px 12px; border: 1px solid #d6e0e7; border-radius: 10px; background: #f4faf8; cursor: pointer; color: var(--ink); transition: transform .15s; }
 .abr-batch:hover { transform: translateY(-1px); }
 .abr-batch.on { border-color: #176b62; background: #e8f6f0; box-shadow: inset 0 0 0 1px #176b62; }
@@ -71,7 +81,7 @@
 @media (max-width: 600px) {
   .abr-row-main { grid-template-columns: 1fr; }
   .abr-field { grid-template-columns: 1fr; gap: 3px; }
-  .abr-batch { flex-basis: 78vw; }
+  .abr-run-group { flex-basis: 78vw; }
 }
 .dark .abr-batch, .dark .abr-summary, .dark .abr-row, .dark .abr-group { background: hsl(var(--background)); border-color: hsl(var(--border)); color: hsl(var(--foreground)); }
 .dark .abr-batch.on { background: hsl(var(--accent)); border-color: hsl(var(--primary)); box-shadow: inset 0 0 0 1px hsl(var(--primary)); }

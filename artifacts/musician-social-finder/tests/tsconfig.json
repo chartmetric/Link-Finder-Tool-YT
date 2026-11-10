@@ -1,0 +1,5 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": { "jsx": "react-jsx" },
+  "include": ["./alternatives-observations.test.ts", "./batch-picker.test.tsx"]
+}
