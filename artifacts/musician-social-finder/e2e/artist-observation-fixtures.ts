@@ -75,6 +75,7 @@ export const csvPath = (id: string) => `/api/bulk/artist-results/${id}/csv`;
 export const csvContents = (b: ArtistResultBatch) =>
   `archive_id,artist_name,reported_usd\n${rowsFor(b.id)
     .map(r => `${b.id},${r.artistName},${b.reportedUsd}`).join('\n')}\n`;
+export const rowError = (id: string) => `Fixture row archive unavailable: ${id}`;
 
 function gate() {
   let release!: () => void;
@@ -89,10 +90,14 @@ export class ObservationApi extends ProgressApi {
   rowRequests: string[] = [];
   csvRequests: string[] = [];
   delivered: string[] = [];
+  failed: string[] = [];
+  private failures = new Set<string>();
   private holds = new Map<string, ReturnType<typeof gate>>();
   private server?: Server;
 
   hold(id: string) { this.holds.set(id, gate()); }
+  fail(id: string) { this.failures.add(id); }
+  recover(id: string) { this.failures.delete(id); }
   release(id: string) { this.holds.get(id)?.release(); }
   releaseAll() { for (const hold of this.holds.values()) hold.release(); }
 
@@ -169,6 +174,13 @@ export class ObservationApi extends ProgressApi {
         if (path === rowPath(batch.id)) {
           this.rowRequests.push(path);
           await this.holds.get(batch.id)?.promise;
+          // Persist across React Query's automatic retries until the test
+          // explicitly restores this archive. Other observations stay readable.
+          if (this.failures.has(batch.id)) {
+            await route.fulfill({ status: 503, json: { error: rowError(batch.id) } });
+            this.failed.push(batch.id);
+            return;
+          }
           const rows = rowsFor(batch.id);
           const body: GetArtistResultRows200 = { batch, rows, total: rows.length, nextOffset: null };
           await json(body);

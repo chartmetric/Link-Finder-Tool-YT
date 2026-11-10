@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import type { ArtistResultBatch } from '@workspace/api-client-react';
 import {
-  test, expect, checkpoint, final, newer, checkpointRows, finalRows, newerRows, rowsFor, rowPath, csvPath, csvContents,
+  test, expect, checkpoint, final, newer, checkpointRows, finalRows, newerRows, rowsFor, rowPath, csvPath, csvContents, rowError,
 } from './artist-observation-fixtures';
 
 const section = (page: Page) => page.getByTestId('section-artist-batch-results');
@@ -228,6 +228,103 @@ for (const theme of ['light', 'dark'] as const) {
         await download(page, chosen);
         expect(api.rowRequests).toEqual(expectedRows);
         expect(api.csvRequests).toEqual(Array(4).fill(csvPath(chosen.id)));
+      });
+    }
+
+    for (const failing of [checkpoint, final]) {
+      test(`${failing.status} row failure and retry preserve the selected archive`, async ({ page, api }, testInfo) => {
+        // Real retry backoff is intentional: don't freeze React Query's UI
+        // notifications or alter production retry/cache behavior for this test.
+        test.setTimeout(60_000);
+        const other = failing.id === checkpoint.id ? final : checkpoint;
+        const root = section(page);
+        const alert = root.getByRole('alert');
+        const retry = root.getByTestId('button-retry-artist-rows');
+        const loading = root.getByLabel('Loading rows', { exact: true });
+        const csv = root.getByTestId('link-download-artist-csv');
+        api.fail(failing.id);
+        await page.goto(`${api.url}/bulk/artists`);
+        await expect(page.locator('html')).toHaveClass(theme === 'dark' ? /dark/ : /^(?!.*dark).*$/);
+        // First read the healthy observation so stale successful rows exist
+        // before selecting the broken archive (in either direction).
+        if (failing.id === checkpoint.id) {
+          await expect(alert).toHaveText(`${rowError(failing.id)}Retry`, { timeout: 15_000 });
+          await radio(page, other).click();
+        }
+        await selected(page, other);
+        await displayedRows(page, other);
+        await download(page, other);
+        await radio(page, failing).click();
+        await expect(alert).toHaveText(`${rowError(failing.id)}Retry`, { timeout: 15_000 });
+        await selected(page, failing);
+        await expect(root.locator('.abr-rows > li')).toHaveCount(0);
+        await expect(root.getByTestId('text-artist-rows-range')).toHaveCount(0);
+        await expect(root.getByTestId('text-no-artist-rows')).toHaveCount(0);
+        await expect(loading).toHaveCount(0);
+        expect(api.failed.length).toBeGreaterThan(0);
+        expect(new Set(api.failed)).toEqual(new Set([failing.id]));
+        await layout(page, [radio(page, failing), radio(page, other), alert, retry, csv]);
+        await download(page, failing);
+        await testInfo.attach(`${theme}-${failing.status}-row-error`, {
+          body: await root.screenshot(), contentType: 'image/png',
+        });
+
+        // Leaving an error must restore only the other observation's rows,
+        // spending and download, with no leaked error or Retry control.
+        await radio(page, other).click();
+        await selected(page, other);
+        await displayedRows(page, other);
+        await expect(alert).toHaveCount(0);
+        await expect(retry).toHaveCount(0);
+        await download(page, other);
+        await radio(page, failing).click();
+        await expect(alert).toHaveText(`${rowError(failing.id)}Retry`, { timeout: 15_000 });
+        await selected(page, failing);
+        await expect(root.locator('.abr-rows > li')).toHaveCount(0);
+        await download(page, failing);
+
+        // Hold the manual retry so its exact request and the interim download
+        // can be checked independently of the eventual successful response.
+        api.hold(failing.id);
+        api.recover(failing.id);
+        const beforeRetry = api.rowRequests.length;
+        await retry.click();
+        await expect(loading).toBeVisible();
+        expect(api.rowRequests.slice(beforeRetry)).toEqual([rowPath(failing.id)]);
+        await selected(page, failing);
+        await expect(alert).toHaveCount(0);
+        await expect(retry).toHaveCount(0);
+        await expect(root.locator('.abr-rows > li')).toHaveCount(0);
+        await download(page, failing);
+
+        // A successful retry arriving after navigation must not replace the
+        // currently chosen archive. Returning then recovers the failed rows.
+        await radio(page, other).click();
+        await selected(page, other);
+        await displayedRows(page, other);
+        api.release(failing.id);
+        await expect.poll(() => api.delivered.includes(failing.id)).toBe(true);
+        await selected(page, other);
+        await displayedRows(page, other);
+        await expect(alert).toHaveCount(0);
+        await download(page, other);
+        await radio(page, failing).click();
+        await selected(page, failing);
+        await displayedRows(page, failing);
+        await expect(alert).toHaveCount(0);
+        await expect(retry).toHaveCount(0);
+        await layout(page, [radio(page, failing),
+          root.getByTestId(`text-observation-provenance-${failing.id}`), csv]);
+        await download(page, failing);
+        await testInfo.attach(`${theme}-${failing.status}-row-recovered`, {
+          body: await root.screenshot(), contentType: 'image/png',
+        });
+        expect([...new Set(api.rowRequests)]).toEqual([rowPath(checkpoint.id), rowPath(final.id)]);
+        expect(api.rowRequests.slice(beforeRetry).every(path => path === rowPath(failing.id))).toBe(true);
+        expect(api.csvRequests).toEqual([
+          csvPath(other.id), csvPath(failing.id), csvPath(other.id), csvPath(failing.id),
+          csvPath(failing.id), csvPath(other.id), csvPath(failing.id),
+        ]);
       });
     }
   });
