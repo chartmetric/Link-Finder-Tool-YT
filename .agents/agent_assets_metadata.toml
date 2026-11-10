@@ -868,3 +868,17 @@ mtime_ms = 1794331832383
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/6d673fd5-97f3-482c-a8d6-579426a681c1/078204b6-4a5c-45a3-a11e-498aaaa48651"
 storage_version_token = "1794331844360035"
 content_type = "text/csv"
+
+[[outputs]]
+id = "JTIfn5u5mfRDPoZuVhCjt"
+uri = "file://generated-artifacts/next-saved-500-usd20/account-context-recheck-results/20-artist-recheck-comparison.csv"
+type = "table"
+title = "20-artist recheck — before and after"
+description = "Previous and new decisions for all 20 artists, including Luke Dean, with all saved metadata and the additional account context used."
+logical_id = "e90a8d6e-01e0-44e9-9f25-2b61a3e0d7bf"
+content_hash = "sha256:cadf71ba3376272d61e4b85df5a88a241be444219c3bc003928ace4562e9be2a"
+size = 227920
+mtime_ms = 1794332057519
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/e90a8d6e-01e0-44e9-9f25-2b61a3e0d7bf/184bfe19-b297-435e-a762-561a1300b521"
+storage_version_token = "1794332078969336"
+content_type = "text/csv"
