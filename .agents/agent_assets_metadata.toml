@@ -1064,3 +1064,31 @@ mtime_ms = 1794345898591
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/cb13e846-bd79-4d39-9a5c-0ff8d1a8f032/06a9a104-fc91-42fa-aa83-01a2777b8b97"
 storage_version_token = "1794345906790445"
 content_type = "text/csv"
+
+[[outputs]]
+id = "aRHqkU1DLBPmVdvGLZziU"
+uri = "file://generated-artifacts/next-saved-500-account-context-usd20/execution-age-restriction-continuation/reviewed-after-faux-moon-likely-matches.csv"
+type = "table"
+title = "Updated likely matches — 249 artists"
+description = "Excludes KaMAPHANGA and the questionable Faux Moon match. Original model results preserved separately."
+logical_id = "12b1643f-6432-4b09-b6b1-a6036dae6802"
+content_hash = "sha256:8fd243e96e59e89aec278f01ca6eb459894099164505068ca77be676825c0aa3"
+size = 1766009
+mtime_ms = 1794346399379
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/12b1643f-6432-4b09-b6b1-a6036dae6802/1b06f9e6-7d15-4553-a528-90430fa49011"
+storage_version_token = "1794346406449530"
+content_type = "text/csv"
+
+[[outputs]]
+id = "2S8Pejb_qLQUL6W00yZ7x"
+uri = "file://generated-artifacts/next-saved-500-account-context-usd20/execution-age-restriction-continuation/reviewed-after-faux-moon-checked-not-accepted.csv"
+type = "table"
+title = "Updated checked but not accepted — 224 artists"
+description = "Includes Faux Moon as a suspected false positive. Absence of an Instagram account is not confirmed."
+logical_id = "2b0ef199-d4b4-4414-9c56-c4778b992a37"
+content_hash = "sha256:fc9bb144b3f2f69e45fb3a215a0dc0d9113faddeaf8f7495bf901639206e997b"
+size = 1605528
+mtime_ms = 1794346399419
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2b0ef199-d4b4-4414-9c56-c4778b992a37/a9896190-d166-4658-b0bf-6d88522e9643"
+storage_version_token = "1794346407249747"
+content_type = "text/csv"

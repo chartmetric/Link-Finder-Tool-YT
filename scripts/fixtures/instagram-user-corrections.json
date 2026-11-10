@@ -3,6 +3,20 @@
   "note": "User-reported artist/account corrections, not independently source-adjudicated benchmark labels. Never include these grading conclusions in verifier inputs.",
   "corrections": [
     {
+      "artist": "Faux Moon",
+      "profileId": "290930",
+      "cmArtist": "14285862",
+      "candidateInstagramUrl": "https://www.instagram.com/faux.project/",
+      "reviewSource": "explicit_user_statement",
+      "review": "suspected_false_positive",
+      "userStatement": "yeah i don't think faux moon has an IG account",
+      "ownershipLabelTier": "user_correction",
+      "independentlySourceAdjudicated": false,
+      "instagramAbsenceConfirmed": false,
+      "appliesTo": "saved_batch_review_exports",
+      "liveLinkChanged": false
+    },
+    {
       "artist": "KaMAPHANGA",
       "profileId": "3829297",
       "cmArtist": "16226641",
