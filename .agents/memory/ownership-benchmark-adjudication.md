@@ -17,6 +17,17 @@ holds separately from missing exact-link evidence. Before interpreting results,
 identify the label tier, reused accounts and prior exposure. No population or
 threshold claim follows from this convenience sample.
 
+Cross-artist synthetic challenges are not independently source-reviewed negative
+ownership labels, even when catalog IDs differ or saved model answers disagree.
+
+**Why:** The user requires control-selection diagnostics to remain separate from
+benchmark-policy approval; rotating saved accounts cannot supply missing
+ownership adjudication or calibrate false-positive rates.
+
+**How to apply:** Report account reuse and diversity shortages explicitly, keep
+ownership labels unassigned, and require the separately approved benchmark policy
+before scoring accuracy.
+
 Do not turn an ownership answer into a source-trust declaration for an acceptance gate.
 
 **Why:** A reviewed artist website can support a benchmark ownership label without
