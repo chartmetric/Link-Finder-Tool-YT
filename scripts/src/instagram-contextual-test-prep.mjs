@@ -8,6 +8,8 @@ import {catalogReferences,catalogConnectionEvidence,CORROBORATED_POLICY,IDENTITY
 import {fitArtistContext,jevRequest,boundedArtistContext} from './instagram-pilot-live-transport.mjs';
 import {CORROBORATED_RUBRIC,IDENTITY_CONTEXT_RUBRIC} from './instagram-ownership-rubric.mjs';
 import {assertNoGradingInputs} from './instagram-corroborated-policy.mjs';
+import {auditLosslessRequests} from './instagram-lossless-request-audit.mjs';
+import {LOSSLESS_REQUEST_V4} from './instagram-lossless-request.mjs';
 const hash=v=>createHash('sha256').update(v).digest('hex');
 const encode=v=>JSON.stringify(v);
 
@@ -45,7 +47,11 @@ export function contextualTestPair(target,original){
   return requests;
 }
 
-export async function prepareContextualTest(batchDir,outputDir){
+export async function prepareContextualTest(batchDir,outputDir,options={}){
+  // Unlike the historical six-pair selection, this explicit investigation
+  // measures the full saved cohort, including every oversized exclusion.
+  // It never creates an executable paired-test manifest or reuses approval.
+  if(options.requestSerialization!==undefined)return auditLosslessRequests(batchDir,outputDir,options);
   const read=async name=>JSON.parse(await fs.readFile(path.join(batchDir,name),'utf8'));
   const scope=await read('scope.json'),receipt=await read('receipt.json'),source=await read('source-rows.json');
   assert.equal(hash(encode(scope)),receipt.scopeSha256);assert.equal(hash(encode(source)),receipt.sourceRowsSha256);
@@ -123,7 +129,9 @@ export async function prepareContextualTest(batchDir,outputDir){
   return summary;
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
-  const [batch,output]=process.argv.slice(2);
-  if(!batch||!output)throw Error('Usage: contextual-test-prep <frozen-batch> <new-output>');
-  console.log(JSON.stringify(await prepareContextualTest(batch,output),null,2));
+  const [batch,output,flag]=process.argv.slice(2);
+  if(!batch||!output||(flag!==undefined&&flag!=='--lossless-v4'))
+    throw Error('Usage: contextual-test-prep <frozen-batch> <new-output> [--lossless-v4]');
+  const result=await prepareContextualTest(batch,output,flag?{requestSerialization:LOSSLESS_REQUEST_V4}:{});
+  console.log(JSON.stringify({...result,...(result.inputs?{inputs:`${result.inputs.length} frozen input hashes`}:{})},null,2));
 }

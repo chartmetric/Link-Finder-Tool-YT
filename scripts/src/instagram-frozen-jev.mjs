@@ -11,6 +11,8 @@ export function frozenJevTransport({responseDir,apiKey,fetchImpl=fetch}) {
   return {live:true,inputBytes:({payload})=>Buffer.byteLength(JSON.stringify(payload.body)),
     dispatch:async({kind,payload,key,signal})=>{
       if(kind!=='jev') throw Error('Frozen verifier transport cannot dispatch another provider.');
+      if(payload.body?.state?.serialization!==undefined)
+        throw Error('Experimental serialization is offline draft-only; no frozen dispatch.');
       const body=JSON.stringify(payload.body);
       if(Buffer.byteLength(body)>6000||createHash('sha256').update(body).digest('hex')!==payload.inputSha256) {
         throw Error('Changed or oversized frozen request; no dispatch.');

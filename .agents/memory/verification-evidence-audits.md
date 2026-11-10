@@ -3,6 +3,20 @@ name: Verification evidence audits
 description: Distinguish original verifier inputs from reconstructions and synthetic fixtures.
 ---
 
+Treat lossless source reconstruction and model-readable equivalence as separate
+claims. Measure a compact format against the same complete evidence, not only
+against historical requests containing bounded summaries.
+
+**Why:** Retaining all saved post records and untruncated metadata can expose
+more oversized requests than an earlier context-only audit. Reversible tables
+can reduce repetition without making the largest cases fit, and no offline
+round trip establishes that a verifier interprets that layout correctly.
+
+**How to apply:** Count dictionary and decoder overhead, report both gains and
+remaining holds, preserve frozen inputs, and keep experimental serialization
+offline until separately reviewed and approved. Do not discard source records
+or increase limits to make the coverage comparison appear better.
+
 Affiliation terms in a musician biography do not independently establish that the account is a label, management company or fan account.
 
 **Why:** Saved-batch reviews found musician self-descriptions mentioning label ownership held by the same vocabulary intended to screen out organizational accounts.

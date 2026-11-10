@@ -8,6 +8,8 @@ import {fileURLToPath} from 'node:url';
 import {assessInstagramCandidates,CORROBORATED_POLICY,IDENTITY_CONTEXT_POLICY,catalogReferences} from './musician-instagram-matching.mjs';
 import {fitArtistContext,jevRequest,boundedArtistContext} from './instagram-pilot-live-transport.mjs';
 import {IDENTITY_CONTEXT_RUBRIC} from './instagram-ownership-rubric.mjs';
+import {auditLosslessRequests} from './instagram-lossless-request-audit.mjs';
+import {LOSSLESS_REQUEST_V4} from './instagram-lossless-request.mjs';
 const hash=v=>createHash('sha256').update(v).digest('hex');
 const cell=value=>{
   const text=String(value??'');
@@ -17,7 +19,8 @@ const csv=rows=>{
   const columns=Object.keys(rows[0]??{});
   return '\ufeff'+[columns,...rows.map(r=>columns.map(k=>r[k]))].map(r=>r.map(cell).join(',')).join('\r\n');
 };
-export async function checkContextualIdentity(batchDir,outputDir){
+export async function checkContextualIdentity(batchDir,outputDir,options={}){
+  if(options.requestSerialization!==undefined)return auditLosslessRequests(batchDir,outputDir,options);
   const inputs=[];
   const read=async f=>{const b=await fs.readFile(path.join(batchDir,f));inputs.push({file:f,sha256:hash(b)});return JSON.parse(b);};
   const scope=await read('scope.json'),receipt=await read('receipt.json'),source=await read('source-rows.json');
@@ -125,8 +128,9 @@ export async function checkContextualIdentity(batchDir,outputDir){
   return summary;
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
-  const [batch,output]=process.argv.slice(2);
-  if(!batch||!output)throw Error('Usage: contextual-identity-check <saved-batch> <new-output>');
-  const result=await checkContextualIdentity(batch,output);
+  const [batch,output,flag]=process.argv.slice(2);
+  if(!batch||!output||(flag!==undefined&&flag!=='--lossless-v4'))
+    throw Error('Usage: contextual-identity-check <saved-batch> <new-output> [--lossless-v4]');
+  const result=await checkContextualIdentity(batch,output,flag?{requestSerialization:LOSSLESS_REQUEST_V4}:{});
   console.log(JSON.stringify({...result,inputs:`${result.inputs.length} frozen input hashes`},null,2));
 }
