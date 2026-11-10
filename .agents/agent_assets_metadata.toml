@@ -784,3 +784,31 @@ mtime_ms = 1794287576877
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/3ed28758-7a66-44c3-a0aa-11c34b9eff4d/82750d4c-f7ba-43db-be1e-c18a146a0f69"
 storage_version_token = "1794287676533463"
 content_type = "text/csv"
+
+[[outputs]]
+id = "HUQbiQtotF2-V96e__k9h"
+uri = "file://generated-artifacts/next-saved-500-usd20/execution-reconciled-continuation/artist-instagram-findings.csv"
+type = "table"
+title = "500 artists — completed findings"
+description = "All 500 artists, candidate links, review decisions, and metadata actually used."
+logical_id = "126281e0-95dd-4863-8993-8fc7d3320c91"
+content_hash = "sha256:dfc4d1abf172d5b8c936fe536d917a2d0e9380e7b5a7f367679495c3d1299f0d"
+size = 3094328
+mtime_ms = 1794329206302
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/126281e0-95dd-4863-8993-8fc7d3320c91/9925d7ef-7dac-4307-b9a0-785dec60ba62"
+storage_version_token = "1794329221887676"
+content_type = "text/csv"
+
+[[outputs]]
+id = "QsZw-Lo2NCZYeWjZWTW4l"
+uri = "file://generated-artifacts/next-saved-500-usd20/execution-reconciled-continuation/all-saved-candidates.csv"
+type = "table"
+title = "All saved candidates"
+description = "Every saved candidate for the batch, including candidates not inspected."
+logical_id = "fbe8b076-bac0-4be5-97c4-5fb4b15190bd"
+content_hash = "sha256:355768cde203a20c5c1c45569d8168b0803ddfaeea562a94b6eeddf72fac9919"
+size = 516274
+mtime_ms = 1794329206318
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/fbe8b076-bac0-4be5-97c4-5fb4b15190bd/c8cdc48c-a22f-495c-b17d-48643a5c86f7"
+storage_version_token = "1794329222608958"
+content_type = "text/csv"
