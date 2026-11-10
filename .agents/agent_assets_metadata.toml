@@ -1218,3 +1218,45 @@ mtime_ms = 1794350839871
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/944ef19a-7f0a-4a48-aa9c-2f81b06945bf/9c44af08-5916-4465-8ada-bfb5b6a7c0ac"
 storage_version_token = "1794350868316272"
 content_type = "text/csv"
+
+[[outputs]]
+id = "NIvmvh4o50GwpM32QX6pQ"
+uri = "file://generated-artifacts/next-saved-100-tiers-1-5-no-ig-usd5/execution/likely-matches.csv"
+type = "table"
+title = "Likely matches — 55 artists"
+description = "Artist names, candidate Instagram links, and metadata used. Review suggestions, not confirmed ownership."
+logical_id = "b2eb38fc-d535-49f9-b85f-59678dc090d4"
+content_hash = "sha256:2668c573da1cf7bf92142458ef11f1bafdff1db5856337950d606678d35ddae1"
+size = 384857
+mtime_ms = 1794352282131
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/b2eb38fc-d535-49f9-b85f-59678dc090d4/d4bac54b-8fbd-4454-a79f-1dc1f5039014"
+storage_version_token = "1794352297820936"
+content_type = "text/csv"
+
+[[outputs]]
+id = "3Z4E510x3OoOD33WIpQOD"
+uri = "file://generated-artifacts/next-saved-100-tiers-1-5-no-ig-usd5/execution/checked-not-accepted.csv"
+type = "table"
+title = "Checked but not accepted — 36 artists"
+description = "Checked candidates that did not pass, with reasons and metadata."
+logical_id = "11343137-1036-4b17-b702-f848f5e0b29e"
+content_hash = "sha256:6a62faa2639b475ccbf30b5adc0be6efa8dd0a40019a28a28f9c425d68957e45"
+size = 251485
+mtime_ms = 1794352282135
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/11343137-1036-4b17-b702-f848f5e0b29e/0cd0623a-ea87-4c40-ada3-9182323d05e5"
+storage_version_token = "1794352298486757"
+content_type = "text/csv"
+
+[[outputs]]
+id = "LdeisZWLPfoQbxFrqDtk7"
+uri = "file://generated-artifacts/next-saved-100-tiers-1-5-no-ig-usd5/execution/artist-instagram-findings.csv"
+type = "table"
+title = "Full findings — all 100 artists"
+description = "All results, saved candidates, and metadata, including 9 incomplete checks."
+logical_id = "2e0f6dbb-7a67-43f1-b31a-93f0afbac1b9"
+content_hash = "sha256:e1583adb6cf350333932af66475239b8f6e9a13a5cd9be2edfb1efd49750bbeb"
+size = 662326
+mtime_ms = 1794352282123
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2e0f6dbb-7a67-43f1-b31a-93f0afbac1b9/d92096c8-88f6-4b2c-a0e5-e5ac7841b5e1"
+storage_version_token = "1794352299146580"
+content_type = "text/csv"

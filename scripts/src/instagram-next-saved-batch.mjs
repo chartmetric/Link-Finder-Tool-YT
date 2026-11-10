@@ -9,9 +9,10 @@ import {normalizeInstagramProfile} from './instagram-link-capture.mjs';
 import {readSavedDiscovery,readVerifiedSavedSources} from './instagram-saved-source-export.mjs';
 import {catalogAccountContext} from './instagram-catalog-account-context.mjs';
 export const digest=v=>createHash('sha256').update(typeof v==='string'?v:JSON.stringify(v)).digest('hex');
-export async function prepareNextSavedBatch(dir,previous){
+export async function prepareNextSavedBatch(dir,previous,{expectedArtists=500}={}){
+  assert.ok(Number.isInteger(expectedArtists)&&expectedArtists>0&&expectedArtists<=500);
   const savedDiscovery=await readSavedDiscovery(dir),discovery=savedDiscovery.rows;
-  assert.equal(discovery.length,500);assert.equal(new Set(discovery.map(r=>r.profile_id)).size,500);
+  assert.equal(discovery.length,expectedArtists);assert.equal(new Set(discovery.map(r=>r.profile_id)).size,expectedArtists);
   const sources=await readVerifiedSavedSources(dir,savedDiscovery);
   const profiles=new Map(sources.catalogProfiles.map(r=>[r.profile_id,r]));
   const accounts=new Map();
@@ -42,7 +43,7 @@ export async function prepareNextSavedBatch(dir,previous){
       sourceArtistName:row.artist,sourceRunEvidenceSha256:digest(row.result_json),
       candidates,selected:candidates[0]??null,context,catalogCountryRecord:country??null};
   });
-  assert.equal(new Set(targets.map(t=>t.player.cm_artist)).size,500);
+  assert.equal(new Set(targets.map(t=>t.player.cm_artist)).size,expectedArtists);
   return targets;
 }
 export function enrichedRequest(target,candidate){
