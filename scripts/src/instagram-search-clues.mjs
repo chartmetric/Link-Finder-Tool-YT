@@ -1,4 +1,5 @@
 import { instagramProfileUrl } from './musician-instagram-matching.mjs';
+import {instagramPostOwnerClues} from './instagram-post-attribution.mjs';
 
 const fold = text => String(text ?? '').normalize('NFKD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
 
@@ -18,10 +19,11 @@ export function instagramSearchCandidates(hits, artist) {
     if (direct) found.push([direct, 'direct_profile']);
     else {
       const parts = source.pathname.split('/').filter(Boolean);
-      if (!['p','reel','reels','tv','popular'].includes(parts[0]) && ['p','reel','reels'].includes(parts[1])) {
-        found.push([instagramProfileUrl(`https://www.instagram.com/${parts[0]}/`), 'post_url_owner']);
+      const ownerClues=instagramPostOwnerClues(source.href,hit.snippet);
+      if (ownerClues.urlOwner) {
+        found.push([instagramProfileUrl(`https://www.instagram.com/${ownerClues.urlOwner}/`), 'post_url_owner']);
       }
-      if (['p','reel','reels','tv','popular'].includes(parts[0]) || found.length) {
+      if (['p','reel','reels','tv','popular'].includes(parts[0]) || ownerClues.isPost) {
         for (const m of text.matchAll(/(?:^|[^\p{L}\p{N}._@])@([a-z0-9._]{1,30})(?![a-z0-9._])/giu)) {
           const handle = m[1].replace(/[.]+$/, '');
           if (!/^www\./i.test(handle)) found.push([instagramProfileUrl(`https://www.instagram.com/${handle}/`), 'post_mention']);
@@ -29,8 +31,7 @@ export function instagramSearchCandidates(hits, artist) {
         for (const m of text.matchAll(/(?:https:\/\/)?(?:www\.)?instagram\.com\/([a-z0-9._]{1,30})(?=[/?#\s"'<>]|$)/gi)) {
           found.push([instagramProfileUrl(`https://www.instagram.com/${m[1]}/`), 'post_profile_link']);
         }
-        const owner = /(?:likes?|comments?)\s*[-–]\s*([a-z0-9._]{1,30})\s+on\b/i.exec(text);
-        if (owner) found.push([instagramProfileUrl(`https://www.instagram.com/${owner[1]}/`), 'post_caption_owner']);
+        if (ownerClues.captionOwner) found.push([instagramProfileUrl(`https://www.instagram.com/${ownerClues.captionOwner}/`), 'post_caption_owner']);
       }
     }
     for (const [url,kind] of found) {

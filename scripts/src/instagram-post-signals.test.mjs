@@ -8,6 +8,7 @@ import {instagramSearchCandidates} from './instagram-search-clues.mjs';
 import {jevRequest,fitArtistContext,createLiveTransport} from './instagram-pilot-live-transport.mjs';
 import {assessInstagramCandidates} from './musician-instagram-matching.mjs';
 import {runFixturePilot} from './instagram-pilot-runner.mjs';
+import {instagramPostAttribution} from './instagram-post-attribution.mjs';
 
 const url='https://www.instagram.com/example.artist/';
 const spotify='https://open.spotify.com/artist/0123456789ABCDEFGHIJKL';
@@ -26,6 +27,86 @@ const profile=(discoveryEvidence=[evidence()],c=candidate)=>({url,discoveryEvide
   identityComparison:{reference,candidate:c,status:'uncertain'}});
 const payload=(profiles=[profile()],ctx=context())=>({
   artist:'Example Artist',catalogReference:reference,profiles,artistContext:ctx,
+});
+
+const searchFormats=JSON.parse(await fs.readFile(
+  new URL('./fixtures/instagram-search-formats/v1.json',import.meta.url),'utf8'));
+
+test('saved search format corpus is versioned, scrubbed and has explicit source provenance',()=>{
+  assert.equal(searchFormats.schemaVersion,1);
+  assert.equal(searchFormats.collectionVersion,'1.0.0');
+  const ids=new Set();
+  for(const fixture of [...searchFormats.observed,...searchFormats.derived]){
+    assert.ok(!ids.has(fixture.id),fixture.id);
+    ids.add(fixture.id);
+    const source=searchFormats.sources[fixture.base??fixture.id];
+    assert.ok(source,fixture.id);
+    assert.match(source.sha256,/^[a-f0-9]{64}$/);
+    assert.match(source.pointer,/^\/data\/organic\/\d+$/);
+    assert.ok(Number.isFinite(Date.parse(source.observedAt)));
+    if(fixture.base){
+      assert.ok(searchFormats.observed.some(f=>f.id===fixture.base));
+      assert.ok(fixture.change);
+    }
+  }
+});
+
+for(const fixture of [...searchFormats.observed,...searchFormats.derived]){
+  test(`saved search formats: ${fixture.base?'derived':'observed'} ${fixture.id}`,()=>{
+    const base=fixture.base?searchFormats.observed.find(f=>f.id===fixture.base):fixture;
+    const source=searchFormats.sources[base.id];
+    const hit={...base.hit,...fixture.hit,observedAt:source.observedAt};
+    const before=structuredClone(hit);
+    const found=instagramSearchCandidates([hit],'Example Artist');
+    const allEvidence=found.flatMap(c=>c.discoveryEvidence);
+    assert.deepEqual([...new Set(allEvidence.filter(e=>['post_url_owner','post_caption_owner'].includes(e.kind))
+      .map(e=>e.kind))].sort(),[...fixture.expectedOwnerKinds].sort());
+    assert.ok(allEvidence.every(e=>e.ownershipConfirmed===false));
+    // Even if discovery did not find this account (no @mention), recomputing
+    // attribution for a retained/previous candidate must fail closed.
+    const supplied=[{kind:'post_mention',sourceUrl:hit.link,...hit,ownershipConfirmed:true}];
+    const signal=postReleaseSignals(context(base.release),candidate,supplied);
+    assert.equal(signal.matches.length,1);
+    assert.equal(signal.matches[0].attribution,fixture.expectedAttribution);
+    assert.equal(signal.result,fixture.expectedResult??'no_information');
+    assert.equal(signal.matches[0].publishedAt,hit.date??null);
+    assert.equal(signal.matches[0].observedAt,source.observedAt);
+    for(const e of allEvidence){
+      assert.equal(e.observedAt,source.observedAt);
+      assert.equal(postReleaseSignals(context(base.release),candidate,[e]).matches[0].attribution,
+        fixture.expectedAttribution);
+    }
+    const serialized=jevRequest(payload([profile(supplied)],context(base.release)))
+      .state.artistContext.candidateSignals[0].songTitlesInCandidatePosts;
+    assert.equal(serialized.matches[0].attribution,fixture.expectedAttribution);
+    assert.equal(serialized.result,fixture.expectedResult??'no_information');
+    assert.deepEqual(hit,before);
+  });
+}
+
+test('unknown formats and owner lookalikes never become candidate-owned',()=>{
+  for(const snippet of [
+    '12 likes - example.artist on someday: Midnight Harbor',
+    '12 likes - example.artist on November 1, 2026 Midnight Harbor',
+    '12 likes - other.owner, example.artist on November 1, 2026: Midnight Harbor',
+    '12 likes - other.owner & example.artist on Monday: Midnight Harbor',
+    '12 likes - example.artist and other.owner on Monday: Midnight Harbor',
+    'Likes - example.artist on Monday: Midnight Harbor',
+    'Midnight Harbor: comments - example.artist on Monday:',
+    '… 12 likes - example.artist on Monday: Midnight Harbor',
+  ]){
+    assert.equal(instagramPostAttribution('https://www.instagram.com/p/POST/',snippet,url),'unconfirmed',snippet);
+  }
+  for(const sourceUrl of [
+    'https://www.instagram.com/_c/reel/POST/',
+    'https://www.instagram.com/_b/reel/POST/',
+    'https://www.instagram.com/example.artist/reel/POST/extra/',
+    'https://www.instagram.com.evil.test/example.artist/reel/POST/',
+  ]){
+    assert.equal(instagramPostAttribution(sourceUrl,'Midnight Harbor',url),'unconfirmed',sourceUrl);
+    assert.ok(!instagramSearchCandidates([{link:sourceUrl,snippet:'Midnight Harbor'}],'Example Artist')
+      .some(c=>c.discoveryEvidence.some(e=>e.kind==='post_url_owner')),sourceUrl);
+  }
 });
 
 test('release titles and hashtags match across languages without guessing from substrings',()=>{

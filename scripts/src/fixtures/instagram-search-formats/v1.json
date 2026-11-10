@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 1,
+  "collectionVersion": "1.0.0",
+  "scrubbing": "Account/display names, release/caption content, locations, hashtags and post IDs are replaced. Formatting, owner/date separators, punctuation, counts, date claims and locale queries are retained. No credentials, query payloads or archived decisions are copied.",
+  "sourceHashEncoding": "SHA-256 of original organic hit serialized as UTF-8 JSON with sorted keys, no whitespace, and unescaped Unicode",
+  "sources": {
+    "english": {
+      "archive": "generated-artifacts/instagram-bulk-shadow-approved-250-usd20/responses/303738-serper-1.json",
+      "pointer": "/data/organic/4",
+      "sha256": "b062048a1f3ba49eac71bd950c9dcc807f05f1cba747f1a1f58f97b6ef3d185e",
+      "observedAt": "2026-11-09T21:39:15.170Z"
+    },
+    "localized-op": {
+      "archive": "generated-artifacts/instagram-bulk-shadow-2026-11-09-approved-50/responses/238042-serper-1.json",
+      "pointer": "/data/organic/1",
+      "sha256": "1893786b9c04c6ea9244bb744cc181f5a5b16a48f39babb6e2743b19521fe4b4",
+      "observedAt": "2026-11-09T20:11:10.817Z"
+    },
+    "localized-comma": {
+      "archive": "generated-artifacts/instagram-bulk-shadow-approved-250-usd20/responses/232717-serper-1.json",
+      "pointer": "/data/organic/2",
+      "sha256": "99c97566582e5e3825efd1ff76cd789566cc09407e2ab1a00a5550659d771f7b",
+      "observedAt": "2026-11-09T21:35:38.316Z"
+    },
+    "localized-no": {
+      "archive": "generated-artifacts/instagram-bulk-shadow-third-approved-238-usd19/responses/245010-serper-1.json",
+      "pointer": "/data/organic/6",
+      "sha256": "e419a9217cfb058c6337e49bf0675ea19463efd3283bd263ba05487241c910f4",
+      "observedAt": "2026-11-09T23:55:04.356Z"
+    },
+    "localized-japanese": {
+      "archive": "generated-artifacts/instagram-bulk-shadow-third-approved-238-usd19/responses/213770-serper-1.json",
+      "pointer": "/data/organic/9",
+      "sha256": "9903a191b114b156340f142e231a12a95fa6b3a9ac9244a98d4292c06f47ee88",
+      "observedAt": "2026-11-09T23:55:55.385Z"
+    },
+    "joint-mentions": {
+      "archive": "generated-artifacts/instagram-bulk-shadow-approved-250-usd20/responses/303738-serper-1.json",
+      "pointer": "/data/organic/2",
+      "sha256": "b2c8d409083b06303568dead04dcefb05be0a507f2958d994c11c7d06badaef3",
+      "observedAt": "2026-11-09T21:39:15.170Z"
+    },
+    "url-and-header": {
+      "archive": "generated-artifacts/instagram-bulk-shadow-2026-11-09-approved-50/responses/284795-serper-1.json",
+      "pointer": "/data/organic/1",
+      "sha256": "8aa8b51dc6e60c1283337210a3cabe912915e2c3c1c9c45a27e321abbf9c9d2d",
+      "observedAt": "2026-11-09T20:11:42.850Z"
+    }
+  },
+  "observed": [
+    {
+      "id": "english",
+      "release": "Midnight Harbor",
+      "hit": {
+        "title": "Example Artist | #midnightharbor #night #city",
+        "link": "https://www.instagram.com/p/SAVED01/",
+        "snippet": "41 likes, 1 comments - example.artist on November 1, 2017: \"#midnightharbor #night #city\"."
+      },
+      "expectedAttribution": "candidate_owned_post_search_snippet",
+      "expectedResult": "support",
+      "expectedOwnerKinds": ["post_caption_owner"]
+    },
+    {
+      "id": "localized-op",
+      "release": "Midnight Harbor",
+      "hit": {
+        "title": "Example Artist / beautiful & talented musician ...",
+        "link": "https://www.instagram.com/p/SAVED02/?img_index=2&hl=af",
+        "snippet": "60 likes, 0 comments - other.owner op November 28, 2025: \"Midnight Harbor / beautiful & talented musician @example.artist for @example.label\"."
+      },
+      "expectedAttribution": "unconfirmed",
+      "expectedResult": "no_information",
+      "expectedOwnerKinds": []
+    },
+    {
+      "id": "localized-comma",
+      "release": "Midnight Harbor",
+      "hit": {
+        "title": "Midnight Harbor prod @example.producer shot by my brother edited by me",
+        "link": "https://www.instagram.com/example.artist/reel/SAVED03/?hl=zh-cn",
+        "snippet": "178 likes, 42 comments - example.artist，February 13, 2026 : \"Midnight Harbor prod @example.producer shot by my brother edited by me\".",
+        "date": "8 months ago"
+      },
+      "expectedAttribution": "unconfirmed",
+      "expectedResult": "no_information",
+      "expectedOwnerKinds": ["post_url_owner"]
+    },
+    {
+      "id": "localized-no",
+      "release": "Midnight Harbor",
+      "hit": {
+        "title": "Midnight Harbor feat Example Guest (2025) #exampleartist ...",
+        "link": "https://www.instagram.com/reel/SAVED04/?hl=pt-br",
+        "snippet": "30 likes, 0 comments - other.owner no April 2, 2026: \"example.artist - Midnight Harbor feat Example Guest (2025) #exampleartist #exampleguest #trapbr #undergroundbr\"."
+      },
+      "expectedAttribution": "unconfirmed",
+      "expectedResult": "no_information",
+      "expectedOwnerKinds": []
+    },
+    {
+      "id": "localized-japanese",
+      "release": "夜明けのメロディー",
+      "hit": {
+        "title": "#夜明けのメロディー Vol.2 tap the future☝️ -「TAP / Example」",
+        "link": "https://www.instagram.com/reel/SAVED05/",
+        "snippet": "夜明けのメロディー Vol.2 tap the future☝️ -「TAP / Example」 #Example_TAP #Example」 - 2026年9月4日、「いいね！」5442件、コメント75件 ...",
+        "date": "2 months ago"
+      },
+      "expectedAttribution": "unconfirmed",
+      "expectedResult": "no_information",
+      "expectedOwnerKinds": []
+    },
+    {
+      "id": "joint-mentions",
+      "release": "Midnight Harbor",
+      "hit": {
+        "title": "New chill house from @example.artist and @example.guest 🌊 Midnight Harbor ...",
+        "link": "https://www.instagram.com/reel/SAVED06/",
+        "snippet": "New chill house from @example.artist and @example.guest Midnight Harbor is out now on all platforms via @example.label · Out Now! · My 2-tracks EP “Other Song” & “ ..."
+      },
+      "expectedAttribution": "unconfirmed",
+      "expectedResult": "no_information",
+      "expectedOwnerKinds": []
+    },
+    {
+      "id": "url-and-header",
+      "release": "Midnight Harbor",
+      "hit": {
+        "title": "Another beautiful day on Example Beach. Catering for Example ...",
+        "link": "https://www.instagram.com/example.artist/p/SAVED07/",
+        "snippet": "1 likes, 3 comments - example.artist on May 13, 2023: \"Another beautiful day on Example Beach. Catering for Midnight Harbor Mother's Day Event ..."
+      },
+      "expectedAttribution": "candidate_owned_post_search_snippet",
+      "expectedResult": "support",
+      "expectedOwnerKinds": ["post_url_owner", "post_caption_owner"]
+    }
+  ],
+  "derived": [
+    {
+      "id": "coauthor-and",
+      "base": "english",
+      "change": "Replace single-owner header with two coauthors; not an observed coauthor header.",
+      "hit": {"snippet": "41 likes, 1 comments - other.owner and example.artist on November 1, 2017: \"Midnight Harbor\"."},
+      "expectedAttribution": "unconfirmed",
+      "expectedOwnerKinds": []
+    },
+    {
+      "id": "coauthor-ampersand-with-url",
+      "base": "url-and-header",
+      "change": "Add second header coauthor even though URL names the candidate.",
+      "hit": {"snippet": "1 likes, 3 comments - example.artist & other.owner on May 13, 2023: \"Midnight Harbor\"."},
+      "expectedAttribution": "unconfirmed",
+      "expectedOwnerKinds": ["post_url_owner"]
+    },
+    {
+      "id": "embedded-header-caption",
+      "base": "english",
+      "change": "Move owner-like header inside a caption without a real header.",
+      "hit": {"snippet": "Midnight Harbor caption quotes 41 likes, 1 comments - example.artist on November 1, 2017: \"out now\"."},
+      "expectedAttribution": "unconfirmed",
+      "expectedOwnerKinds": []
+    },
+    {
+      "id": "embedded-header-title",
+      "base": "english",
+      "change": "Move owner-like header into title; snippet has no owner header.",
+      "hit": {"title": "41 likes, 1 comments - example.artist on November 1, 2017: Midnight Harbor", "snippet": "Midnight Harbor out now."},
+      "expectedAttribution": "unconfirmed",
+      "expectedOwnerKinds": []
+    },
+    {
+      "id": "real-owner-before-caption-impostor",
+      "base": "english",
+      "change": "Keep a third-party header ahead of quoted candidate owner text in the caption.",
+      "hit": {"snippet": "41 likes, 1 comments - other.owner on November 1, 2017: \"Midnight Harbor quotes 12 likes - example.artist on Monday: out now\"."},
+      "expectedAttribution": "third_party_post",
+      "expectedOwnerKinds": ["post_caption_owner"]
+    },
+    {
+      "id": "url-caption-disagreement",
+      "base": "url-and-header",
+      "change": "Replace header owner while retaining candidate owner in URL.",
+      "hit": {"snippet": "1 likes, 3 comments - other.owner on May 13, 2023: \"Midnight Harbor\"."},
+      "expectedAttribution": "conflicting_owner_clues",
+      "expectedOwnerKinds": ["post_url_owner", "post_caption_owner"]
+    },
+    {
+      "id": "url-caption-disagreement-reversed",
+      "base": "url-and-header",
+      "change": "Replace URL owner while retaining candidate header owner.",
+      "hit": {"link": "https://www.instagram.com/other.owner/p/SAVED07/"},
+      "expectedAttribution": "conflicting_owner_clues",
+      "expectedOwnerKinds": ["post_url_owner", "post_caption_owner"]
+    },
+    {
+      "id": "unknown-date",
+      "base": "english",
+      "change": "Replace recognized date with an unsupported owner/date format.",
+      "hit": {"snippet": "41 likes, 1 comments - example.artist on unknown date Midnight Harbor"},
+      "expectedAttribution": "unconfirmed",
+      "expectedOwnerKinds": []
+    }
+  ]
+}

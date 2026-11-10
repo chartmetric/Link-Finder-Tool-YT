@@ -1,27 +1,8 @@
-import {instagramProfileUrl} from './musician-instagram-matching.mjs';
+import {instagramPostAttribution} from './instagram-post-attribution.mjs';
 
 const norm=value=>String(value??'').normalize('NFKD').replace(/\p{M}/gu,'')
   .toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 export const releaseTitle=text=>String(text??'').replace(/\s\(\d{4}-\d{2}-\d{2}\)$/,'').split(' — ')[0];
-const handle=url=>instagramProfileUrl(url)?.split('/')[3];
-
-// Search formatting is an attribution clue, not a fetched post or an ownership decision.
-function attribution(e,candidateUrl,text) {
-  let u;
-  try {
-    u=new URL(e.sourceUrl);
-    if(u.protocol!=='https:'||u.username||u.password||u.port
-      ||!['instagram.com','www.instagram.com','m.instagram.com'].includes(u.hostname))return 'unconfirmed';
-  } catch {return 'unconfirmed';}
-  const parts=u.pathname.split('/').filter(Boolean);
-  const captionOwner=/(?:likes?|comments?)\s*[-–]\s*([a-z0-9._]{1,30})\s+on\b/i.exec(text)?.[1]?.toLowerCase();
-  const urlOwner=['p','reel','reels','tv'].includes(parts[1])?parts[0].toLowerCase():undefined;
-  if(!['p','reel','reels','tv'].includes(parts[0])&&!urlOwner)return 'unconfirmed';
-  const owner=urlOwner??captionOwner;
-  if(urlOwner&&captionOwner&&urlOwner!==captionOwner)return 'conflicting_owner_clues';
-  if(owner)return owner===handle(candidateUrl)?'candidate_owned_post_search_snippet':'third_party_post';
-  return 'unconfirmed';
-}
 
 function contentCautions(text) {
   const n=norm(text);
@@ -58,7 +39,7 @@ export function postReleaseSignals(context,candidate,evidence=[],limit=3) {
       if(seen.has(key))continue;
       seen.add(key);
       records.push({releaseTitle:releaseTitle(item.text),match:exact?'title_text':'hashtag',
-        attribution:attribution(e,candidate.url,text),kind:e.kind,sourceUrl,title,snippet,
+        attribution:instagramPostAttribution(sourceUrl,snippet,candidate.url),kind:e.kind,sourceUrl,title,snippet,
         observedAt:e.observedAt??e.asOf??null,publishedAt:e.date??e.publishedAt??null,
         releaseSource:{source:item.source,sourceUrl:item.sourceUrl,asOf:item.asOf??null,stale:item.stale===true},
         cautions:[...contentCautions(`${text} ${String(candidate.bio??'').slice(0,1600)}`),

@@ -35,6 +35,18 @@ keep provenance and age; deduplicate prompts before omitting low-priority facts.
 Record omissions and hold explicitly if essential evidence cannot fit. Do not
 claim archived decisions improved without a separately approved model rerun.
 
+Keep observed search layouts separate from adversarial mutations of saved
+results. A locale query or several named artists in a caption is not a
+reviewed owner header or evidence of coauthorship.
+
+**Why:** Saved search packets contain localized separators and mixed-account
+content, but do not necessarily contain every ownership failure being tested.
+Calling derived threat cases real captures would overstate the evidence.
+
+**How to apply:** Preserve scrubbed formatting provenance; label mutations
+explicitly and leave unsupported owner layouts unconfirmed. Fixture coverage
+alone does not authorize expanding supported owner formats.
+
 Keep repeated artist/account observations distinct from independent sample size.
 
 **Why:** A favorable replay can coexist with another held or conflicting occurrence
