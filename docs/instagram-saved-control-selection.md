@@ -95,3 +95,58 @@ identity and cross-link exclusions, URL/observation deduplication, scarce and
 absent controls, legacy reused controls, evaluated versus planned counts,
 overlapping exclusion reasons and archive coordinates, unreadable ingestion rows,
 exclusive preparation and byte-for-byte preservation of frozen source files.
+
+## Read-only cross-run comparison report
+
+Compare one or more saved run directories without rerunning preparation or
+evaluation:
+
+```sh
+node scripts/src/instagram-saved-control-report.mjs \
+  path/to/first-run path/to/second-run \
+  --output generated-artifacts/new-control-overlap-report
+node --test scripts/src/instagram-saved-control-report.test.mjs
+```
+
+Each input directory must contain `prepared-scope.json` with a `cases` array.
+`summary.json` with a `results` array is optional: a missing summary is reported
+as unavailable evaluated evidence, **not** proof that no calls occurred. Invalid
+JSON, missing identities and invalid control-account URLs fail explicitly.
+Legacy scopes need not contain `controlCoverage`; the report derives counts
+from the saved rows, never from potentially stale aggregate fields.
+
+Without `--output`, JSON is printed to stdout. With it, `report.json` and
+`report.md` are created exclusively in a **new** directory outside all input
+archives. The output's parent must already exist. No frozen archive file is
+written, including receipts, scopes and summaries. SHA-256 fingerprints of the
+exact input bytes are recorded. Duplicate input paths (including symlinks) are
+rejected; copied runs may be compared, but their shared accounts and pairs still
+count only once in the combined union.
+
+Counting rules:
+
+- A target is a trimmed catalog `profile_id` (numeric and string forms agree),
+  not a display name, Chartmetric ID or the control source's catalog profile.
+- An account is the same normalized Instagram URL used by saved-control
+  selection: lowercase handle, canonical host and trailing slash, ignoring
+  tracking queries and fragments. A URL is not proof of stable current ownership.
+- A pair is a target ID plus normalized control-account URL. Duplicate rows
+  remain comparison **occurrences** but cannot increase distinct counts.
+- Planned controls come only from non-null `cases[].control`; all scope targets,
+  unassigned case occurrences and targets without any planned control remain visible.
+- Evaluated controls come only from `summary.results` with `variant: "control"`
+  and `status: "evaluated"`. Candidate results, held requests and unresolved calls
+  do not count as evaluated controls. Saved control statuses are shown separately.
+  An evaluated pair missing from the saved plan is retained and flagged, not
+  silently matched to another control. Gate passes are observation counts only.
+- Per-run and combined totals distinguish occurrences, distinct targets,
+  accounts and pairs. Combined totals are set unions, not sums of per-run
+  distinct totals. Pairwise overlaps and account/pair run membership expose
+  reuse even when targets or assignment patterns differ. Planned and evaluated
+  overlap are never mixed.
+
+All report counts describe **synthetic challenges**. Source ownership labels
+and model verdicts are not imported as ground truth. There is no accuracy or
+false-positive scoring, provider access, catalog write, policy change or paid
+run authorization. Distinct accounts and repeated runs do not establish
+independent ownership evidence or independent statistical coverage.

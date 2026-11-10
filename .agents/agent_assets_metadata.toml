@@ -616,3 +616,17 @@ mtime_ms = 1794276166441
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/33da28e2-eda4-4561-b018-91bca6c323e1/1cedad3d-1fc8-4561-98bf-7f9c03760d64"
 storage_version_token = "1794276323960992"
 content_type = "text/csv"
+
+[[outputs]]
+id = "b_J9baIv4Q0HwaCYBnvrM"
+uri = "file://generated-artifacts/saved-control-overlap-offline-2026-11-10/report.md"
+type = "text"
+title = "Saved control-account overlap report"
+description = "Offline report of planned versus evaluated controls, distinct counts and reuse limits. The available archive reused one control account across 20 target pairs."
+logical_id = "10ffacde-9ad5-4c53-b9e6-9c6f1adcb6fe"
+content_hash = "sha256:8e64af49565548cc90d9a79ccbced14db8e237d3daf0960b59101de0e79332bc"
+size = 2783
+mtime_ms = 1794275064118
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/10ffacde-9ad5-4c53-b9e6-9c6f1adcb6fe/d8ce0b50-5c4a-4ecb-8bc2-a6b8b46d4f69"
+storage_version_token = "1794276433452544"
+content_type = "text/markdown"
