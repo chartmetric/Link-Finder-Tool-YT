@@ -3,6 +3,19 @@
   "note": "User-reported artist/account corrections, not independently source-adjudicated benchmark labels. Never include these grading conclusions in verifier inputs.",
   "corrections": [
     {
+      "artist": "KaMAPHANGA",
+      "profileId": "3829297",
+      "cmArtist": "16226641",
+      "candidateInstagramUrl": "https://www.instagram.com/ukamaphanga/",
+      "reviewSource": "explicit_user_statement",
+      "review": "false_positive",
+      "userStatement": "False positive",
+      "ownershipLabelTier": "user_correction",
+      "independentlySourceAdjudicated": false,
+      "appliesTo": "saved_batch_review_exports",
+      "liveLinkChanged": false
+    },
+    {
       "artist": "ZHANG HAO",
       "profileId": "211637",
       "cmArtist": "11509489",
