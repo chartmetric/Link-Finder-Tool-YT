@@ -23,3 +23,4 @@
 - [Instagram capture uncertainty](instagram-capture-uncertainty.md) — explicit provider empty links do not prove the visible Instagram profile has no website.
 - [Batch results review](batch-results-review.md) — expose every findings CSV field through progressive disclosure, with visible artist names and candidate versus accepted links.
 - [CLI dependency resolution](cli-package-resolution.md) — generated runners should use workspace-local helpers for dependencies declared only in that package.
+- [Saved candidate provenance](saved-candidate-provenance.md) — local recheck captures are not the full saved search pool; snippets are not captured account metadata.
