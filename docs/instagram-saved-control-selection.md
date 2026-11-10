@@ -33,6 +33,44 @@ and any future run summary include `controlCoverage`:
   not inherit planned coverage;
 - gate-pass observations, **not** a false-positive rate.
 
+## Offline exclusion breakdown
+
+New preparation also returns `controlExclusions` and freezes it inside the new
+`prepared-scope.json` (covered by its receipt). No paid run or collection is
+needed to inspect it. `prepareSavedCaseSelection(pool, limit)` exposes the same
+diagnostic for an in-memory saved pool; `selectSavedCases` retains its array
+return value.
+
+`accounts` contains one row per normalized saved Instagram account, including
+eligible accounts, plus separate rows for observations without a valid account
+URL. Each row includes:
+
+- `eligible`, all applicable `exclusionReasons`, `assignedComparisons` and
+  `duplicateObservations`;
+- every source observation's `archive`, one-based `resultLine` in
+  `results.jsonl`, zero-based `profileIndex` in the saved profiles array, catalog
+  profile/artist IDs, artist name and original `savedUrl`;
+- observation-level `reasons` and specific `metadataIssues` (for example a
+  candidate URL not bound to the saved account or missing comparison metadata).
+  Missing source coordinates in manually supplied pools remain `null`.
+
+Reasons distinguish `unreadable_metadata`, `invalid_account_url`,
+`target_account`, `target_catalog_identity_overlap`, `target_artist_name_overlap`
+and `target_cross_link`. Reasons accumulate rather than stopping at the first
+failure. Identity reservations include transitive aliases, as before.
+`reasonCounts` counts account/report rows for each exclusion reason; **these
+counts overlap and must not be summed**. `distinctSavedAccounts`,
+`eligibleAccounts`, `excludedAccounts` and `invalidUrlObservations` keep valid
+account counts separate from unidentifiable observations.
+
+Repeated saved rows/URL aliases receive `duplicate_account_observation` at the
+observation level; duplicates cannot increase diversity but do not by themselves
+disqualify the account. An unreadable observation does not disqualify a readable
+duplicate unless the existing identity, name or cross-link rules block the group.
+Rows previously skipped because comparison metadata or a saved verification was
+missing are retained in the report as `excludedBeforeSelection`, not introduced
+into the target/control pool. Their diagnostics cannot relax or change selection.
+
 These are **cross-artist synthetic challenges**, not independently
 source-reviewed negative ownership labels. Distinct saved URLs do not establish
 independent artists, current owners, or statistical independence. Ownership
@@ -55,4 +93,5 @@ node --test scripts/src/instagram-saved-fix-rerun.test.mjs
 The fixtures forbid network access and cover deterministic rotation, global
 identity and cross-link exclusions, URL/observation deduplication, scarce and
 absent controls, legacy reused controls, evaluated versus planned counts,
+overlapping exclusion reasons and archive coordinates, unreadable ingestion rows,
 exclusive preparation and byte-for-byte preservation of frozen source files.

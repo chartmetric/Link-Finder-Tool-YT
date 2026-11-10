@@ -45,6 +45,19 @@ const readable=item=>{
 };
 const stableItemKey=item=>JSON.stringify([id(item.artist?.profile_id),id(item.artist?.cm_artist),
   item.artist?.artist,item.archive??'',item.profile,item.context,item.artist]);
+const metadataIssues=item=>{
+  const p=item.profile,c=p?.identityComparison,url=instagramProfileUrl(p?.url);
+  return [
+    !id(item.artist?.profile_id)&&'missing_profile_id',
+    !fold(item.artist?.artist??'')&&'missing_artist_name',
+    !url&&'invalid_account_url',
+    !c&&'missing_identity_comparison',
+    (!url||instagramProfileUrl(c?.candidate?.url)!==url)&&'candidate_not_account_bound',
+    !c?.reference?.url&&'missing_reference_url',
+    !c?.reference?.platform&&'missing_reference_platform',
+    item.excludedFromSavedPool&&!p?.jevVerification&&'missing_saved_verification',
+  ].filter(Boolean);
+};
 
 export async function rerunCodeFingerprint(){
   const dir=path.dirname(fileURLToPath(import.meta.url));
@@ -70,6 +83,13 @@ export function revisedProfile(original,artist){
 }
 
 export function selectSavedCases(pool,limit=20){
+  return prepareSavedCaseSelection(pool,limit).cases;
+}
+
+// The diagnostic includes rows skipped at ingestion, but those rows must not
+// become new targets/controls or change the existing conservative selection.
+export function prepareSavedCaseSelection(observations,limit=20){
+  const pool=observations.filter(item=>!item.excludedFromSavedPool);
   if(!Number.isInteger(limit)||limit<1||limit>20)throw Error('Approved comparison allows at most 20 target artists.');
   const ranked=pool.filter(x=>readable(x)&&x.profile.jevVerification
     &&x.profile.jevVerification.verdict!=='mismatch').sort((a,b)=>
@@ -101,25 +121,81 @@ export function selectSavedCases(pool,limit=20){
     if(!groups.has(url))groups.set(url,[]);
     groups.get(url).push(item);
   }
-  const controls=[...groups].filter(([url,items])=>!targetUrls.has(url)
-    &&items.some(readable)&&items.every(other=>
-      !identityKeys(other).some(key=>targetKeys.has(key))
-      &&!targetNames.has(fold(other.artist?.artist??''))
-      &&[...targetRecords].every(target=>{
-        const candidate=other.profile?.identityComparison?.candidate;
-        const reference=target.profile?.identityComparison?.reference;
-        return !candidate||!reference||(!catalogConnectionEvidence(candidate,target.artist).length
-          &&!hasCatalogCrossLink(reference,candidate,url,{platform:reference.platform,url:reference.url}));
-      })))
+  const reasonsFor=(other,url)=>{
+    const reasons=[];
+    if(!readable(other)||other.excludedFromSavedPool)reasons.push('unreadable_metadata');
+    if(!url)reasons.push('invalid_account_url');
+    if(url&&targetUrls.has(url))reasons.push('target_account');
+    if(identityKeys(other).some(key=>targetKeys.has(key)))reasons.push('target_catalog_identity_overlap');
+    if(targetNames.has(fold(other.artist?.artist??'')))reasons.push('target_artist_name_overlap');
+    if([...targetRecords].some(target=>{
+      const candidate=other.profile?.identityComparison?.candidate;
+      const reference=target.profile?.identityComparison?.reference;
+      return candidate&&reference&&(catalogConnectionEvidence(candidate,target.artist).length
+        ||(url&&hasCatalogCrossLink(reference,candidate,url,{platform:reference.platform,url:reference.url})));
+    }))reasons.push('target_cross_link');
+    return reasons;
+  };
+  const groupReasons=(url,items)=>[
+    ...(!items.some(readable)?['unreadable_metadata']:[]),
+    ...[...new Set(items.flatMap(item=>reasonsFor(item,url).filter(reason=>reason!=='unreadable_metadata')))].sort(compare),
+  ];
+  const controls=[...groups].filter(([url,items])=>!groupReasons(url,items).length)
     .sort(([a],[b])=>compare(a,b))
     .map(([,items])=>items.filter(readable).sort((a,b)=>compare(stableItemKey(a),stableItemKey(b)))[0]);
   // Use each distinct normalized saved account once before balanced reuse.
   // No suitable account is not a reason to silently remove a target.
-  return targets.map((item,index)=>{
+  const cases=targets.map((item,index)=>{
     const control=controls.length?controls[index%controls.length]:null;
     return {...item,control:control?{artist:control.artist.artist,profileId:control.artist.profile_id,
       profile:control.profile,kind:'cross_artist_synthetic_challenge',ownershipLabel:null}:null};
   });
+  const reportGroups=new Map();
+  for(const item of observations){
+    const url=instagramProfileUrl(item.profile?.url);
+    // Invalid URLs cannot safely be equated to each other.
+    const key=url??Symbol();
+    if(!reportGroups.has(key))reportGroups.set(key,{url,items:[]});
+    reportGroups.get(key).items.push(item);
+  }
+  const accounts=[...reportGroups.values()].map(({url,items})=>{
+    const active=items.filter(item=>!item.excludedFromSavedPool);
+    const exclusionReasons=!url?['unreadable_metadata','invalid_account_url']
+      :active.length?groupReasons(url,active):['unreadable_metadata'];
+    const representative=controls.find(item=>instagramProfileUrl(item.profile.url)===url);
+    const ordered=[...items].sort((a,b)=>compare(stableItemKey(a),stableItemKey(b))
+      ||compare(a.resultLine??0,b.resultLine??0)||compare(a.profileIndex??0,b.profileIndex??0));
+    const firstIndex=representative?ordered.indexOf(representative):0;
+    return {
+      accountUrl:url,eligible:exclusionReasons.length===0,exclusionReasons,
+      duplicateObservations:url?items.length-1:0,
+      assignedComparisons:url?cases.filter(c=>c.control&&instagramProfileUrl(c.control.profile.url)===url).length:0,
+      observations:ordered.map((item,index)=>({
+        archive:item.archive??null,resultLine:item.resultLine??null,profileIndex:item.profileIndex??null,
+        profileId:id(item.artist?.profile_id)||null,cmArtist:id(item.artist?.cm_artist)||null,
+        artist:item.artist?.artist??null,savedUrl:item.profile?.url??null,
+        excludedBeforeSelection:item.excludedFromSavedPool===true,
+        metadataIssues:metadataIssues(item),
+        reasons:[...reasonsFor(item,url),...(url&&index!==firstIndex?['duplicate_account_observation']:[])],
+      })),
+    };
+  }).sort((a,b)=>compare(a.accountUrl??'',b.accountUrl??'')||compare(JSON.stringify(a),JSON.stringify(b)));
+  const reasonCounts={};
+  for(const account of accounts)for(const reason of account.exclusionReasons)
+    reasonCounts[reason]=(reasonCounts[reason]??0)+1;
+  return {cases,controlExclusions:{
+    sourceObservations:observations.length,distinctSavedAccounts:accounts.filter(a=>a.accountUrl).length,
+    eligibleAccounts:accounts.filter(a=>a.eligible).length,
+    excludedAccounts:accounts.filter(a=>a.accountUrl&&!a.eligible).length,
+    invalidUrlObservations:accounts.filter(a=>!a.accountUrl).length,
+    duplicateObservations:accounts.reduce((sum,a)=>sum+a.duplicateObservations,0),
+    reasonCounts,accounts,
+    note:'Offline selection diagnostics only; no ownership labels are inferred. Reasons overlap and counts are not additive. '
+      +'Duplicate observations do not supply distinct controls; an otherwise eligible account remains usable once before reuse. '
+      +'Unreadable observations do not block a readable duplicate unless an existing identity/name/cross-link exclusion applies. '
+      +'Rows skipped before selection are reported but do not change selection. Source archives are unchanged; '
+      +'resultLine is one-based in results.jsonl and profileIndex is zero-based in the saved profiles array.',
+  }};
 }
 
 export function summarizeSavedControls(cases,results=[]){
@@ -160,22 +236,27 @@ export async function prepareSavedFixRerun({directories,auditFile,outputDir,prio
     const overlayText=await fs.readFile(path.join(dir,'artist-context-evidence.json'),'utf8');
     const manifest=JSON.parse(manifestText),overlay=JSON.parse(overlayText);
     inputs.push({directory:dir,manifestSha256:hash(manifestText),resultsSha256:hash(resultsText),overlaySha256:hash(overlayText)});
-    for(const result of resultsText.split('\n').filter(Boolean).map(JSON.parse)){
+    for(const [lineIndex,line]of resultsText.split('\n').entries()){
+      if(!line)continue;
+      const result=JSON.parse(line);
       const artist=manifest.artists.find(a=>String(a.profile_id)===String(result.profileId));
       const packet=overlay.packets.find(p=>String(p.profileId)===String(result.profileId));
       if(!artist||!packet||String(packet.cmArtist)!==String(artist.cm_artist))throw Error('Frozen metadata identity mismatch.');
       const context=artistContextFromPacket(packet);
-      for(const profile of (result.rawResult??result.partialEvidence)?.profiles??[]){
-        if(!profile.identityComparison||!profile.jevVerification)continue;
+      for(const [profileIndex,profile]of ((result.rawResult??result.partialEvidence)?.profiles??[]).entries()){
+        const source={artist,profile,context,archive:dir,resultLine:lineIndex+1,profileIndex};
+        if(!profile.identityComparison||!profile.jevVerification){
+          pool.push({...source,excludedFromSavedPool:true});continue;
+        }
         const finding=audit.rows.find(r=>r.profile_id===String(result.profileId)&&r.instagram_link===profile.url);
         if(!finding)throw Error('Saved candidate is absent from the completed audit.');
         const priority=finding.priority==='Review unused supporting evidence'?0
           :finding.priority==='Review missing link-path evidence'?1:2;
-        pool.push({artist,profile,context,priority,archive:dir});
+        pool.push({...source,priority});
       }
     }
   }
-  const cases=selectSavedCases(pool);
+  const {cases,controlExclusions}=prepareSavedCaseSelection(pool);
   if(!cases.length)throw Error('No readable saved candidates eligible for comparison.');
   const controlCoverage=summarizeSavedControls(cases);
   const maxCalls=cases.length+controlCoverage.assignedComparisons;
@@ -193,12 +274,12 @@ export async function prepareSavedFixRerun({directories,auditFile,outputDir,prio
       global_concurrent_provider_requests:1,per_request_timeout_seconds:25,job_wall_time_minutes:15,
       jev_max_input_tokens_per_request:6000,jev_max_output_tokens_per_request:1000,automatic_retries:0}};
   await fs.mkdir(outputDir,{recursive:false});
-  const scope={manifest,cases,inputs,controlCoverage,preparedAt:new Date().toISOString(),paidCalls:0,
+  const scope={manifest,cases,inputs,controlCoverage,controlExclusions,preparedAt:new Date().toISOString(),paidCalls:0,
     missingMetadata:'Audit entries without readable saved identity metadata are not substituted or fetched.',
     prerequisites:['Both requested fixes merged; combined offline validation passes before run.']};
   await save(path.join(outputDir,'prepared-scope.json'),scope);
   await save(path.join(outputDir,'prepared-scope-receipt.json'),{sha256:hash(JSON.stringify(scope))});
-  return {artists:cases.length,maxCalls,worstCaseReservedUsd:maxCalls*0.02,controlCoverage,
+  return {artists:cases.length,maxCalls,worstCaseReservedUsd:maxCalls*0.02,controlCoverage,controlExclusions,
     cappedAtUsd:1,unusedSupportCases:cases.filter(c=>c.priority===0).length,paidCalls:0,outputDir};
 }
 

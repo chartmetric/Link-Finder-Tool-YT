@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
-import {selectSavedCases,summarizeSavedControls,revisedProfile,runSavedFixRerun,rerunCodeFingerprint,prepareSavedFixRerun} from './instagram-saved-fix-rerun.mjs';
+import {selectSavedCases,prepareSavedCaseSelection,summarizeSavedControls,revisedProfile,runSavedFixRerun,rerunCodeFingerprint,prepareSavedFixRerun} from './instagram-saved-fix-rerun.mjs';
 
 test.beforeEach(t=>{
   t.mock.method(globalThis,'fetch',()=>{throw Error('Network forbidden in offline control fixtures');});
@@ -135,6 +135,76 @@ test('scarce and absent controls retain targets and disclose missing diversity w
   }
   assert.equal(summarizeSavedControls([]).diversityStatus,'insufficient_control_diversity');
 });
+test('offline exclusions retain multiple reasons, duplicate sources and transitive identity reservations',()=>{
+  const target=make(1),overlap=control(81);
+  overlap.artist.cm_artist=target.artist.cm_artist;
+  overlap.artist.artist='MUSICIAN-1';
+  overlap.profile.identityComparison.candidate.directExternalUrls=[target.artist.accounts[0].account_url];
+  overlap.profile.identityComparison.candidate.url='https://www.instagram.com/unbound/';
+  const duplicate=bindUrl(control(82),'https://m.instagram.com/ARTIST_81/?from=frozen');
+  duplicate.profile.identityComparison.candidate.externalUrls=[target.profile.identityComparison.reference.url];
+  const transitive=control(83);transitive.artist.account_ids=overlap.artist.account_ids;
+  const good=control(99),goodDuplicate=structuredClone(good);
+  const pool=[target,overlap,duplicate,transitive,good,goodDuplicate].map((item,i)=>({
+    ...item,archive:`frozen-${i}`,resultLine:i+2,profileIndex:0,
+  }));
+  const before=JSON.stringify(pool);
+  const {cases,controlExclusions:report}=prepareSavedCaseSelection(pool,1);
+  assert.equal(JSON.stringify(pool),before);
+  assert.deepEqual(prepareSavedCaseSelection([...pool].reverse(),1),{cases,controlExclusions:report});
+  assert.equal(cases[0].control.profileId,'99');
+  const excluded=report.accounts.find(a=>a.accountUrl===overlap.profile.url);
+  assert.equal(excluded.eligible,false);
+  assert.deepEqual(new Set(excluded.exclusionReasons),new Set([
+    'target_account','target_catalog_identity_overlap',
+    'target_artist_name_overlap','target_cross_link',
+  ])); // a readable duplicate exists
+  const observation=excluded.observations.find(o=>o.profileId==='81');
+  for(const reason of ['unreadable_metadata','target_account','target_catalog_identity_overlap',
+    'target_artist_name_overlap','target_cross_link'])assert.ok(observation.reasons.includes(reason));
+  assert.deepEqual(observation.metadataIssues,['candidate_not_account_bound']);
+  assert.equal(observation.archive,'frozen-1');
+  assert.equal(observation.resultLine,3);
+  assert.equal(observation.profileIndex,0);
+  assert.equal(excluded.duplicateObservations,1);
+  assert.equal(excluded.observations.filter(o=>o.reasons.includes('duplicate_account_observation')).length,1);
+  assert.ok(report.accounts.find(a=>a.accountUrl===transitive.profile.url).exclusionReasons
+    .includes('target_catalog_identity_overlap'));
+  const eligible=report.accounts.find(a=>a.accountUrl===good.profile.url);
+  assert.equal(eligible.eligible,true);
+  assert.deepEqual(eligible.exclusionReasons,[]);
+  assert.equal(eligible.observations.filter(o=>o.reasons.includes('duplicate_account_observation')).length,1);
+  assert.equal(report.eligibleAccounts,1);
+  assert.equal(report.excludedAccounts,3);
+  assert.equal(report.duplicateObservations,2);
+  assert.equal(report.sourceObservations,6);
+  assert.equal(report.reasonCounts.target_cross_link,2);
+  assert.equal(report.reasonCounts.target_catalog_identity_overlap,3);
+  assert.equal(cases[0].control.ownershipLabel,null);
+});
+test('unreadable and invalid observations remain traceable without inventing accounts or blocking readable duplicates',()=>{
+  const bad=control(81);delete bad.profile.identityComparison;
+  const unbound=control(82);unbound.profile.identityComparison.candidate.url=make(83).profile.url;
+  const invalid=control(84);invalid.profile.url='not-an-account';
+  const skipped={...control(85),excludedFromSavedPool:true};delete skipped.profile.jevVerification;
+  const good=control(99),missing=structuredClone(good);delete missing.profile.identityComparison;
+  const pool=[make(1),bad,unbound,invalid,skipped,good,missing];
+  const {cases,controlExclusions:report}=prepareSavedCaseSelection(pool,1);
+  assert.equal(cases[0].control.profileId,'99');
+  assert.equal(report.invalidUrlObservations,1);
+  assert.equal(report.reasonCounts.unreadable_metadata,4);
+  assert.equal(report.reasonCounts.invalid_account_url,1);
+  const unreadable=report.accounts.find(a=>a.accountUrl===bad.profile.url);
+  assert.deepEqual(unreadable.exclusionReasons,['unreadable_metadata']);
+  assert.ok(unreadable.observations[0].metadataIssues.includes('missing_identity_comparison'));
+  const preExcluded=report.accounts.find(a=>a.accountUrl===skipped.profile.url);
+  assert.deepEqual(preExcluded.exclusionReasons,['unreadable_metadata']);
+  assert.equal(preExcluded.observations[0].excludedBeforeSelection,true);
+  assert.deepEqual(preExcluded.observations[0].metadataIssues,['missing_saved_verification']);
+  assert.equal(report.accounts.find(a=>a.accountUrl===good.profile.url).eligible,true);
+  assert.equal(report.accounts.find(a=>a.accountUrl===null).observations[0].savedUrl,'not-an-account');
+  assert.equal(report.reasonCounts.target_cross_link,1); // no null-URL cross-link false match
+});
 test('evaluated counts separate occurrences, target/account pairs and distinct accounts',()=>{
   const cases=selectSavedCases([...targets(4),control(81)],4),url=cases[0].control.profile.url;
   const results=[
@@ -207,10 +277,14 @@ test('offline preparation persists scarcity reports and preserves frozen input b
   const archive=path.join(root,'frozen');await fs.mkdir(archive);
   // Every saved artist becomes a target: no unrelated control remains.
   const pool=targets(3);
+  const unreadable=control(81);delete unreadable.profile.identityComparison;
+  const missingDecision=control(82);delete missingDecision.profile.jevVerification;
+  const archived=[...pool,unreadable,missingDecision];
   const files={
-    'approved-manifest.json':JSON.stringify({artists:pool.map(x=>x.artist)}),
-    'results.jsonl':pool.map(x=>JSON.stringify({profileId:x.artist.profile_id,rawResult:{profiles:[x.profile]}})).join('\n'),
-    'artist-context-evidence.json':JSON.stringify({packets:pool.map(x=>({
+    'approved-manifest.json':JSON.stringify({artists:archived.map(x=>x.artist)}),
+    'results.jsonl':archived.map((x,i)=>JSON.stringify({profileId:x.artist.profile_id,
+      [i===4?'partialEvidence':'rawResult']:{profiles:[x.profile]}})).join('\n\n'),
+    'artist-context-evidence.json':JSON.stringify({packets:archived.map(x=>({
       profileId:x.artist.profile_id,cmArtist:x.artist.cm_artist,platformSnapshots:[],spotifyMetadata:[],tags:[],
     }))}),
   };
@@ -228,6 +302,18 @@ test('offline preparation persists scarcity reports and preserves frozen input b
   assert.equal(report.controlCoverage.diversityStatus,'insufficient_control_diversity');
   const scope=JSON.parse(await fs.readFile(path.join(outputDir,'prepared-scope.json'),'utf8'));
   assert.deepEqual(scope.controlCoverage,report.controlCoverage);
+  assert.deepEqual(scope.controlExclusions,report.controlExclusions);
+  assert.equal(report.controlExclusions.sourceObservations,5);
+  assert.equal(report.controlExclusions.eligibleAccounts,0);
+  assert.equal(report.controlExclusions.excludedAccounts,5);
+  assert.equal(report.controlExclusions.reasonCounts.unreadable_metadata,2);
+  const omitted=scope.controlExclusions.accounts.find(a=>a.accountUrl===missingDecision.profile.url);
+  assert.equal(omitted.observations[0].archive,archive);
+  assert.equal(omitted.observations[0].resultLine,9);
+  assert.equal(omitted.observations[0].profileIndex,0);
+  assert.equal(omitted.observations[0].excludedBeforeSelection,true);
+  assert.deepEqual(omitted.observations[0].metadataIssues,['missing_saved_verification']);
+  assert.equal(scope.inputs[0].resultsSha256,createHash('sha256').update(files['results.jsonl']).digest('hex'));
   assert.deepEqual(scope.manifest.selection.controlCoverage,report.controlCoverage);
   assert.equal(scope.manifest.run_allowed,false);
   assert.equal(scope.manifest.proposed_limits.jev_requests_total,3);
