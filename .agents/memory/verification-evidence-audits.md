@@ -114,3 +114,14 @@ tell us whether its request received all discovered post evidence.
 
 **How to apply:** Show unavailable counts explicitly; distinguish saved result
 audits from original request diagnostics and keep both separate from verdicts.
+
+Supplemental saved catalog metadata does not inherit the archived discovery
+batch's spending authorization.
+
+**Why:** The user requires verification-only reuse of archived candidates, with
+explicit spending approval even when the metadata is already available.
+
+**How to apply:** Prepare offline first, bind new approval to the exact saved
+evidence and candidate scope, preserve historical packets and source dates, and
+retain non-replayable admissions. Never repeat discovery or enable experimental
+acceptance as a side effect of supplementing evidence.
