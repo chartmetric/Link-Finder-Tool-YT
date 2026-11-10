@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "note": "User-reported artist/account corrections, not independently source-adjudicated benchmark labels. Never include these grading conclusions in verifier inputs.",
+  "corrections": [
+    {
+      "artist": "ZHANG HAO",
+      "profileId": "211637",
+      "cmArtist": "11509489",
+      "candidateInstagramUrl": "https://www.instagram.com/_.zhang._hao/",
+      "reviewSource": "explicit_user_statement",
+      "review": "false_positive",
+      "userStatement": "false positive",
+      "ownershipLabelTier": "user_correction",
+      "independentlySourceAdjudicated": false,
+      "appliesTo": "saved_batch_review_exports",
+      "liveLinkChanged": false
+    }
+  ]
+}

@@ -924,3 +924,31 @@ mtime_ms = 1794336122099
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/5a12b3d4-d1cf-4750-8eea-954ea96433d4/0748608c-3240-4450-82fa-93c65b883faa"
 storage_version_token = "1794336145804392"
 content_type = "text/csv"
+
+[[outputs]]
+id = "eZvjr3HkKRgEdVg5yYQBM"
+uri = "file://generated-artifacts/next-saved-500-usd20/account-context-recheck-results/user-reviewed-likely-matches.csv"
+type = "table"
+title = "User-reviewed likely matches — 6 artists"
+description = "ZHANG HAO’s reported false positive has been excluded. All metadata retained."
+logical_id = "87dbf980-9f39-43fc-84e1-aaaf5a283dc6"
+content_hash = "sha256:550a996b57feef3dd9faa3c4fa55d15dc57f66cd70a589a4f0d2a362ba6a0217"
+size = 86979
+mtime_ms = 1794336840631
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/87dbf980-9f39-43fc-84e1-aaaf5a283dc6/f469768f-f9dc-47c3-9cc3-5a6c68facfc5"
+storage_version_token = "1794336852161653"
+content_type = "text/csv"
+
+[[outputs]]
+id = "s9Ey1gonXL2zAztZiBd71"
+uri = "file://generated-artifacts/next-saved-500-usd20/account-context-recheck-results/user-reviewed-not-accepted.csv"
+type = "table"
+title = "User-reviewed not accepted — 14 artists"
+description = "Includes ZHANG HAO marked as a user-reported false positive, with the original model assessment preserved separately."
+logical_id = "eace1be6-917e-4dd7-8c9c-5c0dfd3d0e28"
+content_hash = "sha256:d1975419f43c84d79581b5610dea38f8343d61685d7932417e4e8bc782ac5ca3"
+size = 216543
+mtime_ms = 1794336840639
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/eace1be6-917e-4dd7-8c9c-5c0dfd3d0e28/c9ee9f2a-edab-4bb2-8b9b-a1d4e6a059d4"
+storage_version_token = "1794336852923812"
+content_type = "text/csv"
