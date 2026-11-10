@@ -1,13 +1,14 @@
 // Experimental contract only. No HTTP, credentials, persistence, claims or live imports.
 import {createHash} from 'node:crypto';
 import {assessInstagramCandidates,catalogReferences,instagramProfileUrl,referenceUrl} from './musician-instagram-matching.mjs';
+import {catalogProfileIdentity} from './catalog-profile-identity.mjs';
 
 export const OFFLINE_SOURCE_POLICY='trusted-website-offline-v1';
 const forbidden=new Set(['expectedArtistOwned','labelEvidence','labelTier','adjudication','stratum']);
 const sha=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const canonical=value=>{
   try {const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password&&!u.port
-    ? `${u.origin}${u.pathname.replace(/\/+$/,'')||'/'}`:null;}catch{return null;}
+    ? u.href:null;}catch{return null;}
 };
 const bound=(metadata,url,normalize)=>[metadata?.url,...(metadata?.urlAliases??[])].some(u=>normalize(u)===url);
 const fresh=(at,now,maxAge)=>typeof at==='string'&&Number.isFinite(Date.parse(at))
@@ -84,7 +85,9 @@ export function assessOfflineSourcePolicy({player,result,websiteEvidence=[],conf
       // Only an existing catalog-bound reference may establish domain trust.
       // Search hits, candidate self-links and page self-assertions cannot.
       if(e.catalogDeclaration.kind!=='catalog_reference_external_links'
-        ||referenceUrl(e.catalogDeclaration.sourceUrl,reference.platform)!==reference.url
+        ||catalogProfileIdentity(e.catalogDeclaration.sourceUrl,reference.platform)!==reference.url
+        ||(e.catalogDeclaration.finalUrl!==undefined
+          &&catalogProfileIdentity(e.catalogDeclaration.finalUrl,reference.platform)!==reference.url)
         ||!e.catalogDeclaration.links.some(u=>canonical(u)===canonical(e.page.sourceUrl)))return false;
       const ig=e.page.links.filter(l=>l&&l.contextKind==='artist_specific'
         &&instagramProfileUrl(l.url)===url&&typeof l.contextId==='string'&&l.contextId.length>0);

@@ -14,7 +14,8 @@ node --test scripts/src/instagram-source-policy-offline.test.mjs
 ```
 
 The isolated module is `scripts/src/instagram-source-policy-offline.mjs`. It
-imports only Node hashing and the current pure candidate gate. It is not imported
+imports only Node hashing, a pure catalog-profile URL normalizer and the current
+pure candidate gate. It is not imported
 by the live research runner or API. Every result is labeled offline-only,
 production-unapproved and claims-disallowed. `simulationUrls` are not an export
 or an approved-link field.
@@ -52,6 +53,117 @@ No source-reviewed grading fixture is converted into a trust declaration.
 Replay must retain the original verifier request hash. Supplying new website
 observations to this policy simulation does not establish that an earlier JEV
 response saw those observations or predict a fresh model verdict.
+
+## Independent catalog website acquisition (offline only)
+
+`scripts/src/catalog-website-source.mjs` supplies declarations to this harness,
+not to live matching. It prefers original archived catalog-profile HTTP bodies;
+it does **not** promote historical `referenceMetadata.externalUrls`, search
+receipts, candidate self-links, known-answer labels, or the three grading sites
+into declarations. Missing raw source context remains explicitly unresolved.
+
+The supported source layouts are deliberately narrow:
+
+- Spotify: a unique inert `__NEXT_DATA__` JSON script, exact artist URI/type
+  under `props.pageProps.state.data.entity`, and website-labeled entries in
+  that entity's `externalLinks.items`.
+- YouTube: a unique inert `ytInitialData` assignment, exact channel metadata,
+  and website-labeled `primaryLinks` in the selected About tab's
+  `channelAboutFullMetadataRenderer`. Handle-based catalog accounts require an
+  exact metadata handle URL; a channel ID alone cannot bind an unrelated handle.
+- Only labels `Website` / `Official Website` are admitted. Arbitrary bio anchors,
+  publisher/global footers, descriptions, recommended channels and social/search
+  links are ineligible. Unsupported/currently changed layouts remain unresolved;
+  the synthetic fixtures do not claim every current public page uses these shapes.
+
+Raw archives use this input contract (body is the original UTF-8 HTML string):
+
+```json
+{
+  "kind": "catalog_profile_http",
+  "sourceUrl": "https://open.spotify.com/artist/AAAAAAAAAAAAAAAAAAAAAA",
+  "finalUrl": "https://open.spotify.com/artist/AAAAAAAAAAAAAAAAAAAAAA",
+  "observedAt": "2026-11-09T19:00:00Z",
+  "status": 200,
+  "body": "<original HTML>",
+  "bodySha256": "<SHA-256 of original HTML bytes>",
+  "redirects": []
+}
+```
+
+Redirects must form a contiguous chain, retaining each
+`{sourceUrl, finalUrl, status}` hop. Both ends must retain the exact catalog
+identity. Only profile/About and Spotify artist/embed representations are
+supported, not external redirect destinations or another artist. The source
+and final URLs remain distinct in the output; the policy independently checks
+both against the reference. If an original `packetSha256` exists, it must
+validate and is retained as `originalPacketSha256`. Every output includes the
+raw archive packet digest, body hash, original observation time, selected link
+label/URL/structured field path, active catalog account IDs and catalog-input
+snapshot hash, and a digest of the complete declaration.
+Digests detect modification, **not authenticity** of caller-supplied archives.
+Archive producers and active catalog snapshots must have independent provenance.
+Unknown observation times are never filled with a file date or replay time.
+
+The newest matching archive is considered first, including failed/removed
+declarations. A newer missing or invalid declaration cannot be rescued by an older
+favorable page. Conflicting captures at the same time stay unresolved. Freshness
+requires an explicit evaluation time and maximum age; no window is recommended.
+
+### Running the local adapter
+
+```sh
+node --test scripts/src/catalog-website-source.test.mjs \
+  scripts/src/instagram-source-policy-offline.test.mjs
+node scripts/src/collect-catalog-website-sources.mjs \
+  --input generated-artifacts/source-trust/manifest.json \
+  --out generated-artifacts/source-trust/report.json
+```
+
+The manifest contains `player` in the gate's existing catalog-account shape
+(`profile_id`, active `account_ids`, `accounts`), `now` as ISO time or epoch
+milliseconds, `maxEvidenceAgeMs`, optional `archives` / `archiveFiles`, and optional
+already captured/sealed `pages`. File paths are workspace-relative. Output is
+created exclusively under ignored `generated-artifacts/`; existing files are not
+overwritten. Input bodies total at most 20 MB, individual bodies at most 2 MB,
+input files at most 5 MB, and supported catalog references at most 20.
+No source site, artist exception or grading answer is hardcoded into acquisition.
+
+`declarations` are sealed `catalog_reference_external_links` packets.
+`websiteEvidence` joins them only to supplied page snapshots at the **exact
+declared page**, not all URLs on that domain. Both the join and gate compare the
+full normalized HTTPS URL, retaining query parameters, fragments, and path
+trailing slashes; query-selected artist pages cannot share declarations.
+Page same-artist-section evidence,
+packet validity/freshness, ownership context and verifier identity/request hash
+still have to pass the offline gate. This is not general webpage extraction and
+never creates missing page context or modifies benchmark labels.
+
+### Optional bounded public acquisition
+
+No public fetching was authorized merely by adding this adapter. It is disabled
+unless the caller explicitly opts in. The CLI additionally requires
+`--allow-public-fetch` and explicit manifest `publicFetch` limits:
+`maxRequests` (1–20), `maxBytes` (1–2,000,000), `timeoutMs` (1–15,000) and
+`maxRedirects` (0–3). There are no implicit limits, retries, credentials or paid
+fallbacks. Valid archived declarations avoid public requests.
+
+The separate `catalog-website-source-fetch.mjs` reader requests only fixed
+Spotify/YouTube profile hosts bound to active references. It uses HTTPS with
+normal TLS hostname validation, exclusively public IPv4 DNS results, DNS/socket
+pinning, manual same-identity redirects, no agent/proxy/cookies/auth, identity
+encoding, response byte caps and a deadline spanning DNS plus HTTP. Every hop
+consumes the shared request budget, including failures. Declared artist sites
+are **never fetched**. Safe transport alone does not establish source trust:
+the captured body must separately pass the structured context/identity validator.
+
+Public captures preserve actual acquisition time and are returned in
+`capturedArchives`, including safe but context-invalid captures. Because acquisition
+finishes after preflight, `sourceEvaluationTime` reports the later actual check
+time. Gate replay must use an explicit time at or after the captures and independently
+enforce its freshness windows. Old archive times are never refreshed by fetching
+or re-adaptation. Neither public acquisition nor a successful simulation grants
+production approval, approves spending or establishes population accuracy.
 
 ## Unresolved parameters stay explicit
 

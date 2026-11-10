@@ -28,3 +28,14 @@ the evaluation circular even if no answer label appeared in the model request.
 not just verifier input. Missing automatic domain-trust evidence must remain
 missing. Synthetic trust packets can test rule behavior but cannot qualify real
 benchmark artists or establish production readiness.
+
+Keep website source trust scoped to the declared page, not account-URL aliases
+or the shared domain.
+
+**Why:** Website queries and fragments can select different artists on the same
+host. URL equivalence suitable for music account IDs can therefore transfer
+source trust to the wrong artist's page.
+
+**How to apply:** Preserve the complete normalized website URL across acquisition,
+evidence joins and acceptance checks. Do not reuse account-specific URL cleanup
+to decide that two website observations are the same evidence source.
