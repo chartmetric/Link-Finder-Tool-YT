@@ -602,3 +602,17 @@ mtime_ms = 1794275736086
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/9628aab1-235e-4a1f-93de-8762aed55a3e/0e5668bb-6178-470d-8302-6556783b6502"
 storage_version_token = "1794275787108794"
 content_type = "text/csv"
+
+[[outputs]]
+id = "W6cSr-ekOT1c-oHddjed3"
+uri = "file://generated-artifacts/verification-test-preparation/approved-execution/artist-instagram-findings.csv"
+type = "table"
+title = "Artist Instagram test results"
+description = "Completed 24-check comparison for six artists and six distinct comparison accounts. Includes names, Instagram links, fresh scores, decisions, reasons, all supplied metadata and the complete inputs. Results are for review only; no live links were changed."
+logical_id = "33da28e2-eda4-4561-b018-91bca6c323e1"
+content_hash = "sha256:c558ef7450da9d7a70280e30eeb4869c7c0a82ffee3971bc28c675ac0e9aa195"
+size = 168624
+mtime_ms = 1794276166441
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/33da28e2-eda4-4561-b018-91bca6c323e1/1cedad3d-1fc8-4561-98bf-7f9c03760d64"
+storage_version_token = "1794276323960992"
+content_type = "text/csv"
