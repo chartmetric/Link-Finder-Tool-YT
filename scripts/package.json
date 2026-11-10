@@ -11,6 +11,8 @@
     "instagram:check-corroborated-policy": "node src/instagram-corroborated-policy-check.mjs",
     "instagram:prepare-paired-test": "node src/instagram-paired-verification-prep.mjs",
     "test:instagram-paired-test": "node --test src/instagram-paired-verification-prep.test.mjs",
+    "test:instagram-contextual-identity": "node --test src/instagram-contextual-identity.test.mjs src/instagram-contextual-identity-check.test.mjs",
+    "instagram:check-contextual-identity": "node src/instagram-contextual-identity-check.mjs",
     "instagram:correction-readiness": "node ./src/musician-instagram-research.mjs correction-readiness",
     "instagram:run-correction": "node ./src/musician-instagram-research.mjs run-correction",
     "test:instagram-readiness": "node --test src/instagram-correction-readiness.test.mjs",

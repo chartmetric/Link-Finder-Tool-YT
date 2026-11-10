@@ -672,3 +672,31 @@ mtime_ms = 1794278806438
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/ecf0781b-06a9-45e1-bb23-f6294c968799/f7f8595c-d137-4a4a-90eb-6d3690f09b1b"
 storage_version_token = "1794278884207130"
 content_type = "text/csv"
+
+[[outputs]]
+id = "CkQ5R7U6I8doD8rx4gmUM"
+uri = "file://generated-artifacts/saved-bulk-approved-500-usd20/shared-rule-fix-offline/latest-500-artists.csv"
+type = "table"
+title = "500 artists: before-and-after comparison"
+description = "Offline comparison using saved evidence and unchanged original model answers. Not fresh verification or live-link approval."
+logical_id = "34138814-a4f5-4577-8911-a94bf9e7cfc2"
+content_hash = "sha256:5ed77133be8ee349ba6e887f61611fdfd9d66edabe4c277fdb042b1fe5720a0d"
+size = 53858
+mtime_ms = 1794279841624
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/34138814-a4f5-4577-8911-a94bf9e7cfc2/0b1ba6dc-b6b2-42dc-a882-9365ed911d2f"
+storage_version_token = "1794280021353811"
+content_type = "text/csv"
+
+[[outputs]]
+id = "4olUSTyxzjizSGqNRU-mB"
+uri = "file://generated-artifacts/saved-bulk-approved-500-usd20/shared-rule-fix-offline/candidate-impact.csv"
+type = "table"
+title = "All candidates: rule changes and remaining holds"
+description = "947 candidate or missing-evidence rows, original scores, before/after reasons, source routes and unsent-request preparation holds. No new paid calls."
+logical_id = "86394532-f943-4062-a1a7-142f19a12c86"
+content_hash = "sha256:9cdf88794c6bd57cf08d3e1bcf3ad52ac31cfc4b3bc734611cf72d83a8f6227a"
+size = 346208
+mtime_ms = 1794279841618
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/86394532-f943-4062-a1a7-142f19a12c86/4bd91db3-9fae-40b4-8c13-ae64f1cc54c4"
+storage_version_token = "1794280021965326"
+content_type = "text/csv"

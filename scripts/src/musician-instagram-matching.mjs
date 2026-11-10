@@ -2,8 +2,8 @@
 // as claims and processed by the external resolver; nothing here writes claims.
 export const MATCHING_POLICY = 'catalog-reference-identity-v1';
 import { declaredInstagramLinks } from './instagram-reference-links.mjs';
-import {CORROBORATED_POLICY, corroboratedCandidate, assertNoGradingInputs} from './instagram-corroborated-policy.mjs';
-export {CORROBORATED_POLICY} from './instagram-corroborated-policy.mjs';
+import {CORROBORATED_POLICY, IDENTITY_CONTEXT_POLICY, corroboratedCandidate, assertNoGradingInputs} from './instagram-corroborated-policy.mjs';
+export {CORROBORATED_POLICY, IDENTITY_CONTEXT_POLICY} from './instagram-corroborated-policy.mjs';
 
 export function instagramProfileUrl(value) {
   try {
@@ -150,10 +150,10 @@ function assess(profile, player, references) {
 }
 
 export function assessInstagramCandidates(result, player = {}, options = {}) {
-  if (options.policy !== undefined && ![MATCHING_POLICY, CORROBORATED_POLICY].includes(options.policy)) {
+  if (options.policy !== undefined && ![MATCHING_POLICY, CORROBORATED_POLICY, IDENTITY_CONTEXT_POLICY].includes(options.policy)) {
     throw Error('Unknown matching policy.');
   }
-  if (options.policy === CORROBORATED_POLICY && options.mode !== 'offline') {
+  if ([CORROBORATED_POLICY,IDENTITY_CONTEXT_POLICY].includes(options.policy) && options.mode !== 'offline') {
     throw Error('The corroborated policy requires explicit offline mode; live activation is not approved.');
   }
   if (!result.methodsUsed?.some(method => method.method === 'serper' && method.status === 'used')) {
@@ -161,20 +161,21 @@ export function assessInstagramCandidates(result, player = {}, options = {}) {
   }
   if (!Array.isArray(result.profiles)) throw new Error('Search did not return a candidate list; absence cannot be assessed.');
   const references = catalogReferences(player);
-  if (options.policy === CORROBORATED_POLICY) {
+  if ([CORROBORATED_POLICY,IDENTITY_CONTEXT_POLICY].includes(options.policy)) {
     assertNoGradingInputs({result, player, context:options.context});
     const currentReferences = catalogReferences({...player, accounts:(player.accounts ?? [])
       .filter(a => a.is_active !== false && a.is_active !== 0)});
     const candidates = result.profiles.map(profile => corroboratedCandidate({
       profile, player, references:currentReferences, context:options.context,
       tools:{instagramProfileUrl, referenceUrl, fullNamePresent, catalogConnectionEvidence},
+      contextualIdentity:options.policy===IDENTITY_CONTEXT_POLICY,
     }));
     const proposed = [...new Set(candidates.filter(c => c.status === 'supported').map(c => c.url))]
       .filter(url => candidates.filter(c => c.url === url).every(c => c.status === 'supported'));
     for (const c of candidates) if (c.status === 'supported' && !proposed.includes(c.url)) {
       c.status = 'needs_review'; c.route = 'hold'; c.reason = 'conflicting_duplicate_occurrence';
     }
-    return {policy:CORROBORATED_POLICY, profileId:String(player.profile_id ?? ''),
+    return {policy:options.policy, profileId:String(player.profile_id ?? ''),
       cmArtist:String(player.cm_artist ?? ''), status:'offline_simulation', candidates,
       simulationUrls:proposed, urls:[], offlineOnly:true, productionApproved:false,
       approvedCatalogLinks:false, noAccountConfirmed:false, thresholdCalibrated:false,

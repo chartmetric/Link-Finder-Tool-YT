@@ -3,6 +3,7 @@ import {contextSignals} from './instagram-context-signals.mjs';
 import {declaredInstagramLinks} from './instagram-reference-links.mjs';
 
 export const CORROBORATED_POLICY = 'corroborated-artist-evidence-v2';
+export const IDENTITY_CONTEXT_POLICY = 'corroborated-artist-evidence-v3';
 const norm = value => String(value ?? '').normalize('NFKD').replace(/(\p{Script=Latin})\p{M}+/gu, '$1')
   .normalize('NFC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 // JavaScript \b is ASCII-oriented, including in /u mode. Use Unicode boundaries.
@@ -17,6 +18,40 @@ const web = value => {
 const profileBound = (metadata, url, normalize) => [metadata?.url, ...(metadata?.urlAliases ?? [])]
   .some(value => normalize(value) === url);
 const urlsIn = value => String(value ?? '').match(/https:\/\/[^\s<>"']+/g)?.map(u => u.replace(/[),;]+$/, '')) ?? [];
+const contextualArtistRole = text => artistRole(text)
+  || /(?<![\p{L}\p{N}])(dj|d j|deejay|beatmaker|composer|performer)(?![\p{L}\p{N}])/u.test(norm(text));
+const namePresent = (artist,text) => {
+  const name=norm(artist);
+  return !!name&&` ${norm(text)} `.includes(` ${name} `);
+};
+function contextualRelated(display,bio) {
+  // An affiliation is not the account's role. Explicit fans/organizations still
+  // block even when their biography also mentions a musician or exact music ID.
+  const text=norm(`${display} ${bio}`);
+  if(/(?<![\p{L}\p{N}])(festival|venue|fan page|fan account|fan club|fanclub|fankonto|fanowski|tribute|manufacturer|кавер|фан аккаунт|фан страница)(?![\p{L}\p{N}])|非公式|粉丝|粉絲|팬계정|팬 계정/u.test(text))return true;
+  const label=/(?<![\p{L}\p{N}])(record label|label)(?![\p{L}\p{N}])|レーベル|레이블/u;
+  if(!label.test(text))return /^(?:we are |the |official )?(?:artist management|booking agency|management for|manager of)\b/u.test(norm(bio));
+  const ownership=/(?<![\p{L}\p{N}])(?:(?:record )?label (?:owners?|boss|founders?)|(?:co )?(?:owners?|founders?|boss) of (?:a |the )?(?:record )?label)(?![\p{L}\p{N}])/u;
+  const displayRole=norm(display).replace(ownership,'').trim();
+  if(label.test(displayRole))return true;
+  if(/^(?:we are |official )?(?:a |an |the )?(?:independent |music |electronic |dance )?(?:record )?label(?![\p{L}\p{N}])/u.test(norm(bio)))return true;
+  return !contextualArtistRole(bio)&&!releaseAnnouncement(bio)&&!ownership.test(text);
+}
+function contextualSelfIdentity(player,candidate,inbound,connections,accountUrl) {
+  if(namePresent(player.artist,candidate.displayName))return 'matching_account_name';
+  const compact=value=>norm(value).replaceAll(' ','');
+  const stage=compact(player.artist),handle=compact(new URL(accountUrl).pathname.split('/').filter(Boolean)[0]);
+  if(stage.length>=4&&stage===handle)return 'exact_artist_handle';
+  const name=norm(player.artist);
+  if(String(candidate.bio??'').split(/\n|\|/u).some(line=>
+    [name,`i am ${name}`,`we are ${name}`,`soy ${name}`,`somos ${name}`].includes(norm(line))))
+    return 'explicit_artist_self_introduction';
+  const role=contextualArtistRole(candidate.bio)||releaseAnnouncement(candidate.bio);
+  if(inbound&&(role||official(candidate.bio)))return 'catalog_declared_account_and_self_description';
+  if(new Set(connections.map(c=>c.platform)).size>=2&&(role||official(candidate.bio)))
+    return 'multiple_catalog_accounts_and_self_description';
+  return null;
+}
 
 function capturedMusicPath(candidate, reference, tools) {
   const path = candidate.externalLinkEvidence;
@@ -44,7 +79,7 @@ function capturedMusicPath(candidate, reference, tools) {
   return targets;
 }
 
-export function corroboratedCandidate({profile, player, references, context, tools}) {
+export function corroboratedCandidate({profile, player, references, context, tools, contextualIdentity=false}) {
   const url = tools.instagramProfileUrl(profile.url);
   const hold = reason => ({url: url ?? String(profile.url ?? ''), status:'needs_review', route:'hold', reason});
   const support = (route, evidence) => ({url, status:'supported', route,
@@ -64,8 +99,8 @@ export function corroboratedCandidate({profile, player, references, context, too
   const display = candidate.displayName ?? '';
   const bio = candidate.bio ?? '';
   // Search result titles are not account self-identification.
-  if (!tools.fullNamePresent(player.artist, display)) return hold('account_self_identification_missing');
-  if (related(`${display} ${bio}`)) return hold('related_entity_or_fan');
+  if (!contextualIdentity&&!tools.fullNamePresent(player.artist, display)) return hold('account_self_identification_missing');
+  if (contextualIdentity?contextualRelated(display,bio):related(`${display} ${bio}`)) return hold('related_entity_or_fan');
   const ref = comparison.reference;
   const direct = candidate.directExternalUrls ?? (candidate.externalLinkEvidence ? [] : candidate.externalUrls ?? []);
   const pathTargets = capturedMusicPath(candidate, reference, tools);
@@ -74,16 +109,22 @@ export function corroboratedCandidate({profile, player, references, context, too
   if ([...pathTargets, ...directTargets].some(target => !known.has(target))) return hold('competing_catalog_music_identity');
   const inbound = declaredInstagramLinks(ref.bio).some(l => l.url === url)
     || [...(ref.externalUrls ?? []), ...urlsIn(ref.bio)].some(u => tools.instagramProfileUrl(u) === url);
-  if (inbound) return support('catalog_account_declares_instagram', ['bound_catalog_reference', 'exact_instagram_declaration', 'matching_account_name']);
+  const contextualConnections=contextualIdentity?tools.catalogConnectionEvidence(candidate,player):[];
+  const identity=contextualIdentity?contextualSelfIdentity(player,candidate,inbound,contextualConnections,url):'matching_account_name';
+  if(!identity)return hold('account_self_identification_missing');
+  const role=contextualIdentity?contextualArtistRole:artistRole;
+  if (inbound) return support('catalog_account_declares_instagram', ['bound_catalog_reference', 'exact_instagram_declaration', identity]);
 
   const connections = tools.catalogConnectionEvidence(candidate, player);
   const platforms = new Set(connections.map(c => c.platform));
-  if (platforms.size >= 2 && official(bio)) return support('multiple_catalog_accounts_and_self_identification',
-    [...connections.map(c => c.targetUrl), 'official_self_description']);
+  if (platforms.size >= 2 && (official(bio)||(contextualIdentity&&role(bio)))) return support('multiple_catalog_accounts_and_self_identification',
+    [...connections.map(c => c.targetUrl), ...(contextualIdentity?[identity]:[]),
+      official(bio)?'official_self_description':'artist_self_description']);
 
   const directTarget = directTargets.includes(reference.url);
-  if ((directTarget || pathTargets.has(reference.url)) && (artistRole(bio) || releaseAnnouncement(bio))) {
-    return support('catalog_music_path_and_artist_self_identification', [reference.url, 'artist_role_or_release_announcement']);
+  if ((directTarget || pathTargets.has(reference.url)) && (role(bio) || releaseAnnouncement(bio))) {
+    return support('catalog_music_path_and_artist_self_identification', [reference.url, 'artist_role_or_release_announcement',
+      ...(contextualIdentity?[identity]:[])]);
   }
   // Catalog metadata is separately scoped by the caller. A caller cannot use
   // another profile's releases, synthetic expected answers or precomputed signals.
@@ -98,8 +139,20 @@ export function corroboratedCandidate({profile, player, references, context, too
     p.attribution === 'candidate_owned_post_search_snippet' && !p.cautions.length
     && /(?<![\p{L}\p{N}])(my|our|мой|моя|наш|наша|mi|nuestro|meu|minha)(?![\p{L}\p{N}])/u.test(norm(p.snippet))
     && /(?<![\p{L}\p{N}])(single|album|song|track|трек|песню|песня|cancion|musica)(?![\p{L}\p{N}])/u.test(norm(p.snippet)));
-  if (artistRole(bio) && bioTitles.size >= 2 && ownReleasePosts.length) return support('catalog_releases_and_self_attributed_release_post',
+  if (role(bio) && bioTitles.size >= 2 && ownReleasePosts.length) return support('catalog_releases_and_self_attributed_release_post',
     [...bioTitles, ...ownReleasePosts.map(p => p.sourceUrl)]);
+  const releaseTitles=new Set([...bioTitles,...ownReleasePosts.map(p=>norm(p.releaseTitle))]);
+  const ownedPostUrls=new Map();
+  for(const post of ownReleasePosts){
+    try{
+      const u=new URL(post.sourceUrl),parts=u.pathname.split('/').filter(Boolean),i=parts.findIndex(p=>['p','reel'].includes(p));
+      if(['instagram.com','www.instagram.com'].includes(u.hostname)&&i>=0&&parts[i+1])
+        ownedPostUrls.set(parts[i+1],post.sourceUrl);
+    }catch{/* An unparseable source cannot count as a distinct post. */}
+  }
+  if(contextualIdentity&&role(bio)&&bioTitles.size>=1&&releaseTitles.size>=2&&ownedPostUrls.size>=2)
+    return support('catalog_release_and_multiple_self_attributed_posts',
+      [...releaseTitles,...ownedPostUrls.values(),identity]);
   return hold('insufficient_distinctive_ownership_corroboration');
 }
 
