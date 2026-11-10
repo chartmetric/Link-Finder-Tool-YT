@@ -8,3 +8,14 @@ Batch results must expose everything included in the findings CSV, using progres
 **Why:** The user asked for an on-page component for each batch because the CSV contains too much information to show at once. Earlier feedback specifically required visible artist names and Instagram URLs, including candidates that were not accepted.
 
 **How to apply:** Keep the artist and candidate/accepted-link distinction easy to find. Make the full metadata and original evidence accessible on demand. Preserve the distinction between metadata actually supplied to the checker and metadata merely available; incomplete capture or an unaccepted candidate must not be presented as proof of an absent account.
+
+In comparison exports, ordinary result columns must describe the latest check.
+Label earlier decisions and inputs explicitly as previous values.
+
+**Why:** Leaving old false flags and old scores in the main columns made a
+successful recheck appear to have no likely matches when the user opened the CSV.
+
+**How to apply:** Keep the main status, likely-match flag, score, verdict, reason,
+model and metadata-used fields aligned to the same observation. Preserve the
+historical records and expose their values separately; never silently update
+live-link ownership when correcting an export.

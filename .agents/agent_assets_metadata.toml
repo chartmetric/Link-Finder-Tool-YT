@@ -882,3 +882,45 @@ mtime_ms = 1794332057519
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/e90a8d6e-01e0-44e9-9f25-2b61a3e0d7bf/184bfe19-b297-435e-a762-561a1300b521"
 storage_version_token = "1794332078969336"
 content_type = "text/csv"
+
+[[outputs]]
+id = "ONT9lg7NaaGBDa9hA00Qk"
+uri = "file://generated-artifacts/next-saved-500-usd20/account-context-recheck-results/20-artist-recheck-corrected.csv"
+type = "table"
+title = "Corrected recheck — all 20 artists"
+description = "Main columns now show the latest decisions: 7 likely matches. Earlier values are explicitly labeled previous."
+logical_id = "b16f21a6-3034-49b8-b8bb-3c8663355479"
+content_hash = "sha256:2703fd95bf65b85b663fd71841ff44f1352bb22d5a2559072c943ae2384ac47f"
+size = 301810
+mtime_ms = 1794336122079
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/b16f21a6-3034-49b8-b8bb-3c8663355479/6df376a4-ad00-4cdd-af7f-e1ddbcf44864"
+storage_version_token = "1794336144233219"
+content_type = "text/csv"
+
+[[outputs]]
+id = "CpVF8JVVjJKVe1sjQRyvh"
+uri = "file://generated-artifacts/next-saved-500-usd20/account-context-recheck-results/recheck-likely-matches.csv"
+type = "table"
+title = "Recheck likely matches — 7 artists"
+description = "All seven have likelyReviewSuggestion=true, including Luke Dean. Includes metadata and previous decisions."
+logical_id = "c9199a06-d05f-48aa-a56a-363aa60a5e4f"
+content_hash = "sha256:766de145a3fb194c6f05b59b6149c881ad3f547b7b151b3290e2f9573591e9c7"
+size = 103581
+mtime_ms = 1794336122087
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/c9199a06-d05f-48aa-a56a-363aa60a5e4f/e9399c75-fdfb-4c77-bba1-304ec642c8c1"
+storage_version_token = "1794336145082325"
+content_type = "text/csv"
+
+[[outputs]]
+id = "ix-pofbSNTE4T2zkkdnLl"
+uri = "file://generated-artifacts/next-saved-500-usd20/account-context-recheck-results/recheck-checked-not-accepted.csv"
+type = "table"
+title = "Recheck not accepted — 13 artists"
+description = "Latest non-accepted results, with prior decisions and metadata preserved."
+logical_id = "5a12b3d4-d1cf-4750-8eea-954ea96433d4"
+content_hash = "sha256:efdf7e93490b4ffe778aff1c59ee5f11f181d605f0b8e43a4c9d0a2752d1da3c"
+size = 198951
+mtime_ms = 1794336122099
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/5a12b3d4-d1cf-4750-8eea-954ea96433d4/0748608c-3240-4450-82fa-93c65b883faa"
+storage_version_token = "1794336145804392"
+content_type = "text/csv"
