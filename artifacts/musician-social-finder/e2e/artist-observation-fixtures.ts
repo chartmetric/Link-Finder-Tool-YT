@@ -35,6 +35,14 @@ export const final: ArtistResultBatch = {
     { label: 'Run date source', value: 'First journal event' },
   ],
 };
+export const newer: ArtistResultBatch = {
+  ...final,
+  id: `saved-alternatives-${scope}-${'e'.repeat(16)}`,
+  title: 'Fixture newer final observation', createdAt: '2026-11-10T11:00:00.000Z',
+  artistCount: 3, candidateCount: 3, rowCount: 3, verifiedCount: 3,
+  reviewCount: 0, reservedUsd: 0.96, reportedUsd: 0.81,
+  explanation: 'Newer evidence must not replace the explicitly selected archive.',
+};
 
 function row(id: string, artistName: string, status: string): ArtistResultRow {
   const url = `https://www.instagram.com/${id}/`;
@@ -50,10 +58,22 @@ export const finalRows = [
   row('final-verified', 'Final verified musician', 'verified'),
   row('final-review', 'Final review musician', 'review'),
 ];
+export const newerRows = [
+  row('newer-one', 'Newer first musician', 'verified'),
+  row('newer-two', 'Newer second musician', 'verified'),
+  row('newer-three', 'Newer third musician', 'verified'),
+];
+const archives = [checkpoint, final, newer];
+export function rowsFor(id: string): ArtistResultRow[] {
+  if (id === checkpoint.id) return checkpointRows;
+  if (id === final.id) return finalRows;
+  if (id === newer.id) return newerRows;
+  throw new Error(`Unknown fixture archive: ${id}`);
+}
 export const rowPath = (id: string) => `/api/bulk/artist-results/${id}/rows/0/25/q%3A/all`;
 export const csvPath = (id: string) => `/api/bulk/artist-results/${id}/csv`;
 export const csvContents = (b: ArtistResultBatch) =>
-  `archive_id,artist_name,reported_usd\n${(b.id === checkpoint.id ? checkpointRows : finalRows)
+  `archive_id,artist_name,reported_usd\n${rowsFor(b.id)
     .map(r => `${b.id},${r.artistName},${b.reportedUsd}`).join('\n')}\n`;
 
 function gate() {
@@ -64,6 +84,8 @@ function gate() {
 
 export class ObservationApi extends ProgressApi {
   url = '';
+  batches: ArtistResultBatch[] = [checkpoint, final];
+  batchResponses: string[][] = [];
   rowRequests: string[] = [];
   csvRequests: string[] = [];
   delivered: string[] = [];
@@ -93,7 +115,7 @@ export class ObservationApi extends ProgressApi {
     this.server = createServer(async (request, response) => {
       const path = new URL(request.url!, 'http://fixture.invalid').pathname;
       if (request.method === 'GET') {
-        const batch = [checkpoint, final].find(b => csvPath(b.id) === path);
+        const batch = archives.find(b => csvPath(b.id) === path);
         if (batch) {
           this.csvRequests.push(path);
           response.writeHead(200, {
@@ -137,13 +159,17 @@ export class ObservationApi extends ProgressApi {
         return json({ snapshotAt: null, snapshotStatus: 'missing', tiers: [], history: [], generatedAt: time });
       if (path === '/api/profiles/musician-instagram-rerun-eligibility')
         return json({ count: 0, selectionToken: '0'.repeat(64), generatedAt: time });
-      if (path === '/api/bulk/artist-results')
-        return json({ batches: [checkpoint, final], warnings: [] });
-      for (const batch of [checkpoint, final]) {
+      if (path === '/api/bulk/artist-results') {
+        const batches = [...this.batches];
+        await json({ batches, warnings: [] });
+        this.batchResponses.push(batches.map(b => b.id));
+        return;
+      }
+      for (const batch of archives) {
         if (path === rowPath(batch.id)) {
           this.rowRequests.push(path);
           await this.holds.get(batch.id)?.promise;
-          const rows = batch.id === checkpoint.id ? checkpointRows : finalRows;
+          const rows = rowsFor(batch.id);
           const body: GetArtistResultRows200 = { batch, rows, total: rows.length, nextOffset: null };
           await json(body);
           this.delivered.push(batch.id);

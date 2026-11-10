@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 import type { ArtistResultBatch } from '@workspace/api-client-react';
 import {
-  test, expect, checkpoint, final, checkpointRows, finalRows, rowPath, csvPath, csvContents,
+  test, expect, checkpoint, final, newer, checkpointRows, finalRows, newerRows, rowsFor, rowPath, csvPath, csvContents,
 } from './artist-observation-fixtures';
 
 const section = (page: Page) => page.getByTestId('section-artist-batch-results');
@@ -13,6 +13,8 @@ async function selected(page: Page, b: ArtistResultBatch) {
   const root = section(page);
   await expect(radio(page, b)).toHaveAttribute('aria-checked', 'true');
   await expect(radio(page, other)).toHaveAttribute('aria-checked', 'false');
+  await expect(root.getByRole('radio', { checked: true })).toHaveCount(1);
+  await expect(root.locator('.abr-summary')).toHaveCount(1);
   await expect(root.getByTestId('link-download-artist-csv')).toHaveAttribute('href', csvPath(b.id));
   const summary = root.getByTestId(`summary-batch-${b.id}`);
   await expect(summary).toBeVisible();
@@ -35,8 +37,8 @@ async function selected(page: Page, b: ArtistResultBatch) {
 
 async function displayedRows(page: Page, b: ArtistResultBatch) {
   const root = section(page);
-  const rows = b.id === checkpoint.id ? checkpointRows : finalRows;
-  const others = b.id === checkpoint.id ? finalRows : checkpointRows;
+  const rows = rowsFor(b.id);
+  const others = [...checkpointRows, ...finalRows, ...newerRows].filter(r => !rows.includes(r));
   await expect(root.locator('.abr-rows > li')).toHaveCount(rows.length);
   for (const r of rows) {
     const item = root.getByTestId(`row-artist-result-${r.id}`);
@@ -162,5 +164,71 @@ for (const theme of ['light', 'dark'] as const) {
       expect([...new Set(api.rowRequests)]).toEqual([rowPath(checkpoint.id), rowPath(final.id)]);
       expect(api.csvRequests).toEqual([csvPath(final.id), csvPath(checkpoint.id)]);
     });
+
+    for (const chosen of [checkpoint, final]) {
+      test(`history refresh preserves explicitly selected ${chosen === checkpoint ? 'checkpoint' : 'final'} while rows are pending`, async ({ page, api }) => {
+        api.hold(chosen.id);
+        await page.clock.install();
+        await page.goto(`${api.url}/bulk/artists`);
+        await selected(page, checkpoint);
+        if (chosen.id === final.id) await displayedRows(page, checkpoint);
+        // Explicitly select even the initial checkpoint: the assertion is about
+        // retaining a user's archive choice, not the unpicked first-list default.
+        await radio(page, chosen).click();
+        await selected(page, chosen);
+        await expect.poll(() => api.rowRequests.includes(rowPath(chosen.id))).toBe(true);
+        const pending = async () => {
+          await selected(page, chosen);
+          await expect(section(page).getByLabel('Loading rows', { exact: true })).toBeVisible();
+          await expect(section(page).locator('.abr-rows > li')).toHaveCount(0);
+          expect(api.delivered).not.toContain(chosen.id);
+        };
+        await pending();
+        await expect.poll(() => api.batchResponses.length).toBe(1);
+        const originalSummary = await section(page).getByTestId(`summary-batch-${chosen.id}`).innerText();
+        await download(page, chosen);
+
+        // Poll the actual list query independently of the held rows. The Refresh
+        // button is deliberately disabled while those rows are in flight.
+        for (const batches of [[final, checkpoint], [newer, final, checkpoint]]) {
+          const before = api.batchResponses.length;
+          api.batches = batches;
+          await page.clock.fastForward(30_100);
+          await expect.poll(() => api.batchResponses.length).toBeGreaterThan(before);
+          expect(api.batchResponses.at(-1)).toEqual(batches.map(b => b.id));
+          await expect(section(page).getByRole('radio')).toHaveCount(batches.length);
+          await expect.poll(() => section(page).getByRole('radio').evaluateAll(
+            elements => elements.map(el => el.getAttribute('data-testid')),
+          )).toEqual(batches.map(b => `button-batch-${b.id}`));
+          await expect(section(page).getByRole('group', {
+            name: `Approved run fixture-approved-parent, scope ${'a'.repeat(24)}`, exact: true,
+          })).toContainText(`${batches.length} saved observations`);
+          await pending();
+          await expect(section(page).getByTestId(`summary-batch-${chosen.id}`)).toHaveText(originalSummary, { useInnerText: true });
+          await download(page, chosen);
+        }
+        await expect(radio(page, newer)).toHaveAttribute('aria-checked', 'false');
+        // No row read for the newly inserted archive (or any implicit switch).
+        const expectedRows = chosen.id === checkpoint.id
+          ? [rowPath(checkpoint.id)] : [rowPath(checkpoint.id), rowPath(final.id)];
+        expect(api.rowRequests).toEqual(expectedRows);
+        api.release(chosen.id);
+        await expect.poll(() => api.delivered.includes(chosen.id)).toBe(true);
+        await selected(page, chosen);
+        await displayedRows(page, chosen);
+        await expect(section(page).getByTestId(`summary-batch-${chosen.id}`)).toHaveText(originalSummary, { useInnerText: true });
+        for (const r of rowsFor(chosen.id)) {
+          await section(page).getByTestId(`button-expand-row-${r.id}`).click();
+          const detail = section(page).getByTestId(`detail-artist-row-${r.id}`);
+          await detail.locator('summary').filter({ hasText: 'Provenance' }).click();
+          await expect(detail.getByTestId(`field-${r.id}-provenance-0`)).toHaveText(
+            `Saved archive evidence${r.id} original evidence`,
+          );
+        }
+        await download(page, chosen);
+        expect(api.rowRequests).toEqual(expectedRows);
+        expect(api.csvRequests).toEqual(Array(4).fill(csvPath(chosen.id)));
+      });
+    }
   });
 }
