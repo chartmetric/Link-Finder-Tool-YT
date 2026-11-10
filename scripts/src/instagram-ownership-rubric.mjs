@@ -1,5 +1,18 @@
 // Experimental criteria only. No entity-specific exceptions or score overrides.
 export const OWNERSHIP_RUBRIC='evidence_weighted_v1';
+export const CORROBORATED_RUBRIC='corroborated_ownership_v2';
+
+export function withCorroboratedRubric(request) {
+  const out = withOwnershipRubric(request);
+  for (const [key, question] of Object.entries(out.questions)) {
+    question.instructions += ' Distinguish a captured account declaration or music path from a mere mention. Also consider distinctive catalog release matches in the account biography and account-attributed first-person release posts together with artist self-identification. These can corroborate ownership without an exact music link; no single name, title, hashtag, badge or self-claim is enough. Country and missing evidence are context, not proof. Do not treat a historical score or workflow label as source evidence.';
+    if (key.endsWith('_same_identity')) question.criteria.true =
+      'Combined source-bound identity connections or distinctive release and self-attributed publishing evidence, together with consistent artist self-identification, support ownership without material contradiction.';
+    else question.criteria.verified =
+      'The combined supplied evidence establishes artist ownership, through a catalog-bound identity path or distinctive corroborated catalog-release and self-publishing evidence. No mandatory backlink pattern or platform badge is required.';
+  }
+  return out;
+}
 
 export function withOwnershipRubric(request) {
   const out=structuredClone(request);

@@ -7,7 +7,7 @@ import { safeMusicFetch } from './safe-music-fetch.mjs';
 import { contextSignals } from './instagram-context-signals.mjs';
 import {postReleaseSignals,releaseTitle} from './instagram-post-signals.mjs';
 import { declaredInstagramLinks } from './instagram-reference-links.mjs';
-import { OWNERSHIP_RUBRIC, withOwnershipRubric } from './instagram-ownership-rubric.mjs';
+import { OWNERSHIP_RUBRIC, withOwnershipRubric, CORROBORATED_RUBRIC, withCorroboratedRubric } from './instagram-ownership-rubric.mjs';
 import {normalizeInstagramProfile, failedLinkCapture} from './instagram-link-capture.mjs';
 
 const MODEL = 'typesafe/jev-1.13';
@@ -87,7 +87,7 @@ export function boundedArtistContext(context) {
 }
 
 export function jevRequest(payload) {
-  if(payload.ownershipRubric!==undefined&&payload.ownershipRubric!==OWNERSHIP_RUBRIC) {
+  if(payload.ownershipRubric!==undefined&&![OWNERSHIP_RUBRIC,CORROBORATED_RUBRIC].includes(payload.ownershipRubric)) {
     throw new Error('Unknown ownership rubric; refusing an implicit fallback.');
   }
   const rawContext = boundedArtistContext(payload.artistContext);
@@ -140,7 +140,8 @@ export function jevRequest(payload) {
         // construction time so normal and compact requests share this contract.
         observedExactCatalogLinks: exactCatalogLinkEdges(reference,candidate,payload.catalogReference,p.url) };
     }) }, questions };
-  const request=payload.ownershipRubric===OWNERSHIP_RUBRIC?withOwnershipRubric(body):body;
+  const request=payload.ownershipRubric===CORROBORATED_RUBRIC?withCorroboratedRubric(body)
+    :payload.ownershipRubric===OWNERSHIP_RUBRIC?withOwnershipRubric(body):body;
   if(payload.compactEvidence) {
     // Share identity rules once; context cautions are also retained in the
     // compact context note. Do not delete source evidence to fit the request.

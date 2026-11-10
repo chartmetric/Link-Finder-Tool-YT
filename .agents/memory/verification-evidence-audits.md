@@ -59,6 +59,15 @@ identify the aggregation rule, and report distinct artists, accounts and pairs.
 Never describe an offline source-policy acceptance as a fresh model result or a
 production-approved correction.
 
+Keep recorded model scores unchanged when an evidence-based research policy
+finds additional support. Show the proposed support route separately from the
+historical score and verdict.
+
+**Why:** The user found correct candidates held below 0.90. A policy simulation
+can change candidate support without changing what the model actually answered;
+silently upgrading the saved score or calling that a fresh verification would
+misrepresent the experiment.
+
 Keep account-owned post clues distinct from third-party release mentions and
 related content, even when saved profile bios are incomplete. A release title
 or hashtag match supplies consistency context, never ownership proof.

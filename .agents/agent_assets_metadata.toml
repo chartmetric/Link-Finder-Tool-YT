@@ -560,3 +560,31 @@ mtime_ms = 1794272214946
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/9cf60a77-9258-4393-9270-bb81200da830/6b6a83d1-4575-4766-b221-a9ae2cced8a0"
 storage_version_token = "1794272270906947"
 content_type = "text/csv"
+
+[[outputs]]
+id = "gy8Jj6GQ3OCX1DkUdqOw3"
+uri = "file://generated-artifacts/verification-policy-offline/policy-impact.csv"
+type = "table"
+title = "Offline verification-policy comparison"
+description = "20 targets plus 20 reused-account controls. Original model scores and verdicts alongside proposed evidence routes, source evidence and unsent request diagnostics. These are simulations, not fresh verifications or live approvals."
+logical_id = "e7a30569-3af3-4c1e-8346-fb7eda26ec6e"
+content_hash = "sha256:75c6591883e372184f4b84d057d5b60d8e9cf91bbf5fe0489148fa049091d371"
+size = 15993
+mtime_ms = 1794274486486
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/e7a30569-3af3-4c1e-8346-fb7eda26ec6e/0bd3812f-6685-4864-a5a6-82291451106d"
+storage_version_token = "1794274847126391"
+content_type = "text/csv"
+
+[[outputs]]
+id = "i9s1-3sQJ-8ywaaX9CL2l"
+uri = "file://generated-artifacts/verification-policy-offline/source-archive-impact.csv"
+type = "table"
+title = "250-artist source-archive policy check"
+description = "1,248 retained archive rows, including uninspected candidates and incomplete evidence. Historical scores remain unchanged; proposed research support is shown separately. No paid calls or catalog writes."
+logical_id = "e9ef8f55-249a-46f7-a448-fa3f70176d2d"
+content_hash = "sha256:b917fa7f3f9e25ce336858d930d1c9393baec5f7339b7dafefb328de375cc600"
+size = 268052
+mtime_ms = 1794274486490
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/e9ef8f55-249a-46f7-a448-fa3f70176d2d/f1965ebd-c19e-4e5d-a80a-e04e02071e9b"
+storage_version_token = "1794274847770096"
+content_type = "text/csv"

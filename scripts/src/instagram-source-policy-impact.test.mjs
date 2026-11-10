@@ -282,7 +282,9 @@ test('offline dependency graph contains only allowlisted pure modules and Node l
   const directory = path.dirname(fileURLToPath(import.meta.url));
   const modules = ['instagram-source-policy-impact.mjs', 'instagram-source-policy-impact-cli.mjs',
     'instagram-source-policy-offline.mjs', 'musician-instagram-matching.mjs',
-    'catalog-profile-identity.mjs', 'instagram-reference-links.mjs'];
+    'catalog-profile-identity.mjs', 'instagram-reference-links.mjs',
+    'instagram-corroborated-policy.mjs', 'instagram-context-signals.mjs',
+    'instagram-post-signals.mjs', 'instagram-post-attribution.mjs'];
   for (const name of modules) {
     const text = await fs.readFile(path.join(directory, name), 'utf8');
     for (const [, specifier] of text.matchAll(/from\s+['"]([^'"]+)['"]/g)) {

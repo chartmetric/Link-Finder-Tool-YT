@@ -1020,27 +1020,6 @@ export type ListArtistResultBatches200 = {
   warnings: string[];
 };
 
-export type GetArtistResultRowsParams = {
-/**
- * @maxLength 120
- */
-search?: string;
-filter?: GetArtistResultRowsFilter;
-};
-
-export type GetArtistResultRowsFilter = typeof GetArtistResultRowsFilter[keyof typeof GetArtistResultRowsFilter];
-
-
-export const GetArtistResultRowsFilter = {
-  all: 'all',
-  verified: 'verified',
-  review: 'review',
-  not_inspected: 'not_inspected',
-  metadata_failed: 'metadata_failed',
-  no_candidate: 'no_candidate',
-  controls: 'controls',
-} as const;
-
 export type GetArtistResultRows200 = {
   batch: ArtistResultBatch;
   rows: ArtistResultRow[];
