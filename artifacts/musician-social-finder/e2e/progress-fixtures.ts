@@ -72,10 +72,10 @@ export class ProgressApi {
   releaseStart?: () => void;
   unexpected: string[] = [];
 
-  async install(page: Page) {
+  async install(page: Page, frontendUrl = baseUrl()) {
     // Context routing also covers requests after reload/navigation. Never route
     // an unknown /api call through to the server, even if an assertion fails.
-    const origin = new URL(baseUrl()).origin;
+    const origin = new URL(frontendUrl).origin;
     await page.context().route('**/*', async route => {
       const req = route.request();
       const url = new URL(req.url());

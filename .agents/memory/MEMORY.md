@@ -11,6 +11,7 @@
 - [Confidence presentation](confidence-presentation.md) — headline net confidence must not confuse discovery strength or verdict-label confidence with positive identity evidence.
 - [Bulk profile workflow](bulk-brand-workflow.md) — all profile types, linked-only discovery; continuous remaining-profile runs use bounded chunks, explicit paid start/resume and saved archives.
 - [Browser fixture timers](browser-fixture-timers.md) — frozen browser timers can strand React Query on loading skeletons despite successful fixture responses.
+- [Native browser download fixtures](native-browser-download-fixtures.md) — Chromium download links can bypass Playwright routing; enforce fixture-only safety at the HTTP origin too.
 - [Provider test observations](provider-test-observations.md) — assert captured mock-call observations after discovery returns; provider error handlers can swallow assertions inside fetch stubs.
 - [Bulk paid-work safety](bulk-paid-work-safety.md) — uncertain provider calls are not replayable; transactional coordination supplements rather than replaces ClickHouse.
 - [ClickHouse string parameters](clickhouse-string-parameters.md) — typed String parameters interpret escapes; nested JSON-in-string fixtures can silently become invalid JSON.

@@ -65,3 +65,22 @@ pnpm --filter @workspace/musician-social-finder exec playwright test e2e/run-pre
 
 Screenshots, traces and the HTML report are written under the ignored
 `generated-artifacts/run-progress` directory at the workspace root.
+
+`artist-observations.spec.ts` exercises the real saved artist results page with
+a checkpoint and a final archive sharing a scope, parent budget, and date, but
+different rows, counts, spending, and CSV bytes. It follows the final shortcut,
+switches back, and releases held responses in both directions to catch stale
+evidence replacing the selected observation. Exact row request paths, archive
+IDs, summary amounts, download URLs, filenames and downloaded CSV contents are
+asserted. Both projects run in light and dark themes, with bounds checks and
+screenshots of the restored checkpoint and final. The read-only fixture guard
+aborts all mutations and unknown API/provider calls; no backend is needed.
+Because Chromium's native `<a download>` traffic can bypass browser routing,
+this suite navigates through a loopback fixture gateway. It serves only the two
+known CSV fixtures and forwards allowlisted frontend asset reads to the managed
+Vite workflow. Every other API request at the gateway is rejected, never
+forwarded. Thus native downloads remain fixture-only too.
+
+```sh
+pnpm --filter @workspace/musician-social-finder exec playwright test e2e/artist-observations.spec.ts
+```
