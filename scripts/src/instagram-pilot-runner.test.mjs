@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createPilotBudget } from './instagram-pilot-budget.mjs';
 import { pilotPreflight, runFixturePilot } from './instagram-pilot-runner.mjs';
+import {normalizeInstagramProfile} from './instagram-link-capture.mjs';
 
 const spotify = 'https://open.spotify.com/artist/0123456789ABCDEFGHIJKL';
 const ig = 'https://www.instagram.com/example.artist/';
@@ -219,4 +220,48 @@ test('candidate inspection is capped and uninspected hits are explicit, not abse
   assert.equal(output.results[0].status, 'needs_review');
   assert.equal(output.results[0].rawResult.profiles.length, 3);
   assert.equal(output.results[0].discoveryAttempts[0].profiles.length, 5, 'preserve uninspected discovery evidence');
+});
+
+test('capture gaps survive a verifier hold and never trigger fallback metadata requests',async t=>{
+  for(const empty of [true,false]) {
+    const calls=[];
+    const output=await runFixturePilot({manifest:manifest(),journalPath:await temp(t),
+      transport:fixture(async request=>{
+        calls.push(request.kind);
+        if(request.kind==='spotify_oembed')return {url:spotify};
+        if(request.kind==='serper')return {methodsUsed:[{method:'serper',status:'used'}],profiles:[{url:ig}]};
+        if(request.kind==='scrapecreators_candidate')return normalizeInstagramProfile({data:{user:{
+          username:'example.artist',full_name:'Example Artist',...(empty?{external_url:null,bio_links:[]}:{}),
+        }}},ig);
+        if(request.kind==='jev')return [{url:ig,jevVerification:{verdict:'uncertain',sameIdentityProbability:0.5}}];
+        throw Error('Unapproved fallback');
+      })});
+    const result=output.results[0];
+    assert.equal(result.linkCaptureDiagnostics[0].capture.status,empty?'explicit_empty':'incomplete_fields');
+    assert.equal(result.linkEvidenceIncomplete??false,!empty);
+    assert.equal(result.status,'needs_review');
+    assert.deepEqual(calls,['spotify_oembed','serper','scrapecreators_candidate','jev']);
+    assert.equal(result.approvedCatalogLinks,false);
+    assert.equal(result.noAccountConfirmed??false,false);
+  }
+});
+
+test('exhausted public-page allowance records capped resolution without dispatch',async t=>{
+  const m=manifest();m.proposed_limits.public_music_page_requests_per_artist=1;
+  const calls=[];
+  const output=await runFixturePilot({manifest:m,journalPath:await temp(t),transport:fixture(async request=>{
+    calls.push(request.kind);
+    if(request.kind==='spotify_oembed')return {url:spotify};
+    if(request.kind==='serper')return {methodsUsed:[{method:'serper',status:'used'}],profiles:[{url:ig},{url:'https://www.instagram.com/example.other/'}]};
+    if(request.kind==='scrapecreators_candidate')return normalizeInstagramProfile({data:{user:{
+      username:new URL(request.payload.url).pathname.split('/')[1],external_url:'https://linktr.ee/example',bio_links:[],
+    }}},request.payload.url);
+    if(request.kind==='public_page')return {sourceUrl:request.payload.url,musicTargets:['https://linktr.ee/next'],externalUrls:[]};
+    if(request.kind==='jev')return [];
+    throw Error('No public-page admission allowed');
+  })});
+  assert.equal(output.results[0].linkCaptureDiagnostics[0].resolution,'capped');
+  assert.equal(output.results[0].linkCaptureDiagnostics[1].resolution,'capped');
+  assert.equal(output.results[0].linkEvidenceIncomplete,true);
+  assert.equal(calls.filter(k=>k==='public_page').length,1);
 });

@@ -7,6 +7,7 @@ import {instagramProfileUrl,catalogConnectionEvidence} from './musician-instagra
 import {artistContextFromPacket} from './instagram-artist-metadata-overlay.mjs';
 import {declaredInstagramLinks} from './instagram-reference-links.mjs';
 import {musicPageUrl} from './public-music-links.mjs';
+import {profileLinkDiagnostics} from './instagram-link-capture.mjs';
 
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const norm=value=>String(value??'').normalize('NFKD').replace(/\p{M}/gu,'')
@@ -131,6 +132,7 @@ export function auditCandidate({artist,result,candidateUrl,discovered=[],profile
     owned_post_release_matches:own,unused_owned_post_release_matches:unusedOwn,
     other_post_release_matches:mentions.filter(m=>m.attribution!=='candidate_owned_post_search_snippet'),
     unchecked_supported_links:unchecked,unresolved_declared_links:unresolved,
+    link_capture_diagnostics:profileLinkDiagnostics(profile),
     captured_external_links:direct,candidate_name:candidate?.displayName??'',candidate_bio:candidate?.bio??'',
     discovery_source_urls:unique(evidence.map(e=>e.sourceUrl)),discovery_evidence:evidence,
     supported_link:(result.urls??[]).includes(candidateUrl),safe_for_import:false,
@@ -192,6 +194,7 @@ export async function loadAuditRows(directories) {
 }
 
 const columns=[
+  ['Bio-link capture diagnostics','link_capture_diagnostics'],
   ['Artist name','artist'],['Instagram candidate link','instagram_link'],['Review priority','priority'],
   ['Main acceptance blocker','main_blocker'],['Audit findings','audit_flags'],['Saved verdict','saved_verdict'],
   ['Saved confidence score','saved_score'],['Candidate stage','candidate_stage'],['Tier','tier'],

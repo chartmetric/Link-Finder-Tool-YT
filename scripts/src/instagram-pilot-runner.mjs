@@ -5,6 +5,7 @@ import { fitArtistContext } from './instagram-pilot-live-transport.mjs';
 import { catalogReferences, referenceUrl, instagramProfileUrl, hasCatalogCrossLink, catalogConnectionEvidence, assessInstagramCandidates } from './musician-instagram-matching.mjs';
 import { createPilotBudget } from './instagram-pilot-budget.mjs';
 import { musicEvidenceSources, musicPageUrl, resolveMusicEvidence } from './public-music-links.mjs';
+import {failedLinkCapture, profileLinkDiagnostics, incompleteLinkEvidence} from './instagram-link-capture.mjs';
 
 export function pilotPreflight(manifest) {
   if (!Number.isInteger(manifest.proposed_limits.artist_workers) || manifest.proposed_limits.artist_workers < 1
@@ -101,7 +102,8 @@ export async function runPilot({ manifest, journalPath, transport, evaluateRegre
           let candidate;
           try { candidate = await call('scrapecreators_candidate', { url: p.url }); }
           catch (error) {
-            profiles.push({...p,metadataLookupError:error.message});
+            profiles.push({...p,metadataLookupError:error.message,
+              linkCapture:error.linkCapture ?? failedLinkCapture(p.url,error.resourceRestricted?'restricted_response':'error_response')});
             continue; // A restricted/unreadable neighbour must not discard readable candidates.
           }
           candidate.unresolvedExternalLinks=(candidate.directExternalUrls??candidate.externalUrls??[])
@@ -109,6 +111,9 @@ export async function runPilot({ manifest, journalPath, transport, evaluateRegre
               {...candidate,directExternalUrls:[url]},artist).length);
           const publicLimit=Math.min(4,manifest.proposed_limits.public_music_page_requests_per_artist??1);
           const remainingPages=publicLimit-(evidence.musicPagesAttempted??0);
+          if (musicEvidenceSources(candidate).length && remainingPages<=0 && !transport.lookupAlbum) {
+            candidate.linkResolution='capped';
+          }
           if (instagramProfileUrl(candidate.url)===p.url && musicEvidenceSources(candidate).length
             && (remainingPages>0||transport.lookupAlbum)) {
             if(!candidate.externalLinkEvidence) candidate.directExternalUrls??=[...(candidate.externalUrls??[])];
@@ -121,6 +126,9 @@ export async function runPilot({ manifest, journalPath, transport, evaluateRegre
                 return call('public_page',{url});
               }});
             candidate.externalLinkEvidence = hub;
+            candidate.linkResolution=hub.resolutionCapped?'capped'
+              :hub.status==='exact_catalog_music_identity'?'exact_catalog_music_identity'
+              :hub.attempts.some(a=>a.status==='failed')?'error_response':'checked_unresolved';
             candidate.externalUrls = [...new Set([...(candidate.externalUrls??[]),...hub.externalUrls])];
           }
           const connections = catalogConnectionEvidence(candidate, artist);
@@ -139,10 +147,17 @@ export async function runPilot({ manifest, journalPath, transport, evaluateRegre
           for (const p of profiles) p.jevVerification = decisions.find(d => instagramProfileUrl(d.url) === p.url)?.jevVerification;
         }
         const assessment = assessInstagramCandidates({ ...discovery, profiles }, artist);
+        // A hold on incomplete capture is not a completed no-link result.
+        const linkCaptureDiagnostics=profiles.map(p=>({url:p.url,...profileLinkDiagnostics(p)}));
+        if (!assessment.urls?.length && profiles.some(incompleteLinkEvidence)) {
+          assessment.status='needs_review';
+          assessment.linkEvidenceIncomplete=true;
+        }
         // Invalid or truncated candidates cannot turn into a completed absence.
         if (!profiles.length && discoveryAttempts.some(a=>a.profiles.length)) assessment.status = 'needs_review';
         await record({ profileId: id, ...assessment, uninspectedCandidates: Math.max(0, unique.length - selected.length),
-          rawResult: { ...discovery, profiles }, discoveryAttempts, contextDelivery:evidence.contextDelivery,
+          rawResult: { ...discovery, profiles }, discoveryAttempts, linkCaptureDiagnostics,
+          contextDelivery:evidence.contextDelivery,
           fixtureOnly: true, approvedCatalogLinks: false });
       } catch (error) { await record({ profileId: id, status: 'needs_review', reason: error.message,
         partialEvidence: evidence, fixtureOnly: true }); }

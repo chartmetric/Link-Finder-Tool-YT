@@ -68,13 +68,14 @@ test('live transport uses fixed Serper endpoint and preserves blind query and ra
   assert.equal(raw.data.organic.length,2); assert.equal(raw.status,200);
 });
 
-test('Instagram retains actual external links and binds username from response, not request',async t=>{
+test('Instagram retains actual external links bound to the requested account',async t=>{
   const transport=createLiveTransport({keys,responseDir:await temp(t),fetchImpl:async()=>Response.json({
-    credits_charged:1,data:{user:{username:'another',external_url:reference.url,
+    credits_charged:1,data:{user:{username:'example',external_url:reference.url,
       bio_links:[{url:'https://linktr.ee/another'}],full_name:'Another Artist'}}})});
   const result=await transport.dispatch(req('scrapecreators_candidate',{url:candidate.url}));
-  assert.equal(result.url,'https://www.instagram.com/another/');
+  assert.equal(result.url,candidate.url);
   assert.deepEqual(result.externalUrls,[reference.url,'https://linktr.ee/another']);
+  assert.equal(result.linkCapture.status,'links_captured');
 });
 
 test('restricted response is unresolved; credit failures stop globally; requests never retry',async t=>{

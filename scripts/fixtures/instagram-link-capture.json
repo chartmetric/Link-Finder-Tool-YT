@@ -1,0 +1,12 @@
+[
+  {"name":"explicit provider empty, not proven Instagram absence","user":{"username":"example","external_url":null,"bio_links":[]},"status":"explicit_empty","count":0},
+  {"name":"empty string website and explicit empty list","user":{"username":"example","external_url":"","bio_links":[]},"status":"explicit_empty","count":0},
+  {"name":"missing all link fields","user":{"username":"example","biography":"Musician"},"status":"incomplete_fields","count":0},
+  {"name":"missing multi-link field","user":{"username":"example","external_url":""},"status":"incomplete_fields","count":0},
+  {"name":"partial capture retains website","user":{"username":"example","external_url":"https://example.org/"},"status":"incomplete_fields","count":1},
+  {"name":"missing scalar website field","user":{"username":"example","bio_links":[]},"status":"incomplete_fields","count":0},
+  {"name":"null is not an explicit link list","user":{"username":"example","external_url":null,"bio_links":null},"status":"incomplete_fields","count":0},
+  {"name":"malformed link list","user":{"username":"example","external_url":null,"bio_links":{}},"status":"incomplete_fields","count":0},
+  {"name":"unusable entries do not become empty evidence","user":{"username":"example","external_url":"","bio_links":[null,{},{"url":"javascript:alert(1)"},{"url":"http://example.org/"}]},"status":"incomplete_fields","count":0},
+  {"name":"provider website and deduplicated bio links","user":{"username":"example","external_url":"https://example.org/","bio_links":[{"url":"https://example.org/"},{"url":"https://linktr.ee/example"}]},"status":"links_captured","count":2}
+]

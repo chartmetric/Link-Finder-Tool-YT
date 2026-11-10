@@ -8,6 +8,7 @@ import { contextSignals } from './instagram-context-signals.mjs';
 import {postReleaseSignals,releaseTitle} from './instagram-post-signals.mjs';
 import { declaredInstagramLinks } from './instagram-reference-links.mjs';
 import { OWNERSHIP_RUBRIC, withOwnershipRubric } from './instagram-ownership-rubric.mjs';
+import {normalizeInstagramProfile, failedLinkCapture} from './instagram-link-capture.mjs';
 
 const MODEL = 'typesafe/jev-1.13';
 export const serperQuery = payload => payload.queryIndex === 0
@@ -29,8 +30,6 @@ export function cachedPacketFor(packets,request,now=Date.now()) {
     && !p.data.error && p.data.success!==false
     && (request.kind!=='serper' || (p.data.searchParameters?.q===serperQuery(request.payload) && Array.isArray(p.data.organic))));
 }
-const externalUrls = user => [...new Set([user.external_url, ...(user.bio_links ?? []).map(b => b.url)]
-  .filter(value => { try { const u = new URL(value); return u.protocol === 'https:' && !u.username && !u.password && !u.port; } catch { return false; } }))];
 
 function exactCatalogLinkEdges(reference,candidate,catalog,candidateUrl) {
   if (instagramProfileUrl(candidate?.url) !== candidateUrl
@@ -230,7 +229,10 @@ export function createLiveTransport({ keys, responseDir, fetchImpl = fetch, publ
       const restricted = [403,404].includes(response.status) && /restrict|18 years|age.?gat|login.required|log in to continue/i.test(message);
       throw Object.assign(new Error(restricted ? 'Restricted profile; skipped without absence claim.'
         : `${request.kind} failed (HTTP ${response.status}); evidence saved.`),
-      { fatalProvider: !restricted && (creditFailure || [401,402,429].includes(response.status)
+      { resourceRestricted:restricted,
+        ...(request.kind==='scrapecreators_candidate' ? {linkCapture:failedLinkCapture(request.payload.url,
+          restricted ? 'restricted_response' : 'error_response',response.status)} : {}),
+        fatalProvider: !restricted && (creditFailure || [401,402,429].includes(response.status)
         || (response.status === 403 && request.kind !== 'scrapecreators_candidate')) });
     }
     if (request.kind.startsWith('scrapecreators_') && (!Number.isFinite(data.credits_charged) || data.credits_charged > 10)) {
@@ -293,11 +295,7 @@ export function createLiveTransport({ keys, responseDir, fetchImpl = fetch, publ
       const handle = new URL(canonical).pathname.split('/')[1];
       const data = await http(request, `https://api.scrapecreators.com/v1/instagram/profile?${new URLSearchParams({handle})}`,
         {headers:{'x-api-key':keys.SCRAPECREATORS_API_KEY}});
-      const user = data.data?.user;
-      if (!user?.username) throw new Error('Instagram metadata missing response-bound username.');
-      return {platform:'instagram',url:`https://www.instagram.com/${user.username}/`,
-        displayName:user.full_name, bio:user.biography, externalUrls:externalUrls(user),
-        directExternalUrls:externalUrls(user)};
+      return normalizeInstagramProfile(data,payload.url);
     }
     if (kind === 'public_page') {
       const url = musicPageUrl(payload.url);

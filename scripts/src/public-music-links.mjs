@@ -314,6 +314,7 @@ export async function resolveMusicEvidence({candidate,catalog,readPage,lookupAlb
         .sort((a,b)=>Number(referenceUrl(b,catalog.platform)===catalog.url)-Number(referenceUrl(a,catalog.platform)===catalog.url));
       for (const target of targets) if (!seen.has(target)) queue.push({url:target,linkedFrom:url});
     }
+    evidence.resolutionCapped=pageLimitReached;
     evidence.reason ??= pageLimitReached ? 'Public music-page limit reached before all supported links were checked.'
       : evidence.attempts.some(a=>a.status==='failed') ? 'Some source-linked music pages were unavailable; identity remains unresolved.'
       : 'No exact catalog artist ID in the checked music path.';
