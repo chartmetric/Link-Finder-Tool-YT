@@ -19,6 +19,12 @@ by the live research runner or API. Every result is labeled offline-only,
 production-unapproved and claims-disallowed. `simulationUrls` are not an export
 or an approved-link field.
 
+For a batch impact comparison of supplied captured cases, see
+[Offline source-policy impact report](INSTAGRAM_SOURCE_POLICY_IMPACT.md).
+That CLI requires explicit settings and original request/decision bindings,
+retains per-case and per-pair outcomes, and writes only exclusive ignored reports.
+It does not implement the later paid evaluation criteria below.
+
 ## Source trust supported in this first harness
 
 Only the conservative catalog-reference route is simulated:

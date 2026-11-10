@@ -34,3 +34,15 @@ candidates and delivering their evidence are separate success criteria.
 keep provenance and age; deduplicate prompts before omitting low-priority facts.
 Record omissions and hold explicitly if essential evidence cannot fit. Do not
 claim archived decisions improved without a separately approved model rerun.
+
+Keep repeated artist/account observations distinct from independent sample size.
+
+**Why:** A favorable replay can coexist with another held or conflicting occurrence
+for the same account; selecting only that replay hides disagreement and inflates
+apparent coverage. Cross-artist account reuse is an unresolved ownership risk,
+not an automatic identity adjudication.
+
+**How to apply:** Retain occurrence-level decisions alongside pair-level summaries,
+identify the aggregation rule, and report distinct artists, accounts and pairs.
+Never describe an offline source-policy acceptance as a fresh model result or a
+production-approved correction.
