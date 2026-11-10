@@ -952,3 +952,45 @@ mtime_ms = 1794336840639
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/eace1be6-917e-4dd7-8c9c-5c0dfd3d0e28/c9ee9f2a-edab-4bb2-8b9b-a1d4e6a059d4"
 storage_version_token = "1794336852923812"
 content_type = "text/csv"
+
+[[outputs]]
+id = "SAl0yXyyMzkCyJYFvvRul"
+uri = "file://generated-artifacts/next-saved-500-account-context-usd20/execution/likely-matches.csv"
+type = "table"
+title = "Likely matches — 157 artists"
+description = "Review suggestions with artist names, Instagram links, supporting metadata and reasons. Not verified ownership."
+logical_id = "5bccbc1b-dc86-4eef-8dd4-470ee8a0bee3"
+content_hash = "sha256:6ab627df0175dd1301abe8fc538328f17438405c1691153e3642d40cc1a51027"
+size = 1119577
+mtime_ms = 1794339366963
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/5bccbc1b-dc86-4eef-8dd4-470ee8a0bee3/43097c9a-711e-482d-8ed6-f445c9579536"
+storage_version_token = "1794339391648868"
+content_type = "text/csv"
+
+[[outputs]]
+id = "65L6Ehs7zKMlBktU4QaKG"
+uri = "file://generated-artifacts/next-saved-500-account-context-usd20/execution/checked-not-accepted.csv"
+type = "table"
+title = "Checked but not accepted — 131 artists"
+description = "Completed checks without an accepted review suggestion, including reasons and metadata."
+logical_id = "3268174a-f787-4855-8a91-cf7084420c18"
+content_hash = "sha256:2719932b1c975005a6ba31745cef04e7d457c14c4612a4c18fd45f97986ea537"
+size = 935389
+mtime_ms = 1794339366971
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/3268174a-f787-4855-8a91-cf7084420c18/1ebaf357-9e47-42cb-a372-84d2bf07849b"
+storage_version_token = "1794339392302513"
+content_type = "text/csv"
+
+[[outputs]]
+id = "6bCCOUmfuDfNs57Skj577"
+uri = "file://generated-artifacts/next-saved-500-account-context-usd20/execution/artist-instagram-findings.csv"
+type = "table"
+title = "Full batch — 500 artists"
+description = "All results, including 212 unfinished checks, metadata used and saved candidates."
+logical_id = "effa2464-9ef2-4ae6-8c53-10f327e85053"
+content_hash = "sha256:3e11bc7375509ae34b9e3bc4d54efb66c80e8a530f96ed03f3f01ae390f85ec8"
+size = 2720819
+mtime_ms = 1794339366947
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/effa2464-9ef2-4ae6-8c53-10f327e85053/b720ec82-0989-43f8-a740-450c4b48c8c6"
+storage_version_token = "1794339393713695"
+content_type = "text/csv"
