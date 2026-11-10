@@ -9,6 +9,107 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Read-only saved artist batches and diagnostic exports
+ */
+export const ListArtistResultBatchesResponse = zod.object({
+  "batches": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "createdAt": zod.string(),
+  "status": zod.string(),
+  "source": zod.enum(['research', 'diagnostic', 'live']),
+  "artistCount": zod.number(),
+  "candidateCount": zod.number(),
+  "rowCount": zod.number(),
+  "verifiedCount": zod.number(),
+  "reviewCount": zod.number(),
+  "notInspectedCount": zod.number(),
+  "metadataFailedCount": zod.number(),
+  "noCandidateCount": zod.number(),
+  "reservedUsd": zod.number().nullable(),
+  "reportedUsd": zod.number().nullable(),
+  "explanation": zod.string()
+})),
+  "warnings": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Paginated saved candidates with all original CSV fields
+ */
+export const getArtistResultRowsPathBatchIdMax = 180;
+
+export const getArtistResultRowsPathOffsetMin = 0;
+
+export const getArtistResultRowsPathPageSizeMax = 50;
+
+export const getArtistResultRowsPathSearchTermMax = 122;
+
+
+
+export const GetArtistResultRowsParams = zod.object({
+  "batchId": zod.coerce.string().max(getArtistResultRowsPathBatchIdMax),
+  "offset": zod.coerce.number().min(getArtistResultRowsPathOffsetMin),
+  "pageSize": zod.coerce.number().min(1).max(getArtistResultRowsPathPageSizeMax),
+  "searchTerm": zod.coerce.string().max(getArtistResultRowsPathSearchTermMax).describe('Prefix the search with q:; q: alone means no search.'),
+  "resultFilter": zod.enum(['all', 'verified', 'review', 'not_inspected', 'metadata_failed', 'no_candidate', 'controls'])
+})
+
+export const GetArtistResultRowsResponse = zod.object({
+  "batch": zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "createdAt": zod.string(),
+  "status": zod.string(),
+  "source": zod.enum(['research', 'diagnostic', 'live']),
+  "artistCount": zod.number(),
+  "candidateCount": zod.number(),
+  "rowCount": zod.number(),
+  "verifiedCount": zod.number(),
+  "reviewCount": zod.number(),
+  "notInspectedCount": zod.number(),
+  "metadataFailedCount": zod.number(),
+  "noCandidateCount": zod.number(),
+  "reservedUsd": zod.number().nullable(),
+  "reportedUsd": zod.number().nullable(),
+  "explanation": zod.string()
+}),
+  "rows": zod.array(zod.object({
+  "id": zod.string(),
+  "artistName": zod.string(),
+  "profileId": zod.string(),
+  "candidateUrl": zod.string().nullable(),
+  "verifiedUrl": zod.string().nullable(),
+  "status": zod.string(),
+  "score": zod.number().nullable(),
+  "verdict": zod.string().nullable(),
+  "comparisonType": zod.string().nullable(),
+  "fields": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.string(),
+  "group": zod.enum(['identity', 'decision', 'metadata', 'provenance', 'raw'])
+}))
+})),
+  "total": zod.number(),
+  "nextOffset": zod.number().nullable()
+})
+
+
+/**
+ * @summary Download every saved field for this batch
+ */
+export const downloadArtistResultCsvPathBatchIdMax = 180;
+
+
+
+export const DownloadArtistResultCsvParams = zod.object({
+  "batchId": zod.coerce.string().max(downloadArtistResultCsvPathBatchIdMax)
+})
+
+export const DownloadArtistResultCsvResponse = zod.unknown()
+
+
+/**
  * @summary Evidence-backed platform resolution coverage for all bulk profile types
  */
 export const GetBulkCoverageResponse = zod.object({

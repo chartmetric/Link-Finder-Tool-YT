@@ -11,6 +11,7 @@
     "test": "esbuild tests/*.test.ts --bundle --platform=node --format=esm --external:pino --banner:js='import { createRequire as testRequire } from \"node:module\"; const require = testRequire(import.meta.url);' --outdir=.local/test-build && node --test .local/test-build/*.test.js"
   },
   "dependencies": {
+    "@google-cloud/storage": "^8.4.0",
     "@workspace/api-zod": "workspace:*",
     "@workspace/db": "workspace:*",
     "cookie-parser": "^1.4.7",

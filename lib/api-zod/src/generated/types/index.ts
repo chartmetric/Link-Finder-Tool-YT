@@ -6,6 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './artistResultBatch';
+export * from './artistResultBatchSource';
+export * from './artistResultRow';
+export * from './artistResultRowFieldsItem';
+export * from './artistResultRowFieldsItemGroup';
 export * from './billingOutage';
 export * from './billingOutageProvider';
 export * from './billingRecoveryInput';
@@ -52,6 +57,7 @@ export * from './bulkTypeCoverage';
 export * from './existingProfile';
 export * from './existingProfileAccount';
 export * from './existingProfilePage';
+export * from './getArtistResultRows200';
 export * from './healthStatus';
 export * from './identityComparison';
 export * from './identityComparisonStatus';
@@ -59,6 +65,7 @@ export * from './identityMetadata';
 export * from './jevVerification';
 export * from './jevVerificationProbabilities';
 export * from './jevVerificationVerdict';
+export * from './listArtistResultBatches200';
 export * from './listBulkBrandCandidatesParams';
 export * from './listBulkBrandRuns200';
 export * from './listExistingProfilesParams';

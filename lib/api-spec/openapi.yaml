@@ -13,6 +13,64 @@ tags:
   - name: profile-search
     description: Public profile discovery
 paths:
+  /bulk/artist-results:
+    get:
+      operationId: listArtistResultBatches
+      tags: [profile-search]
+      summary: Read-only saved artist batches and diagnostic exports
+      responses:
+        "200":
+          description: Available saved batches, without starting any provider work
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [batches, warnings]
+                properties:
+                  batches:
+                    type: array
+                    items: { $ref: "#/components/schemas/ArtistResultBatch" }
+                  warnings: { type: array, items: { type: string } }
+  /bulk/artist-results/{batchId}/rows/{offset}/{pageSize}/{searchTerm}/{resultFilter}:
+    get:
+      operationId: getArtistResultRows
+      tags: [profile-search]
+      summary: Paginated saved candidates with all original CSV fields
+      parameters:
+        - { name: batchId, in: path, required: true, schema: { type: string, maxLength: 180 } }
+        - { name: offset, in: path, required: true, schema: { type: number, minimum: 0 } }
+        - { name: pageSize, in: path, required: true, schema: { type: number, minimum: 1, maximum: 50 } }
+        - { name: searchTerm, in: path, required: true, description: "Prefix the search with q:; q: alone means no search.", schema: { type: string, maxLength: 122 } }
+        - { name: resultFilter, in: path, required: true, schema: { type: string, enum: [all, verified, review, not_inspected, metadata_failed, no_candidate, controls] } }
+      responses:
+        "200":
+          description: A page of frozen saved results; omitted evidence stays explicitly missing
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [batch, rows, total, nextOffset]
+                properties:
+                  batch: { $ref: "#/components/schemas/ArtistResultBatch" }
+                  rows: { type: array, items: { $ref: "#/components/schemas/ArtistResultRow" } }
+                  total: { type: number }
+                  nextOffset: { type: [number, "null"] }
+        "404": { description: Batch not found }
+        "400": { description: Invalid filters or pagination }
+  /bulk/artist-results/{batchId}/csv:
+    get:
+      operationId: downloadArtistResultCsv
+      tags: [profile-search]
+      summary: Download every saved field for this batch
+      parameters:
+        - { name: batchId, in: path, required: true, schema: { type: string, maxLength: 180 } }
+      responses:
+        "200":
+          description: Full CSV, independent of the current page or filter
+          content:
+            text/csv:
+              schema: { type: string }
+        "404": { description: Batch not found }
   /bulk/coverage:
     get:
       operationId: getBulkCoverage
@@ -439,6 +497,48 @@ paths:
           description: Suggestion storage is unavailable
 components:
   schemas:
+    ArtistResultBatch:
+      type: object
+      required: [id, title, createdAt, status, source, artistCount, candidateCount, rowCount, verifiedCount, reviewCount, notInspectedCount, metadataFailedCount, noCandidateCount, reservedUsd, reportedUsd, explanation]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        createdAt: { type: string }
+        status: { type: string }
+        source: { type: string, enum: [research, diagnostic, live] }
+        artistCount: { type: number }
+        candidateCount: { type: number }
+        rowCount: { type: number }
+        verifiedCount: { type: number }
+        reviewCount: { type: number }
+        notInspectedCount: { type: number }
+        metadataFailedCount: { type: number }
+        noCandidateCount: { type: number }
+        reservedUsd: { type: [number, "null"] }
+        reportedUsd: { type: [number, "null"] }
+        explanation: { type: string }
+    ArtistResultRow:
+      type: object
+      required: [id, artistName, profileId, candidateUrl, verifiedUrl, status, score, verdict, comparisonType, fields]
+      properties:
+        id: { type: string }
+        artistName: { type: string }
+        profileId: { type: string }
+        candidateUrl: { type: [string, "null"] }
+        verifiedUrl: { type: [string, "null"] }
+        status: { type: string }
+        score: { type: [number, "null"] }
+        verdict: { type: [string, "null"] }
+        comparisonType: { type: [string, "null"] }
+        fields:
+          type: array
+          items:
+            type: object
+            required: [label, value, group]
+            properties:
+              label: { type: string }
+              value: { type: string }
+              group: { type: string, enum: [identity, decision, metadata, provenance, raw] }
     BulkCoverageGroup:
       type: string
       enum: [tiers_1_3, tiers_1_5, all]

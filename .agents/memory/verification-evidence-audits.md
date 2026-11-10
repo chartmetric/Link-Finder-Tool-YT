@@ -7,7 +7,7 @@ Do not attribute an archived model result to a request reconstructed with a newe
 
 **Why:** Historical completion packets can lack outgoing input bytes, while subsequent question changes and provenance repairs change both evidence interpretation and request size. A complete music-ID path does not establish how the historical model received it or prove that a wording repair fixes its score.
 
-**How to apply:** Prefer archived request bodies and hashes when available; explicitly label reconstructions otherwise. Measure the whole serialized request including every candidate and typed question against the existing byte cap. Fixture decisions test the acceptance contract, not model accuracy. A new paid evaluation always needs its own approval and exclusive journal.
+**How to apply:** Prefer archived request bodies and hashes when available; explicitly label reconstructions otherwise. Measure the whole serialized request including every candidate and typed question against the existing byte cap. Fixture decisions test the acceptance contract, not model accuracy. When isolating simultaneous verdict and score failures with artificial answers, keep real outputs alongside the counterfactuals; structurally eligible cases are not recovered or verified links. A new paid evaluation always needs its own approval and exclusive journal.
 
 A completed research workflow with no evaluated holdouts has not passed an
 ownership quality check.

@@ -5,6 +5,71 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type ArtistResultBatchSource = typeof ArtistResultBatchSource[keyof typeof ArtistResultBatchSource];
+
+
+export const ArtistResultBatchSource = {
+  research: 'research',
+  diagnostic: 'diagnostic',
+  live: 'live',
+} as const;
+
+export interface ArtistResultBatch {
+  id: string;
+  title: string;
+  createdAt: string;
+  status: string;
+  source: ArtistResultBatchSource;
+  artistCount: number;
+  candidateCount: number;
+  rowCount: number;
+  verifiedCount: number;
+  reviewCount: number;
+  notInspectedCount: number;
+  metadataFailedCount: number;
+  noCandidateCount: number;
+  /** @nullable */
+  reservedUsd: number | null;
+  /** @nullable */
+  reportedUsd: number | null;
+  explanation: string;
+}
+
+export type ArtistResultRowFieldsItemGroup = typeof ArtistResultRowFieldsItemGroup[keyof typeof ArtistResultRowFieldsItemGroup];
+
+
+export const ArtistResultRowFieldsItemGroup = {
+  identity: 'identity',
+  decision: 'decision',
+  metadata: 'metadata',
+  provenance: 'provenance',
+  raw: 'raw',
+} as const;
+
+export type ArtistResultRowFieldsItem = {
+  label: string;
+  value: string;
+  group: ArtistResultRowFieldsItemGroup;
+};
+
+export interface ArtistResultRow {
+  id: string;
+  artistName: string;
+  profileId: string;
+  /** @nullable */
+  candidateUrl: string | null;
+  /** @nullable */
+  verifiedUrl: string | null;
+  status: string;
+  /** @nullable */
+  score: number | null;
+  /** @nullable */
+  verdict: string | null;
+  /** @nullable */
+  comparisonType: string | null;
+  fields: ArtistResultRowFieldsItem[];
+}
+
 export type BulkCoverageGroup = typeof BulkCoverageGroup[keyof typeof BulkCoverageGroup];
 
 
@@ -949,6 +1014,19 @@ export interface ProfileSuggestionApprovalResult {
   inserted: number;
   approvedAt: string;
 }
+
+export type ListArtistResultBatches200 = {
+  batches: ArtistResultBatch[];
+  warnings: string[];
+};
+
+export type GetArtistResultRows200 = {
+  batch: ArtistResultBatch;
+  rows: ArtistResultRow[];
+  total: number;
+  /** @nullable */
+  nextOffset: number | null;
+};
 
 export type ListProfileInvestigationsParams = {
 /**

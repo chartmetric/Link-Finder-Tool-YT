@@ -21,3 +21,4 @@
 - [Systematic musician corrections](musician-correction-scope.md) — prioritize shared fixes and bounded bulk execution; no artist-specific work or prolonged individual probes.
 - [Correction rerun safety](correction-rerun-safety.md) — full musician attribution corrections need separately approved readiness; discovery reruns and diagnostic pilots are not correction executors.
 - [Instagram capture uncertainty](instagram-capture-uncertainty.md) — explicit provider empty links do not prove the visible Instagram profile has no website.
+- [Batch results review](batch-results-review.md) — expose every findings CSV field through progressive disclosure, with visible artist names and candidate versus accepted links.

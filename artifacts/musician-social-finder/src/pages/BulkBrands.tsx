@@ -15,6 +15,7 @@ import '@/styles/bulk.css';
 import { bulkRequest, completeBulkRequest } from '@/lib/bulk-requests';
 import { BillingHealthNotice, useBulkBillingGate } from '@/components/bulk/billing-health';
 import { MusicianInstagramResearchProgress } from '@/components/bulk/musician-instagram-research-progress';
+import { ArtistBatchResults } from '@/components/bulk/artist-batch-results';
 
 type Selections = Record<ProfileKind, Map<number, BulkBrandCandidate>>;
 const load = (k: ProfileKind) => new Map(readStorage<BulkBrandCandidate[]>(selectionKey(k), []).filter(c => kindOf(c) === k).map(c => [c.profileId, c]));
@@ -143,6 +144,7 @@ export default function BulkBrands() {
             </p>
           )}
 
+          {kind === 'artist' && <ArtistBatchResults />}
           {kind === 'artist' && <MusicianInstagramResearchProgress />}
           <CoveragePanel kind={kind} />
 

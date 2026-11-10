@@ -34,7 +34,9 @@ import type {
   BulkRunControl,
   BulkRunResumeInput,
   ExistingProfilePage,
+  GetArtistResultRows200,
   HealthStatus,
+  ListArtistResultBatches200,
   ListBulkBrandCandidatesParams,
   ListBulkBrandRuns200,
   ListExistingProfilesParams,
@@ -78,6 +80,257 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getListArtistResultBatchesUrl = () => {
+
+
+
+
+  return `/api/bulk/artist-results`
+}
+
+/**
+ * @summary Read-only saved artist batches and diagnostic exports
+ */
+export const listArtistResultBatches = async ( options?: Parameters<typeof customFetch>[1]): Promise<ListArtistResultBatches200> => {
+
+  return customFetch<ListArtistResultBatches200>(getListArtistResultBatchesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListArtistResultBatchesQueryKey = () => {
+    return [
+    `/api/bulk/artist-results`
+    ] as const;
+    }
+
+
+export const getListArtistResultBatchesQueryOptions = <TData = Awaited<ReturnType<typeof listArtistResultBatches>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listArtistResultBatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListArtistResultBatchesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listArtistResultBatches>>> = ({ signal }) => listArtistResultBatches({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listArtistResultBatches>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListArtistResultBatchesQueryResult = NonNullable<Awaited<ReturnType<typeof listArtistResultBatches>>>
+export type ListArtistResultBatchesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Read-only saved artist batches and diagnostic exports
+ */
+
+export function useListArtistResultBatches<TData = Awaited<ReturnType<typeof listArtistResultBatches>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listArtistResultBatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListArtistResultBatchesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetArtistResultRowsUrl = (batchId: string,
+    offset: number,
+    pageSize: number,
+    searchTerm: string,
+    resultFilter: 'all' | 'verified' | 'review' | 'not_inspected' | 'metadata_failed' | 'no_candidate' | 'controls',) => {
+
+
+
+
+  return `/api/bulk/artist-results/${batchId}/rows/${offset}/${pageSize}/${searchTerm}/${resultFilter}`
+}
+
+/**
+ * @summary Paginated saved candidates with all original CSV fields
+ */
+export const getArtistResultRows = async (batchId: string,
+    offset: number,
+    pageSize: number,
+    searchTerm: string,
+    resultFilter: 'all' | 'verified' | 'review' | 'not_inspected' | 'metadata_failed' | 'no_candidate' | 'controls', options?: Parameters<typeof customFetch>[1]): Promise<GetArtistResultRows200> => {
+
+  return customFetch<GetArtistResultRows200>(getGetArtistResultRowsUrl(batchId,offset,pageSize,searchTerm,resultFilter),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetArtistResultRowsQueryKey = (batchId: string,
+    offset: number,
+    pageSize: number,
+    searchTerm: string,
+    resultFilter: 'all' | 'verified' | 'review' | 'not_inspected' | 'metadata_failed' | 'no_candidate' | 'controls',) => {
+    return [
+    `/api/bulk/artist-results/${batchId}/rows/${offset}/${pageSize}/${searchTerm}/${resultFilter}`
+    ] as const;
+    }
+
+
+export const getGetArtistResultRowsQueryOptions = <TData = Awaited<ReturnType<typeof getArtistResultRows>>, TError = ErrorType<void>>(batchId: string,
+    offset: number,
+    pageSize: number,
+    searchTerm: string,
+    resultFilter: 'all' | 'verified' | 'review' | 'not_inspected' | 'metadata_failed' | 'no_candidate' | 'controls', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArtistResultRows>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetArtistResultRowsQueryKey(batchId,offset,pageSize,searchTerm,resultFilter);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getArtistResultRows>>> = ({ signal }) => getArtistResultRows(batchId,offset,pageSize,searchTerm,resultFilter, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: batchId !== null && batchId !== undefined && offset !== null && offset !== undefined && pageSize !== null && pageSize !== undefined && searchTerm !== null && searchTerm !== undefined && resultFilter !== null && resultFilter !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getArtistResultRows>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetArtistResultRowsQueryResult = NonNullable<Awaited<ReturnType<typeof getArtistResultRows>>>
+export type GetArtistResultRowsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Paginated saved candidates with all original CSV fields
+ */
+
+export function useGetArtistResultRows<TData = Awaited<ReturnType<typeof getArtistResultRows>>, TError = ErrorType<void>>(
+ batchId: string,
+    offset: number,
+    pageSize: number,
+    searchTerm: string,
+    resultFilter: 'all' | 'verified' | 'review' | 'not_inspected' | 'metadata_failed' | 'no_candidate' | 'controls', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArtistResultRows>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetArtistResultRowsQueryOptions(batchId,offset,pageSize,searchTerm,resultFilter,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDownloadArtistResultCsvUrl = (batchId: string,) => {
+
+
+
+
+  return `/api/bulk/artist-results/${batchId}/csv`
+}
+
+/**
+ * @summary Download every saved field for this batch
+ */
+export const downloadArtistResultCsv = async (batchId: string, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getDownloadArtistResultCsvUrl(batchId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadArtistResultCsvQueryKey = (batchId: string,) => {
+    return [
+    `/api/bulk/artist-results/${batchId}/csv`
+    ] as const;
+    }
+
+
+export const getDownloadArtistResultCsvQueryOptions = <TData = Awaited<ReturnType<typeof downloadArtistResultCsv>>, TError = ErrorType<void>>(batchId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadArtistResultCsv>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadArtistResultCsvQueryKey(batchId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadArtistResultCsv>>> = ({ signal }) => downloadArtistResultCsv(batchId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: batchId !== null && batchId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadArtistResultCsv>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadArtistResultCsvQueryResult = NonNullable<Awaited<ReturnType<typeof downloadArtistResultCsv>>>
+export type DownloadArtistResultCsvQueryError = ErrorType<void>
+
+
+/**
+ * @summary Download every saved field for this batch
+ */
+
+export function useDownloadArtistResultCsv<TData = Awaited<ReturnType<typeof downloadArtistResultCsv>>, TError = ErrorType<void>>(
+ batchId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadArtistResultCsv>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadArtistResultCsvQueryOptions(batchId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetBulkCoverageUrl = () => {
 

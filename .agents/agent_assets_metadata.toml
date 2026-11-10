@@ -532,3 +532,31 @@ mtime_ms = 1794271911823
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/5625e3a6-1a5c-4ee6-8c7d-2805d7d86a1e/50ea0155-1240-4450-b9b9-17065200a3ce"
 storage_version_token = "1794271932632780"
 content_type = "text/csv"
+
+[[outputs]]
+id = "_j1MbDWfH5D4QdfcrCXWb"
+uri = "file://generated-artifacts/saved-verification-fixes-approved-usd1/rejection-rules-audit.html"
+type = "html"
+title = "Offline audit — why Instagram candidates remain unverified"
+description = "Findings from all 40 archived requests and reproduced acceptance decisions, including the two independent model requirements, prior workflow-label leakage, missing source paths, and limits of historical prompt experiments. No paid calls or policy changes."
+logical_id = "de795cc2-1489-465f-b61b-c1d63b8454e7"
+content_hash = "sha256:dcba2331c327ceb4a6408c967f40dc8d65f43ed3c22c54d8ff9ec27e28aa888d"
+size = 11192
+mtime_ms = 1794272214950
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/de795cc2-1489-465f-b61b-c1d63b8454e7/558c0b8b-0a7b-416a-a676-aadae8065f61"
+storage_version_token = "1794272270286863"
+content_type = "text/html"
+
+[[outputs]]
+id = "8d0njvychh5OMaEiTEq4o"
+uri = "file://generated-artifacts/saved-verification-fixes-approved-usd1/rejection-rules-audit.csv"
+type = "table"
+title = "Rejection audit — candidate-level checks"
+description = "Per-candidate and control diagnostics: actual score and verdict, structural source checks, metadata delivery, prior internal labels, and clearly marked artificial gate-isolation tests. Artificial positives are not verified links."
+logical_id = "9cf60a77-9258-4393-9270-bb81200da830"
+content_hash = "sha256:a05bb99ab2dc745afbfa0ab59504a344fb2e7f56583ef345b455180f58cbd7f8"
+size = 14664
+mtime_ms = 1794272214946
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/9cf60a77-9258-4393-9270-bb81200da830/6b6a83d1-4575-4766-b221-a9ae2cced8a0"
+storage_version_token = "1794272270906947"
+content_type = "text/csv"
