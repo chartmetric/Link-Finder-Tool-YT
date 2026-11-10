@@ -6,32 +6,38 @@ import {catalogReferences,instagramProfileUrl} from './musician-instagram-matchi
 import {jevRequest,fitArtistContext} from './instagram-pilot-live-transport.mjs';
 import {CORROBORATED_RUBRIC} from './instagram-ownership-rubric.mjs';
 import {normalizeInstagramProfile} from './instagram-link-capture.mjs';
+import {readSavedDiscovery,readVerifiedSavedSources} from './instagram-saved-source-export.mjs';
 export const digest=v=>createHash('sha256').update(typeof v==='string'?v:JSON.stringify(v)).digest('hex');
 export async function prepareNextSavedBatch(dir,previous){
-  const read=async f=>JSON.parse(await fs.readFile(path.join(dir,f),'utf8'));
-  const discovery=(await Promise.all((await fs.readdir(dir)).filter(f=>/^discovery-\d+\.json$/.test(f)).sort().map(read))).flat();
+  const savedDiscovery=await readSavedDiscovery(dir),discovery=savedDiscovery.rows;
   assert.equal(discovery.length,500);assert.equal(new Set(discovery.map(r=>r.profile_id)).size,500);
-  const profiles=new Map((await read('frozen-profiles.json')).map(r=>[r.profile_id,r]));
-  const accounts=new Map((await read('frozen-accounts.json')).map(r=>[r.profile_id,r.accounts]));
-  const countries=new Map((await read('frozen-country.json')).map(r=>[String(r.cm_artist),r]));
+  const sources=await readVerifiedSavedSources(dir,savedDiscovery);
+  const profiles=new Map(sources.catalogProfiles.map(r=>[r.profile_id,r]));
+  const accounts=new Map();
+  for(const a of sources.accounts){
+    const list=accounts.get(a.profile_id)??[];list.push(a);accounts.set(a.profile_id,list);
+  }
+  const countries=new Map(sources.chartmetric.map(r=>[String(r.cm_artist),r]));
   const priorIds=new Set(previous.artists.map(a=>String(a.profile_id))),priorCms=new Set(previous.artists.map(a=>String(a.cm_artist)));
   const targets=discovery.map(row=>{
-    const p=profiles.get(row.profile_id);assert.ok(p);assert.equal(String(p.cm_artist),String(row.cm_artist));
-    assert.ok(!priorIds.has(row.profile_id)&&!priorCms.has(String(row.cm_artist)),'Prior artist would be charged again.');
+    const id=String(row.profile_id);
+    const p=profiles.get(id);assert.ok(p);assert.equal(String(p.cm_artist),String(row.cm_artist));
+    assert.ok(!priorIds.has(id)&&!priorCms.has(String(row.cm_artist)),'Prior artist would be charged again.');
     const saved=JSON.parse(row.result_json),candidates=[],seen=new Set();
     for(const candidate of saved.profiles??[]){
       const url=instagramProfileUrl(candidate.url);
       if(url&&!seen.has(url)){candidates.push({...candidate,url});seen.add(url);}
     }
-    const aa=(accounts.get(row.profile_id)??[]).map(([account_id,platform,account_url,handle])=>
-      ({profile_id:row.profile_id,account_id,platform,account_url,handle}));
-    const player={profile_id:row.profile_id,cm_artist:String(row.cm_artist),artist:p.name,tier_rank:row.tier_rank,
+    const aa=accounts.get(id)??[];
+    const player={profile_id:id,cm_artist:String(row.cm_artist),artist:p.name,tier_rank:row.tier_rank,
       accounts:aa,account_ids:aa.map(a=>a.account_id),source_identity_matches:true,catalog_profile:p,
+      source_export_sha256:sources.sourceExportSha256,
       savedCandidateUrls:candidates.map(c=>c.url)};
     const country=countries.get(String(row.cm_artist));
     const context={ownershipConfirmed:false,items:country?.code2?[{kind:'country',source:'new_vertical.cm_artist',
       text:country.code2,asOf:p.source_updated_at,binding:'catalog_artist_identity_only',stale:false}]:[]};
-    return {player,artist:p.name,profileId:row.profile_id,sourceCapturedAt:row.captured_at,
+    return {player,artist:p.name,profileId:id,sourceCapturedAt:row.captured_at,
+      sourceExportSha256:sources.sourceExportSha256,
       sourceArtistName:row.artist,sourceRunEvidenceSha256:digest(row.result_json),
       candidates,selected:candidates[0]??null,context,catalogCountryRecord:country??null};
   });

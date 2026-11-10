@@ -27,9 +27,12 @@ export function metadataQueries(manifest,maxArtists=250) {
     catalogProfiles:`SELECT toString(id) profile_id,toString(cm_source_id) cm_artist,name,image_url,
       toString(updated_at) source_updated_at FROM new_vertical.profile FINAL
       WHERE id IN (${ids}) AND cm_source='cm_artist'`,
-    accounts:`SELECT toString(l.profile_id) profile_id,toString(a.id) account_id,a.platform,a.account_url,
+    accounts:`SELECT toString(l.profile_id) profile_id,toString(p.cm_source_id) cm_artist,
+      toString(a.id) account_id,a.platform,a.account_url,
       a.handle,toString(l.connected_at) connected_at,toString(a.modified_at) source_updated_at
       FROM new_vertical.l_profile_account AS l FINAL
+      INNER JOIN (SELECT id,cm_source_id FROM new_vertical.profile FINAL
+        WHERE id IN (${ids}) AND cm_source='cm_artist') p ON p.id=l.profile_id
       INNER JOIN (SELECT id,platform,account_url,handle,modified_at FROM new_vertical.account FINAL
         WHERE is_active=1 AND platform!='instagram') a ON a.id=l.account_id
       WHERE l.disconnected_at IS NULL AND l.profile_id IN (${ids})`,

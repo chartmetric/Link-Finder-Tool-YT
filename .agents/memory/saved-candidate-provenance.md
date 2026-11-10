@@ -42,3 +42,13 @@ which catalog artist owns the account.
 **How to apply:** Keep the total approved parent ceiling authoritative across all
 rounds and providers; preserve shared-handle conflicts and never automatically
 replay uncertain admissions.
+
+Legacy account exports without source-query provenance must be re-exported, not
+grandfathered in or relabeled as musician records.
+
+**Why:** Validating numeric IDs after the fact cannot recover which parallel
+catalog supplied an account. A new provenance label cannot repair an unknown join.
+
+**How to apply:** Fail preparation closed when source provenance is absent. Keep
+the original evidence untouched and create a fresh read-only musician export;
+this still does not verify ownership or authorize paid provider work.
