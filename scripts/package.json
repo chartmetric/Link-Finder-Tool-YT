@@ -9,6 +9,8 @@
     "test:reference-links": "node --test ./src/instagram-reference-links.test.mjs",
     "test:instagram-corroborated-policy": "node --test src/instagram-corroborated-policy.test.mjs src/instagram-corroborated-check.test.mjs",
     "instagram:check-corroborated-policy": "node src/instagram-corroborated-policy-check.mjs",
+    "instagram:prepare-paired-test": "node src/instagram-paired-verification-prep.mjs",
+    "test:instagram-paired-test": "node --test src/instagram-paired-verification-prep.test.mjs",
     "instagram:correction-readiness": "node ./src/musician-instagram-research.mjs correction-readiness",
     "instagram:run-correction": "node ./src/musician-instagram-research.mjs run-correction",
     "test:instagram-readiness": "node --test src/instagram-correction-readiness.test.mjs",

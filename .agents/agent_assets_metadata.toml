@@ -588,3 +588,17 @@ mtime_ms = 1794274486490
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/e9ef8f55-249a-46f7-a448-fa3f70176d2d/f1965ebd-c19e-4e5d-a80a-e04e02071e9b"
 storage_version_token = "1794274847770096"
 content_type = "text/csv"
+
+[[outputs]]
+id = "qZQ_9sDbv-vqUy5bfnHi6"
+uri = "file://generated-artifacts/verification-test-preparation/request-review.csv"
+type = "table"
+title = "Prepared verification test — 24 frozen requests"
+description = "Six artists and six distinct saved controls, each tested with baseline and proposed rubrics. Includes the exact request JSON, supplied metadata, byte counts, paired evidence hashes and zero-omission checks. Execution is not approved and no paid requests have been sent."
+logical_id = "9628aab1-235e-4a1f-93de-8762aed55a3e"
+content_hash = "sha256:23bac73fde3a6ddf68e37a422c0838de43661a913e99e7584d0e47f265939b16"
+size = 166529
+mtime_ms = 1794275736086
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/9628aab1-235e-4a1f-93de-8762aed55a3e/0e5668bb-6178-470d-8302-6556783b6502"
+storage_version_token = "1794275787108794"
+content_type = "text/csv"

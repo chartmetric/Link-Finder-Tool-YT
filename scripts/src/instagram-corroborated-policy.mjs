@@ -94,7 +94,7 @@ export function corroboratedCandidate({profile, player, references, context, too
     i && i.stale !== true && i.source && typeof i.text === 'string').slice(0, 16)};
   const signals = contextSignals(metadata, candidate, player.artist, profile.discoveryEvidence ?? []);
   const bioTitles = new Set((signals.songTitlesInCandidateProfile.titles ?? []).map(norm));
-  const ownReleasePosts = (signals.songTitlesInCandidatePosts.matches ?? []).filter(p =>
+  const ownReleasePosts = (signals.songTitlesInCandidatePosts?.matches ?? []).filter(p =>
     p.attribution === 'candidate_owned_post_search_snippet' && !p.cautions.length
     && /(?<![\p{L}\p{N}])(my|our|мой|моя|наш|наша|mi|nuestro|meu|minha)(?![\p{L}\p{N}])/u.test(norm(p.snippet))
     && /(?<![\p{L}\p{N}])(single|album|song|track|трек|песню|песня|cancion|musica)(?![\p{L}\p{N}])/u.test(norm(p.snippet)));
