@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
+    "check:reference-links": "node ./src/instagram-reference-label-audit.mjs --check-reference-links",
+    "test:reference-links": "node --test ./src/instagram-reference-links.test.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

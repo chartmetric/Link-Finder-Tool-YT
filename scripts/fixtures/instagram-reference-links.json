@@ -1,0 +1,84 @@
+{
+  "representation": "Reconstructed anchor fixtures from archived observed hrefs, NOT original HTML excerpts. SVG markup and tracking duplicates are synthetic regression scaffolding. Original HTML bytes were not retained; original hashes cannot be revalidated from these fixtures.",
+  "cases": [
+    {
+      "profileId": "207595",
+      "name": "Aimee Carty",
+      "archive": {
+        "file": "generated-artifacts/instagram-reference-label-audit-2026-11-09-ready/direct-html-links-207595.json",
+        "sha256": "cfcc549847fa55d42ead15e48a665f51ead7c373f545689f8a027dd4d01d4b54",
+        "url": "https://www.aimeecarty.com/",
+        "at": "2026-11-09T18:46:39.500Z",
+        "bodySha256": "90c1848c8ba0735fdeb50f09374ac3e787fce16d262a95dddaf0ead4135ea280"
+      },
+      "readableArchive": {
+        "file": "generated-artifacts/instagram-reference-label-audit-2026-11-09-ready/site-207595.json",
+        "sha256": "cb362e8e9a7cf47f3b7f901aeec82399b630bd481359df9878297359d847a3f6",
+        "url": "https://aimeecarty.com/",
+        "at": "2026-11-09T18:45:11.788Z",
+        "observation": "Neither exact Instagram nor Spotify URL present in saved readable text."
+      },
+      "observedHrefs": [
+        "https://www.instagram.com/aimee.carty_music/#",
+        "https://open.spotify.com/artist/4LkmOQU5KA6vZgvJHnpQDl?si=zbsW3qI7REKOoq9EUjhqcg"
+      ],
+      "html": "<footer><a href=\"https://www.instagram.com/aimee.carty_music/#\"><svg><use href=\"#instagram\"/></svg></a><a href=\"https://open.spotify.com/artist/4LkmOQU5KA6vZgvJHnpQDl?si=zbsW3qI7REKOoq9EUjhqcg\"><svg/></a><a href=\"https://instagram.com/AIMEE.CARTY_MUSIC/?utm_source=footer&amp;hl=en\"><svg/></a></footer>"
+    },
+    {
+      "profileId": "226788",
+      "name": "ERNEST",
+      "archive": {
+        "file": "generated-artifacts/instagram-reference-label-audit-2026-11-09-ready/direct-html-links-226788.json",
+        "sha256": "d9ad42736b6484a2af43b1df4d5b4de3c8c417a98b29100ed46ec5225c82b22d",
+        "url": "https://ernestofficial.com/",
+        "at": "2026-11-09T18:46:38.930Z",
+        "bodySha256": "5bb0cae47afbc6a91a022fddbf6b65348190c130bf22eeb7632d7abce7a7cd92"
+      },
+      "readableArchive": {
+        "file": "generated-artifacts/instagram-reference-label-audit-2026-11-09-ready/site-226788.json",
+        "sha256": "f673ee9484146f7d6ca62da680076da99ced51f9ba9af84437c682b6b31d629c",
+        "url": "https://ernestofficial.com/",
+        "at": "2026-11-09T18:45:11.788Z",
+        "observation": "Neither exact Instagram nor Spotify URL present in saved readable text."
+      },
+      "observedHrefs": [
+        "https://www.instagram.com/ernest/",
+        "https://open.spotify.com/artist/4GGfAshSkqoxpZdoaHm7ky"
+      ],
+      "html": "<footer><a href='https://www.instagram.com/ernest/'><i class='instagram'></i></a><a href='https://open.spotify.com/artist/4GGfAshSkqoxpZdoaHm7ky'><i class='spotify'></i></a><a href='https://open.spotify.com/artist/4GGfAshSkqoxpZdoaHm7ky?si=fixture#footer'><svg/></a></footer>"
+    },
+    {
+      "profileId": "35092",
+      "name": "The Format",
+      "archive": {
+        "file": "generated-artifacts/instagram-reference-label-audit-2026-11-09-ready/direct-html-links-35092.json",
+        "sha256": "c7aa916db044c8350a4daeea0e325f7c1839d90c17aecd98cbc2c35b99ecda12",
+        "url": "https://www.theformat.com/",
+        "at": "2026-11-09T18:46:39.166Z",
+        "bodySha256": "e48162434999bcfd6f533e9f69be0cf36ba8bf3425cab892c917daa697702d03"
+      },
+      "readableArchive": {
+        "file": "generated-artifacts/instagram-reference-label-audit-2026-11-09-ready/site-35092.json",
+        "sha256": "97e9c5ba12e190c7ddc76c6ed1520fe3fa9a853198b9dd44c9b097f8e781493a",
+        "url": "https://www.theformat.com/",
+        "at": "2026-11-09T18:45:11.788Z",
+        "observation": "Neither exact Instagram nor Spotify URL present in saved readable text."
+      },
+      "observedHrefs": [
+        "https://instagram.com/theformat",
+        "https://open.spotify.com/artist/3ZJC8cLts8Q8s8JbNJKsLf?si=G0AhL7iVRkSrIoHK-VC6Tw"
+      ],
+      "html": "<footer><a href=\"https://instagram.com/theformat\"><svg/></a><a href=\"https://open.spotify.com/artist/3ZJC8cLts8Q8s8JbNJKsLf?si=G0AhL7iVRkSrIoHK-VC6Tw\"><svg/></a><a href=https://www.instagram.com/theformat/?hl=en><svg/></a></footer>"
+    }
+  ],
+  "negative": {
+    "representation": "Reconstructed global-navigation and promoted-profile links from saved readable text. Injected exact target account anchors are synthetic adversarial controls, not claims about the archived page.",
+    "archive": {
+      "file": "generated-artifacts/instagram-reference-label-audit-2026-11-09-ready/site-205493.json",
+      "sha256": "32ac33518b3db385a5430deb5f61c0c7b829d3e21c8db6a60182f271c23da05f",
+      "url": "https://linktr.ee/rnboi",
+      "at": "2026-11-09T18:45:11.788Z"
+    },
+    "html": "<nav><a href=\"https://linktr.ee/tools/instagram-caption-generator\">Instagram tools</a><a href=\"https://linktr.ee/tools/spotify-playlist-cover-maker\">Spotify tools</a></nav><aside><h2>Explore other Linktrees</h2><a href=\"https://linktr.ee/demilovato\">Demi Lovato</a><a href=\"https://linktr.ee/veggiekins\">Remy Morimoto Park</a></aside><aside aria-label=\"Synthetic promoted target\"><a href=\"https://www.instagram.com/aimee.carty_music/\"><svg/></a><a href=\"https://open.spotify.com/artist/4LkmOQU5KA6vZgvJHnpQDl\"><svg/></a></aside>"
+  }
+}
