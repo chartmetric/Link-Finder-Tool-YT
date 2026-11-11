@@ -9,6 +9,20 @@ Bulk recovery must not automatically retry admitted work whose provider outcome 
 
 **How to apply:** Preserve uncertain admissions across worker generations. Manual resume may continue untouched work and explicitly retry acknowledged failures, but an uncertain brand requires provider review and a deliberately new run before new spend.
 
+Keep read-only catalog failures distinct from paid-provider failures, and retain
+sanitized structured diagnostics rather than only a generic stop reason.
+
+**Why:** A catalog failure stopped a campaign cleanly, but its saved diagnostic
+discarded the HTTP status and original server reason. Later successful reads
+could not establish the historical cause. A separate denial when reading server
+logs was not evidence that the original catalog request was denied access.
+
+**How to apply:** Preserve HTTP status, exception code, query kind/ID and stage
+without raw credentials or unrestricted error bodies. Label new read-only
+probes as new observations, not exact historical reproductions. Limited retries
+of transient catalog reads must never authorize replaying paid admissions,
+resetting their reservations or changing frozen acceptance rules.
+
 Distributed coordination supplements ClickHouse; it must not replace the existing catalog or result archive.
 
 **Why:** The assigned scope explicitly preserves ClickHouse and forbids writes to the catalog. Append-only analytical snapshots cannot safely serve as atomic distributed claims.

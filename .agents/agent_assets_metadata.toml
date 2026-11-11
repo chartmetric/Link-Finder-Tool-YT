@@ -1484,3 +1484,17 @@ mtime_ms = 1794433626841
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/d7bcfbfa-bacc-4b03-bc90-b567a6a6d876/6de52ca9-c42f-4b1f-8fcc-ba9dbdfe89b1"
 storage_version_token = "1794433731874331"
 content_type = "text/plain"
+
+[[outputs]]
+id = "_rW_uskD9GOXKjTOak9_w"
+uri = "file://generated-artifacts/instagram-stop-review-2026-11-11/review.txt"
+type = "text"
+title = "Instagram stop investigation"
+description = "Explains the failed catalog-data lookup, the limits of the saved error details, successful read-only checks for the next 192 queued artists, and spending-history reconciliation. No paid provider calls, coordinator updates or restarts were made."
+logical_id = "1722da19-b212-45b8-90f7-ac21756e9b98"
+content_hash = "sha256:1e3bd4a019169d4deb5d33734ee7b85b453387592a8b7a6eada88cb675546aa0"
+size = 3502
+mtime_ms = 1794434493933
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/1722da19-b212-45b8-90f7-ac21756e9b98/68a2890c-c865-4d1c-bd6b-db70c35dc9a8"
+storage_version_token = "1794434540778137"
+content_type = "text/plain"
