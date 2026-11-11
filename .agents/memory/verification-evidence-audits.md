@@ -17,6 +17,17 @@ remaining holds, preserve frozen inputs, and keep experimental serialization
 offline until separately reviewed and approved. Do not discard source records
 or increase limits to make the coverage comparison appear better.
 
+For already-frozen byte-held requests, a separately approved, measured larger
+allowance is preferable to an experimental encoding when it can preserve the
+exact outgoing bodies within the existing spending allocation.
+
+**Why:** A lossless decoder round trip does not prove model-readable equivalence;
+unchanged request hashes avoid that additional uncertainty.
+
+**How to apply:** Prepare the smallest allowance covering the full held bodies,
+keep it non-executable pending approval, and distinguish archived reservations
+from a fresh shared-ledger reconciliation and provider-enforced cost limits.
+
 Affiliation terms in a musician biography do not independently establish that the account is a label, management company or fan account.
 
 **Why:** Saved-batch reviews found musician self-descriptions mentioning label ownership held by the same vocabulary intended to screen out organizational accounts.

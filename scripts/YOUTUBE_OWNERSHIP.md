@@ -122,3 +122,47 @@ new continuation authorization without changing either spending counter or
 ceiling. Previously returned requests are reused from their receipts, not sent
 again; immutable capture/input files must compare exactly before reuse. An
 uncertain admission blocks this continuation.
+
+### Offline proposal for the 13 oversized saved requests
+
+Run `node scripts/src/youtube-ownership-size-prep.mjs` from the workspace root.
+This reads local files only: no providers, database, credentials or live runner.
+It writes an additive `ownership-size-preparation` directory and refuses to
+overwrite an existing proposal. It accepts no run or approval flags.
+
+The chosen approach is **unchanged full request bodies**, not a compact format.
+The 13 held requests measure 6,305–11,744 UTF-8 bytes including rules and typed
+questions. A proposed 11,744-byte ceiling is the smallest limit covering them
+without shortening biographies, dropping catalog context, deduplicating source
+observations or asking a model to decode a new representation. This changes the
+allowance, not the evidence, model, questions or ownership standard. It does not
+claim improved accuracy or any new verified matches.
+
+The audit rebuilds source-only artist fields from the frozen catalog overlay,
+compares the entire saved artist/search input, binds each normalized capture to
+its full raw receipt, and compares every request, byte count and fingerprint.
+Catalog envelope review flags and historical judgments are not request inputs.
+Ten completed model answers must match their original evidence and outgoing
+requests exactly; they are recorded separately and never scheduled again.
+Every original file, including full raw captures, catalog context, admissions,
+answers and outcomes, has a byte-level SHA-256 entry in the source manifest.
+Those files stay in place and are checked again before and after output.
+
+The archived spending snapshot preserves $1.28 already reserved ($0.40 discovery
+plus $0.88 ownership). Thirteen model calls would reserve at most another $0.26,
+giving $1.54 combined, within the unchanged $1.76 combined phase allowance and
+$2 parent. These are reservations, not invoices. Larger requests can cost more;
+the existing post-response cost check is not a provider-enforced price ceiling.
+Pricing and the shared ledger must be reconciled before any paid launch.
+
+`proposal.json` is **not authorization**. It contains the exact 13 bodies and
+hashes, preserved completed bindings, source manifest, proposed allowance,
+spending arithmetic and execution prerequisites. Explicit approval must bind to
+its proposal hash and request scope. There is no new dispatch path: the transport
+still rejects bodies over 6,000 bytes, and the existing stopped-phase recovery
+does not reopen a completed phase. Any future approved continuation must retain
+the original allocation, reconcile all admissions, fence the old worker and use
+only these untouched operations, without a new budget or Instagram funding.
+
+Offline regressions:
+`node --test scripts/src/youtube-ownership-size-prep.test.mjs scripts/src/youtube-ownership-execution.test.mjs scripts/src/youtube-ownership-policy.test.mjs scripts/src/youtube-ownership-check-prep.test.mjs`.

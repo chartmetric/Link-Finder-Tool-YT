@@ -86,7 +86,7 @@ test('One complete mocked flow separates Topic/unavailable channels and preserve
       if(op.key==='m1')return rawChannel('janetopic','Jane Artist - Topic');
       if(op.key==='m2')return {status:404,data:{error:'not_found'},at:'2026-11-11T01:00:00Z'};
       assert.equal(op.kind,'model');
-      return {status:200,inputSha256:evidenceDigest(request),data:{model:model.expectedModel,usage:{cost:.001},
+      return {status:200,request,inputSha256:evidenceDigest(request),data:{model:model.expectedModel,usage:{cost:.001},
         answers:{same_identity:{noul:.47},verdict:{choice:'likely'},channel_type:{choice:'artist_owned'}}}};
     },
     onCapture:async()=>{},onAnswer:async()=>{},onHold:async()=>{},progress:async()=>{},
@@ -101,13 +101,15 @@ test('One complete mocked flow separates Topic/unavailable channels and preserve
   assert.deepEqual(seen,['metadata','metadata','metadata','model']);
 });
 test('The exact observed dated model resolution is accepted and archived; other model families remain blocked',()=>{
-  const input={inputSha256:'a'.repeat(64)};
-  const packet={status:200,inputSha256:'b'.repeat(64),data:{model:'typesafe/jev-1.13-20260917',
+  const input=youtubeVerificationInput(artist,{url:'https://www.youtube.com/@janeartist',
+    capture:normalizeYoutubeChannel(rawChannel(),'https://www.youtube.com/@janeartist')});
+  const prepared=youtubeDecisionRequest(input,{model}),hash=prepared.inputSha256;
+  const packet={status:200,request:prepared.request,inputSha256:hash,data:{model:'typesafe/jev-1.13-20260917',
     usage:{cost:.000073122},answers:{same_identity:{noul:.64},verdict:{choice:'likely'},channel_type:{choice:'artist_owned'}}}};
-  const answer=parseYoutubeDecision(packet,input,{model},'b'.repeat(64));
+  const answer=parseYoutubeDecision(packet,input,{model},hash);
   assert.equal(answer.resolvedModel,'typesafe/jev-1.13-20260917');
   assert.equal(answer.answer.sameIdentityProbability,.64);
-  assert.throws(()=>parseYoutubeDecision({...packet,data:{...packet.data,model:'typesafe/jev-1.14'}},input,{model},'b'.repeat(64)));
+  assert.throws(()=>parseYoutubeDecision({...packet,data:{...packet.data,model:'typesafe/jev-1.14'}},input,{model},hash));
 });
 test('Explicit continuation requires every charged admission to have its exact returned receipt',()=>{
   const receipts=new Map([['one',{kind:'metadata',inputSha256:'h',receiptSha256:'r',status:200}]]);

@@ -52,6 +52,12 @@ export function youtubeDecisionRequest(input,plan){
 }
 export function parseYoutubeDecision(packet,input,plan,requestHash){
   const d=packet.data;
+  // A receipt hash alone does not bind an answer to the supplied artist/evidence.
+  // Verify the complete policy input, regenerate the exact typed request, and
+  // compare the saved outgoing bytes before allowing the answer to be attached.
+  assert.equal(input.inputSha256,evidenceDigest({policy:input.policy,rules:input.rules,state:input.state}));
+  assert.equal(youtubeDecisionRequest(input,plan).inputSha256,requestHash);
+  assert.equal(evidenceDigest(packet.request),requestHash);
   assert.equal(packet.inputSha256,requestHash);
   assert.equal(packet.status,200);
   assert.ok(!d?.error);
