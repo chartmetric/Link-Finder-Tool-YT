@@ -213,3 +213,29 @@ reconciliation to a separate immutable plan. Keep the original queue, approval,
 reservations and global conflict history intact. A stale heartbeat is not
 drain proof; a local approval file without a committed coordinator approval is
 not permission to dispatch.
+
+Queue shared coordinator transactions locally before acquiring database
+connections when they all serialize on the same campaign lock.
+
+**Why:** A high-concurrency Instagram worker stopped during connection acquisition
+while using a small pool with a short acquisition deadline. Adding connections
+alone can consume the pool with transactions waiting on the same row lock.
+
+**How to apply:** Keep a bounded local FIFO and bounded connection pool, with a
+separate connection-acquisition allowance from provider deadlines. Retain closed
+dispatch gates, owner checks, receipt persistence and draining of existing work;
+never replay a charge to recover from local queue congestion.
+
+A saved response that was not acknowledged in the coordinator is not
+automatically a completed admission. Exact receipt acknowledgment needs explicit,
+separate approval; it is not a provider retry.
+
+**Why:** The user approved recording two already-saved successful Instagram
+responses before resuming untouched artists. Their original reservations and
+failed artist outcomes were deliberately preserved.
+
+**How to apply:** Bind the stopped owner, full ledger snapshot, request and
+receipt hashes, original approval and sealed continuation before any write.
+Update only the approved receipt-status fields transactionally; never fabricate
+responses, refund reservations, reset failed artists, or treat finding a local
+receipt alone as authorization to continue.

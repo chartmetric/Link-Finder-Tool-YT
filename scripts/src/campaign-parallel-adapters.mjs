@@ -80,9 +80,14 @@ export async function processInstagram({target,a,source,root,request,conflict}){
       method:'POST',url:'https://google.serper.dev/search',body:{q:serperQuery({artist:a.artist,queryIndex}),num:10}});
     if(packet.status>=500){target.searchUnavailable=true;break;}
     assert.equal(packet.status,200);assert.ok(Array.isArray(packet.data.organic),'Search failure is not absence.');
-    target.candidates=instagramSearchCandidates(packet.data.organic.map(h=>({...h,observedAt:packet.at})),a.artist);
+    target.candidates=instagramSearchCandidates(packet.data.organic.map(h=>({...h,observedAt:packet.at})),
+      a.artist,{explicitAliases:true});
     target.sourceCapturedAt=packet.at;if(target.candidates.length)break;
   }
+  const expanded=instagramSearchCandidates([],a.artist,{explicitAliases:true,savedCandidates:target.candidates});
+  // A resumed older campaign uses its sealed parser, which ignores the new
+  // options and returns []; keep that campaign's original candidate ordering.
+  if(expanded.length)target.candidates=expanded;
   target.candidates=[...new Map(target.candidates.map(c=>[c.url,c])).values()];
   await saveJson(root+'/inputs/'+active+'-scope.json',target);
   const findings=[];
@@ -106,7 +111,8 @@ export async function processInstagram({target,a,source,root,request,conflict}){
     assert.ok(Number.isFinite(response.data.usage?.cost)&&response.data.usage.cost>=0&&response.data.usage.cost<=.02);
     const answer=answersFrom(response.data,1)[0];assert.ok(answer);
     const decision=catalogBoundReviewSuggestion({...built.profile,jevVerification:answer},target.player,
-      {sharedHandle:shared||await conflict(candidate.url,active)});
+      {sharedHandle:shared||await conflict(candidate.url,active),
+        guardPolicy:'targeted_title_guard',modelState:built.body.state});
     Object.assign(finding,{status:decision.status,reason:decision.reason,reviewSuggestion:decision.reviewSuggestion,
       decision,recordedAnswer:answer,metadataActuallyUsed:built.body.state,requestSha256:built.sha256});
     if(finding.reviewSuggestion)break;

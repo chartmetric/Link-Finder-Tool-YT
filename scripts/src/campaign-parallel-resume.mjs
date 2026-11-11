@@ -13,6 +13,7 @@ import {select} from './instagram-artist-metadata-overlay.mjs';
 import {CAMPAIGNS,readJson,saveJson,ledgerProof,verifyArchive,assertParallelAdmission,
   sameTierBatch,drainBatch,rollingArtists,preparedArtistBuffer,gradualCapacity,pacedAdmissions,safeDiagnostic} from './campaign-parallel-core.mjs';
 import {eligibilitySql,catalogContexts,instagramSavedCandidates,processInstagram,processYoutube} from './campaign-parallel-adapters.mjs';
+import {COORDINATOR_OPTIONS,openCoordinatorPool,coordinatorTransactions} from './campaign-parallel-coordinator.mjs';
 
 const DEFAULT_WIDTH=3;
 const directory=path.dirname(fileURLToPath(import.meta.url));
@@ -84,6 +85,7 @@ export async function prepareParallel(platform){
       runtimeFiles[name]=hash(await fs.readFile(runtime+'/'+name,'utf8'));
     const manifest={version:1,at:new Date().toISOString(),platform,campaignId:cfg.id,width,rolling,buffered,deadline,
       catalogPreparationBatchSize:deadline?192:buffered?64:width,
+      coordinator:{...COORDINATOR_OPTIONS,maximumPending:512,serializeTransactions:true},
       ...(deadline?{targetDeadline:'2026-11-11T20:00:00Z',rampIntervalMs:60000,admissionIntervalMs:50}:{}),
       approvalSha256:hash(approval),scopeSha256:hash(queue),before:ledger.proof,
       approvedBy:deadline?'User requested all remaining Tier 1–5 Instagram work by noon PST and asked to maximize effort; preserve uncapped authorization and keep YouTube paused.':
@@ -128,10 +130,13 @@ export async function runParallel(phase){
     }
   };
   await assertFrozen();
-  const pool=await connectSavedBatchPool(),owner=randomUUID(),live=new Map();
+  if(manifest.coordinator)assert.deepEqual(manifest.coordinator,
+    {...COORDINATOR_OPTIONS,maximumPending:512,serializeTransactions:true});
+  const pool=manifest.coordinator?await openCoordinatorPool():await connectSavedBatchPool();
+  const owner=randomUUID(),live=new Map();
   let claimed=false,closed=false,stage='claim',firstError=null;
   const close=e=>{closed=true;firstError??=e;};
-  const tx=fn=>transaction(pool,fn);
+  const tx=manifest.coordinator?coordinatorTransactions(pool,{maximumPending:512}):fn=>transaction(pool,fn);
   const assertOwner=async c=>{
     if(manifest.platform==='instagram')await assertLegacy(c,approval);
     const r=(await c.query(`SELECT * FROM ${cfg.runs} WHERE id=$1 FOR UPDATE`,[cfg.id])).rows[0];

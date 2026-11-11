@@ -8,6 +8,7 @@ import {CORROBORATED_RUBRIC} from './instagram-ownership-rubric.mjs';
 import {normalizeInstagramProfile} from './instagram-link-capture.mjs';
 import {readSavedDiscovery,readVerifiedSavedSources} from './instagram-saved-source-export.mjs';
 import {catalogAccountContext} from './instagram-catalog-account-context.mjs';
+import {instagramSearchCandidates} from './instagram-search-clues.mjs';
 export const digest=v=>createHash('sha256').update(typeof v==='string'?v:JSON.stringify(v)).digest('hex');
 export async function prepareNextSavedBatch(dir,previous,{expectedArtists=500}={}){
   assert.ok(Number.isInteger(expectedArtists)&&expectedArtists>0&&expectedArtists<=500);
@@ -25,11 +26,15 @@ export async function prepareNextSavedBatch(dir,previous,{expectedArtists=500}={
     const id=String(row.profile_id);
     const p=profiles.get(id);assert.ok(p);assert.equal(String(p.cm_artist),String(row.cm_artist));
     assert.ok(!priorIds.has(id)&&!priorCms.has(String(row.cm_artist)),'Prior artist would be charged again.');
-    const saved=JSON.parse(row.result_json),candidates=[],seen=new Set();
+    const saved=JSON.parse(row.result_json),seen=new Set();
+    let candidates=[];
     for(const candidate of saved.profiles??[]){
       const url=instagramProfileUrl(candidate.url);
       if(url&&!seen.has(url)){candidates.push({...candidate,url});seen.add(url);}
     }
+    // Derive aliases before freezing the new scope and its approved URL set.
+    // Never expand candidates inside an already authorized saved-run scope.
+    candidates=instagramSearchCandidates([],p.name,{explicitAliases:true,savedCandidates:candidates});
     const allAccounts=accounts.get(id)??[];
     const aa=allAccounts.filter(a=>typeof a.account_url==='string'&&a.account_url.trim());
     const player={profile_id:id,cm_artist:String(row.cm_artist),artist:p.name,tier_rank:row.tier_rank,

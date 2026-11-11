@@ -1,4 +1,4 @@
-// Comparison only. This is not an ownership-verification or live-acceptance rule.
+// Review-suggestion policies, never ownership verification or catalog acceptance.
 import {catalogReferences,instagramProfileUrl,referenceUrl} from './musician-instagram-matching.mjs';
 import {assertNoGradingInputs} from './instagram-corroborated-policy.mjs';
 export const LIKELY_REVIEW_POLICY='likely-review-suggestions-v1';
@@ -45,7 +45,25 @@ export function likelyReviewSuggestion(profile,player,{sharedHandle=false,contra
 // Some saved-discovery artists have a bound catalog identity but no frozen
 // Spotify/YouTube/TikTok account. This is a review-only, catalog-context variant.
 export function catalogBoundReviewSuggestion(profile,player,options={}){
-  return evaluateReview(profile,player,options,true);
+  const previous=evaluateReview(profile,player,options,true);
+  // Explicit opt-in keeps historical audit calls and sealed older policies
+  // unchanged. New-run entry points provide the actual outgoing model state.
+  if(options.guardPolicy===undefined)return previous;
+  if(options.guardPolicy!=='targeted_title_guard')throw Error('Unknown future Instagram review guard');
+  if(!previous.reviewSuggestion)return previous;
+  const proposal=proposeEvidenceGuard({
+    profile_id:String(player.profile_id),cm_artist:String(player.cm_artist),artist:player.artist,
+  },{url:profile.url,reviewSuggestion:previous.reviewSuggestion,
+    recordedAnswer:profile.jevVerification,metadataActuallyUsed:options.modelState});
+  return {...previous,policy:'catalog-bound-targeted-title-guard',
+    basePolicy:previous.policy,
+    status:proposal.proposedReviewSuggestion===true?previous.status:
+      proposal.proposedReviewSuggestion===null?'incomplete_saved_evidence':'needs_more_identity_evidence',
+    reason:proposal.proposedReviewSuggestion===true?previous.reason:
+      proposal.proposedReviewSuggestion===null?'title_guard_input_unavailable':'unsupported_release_title_overlap',
+    reviewSuggestion:proposal.proposedReviewSuggestion===true,
+    guard:{mode:'targeted_title_guard',application:'future_run',status:proposal.status,
+      reason:proposal.reason,referenceKinds:proposal.referenceKinds}};
 }
 // Batch inspection state is separate from review/ownership status. A recorded
 // mismatch is unsupported, not an unavailable account or an uncertain verdict.
@@ -93,4 +111,97 @@ function evaluateReview(profile,player,{sharedHandle=false,contradictoryPair=fal
   if(['likely','verified'].includes(decision.verdict))
     return result('positive_review_suggestion','positive_model_verdict_without_observed_conflict');
   return result('model_not_positive',decision.verdict==='mismatch'?'recorded_model_mismatch':'recorded_model_uncertain');
+}
+
+// Pure shared evaluator: offline comparisons and opted-in future runs use
+// identical logic. No provider requests, database operations, or score cutoff.
+export const EVIDENCE_GUARD_PROPOSAL='offline-reference-evidence-guard';
+export function normalizedGuardName(value){
+  return String(value??'').normalize('NFKD').replace(/\p{M}/gu,'')
+    .toLocaleLowerCase('en').replace(/[^\p{L}\p{N}]+/gu,' ').trim().replace(/\s+/g,' ');
+}
+const guardPhraseIn=(phrase,text)=>phrase.length>=3
+  &&(' '+normalizedGuardName(text)+' ').includes(' '+phrase+' ');
+export function guardNameAgreement(artist,displayName,url){
+  const compact=value=>normalizedGuardName(value).replaceAll(' ','');
+  const a=compact(artist),d=compact(displayName);
+  let handle='',rawHandle='';
+  try{rawHandle=new URL(url).pathname.split('/').filter(Boolean)[0]??'';handle=compact(rawHandle);}catch{}
+  if(!a)return null;
+  const words=normalizedGuardName(artist);
+  if((' '+normalizedGuardName(displayName)+' ').includes(' '+words+' ')
+    ||(' '+normalizedGuardName(rawHandle)+' ').includes(' '+words+' '))return true;
+  if(a.length<4)return a===d||a===handle;
+  return d.includes(a)||(d.length>=4&&a.includes(d))||handle.includes(a);
+}
+export function guardReleaseCueNear(phrase,text){
+  const s=normalizedGuardName(text),i=s.indexOf(phrase);
+  if(i<0)return false;
+  return /\b(single|song|track|album|release|released|releasing|debut|ep|out now|new music|music video|presave|pre save)\b/
+    .test(s.slice(Math.max(0,i-100),i+phrase.length+100));
+}
+export function guardTitleStyleOverlap(phrase,text){
+  if(!guardPhraseIn(phrase,text)||!guardReleaseCueNear(phrase,text))return false;
+  const normalized=normalizedGuardName(text),i=normalized.indexOf(phrase);
+  const before=normalized.slice(Math.max(0,i-80),i);
+  if(/\b(single|song|track|album|ep|debut|music video|new release)\s*$/u.test(before))return true;
+  const quoted=String(text).match(/“[^“”]{1,160}”|"[^"]{1,160}"|‘[^‘’]{1,160}’/g)??[];
+  return quoted.some(q=>guardPhraseIn(phrase,q));
+}
+export function proposeEvidenceGuard(artist,finding,{mode='targeted_title_guard'}={}){
+  if(!['targeted_title_guard','require_identity_reference'].includes(mode))
+    throw Error('Unknown offline guard mode');
+  const prior=finding.reviewSuggestion??finding.review?.reviewSuggestion??finding.decision?.reviewSuggestion;
+  const output=(status,reason,proposed,referenceKinds=[])=>({
+    policy:EVIDENCE_GUARD_PROPOSAL,mode,executionMode:'offline_only',
+    originalReviewSuggestion:typeof prior==='boolean'?prior:null,
+    proposedReviewSuggestion:proposed,status,reason,referenceKinds,
+    verified:false,liveLinkAccepted:false,originalDecisionChanged:false,
+  });
+  if(prior===false)return output('keep_existing_hold','Never promote a prior nonpositive decision',false);
+  if(prior!==true)return output('not_comparable','Missing original decision',null);
+  const state=finding.metadataActuallyUsed;
+  if(!state||typeof state!=='object'||Array.isArray(state))
+    return output('not_comparable','Original model input unavailable',null);
+  const evidence=state.catalogAccountEvidence;
+  const url=instagramProfileUrl(finding.url);
+  const candidate=state.candidates?.find(c=>instagramProfileUrl(c.url)===url);
+  if(!url||!candidate||!evidence
+    ||String(evidence.profileId)!==String(artist.profile_id)
+    ||String(evidence.cmArtist)!==String(artist.cm_artist)
+    ||instagramProfileUrl(evidence.candidateUrl)!==url
+    ||normalizedGuardName(state.artist)!==normalizedGuardName(artist.artist))
+    return output('not_comparable','Saved input identity binding is incomplete or mismatched',null);
+  const answer=finding.recordedAnswer;
+  if(!['likely','verified'].includes(answer?.verdict)
+    ||!Number.isFinite(answer.sameIdentityProbability)
+    ||answer.sameIdentityProbability<0||answer.sameIdentityProbability>1)
+    return output('keep_existing_hold','Saved positive model answer is missing or invalid',false);
+  const kinds=[];
+  const accounts=Array.isArray(evidence.accounts)?evidence.accounts:[];
+  if(accounts.some(a=>typeof a.platform==='string'&&a.platform!=='instagram'
+    &&a.is_active!==false&&a.is_active!==0&&a.is_active!=='0'&&https(a.url)))
+    kinds.push('known_other_platform_catalog_account');
+  const referenceUrl=https(candidate.reference?.url);
+  if(typeof candidate.reference?.platform==='string'
+    &&!['catalog','instagram'].includes(candidate.reference.platform)
+    &&referenceUrl&&referenceUrl===https(state.knownProfileUrl)
+    &&!new URL(referenceUrl).hostname.endsWith('chartmetric.com'))
+    kinds.push('supplied_non_catalog_artist_reference');
+  const catalogUrl=`https://app.chartmetric.com/artist/${artist.cm_artist}`;
+  const direct=(candidate.candidate?.externalUrls??[]).map(https).filter(Boolean);
+  const exact=candidate.observedExactCatalogLinks??[];
+  if(direct.includes(catalogUrl)&&Array.isArray(exact)&&exact.some(link=>
+    https(typeof link==='string'?link:link?.catalogUrl)===catalogUrl))
+    kinds.push('candidate_declares_exact_catalog_artist_record');
+  if(kinds.length)return output('retain_prior_suggestion',
+    'Identity-bearing reference was supplied; original ownership judgment still requires review',true,kinds);
+  const nameAgrees=guardNameAgreement(artist.artist,candidate.candidate?.displayName,finding.url);
+  const titleOverlap=guardTitleStyleOverlap(normalizedGuardName(artist.artist),candidate.candidate?.bio??'');
+  if(mode==='targeted_title_guard'&&!(nameAgrees===false&&titleOverlap))
+    return output('retain_prior_suggestion',
+      'No targeted title-confusion trigger; this is not independent validation',true);
+  return output('needs_more_identity_evidence',mode==='targeted_title_guard'
+    ?'Different account name and release-title overlap without a supplied identity-bearing reference'
+    :'No identity-bearing artist reference was supplied; keep in review, not a mismatch verdict',false);
 }

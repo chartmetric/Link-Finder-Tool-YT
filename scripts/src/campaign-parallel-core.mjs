@@ -136,7 +136,16 @@ export async function verifyArchive(cfg,ledger){
   const ops=new Map(ledger.admissions.map(a=>[a.operation_key,a]));
   assert.equal(journal.length,ops.size,'Local and shared admission histories differ.');
   const seen=new Set();
-  for(const j of journal){
+  const verifyGroups=async(rows,verify)=>{
+    // Read-only archive checks can overlap without changing their bindings.
+    // Bound open files/memory rather than serially waiting on 150k receipts.
+    for(let i=0;i<rows.length;i+=32){
+      const results=await Promise.allSettled(rows.slice(i,i+32).map(verify));
+      const failure=results.find(x=>x.status==='rejected');
+      if(failure)throw failure.reason;
+    }
+  };
+  await verifyGroups(journal,async j=>{
     const a=ops.get(j.key);assert.ok(a);assert.ok(!seen.has(j.key));seen.add(j.key);
     assert.equal(j.profileId,a.profile_id);assert.equal(j.inputSha256,a.input_sha256);
     assert.equal(j.kind,a.kind);assert.equal(j.reservedCents,a.reserved_cents);
@@ -145,20 +154,20 @@ export async function verifyArchive(cfg,ledger){
     assert.equal(receipt.operationKey,j.key);assert.equal(receipt.kind,j.kind);
     assert.equal(receipt.inputSha256,j.inputSha256);assert.equal(hash(receipt.request),j.inputSha256);
     assert.equal(receipt.status,a.http_status);
-  }
+  });
   let baseline=new Map();
   if(cfg.runs==='instagram_priority_runs'){
     const saved=await readJson(cfg.root+'/baseline.json'),approval=await readJson(cfg.root+'/approval.json');
     assert.equal(hash(saved),approval.baselineSha256,'Legacy baseline changed.');
     baseline=new Map(saved.map(a=>[a.profileId,a]));
   }
-  for(const a of ledger.artists.filter(a=>a.status==='completed')){
+  await verifyGroups(ledger.artists.filter(a=>a.status==='completed'),async a=>{
     const result=baseline.get(a.profile_id)??await readJson(cfg.root+'/artists/'+a.profile_id+'.json');
     if(baseline.has(a.profile_id)&&a.result_sha256===null){
       // Imported historical counters were bound to the whole baseline rather
       // than individual result hashes. Never relax checks for new results.
-      assert.equal(result.cmArtist,a.cm_artist);continue;
+      assert.equal(result.cmArtist,a.cm_artist);return;
     }
     assert.equal(hash(result),a.result_sha256,'Completed evidence changed.');
-  }
+  });
 }

@@ -34,6 +34,48 @@ Affiliation terms in a musician biography do not independently establish that th
 
 **How to apply:** Separate what an account is from what its biography mentions. Assess its role using bound evidence, preserve historical decisions, and do not treat a favorable model answer as independently reviewed ownership.
 
+Name/phrase-overlap audits are review triage, not ownership decisions.
+
+**Why:** Short stage names can appear inside legitimate credited names, and a
+biography can state an alias before announcing an unrelated release. Simple
+substring and nearby-release-word rules can flag these as title confusion.
+
+**How to apply:** Distinguish actual quoted/release-title contexts from identity
+headers, preserve plausible aliases, and keep risk flags separate from confirmed
+user corrections. Do not infer missing checker inputs from metadata merely
+available elsewhere; absent original model states remain unauditable.
+Compare a targeted title-confusion guard with a broader reference requirement
+before adoption. A broader gate can hold many plausible matches: more holds do
+not demonstrate better accuracy, and an offline hold must not become a mismatch
+verdict or an unapproved change to a frozen campaign.
+
+The user approved enabling the targeted title-confusion guard for future runs,
+not the broader all-reference gate or the active campaign.
+
+**Why:** They explicitly chose “Enable for future runs” after comparing the
+targeted guard with the much broader reference requirement.
+
+**How to apply:** Newly prepared Instagram runs opt into the targeted guard.
+Historical results stay unchanged. Resuming an existing frozen campaign is a
+continuation, not permission to upgrade its acceptance policy; preserve its
+sealed implementation and original model answers.
+
+The user subsequently approved explicit-alias discovery for future runs only.
+The separate mention-only review guard remains offline and is not approved
+for activation.
+
+**Why:** After reviewing the offline comparison, the user chose “Alias discovery
+only,” not “Enable both extensions.” Extra review holds can affect legitimate
+aliases, whereas discovery only adds unverified candidates.
+
+**How to apply:** Enable explicit alias extraction from fresh or retained
+search provenance when preparing new runs. Derive saved-evidence aliases before
+freezing the candidate URL set and spending scope, never inside an already
+authorized scope. Keep the active campaign's sealed parser unchanged.
+Search aliases remain unverified clues, never captured biographies, ownership
+proof, or permission to share one artist's assessment with another artist using
+the same handle. Do not enable the mention-only guard without separate approval.
+
 Do not attribute an archived model result to a request reconstructed with a newer serializer. Keep source-path availability, account ownership, model disagreement and application acceptance separate.
 
 **Why:** Historical completion packets can lack outgoing input bytes, while subsequent question changes and provenance repairs change both evidence interpretation and request size. A complete music-ID path does not establish how the historical model received it or prove that a wording repair fixes its score.
@@ -169,3 +211,18 @@ negative assertions that the source did not make.
 normalization. Do not infer channel ownership from generic verification, and
 do not claim that correcting these inputs improves archived model decisions
 without a separately approved comparison.
+
+Reference collection must depend on the platform being investigated. Distinguish
+references excluded from collection from references actually absent in the catalog.
+
+**Why:** A YouTube pilot reused an Instagram-oriented metadata collector that
+excluded Instagram accounts and snapshots. Zero Instagram references in its
+verifier inputs therefore did not establish zero available catalog references.
+Successful captures and a larger request allowance could not repair that omission.
+
+**How to apply:** For future YouTube preparation, retain exact catalog-bound
+Instagram references without changing Instagram-target collection defaults or
+frozen workers. Measure actual delivered inputs separately from upstream catalog
+availability, which remains unknown until queried. Existing catalog links are
+contextual references, not independently adjudicated ownership or automatic
+acceptance.

@@ -87,7 +87,9 @@ export async function runSavedAlternatives({scope,gate,persist,previousArtists=n
         }else{
           if(response.model!==scope.expectedModel)throw Error('Resolved verifier model changed; no retry.');
           const profile={...built.profile,jevVerification:response.answers?.[0]};
-          const decision=catalogBoundReviewSuggestion(profile,t.player,{sharedHandle:shared.get(c.url).size>1});
+          const decision=catalogBoundReviewSuggestion(profile,t.player,{
+            sharedHandle:shared.get(c.url).size>1,
+            guardPolicy:'targeted_title_guard',modelState:built.body.state});
           const inspection=savedCandidateInspection(decision);
           c.status=inspection.status;c.reason=decision.reason;c.review=decision;
           c.recordedAnswer=response.answers?.[0]??null;c.requestSha256=built.sha256;

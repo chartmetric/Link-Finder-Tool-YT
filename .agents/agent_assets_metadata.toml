@@ -1372,3 +1372,115 @@ mtime_ms = 1794414590128
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/d9404bed-3b32-4596-9723-7762e1a85a26/4fd9196f-35ab-4e4a-8f1f-22da084d1ac9"
 storage_version_token = "1794426159708376"
 content_type = "text/html"
+
+[[outputs]]
+id = "y3kT5D3FqBiX2u92vI0Is"
+uri = "file://generated-artifacts/instagram-likely-evidence-audit-2026-11-11/review-download/prioritized-review.csv"
+type = "table"
+title = "Instagram evidence audit — prioritized review"
+description = "1,535 flagged URLs: 8 high-priority and 1,527 medium-priority. One URL per row with artist IDs, saved profile bio, search snippet, score, and exact review reason. Snapshot: 12:17 PM Pacific. Risk flags are not confirmed ownership errors; only the reported who.i.am case is labelled user-confirmed."
+logical_id = "f9da3342-2faf-4382-bc08-edbdffd0a4ad"
+content_hash = "sha256:b7ad8e1df32cb9ecceffef5926534dd67c48f7faafb1a2f6657ec1e241bb830b"
+size = 1222624
+mtime_ms = 1794428290745
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/f9da3342-2faf-4382-bc08-edbdffd0a4ad/3f18ff0f-0002-4c14-95db-42105f327f1b"
+storage_version_token = "1794428364190031"
+content_type = "text/csv"
+
+[[outputs]]
+id = "toIICrz9t1vv_1_AVS7Vj"
+uri = "file://generated-artifacts/instagram-evidence-guard-proposal-2026-11-11/proposed-title-guard-holds.csv"
+type = "table"
+title = "Targeted guard — 8 proposed review holds"
+description = "One Instagram URL per row. These archived likely suggestions would move to needs-more-evidence under the proposed targeted guard, including the reported who.i.am case. Original scores and verdicts remain unchanged; this is not a list of 8 proven false positives."
+logical_id = "332e3a08-0afb-4d56-ad87-48c58012f011"
+content_hash = "sha256:0bdff3e8dfb0657e34c6497c0819eebd2ca7589bf2092be71cff1857081e4a84"
+size = 5197
+mtime_ms = 1794428797745
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/332e3a08-0afb-4d56-ad87-48c58012f011/d31d5293-947d-4fa1-9e84-025579c4a848"
+storage_version_token = "1794428862764490"
+content_type = "text/csv"
+
+[[outputs]]
+id = "VicHBTNJjRM6D0eaT5ZmM"
+uri = "file://generated-artifacts/instagram-evidence-guard-proposal-2026-11-11/all-saved-results-policy-comparison.csv"
+type = "table"
+title = "Offline guard comparison — 26,458 saved URLs"
+description = "Compares original suggestions with targeted and strict reference guards on the frozen 12:17 PM Pacific audit cohort. Missing inputs remain not comparable. Nothing was applied to the running campaign, and no new model judgments or paid requests were made."
+logical_id = "b3dbcf0c-9686-40b4-9e3b-45bdc02a94f8"
+content_hash = "sha256:6abc2c4d2948de75a4835b40652327e74c44b26d7ffece8072f7de900436e1a6"
+size = 16149909
+mtime_ms = 1794428798297
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/b3dbcf0c-9686-40b4-9e3b-45bdc02a94f8/b8751026-6fa5-40d1-806b-261f912bf328"
+storage_version_token = "1794428863729568"
+content_type = "text/csv"
+
+[[outputs]]
+id = "dBWrkYnbkxb8GcfQQnDOT"
+uri = "file://generated-artifacts/instagram-mention-alias-proposal-2026-11-11/proposed-mention-only-review-holds.csv"
+type = "table"
+title = "Mention-only matches — 363 proposed review holds"
+description = "One candidate Instagram URL per row, with original score, captured bio, saved search snippet, and proposed hold reason. These are evidence-review flags, not 363 proven false positives. Neither historical results nor active/future run defaults were changed."
+logical_id = "bbe52dc2-8906-462a-9ada-550fe74ab902"
+content_hash = "sha256:37be1cf3faf7bda68e767006e8973aa7263328280868622ca1abfb6c3a4c3bbe"
+size = 203410
+mtime_ms = 1794431081293
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/bbe52dc2-8906-462a-9ada-550fe74ab902/d63e4266-817b-4382-be32-eaf08a695af2"
+storage_version_token = "1794431172449883"
+content_type = "text/csv"
+
+[[outputs]]
+id = "U1RqfTPObHDwE2i_pXB6d"
+uri = "file://generated-artifacts/instagram-mention-alias-proposal-2026-11-11/proposed-new-alias-candidates.csv"
+type = "table"
+title = "Explicit aliases — 2 additional unverified candidates"
+description = "Includes Djordjoo → georgio_schultz. Handles were extracted from explicit alias relations in retained search snippets, not guessed or newly verified. One candidate URL per row. No paid fetches or catalog changes."
+logical_id = "b5069db8-66d5-4740-b577-f347d84e3fc2"
+content_hash = "sha256:a98335be16a6811f77a2c9a55afab1cf715b0f2c2226f9fdbb0a4c8a24995fb8"
+size = 924
+mtime_ms = 1794431081297
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/b5069db8-66d5-4740-b577-f347d84e3fc2/3c5e173f-7295-486b-b5be-adb72d455be6"
+storage_version_token = "1794431173441747"
+content_type = "text/csv"
+
+[[outputs]]
+id = "iRTF3Chxo8mAgXlPQqxIe"
+uri = "file://generated-artifacts/youtube-test-20-usd5-2026-11-11/youtube-test-findings.csv"
+type = "table"
+title = "YouTube test results — 20 artists"
+description = "31 channel candidates plus one no-channel row. Includes original model answers, captured channel metadata, catalog context, evidence actually supplied, and acceptance/hold reasons. Two likely suggestions, 17 checked artists without an accepted suggestion, and one completed search with no channel found. These are automated review suggestions, not confirmed ownership."
+logical_id = "55fcb42e-2ac6-465b-b555-7ec1458cc39c"
+content_hash = "sha256:3e3c900e9d798f55d8f04321f4747d2520b3b9340a3e617a574508a35c7079d9"
+size = 362592
+mtime_ms = 1794432644397
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/55fcb42e-2ac6-465b-b555-7ec1458cc39c/0bb847b4-b912-4f47-aa33-62a5fc6ee8c2"
+storage_version_token = "1794432785477668"
+content_type = "text/csv"
+
+[[outputs]]
+id = "DMOY3vNlqpj0cctKeC6x2"
+uri = "file://generated-artifacts/youtube-test-20-usd5-2026-11-11-offline-review/saved-evidence-review.csv"
+type = "table"
+title = "YouTube saved-evidence audit"
+description = "One channel address per row, plus the search with no channel found. Covers all 20 artists and explains each unresolved case while preserving original verdicts and scores. Flags the duplicate DJ PANDA SC channel and matching localized Spotify ID without declaring ownership verified."
+logical_id = "6060601a-fd97-46ad-be95-7b4857f783da"
+content_hash = "sha256:843ea746bd17db40dd7e2f90543d13dada70b3657279d65d17ae31b606285058"
+size = 22132
+mtime_ms = 1794433626837
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/6060601a-fd97-46ad-be95-7b4857f783da/ff0f0cf2-e1d1-4e8f-82fe-b15fca83868f"
+storage_version_token = "1794433731236674"
+content_type = "text/csv"
+
+[[outputs]]
+id = "RegrNM8xm4R6PR9fRaktJ"
+uri = "file://generated-artifacts/youtube-test-20-usd5-2026-11-11-offline-review/review.txt"
+type = "text"
+title = "YouTube audit findings and recommended fixes"
+description = "Read-only review: excluded Instagram references, weak search relevance, duplicate channel checks, localized Spotify comparisons, and limits of the saved explanations. No new provider calls, database queries, verdict changes or campaign restarts."
+logical_id = "d7bcfbfa-bacc-4b03-bc90-b567a6a6d876"
+content_hash = "sha256:5147d780b1418acc4241efe71a103320747eec44cfc638d6eeab0d59abf175fa"
+size = 3432
+mtime_ms = 1794433626841
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/d7bcfbfa-bacc-4b03-bc90-b567a6a6d876/6de52ca9-c42f-4b1f-8fcc-ba9dbdfe89b1"
+storage_version_token = "1794433731874331"
+content_type = "text/plain"
