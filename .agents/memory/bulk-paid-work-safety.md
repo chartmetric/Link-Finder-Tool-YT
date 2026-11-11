@@ -113,3 +113,89 @@ double spending.
 **How to apply:** Require the explicit handoff proof and cross-check the locked
 owner, admission ledger, reservations and timestamps. Preserve every actual
 admission and receipt; never infer replay permission from a journal label.
+
+Parallel continuation must distinguish a known live request from an abandoned
+admission, and keep the original platform's evidence policy sealed.
+
+**Why:** A global zero-pending rule serializes all artists, but simply dropping
+that rule permits new spending after an unknown outcome. Concurrent policy
+merges can also silently change results if a new executor copies mutable source.
+
+**How to apply:** Allow only bounded requests registered live by the current
+owner, keep each artist sequential and enforce the earliest-tier barrier. Close
+dispatch on the first failure, drain already-sent responses, then stop. Bind a
+new execution supplement to reconciled histories without resetting charges,
+original approvals or terminal artists; copy evidence dependencies from that
+platform's previous sealed runtime, not newer source.
+
+Pausing a sealed worker without a cooperative pause handler requires a drained
+admission boundary, not killing its process or changing its owner mid-request.
+
+**Why:** An already-sent response can be saved locally yet fail its transactional
+return check after an ownership/status fence, leaving an unnecessarily uncertain
+charge that blocks recovery.
+
+**How to apply:** Lock the platform coordinator, confirm zero admitted/unreturned
+requests, and fence new dispatch atomically at that boundary. If pending work
+exists, release the lock so its receipt can commit and wait for a safe boundary.
+Keep the other platform independent and preserve the explicit pause approval.
+
+Changing scheduler width requires a whole-artist handoff, not merely a moment
+with no pending provider requests.
+
+**Why:** A sequential artist has gaps between its paid requests. Stopping in
+one of those gaps leaves an unfinished artist even if every prior charge returned,
+so an untouched-work continuation cannot safely reconcile it.
+
+**How to apply:** For scheduler replacement, lock the coordinator and require
+both zero pending admissions and zero in-progress artists before fencing the old
+owner. Rolling workers must include in-progress artists when enforcing the
+earliest-tier barrier, serialize progress writes, and drain live responses on
+both worker failures and catalog-preparation failures.
+
+Concurrent failure timestamps do not reliably identify the original failing
+lane; preserve a sanitized first-failure source location.
+
+**Why:** After a shared dispatch gate closes, other lanes fail at their next
+admission. Their database failure rows may be written before the original
+failure's row, and a generic assertion label alone cannot distinguish the cause.
+
+**How to apply:** Record the first exception's allowed source filename and
+line without raw assertion values, provider bodies or full filesystem paths.
+Do not infer a root cause from the first failed artist or replay charged work
+to recreate the error; retain exact receipts and investigate offline.
+
+Rolling schedulers must reserve prepared identities before asynchronous database
+claims finish, not only exclude artists already marked in progress.
+
+**Why:** A constrained connection pool can delay a new claim while another lane
+finishes. A refill then sees the prepared artist as queued, selects it again,
+and triggers a duplicate-claim safety stop even though no paid call was repeated.
+
+**How to apply:** Exclude all locally prepared or active identities from each
+refill query, retain the transactional claim as the authoritative cross-process
+fence, and regression-test delayed claims alongside fast completions.
+
+Keep catalog preparation batch size separate from paid-worker concurrency.
+
+**Why:** Preparing context separately for each newly free slot can leave most
+paid slots idle waiting for repeated read-only catalog queries. Increasing the
+worker limit alone does not remove that bottleneck.
+
+**How to apply:** Prepare bounded same-tier context groups, buffer only untouched
+identities without claiming or charging them, and keep paid slots independently
+refilled. Discard unused buffered context on a stop; retain live tier, ownership,
+admission and receipt fences.
+
+Deadline escalation needs verified provider capacity and measured sustained
+throughput, not just a larger worker number.
+
+**Why:** A completion deadline can require an order-of-magnitude increase.
+Concurrency recommendations differ from request-rate limits, and preparation
+helpers may have smaller artist-count bounds than the scheduler.
+
+**How to apply:** Verify official provider guidance, ramp capacity with paced
+admissions, keep preparation inside the sealed metadata policy's bounds, and
+preserve every receipt and stop fence. Treat a finish time as unproven until
+actual sustained completions meet the required rate; never weaken identity
+checks or replay charges to make a deadline appear satisfied.
