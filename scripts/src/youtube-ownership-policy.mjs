@@ -28,6 +28,41 @@ function exactUrl(raw){
   try{const u=new URL(raw);return u.protocol==='https:'&&!u.username&&!u.password&&!u.port?u.href:null;}
   catch{return null;}
 }
+// The provider returns HTTP canonical addresses in archived channel receipts.
+// This exception applies only to exact YouTube hosts, never lookalike domains.
+export function returnedYoutubeUrl(raw){
+  try{
+    const u=new URL(raw);
+    if(u.protocol==='http:'&&!u.username&&!u.password&&!u.port
+      &&['youtube.com','www.youtube.com','m.youtube.com','music.youtube.com'].includes(u.hostname))u.protocol='https:';
+    return youtubeOwnershipUrl(u.href);
+  }catch{return null;}
+}
+function legacyResolution(requested,packet){
+  const receipt=packet.rawReceipt,request=receipt?.request,raw=receipt?.data;
+  if(!receipt||receipt.kind!=='metadata'||receipt.status!==200||receipt.parseFailed
+    ||raw?.success!==true||receipt.at!==packet.capturedAt
+    ||evidenceDigest(receipt)!==packet.rawReceiptSha256
+    ||!request||request.method!=='GET'||request.body!==undefined
+    ||evidenceDigest(request)!==receipt.inputSha256)return null;
+  let target;
+  try{
+    const u=new URL(request.url);
+    if(u.origin!=='https://api.scrapecreators.com'||u.username||u.password
+      ||u.pathname!=='/v1/youtube/channel'||u.hash||u.searchParams.size!==1)return null;
+    target=u.searchParams.get('url');
+    if(youtubeOwnershipUrl(target)!==requested)return null;
+  }catch{return null;}
+  const returned=returnedYoutubeUrl(raw.channel);
+  const returnedHandle=returned?.match(/\/@([^/]+)$/u)?.[1]??null;
+  if(!returned||raw.channelId!==packet.body.channelId||returned!==packet.body.url
+    ||returnedHandle!==packet.body.handle)return null;
+  if(raw.handle!=null&&youtubeOwnershipUrl('https://www.youtube.com/'+raw.handle)!==
+    (returnedHandle?'https://www.youtube.com/@'+returnedHandle:null))return null;
+  return {provider:'scrapecreators',requestedUrl:target,returnedUrl:raw.channel,
+    channelId:raw.channelId,handle:raw.handle??null,
+    requestSha256:receipt.inputSha256,rawReceiptSha256:packet.rawReceiptSha256};
+}
 function musicKey(raw){
   try{
     const u=new URL(raw),host=u.hostname.replace(/^www\./,'');
@@ -54,11 +89,15 @@ export function boundYoutubeCapture(candidateUrl,packet){
   const canonical=youtubeOwnershipUrl(body.url);
   const idUrl='https://www.youtube.com/channel/'+body.channelId;
   const handleUrl=handle?youtubeOwnershipUrl('https://www.youtube.com/@'+handle):null;
+  const legacy=/\/(?:c|user)\//.test(requested);
+  const resolution=legacy?legacyResolution(requested,packet):null;
+  if(legacy&&!resolution)return null;
   if(body.url&&canonical!==idUrl&&canonical!==handleUrl
     &&!(canonical===requested&&/\/(?:c|user)\//.test(requested)))return null;
-  if(requested!==idUrl&&requested!==handleUrl&&requested!==canonical)return null;
-  const aliases=[...new Set([idUrl,handleUrl,canonical].filter(Boolean))];
-  return {body,aliases,capturedAt:packet.capturedAt,bodySha256:packet.bodySha256,requestedUrl:requested};
+  if(requested!==idUrl&&requested!==handleUrl&&requested!==canonical&&!resolution)return null;
+  const aliases=[...new Set([idUrl,handleUrl,canonical,...(resolution?[requested]:[])].filter(Boolean))];
+  return {body,aliases,capturedAt:packet.capturedAt,bodySha256:packet.bodySha256,requestedUrl:requested,
+    ...(resolution?{resolution}:{})};
 }
 function channelRole(body,artistName){
   const name=norm(body.displayName),description=norm(body.description);
