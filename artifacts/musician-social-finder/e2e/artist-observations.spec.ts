@@ -35,9 +35,8 @@ async function selected(page: Page, b: ArtistResultBatch) {
   }
 }
 
-async function displayedRows(page: Page, b: ArtistResultBatch) {
+async function displayedRows(page: Page, b: ArtistResultBatch, rows = rowsFor(b.id)) {
   const root = section(page);
-  const rows = rowsFor(b.id);
   const others = [...checkpointRows, ...finalRows, ...newerRows].filter(r => !rows.includes(r));
   await expect(root.locator('.abr-rows > li')).toHaveCount(rows.length);
   for (const r of rows) {
@@ -325,6 +324,99 @@ for (const theme of ['light', 'dark'] as const) {
           csvPath(other.id), csvPath(failing.id), csvPath(other.id), csvPath(failing.id),
           csvPath(failing.id), csvPath(other.id), csvPath(failing.id),
         ]);
+      });
+    }
+
+    for (const change of ['search', 'status'] as const) {
+      test(`late filtered-row retry cannot replace the current ${change} results`, async ({ page, api }, testInfo) => {
+        test.setTimeout(60_000);
+        const root = section(page);
+        const search = root.getByTestId('input-artist-results-search');
+        const alert = root.getByRole('alert');
+        const retry = root.getByTestId('button-retry-artist-rows');
+        const loading = root.getByLabel('Loading rows', { exact: true });
+        // Only this exact search query fails; the unfiltered archive and the
+        // replacement filter must remain independently readable.
+        const failedPath = rowPath(final.id, { search: 'Final' });
+        const currentQuery = change === 'search'
+          ? { search: 'verified' } : { search: 'Final', status: 'verified' };
+        const currentPath = rowPath(final.id, currentQuery);
+        api.fail(failedPath);
+        await page.goto(`${api.url}/bulk/artists`);
+        await expect(page.locator('html')).toHaveClass(theme === 'dark' ? /dark/ : /^(?!.*dark).*$/);
+        await displayedRows(page, checkpoint);
+        await shortcut(page).click();
+        await selected(page, final);
+        await displayedRows(page, final);
+        const summary = root.getByTestId(`summary-batch-${final.id}`);
+        const originalSummary = await summary.innerText();
+        await search.fill('Final');
+        await expect(alert).toHaveText(`${rowError(final.id)}Retry`, { timeout: 15_000 });
+        await expect(root.locator('.abr-rows > li')).toHaveCount(0);
+        await expect(root.getByTestId('text-artist-rows-range')).toHaveCount(0);
+        await expect(root.getByTestId('text-no-artist-rows')).toHaveCount(0);
+        await selected(page, final);
+        expect(api.failedPaths.length).toBeGreaterThan(0);
+        expect(new Set(api.failedPaths)).toEqual(new Set([failedPath]));
+        await layout(page, [search, root.getByTestId('button-filter-verified'), alert, retry,
+          root.getByTestId('link-download-artist-csv')]);
+        await download(page, final);
+
+        api.hold(failedPath);
+        api.recover(failedPath);
+        const beforeRetry = api.rowRequests.length;
+        await retry.click();
+        await expect.poll(() => api.rowRequests.slice(beforeRetry)).toEqual([failedPath]);
+        await expect(loading).toBeVisible();
+        await expect(alert).toHaveCount(0);
+        await expect(root.locator('.abr-rows > li')).toHaveCount(0);
+        await expect(root.getByTestId('text-artist-rows-range')).toHaveCount(0);
+        await selected(page, final);
+        await download(page, final);
+
+        // Change the query while its retry is held, not after it has recovered.
+        if (change === 'search') await search.fill(currentQuery.search);
+        else await root.getByTestId('button-filter-verified').click();
+        await expect.poll(() => api.deliveredPaths.includes(currentPath)).toBe(true);
+        expect(api.deliveredPaths).not.toContain(failedPath);
+        await displayedRows(page, final, [finalRows[0]]);
+        await expect(loading).toHaveCount(0);
+        await expect(alert).toHaveCount(0);
+        await expect(retry).toHaveCount(0);
+        await selected(page, final);
+        await expect(summary).toHaveText(originalSummary, { useInnerText: true });
+        await download(page, final);
+
+        api.release(failedPath);
+        await expect.poll(() => api.deliveredPaths.includes(failedPath)).toBe(true);
+        await selected(page, final);
+        await displayedRows(page, final, [finalRows[0]]);
+        await expect(search).toHaveValue(currentQuery.search);
+        await expect(root.getByTestId(`button-filter-${change === 'status' ? 'verified' : 'all'}`))
+          .toHaveAttribute('aria-pressed', 'true');
+        await expect(alert).toHaveCount(0);
+        await expect(retry).toHaveCount(0);
+        await expect(summary).toHaveText(originalSummary, { useInnerText: true });
+        await download(page, final);
+        await layout(page, [search, root.getByTestId('text-artist-rows-range'),
+          root.getByTestId('row-artist-result-final-verified'), root.getByTestId('link-download-artist-csv')]);
+        await testInfo.attach(`${theme}-${change}-late-filter-recovery`, {
+          body: await root.screenshot(), contentType: 'image/png',
+        });
+
+        // Revisit the failed query: recovery must have its own two-row count,
+        // rather than poisoning either cache entry with the other filter.
+        if (change === 'search') await search.fill('Final');
+        else await root.getByTestId('button-filter-all').click();
+        await displayedRows(page, final);
+        await selected(page, final);
+        await expect(alert).toHaveCount(0);
+        await expect(summary).toHaveText(originalSummary, { useInnerText: true });
+        await download(page, final);
+        expect(new Set(api.rowRequests)).toEqual(new Set([
+          rowPath(checkpoint.id), rowPath(final.id), failedPath, currentPath,
+        ]));
+        expect(api.csvRequests).toEqual(Array(5).fill(csvPath(final.id)));
       });
     }
   });

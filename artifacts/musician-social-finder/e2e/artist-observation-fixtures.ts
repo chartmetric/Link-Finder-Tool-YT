@@ -70,7 +70,9 @@ export function rowsFor(id: string): ArtistResultRow[] {
   if (id === newer.id) return newerRows;
   throw new Error(`Unknown fixture archive: ${id}`);
 }
-export const rowPath = (id: string) => `/api/bulk/artist-results/${id}/rows/0/25/q%3A/all`;
+export type RowQuery = { search?: string; status?: string; offset?: number; limit?: number };
+export const rowPath = (id: string, { search = '', status = 'all', offset = 0, limit = 25 }: RowQuery = {}) =>
+  `/api/bulk/artist-results/${id}/rows/${offset}/${limit}/${encodeURIComponent(`q:${search}`)}/${status}`;
 export const csvPath = (id: string) => `/api/bulk/artist-results/${id}/csv`;
 export const csvContents = (b: ArtistResultBatch) =>
   `archive_id,artist_name,reported_usd\n${rowsFor(b.id)
@@ -91,14 +93,18 @@ export class ObservationApi extends ProgressApi {
   csvRequests: string[] = [];
   delivered: string[] = [];
   failed: string[] = [];
+  deliveredPaths: string[] = [];
+  failedPaths: string[] = [];
   private failures = new Set<string>();
   private holds = new Map<string, ReturnType<typeof gate>>();
   private server?: Server;
 
-  hold(id: string) { this.holds.set(id, gate()); }
-  fail(id: string) { this.failures.add(id); }
-  recover(id: string) { this.failures.delete(id); }
-  release(id: string) { this.holds.get(id)?.release(); }
+  // Accept archive IDs for older scenarios, or exact row-query paths to isolate
+  // a single failed/held filter without affecting other reads of that archive.
+  hold(target: string) { this.holds.set(target, gate()); }
+  fail(target: string) { this.failures.add(target); }
+  recover(target: string) { this.failures.delete(target); }
+  release(target: string) { this.holds.get(target)?.release(); }
   releaseAll() { for (const hold of this.holds.values()) hold.release(); }
 
   async close() {
@@ -171,20 +177,38 @@ export class ObservationApi extends ProgressApi {
         return;
       }
       for (const batch of archives) {
-        if (path === rowPath(batch.id)) {
+        const prefix = `/api/bulk/artist-results/${batch.id}/rows/`;
+        const parts = path.startsWith(prefix) ? path.slice(prefix.length).split('/') : [];
+        const [offsetText, limitText, searchText, status] = parts;
+        const offset = Number(offsetText);
+        const limit = Number(limitText);
+        const search = searchText ? decodeURIComponent(searchText) : '';
+        if (parts.length === 4 && /^\d+$/.test(offsetText) && limit === 25
+          && search.startsWith('q:') && ['all', 'verified', 'review', 'not_inspected', 'metadata_failed', 'no_candidate'].includes(status)) {
           this.rowRequests.push(path);
+          await this.holds.get(path)?.promise;
           await this.holds.get(batch.id)?.promise;
           // Persist across React Query's automatic retries until the test
           // explicitly restores this archive. Other observations stay readable.
-          if (this.failures.has(batch.id)) {
+          if (this.failures.has(path) || this.failures.has(batch.id)) {
             await route.fulfill({ status: 503, json: { error: rowError(batch.id) } });
             this.failed.push(batch.id);
+            this.failedPaths.push(path);
             return;
           }
-          const rows = rowsFor(batch.id);
-          const body: GetArtistResultRows200 = { batch, rows, total: rows.length, nextOffset: null };
+          const term = search.slice(2).toLowerCase();
+          const matches = rowsFor(batch.id).filter(r =>
+            (status === 'all' || r.status === status)
+            && [r.artistName, r.profileId, r.candidateUrl, r.verifiedUrl]
+              .some(value => value?.toLowerCase().includes(term)));
+          const rows = matches.slice(offset, offset + limit);
+          const body: GetArtistResultRows200 = {
+            batch, rows, total: matches.length,
+            nextOffset: offset + limit < matches.length ? offset + limit : null,
+          };
           await json(body);
           this.delivered.push(batch.id);
+          this.deliveredPaths.push(path);
           return;
         }
         // Some browser versions route native downloads, others do not. Both
