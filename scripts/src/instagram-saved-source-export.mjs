@@ -41,7 +41,7 @@ function validateRows(manifest,data) {
     const key=`${a.profile_id}:${a.account_id}`;
     if(!scope.has(a.profile_id)||scope.get(a.profile_id)!==a.cm_artist||links.has(key)
       ||!/^\d+$/.test(a.account_id)||typeof a.platform!=='string'||!a.platform||a.platform==='instagram'
-      ||typeof a.account_url!=='string'||!a.account_url
+      ||(a.account_url!==null&&typeof a.account_url!=='string')
       ||a.disconnected_at||a.is_active===0)
       throw Error('Account source identity mismatch or invalid musician account binding.');
     links.add(key);

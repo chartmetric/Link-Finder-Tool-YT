@@ -6,7 +6,7 @@ import {randomUUID} from 'node:crypto';
 export const campaignSchemaSql=`
 CREATE TABLE IF NOT EXISTS instagram_campaign_budgets (
  id text PRIMARY KEY, scope_sha256 text NOT NULL,
- cap_cents integer NOT NULL CHECK(cap_cents BETWEEN 1 AND 10000),
+ cap_cents integer CHECK(cap_cents BETWEEN 1 AND 10000),
  owner uuid NOT NULL, created_at timestamptz NOT NULL DEFAULT clock_timestamp()
 );
 CREATE TABLE IF NOT EXISTS instagram_campaign_children (
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS instagram_campaign_children (
 );`;
 
 export function nextCampaignAllocation(cap,children){
-  assert.ok(Number.isInteger(cap)&&cap>0&&cap<=10000);
+  assert.ok(cap===null||(Number.isInteger(cap)&&cap>0&&cap<=10000));
   const ids=new Set();
   let allocated=0,reserved=0;
   for(const b of children){
@@ -25,9 +25,9 @@ export function nextCampaignAllocation(cap,children){
     assert.ok(Number.isInteger(b.reserved_cents)&&b.reserved_cents>=0&&b.reserved_cents<=b.cap_cents);
     allocated+=b.cap_cents;reserved+=b.reserved_cents;
   }
-  assert.ok(allocated<=cap,'Campaign allocations exceed authorization.');
+  assert.ok(cap===null||allocated<=cap,'Campaign allocations exceed authorization.');
   return {allocatedCents:allocated,reservedCents:reserved,
-    nextCapCents:Math.min(2000,cap-allocated)};
+    nextCapCents:cap===null?2000:Math.min(2000,cap-allocated)};
 }
 
 export async function claimCampaign(pool,{id,scopeSha256,capCents}){

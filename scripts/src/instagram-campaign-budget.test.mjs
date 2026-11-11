@@ -19,6 +19,17 @@ test('shared $100 cap counts all active child allocations, not just used reserva
   assert.deepEqual(nextCampaignAllocation(10000,children),{allocatedCents:10000,reservedCents:9500,nextCapCents:0});
   assert.throws(()=>nextCampaignAllocation(10000,[...children,{id:'extra',cap_cents:2,reserved_cents:0}]));
 });
+test('explicit uncapped approval retains all reservations and per-child limits without a total stop',async()=>{
+  const children=Array.from({length:12},(_,i)=>({id:String(i),cap_cents:2000,reserved_cents:1900}));
+  assert.deepEqual(nextCampaignAllocation(null,children),
+    {allocatedCents:24000,reservedCents:22800,nextCapCents:2000});
+  for(const bad of [undefined,Infinity,NaN,10001,0,-1])assert.throws(()=>nextCampaignAllocation(bad,[]));
+  const f=fixture(children,{cap_cents:null});
+  const uncapped={...claim,capCents:null};
+  await allocateCampaignChild(f.pool,uncapped,{id:'campaign-chunk-013',scopeSha256:'next',capCents:2000});
+  assert.equal(f.calls.at(-1).sql,'COMMIT');
+  await assert.rejects(allocateCampaignChild(f.pool,uncapped,{id:'campaign-chunk-014',scopeSha256:'bad',capCents:2001}));
+});
 test('unused funds become available only after an old child ceiling is durably retired',()=>{
   const retired=[{id:'first',cap_cents:1900,reserved_cents:1900}];
   assert.equal(nextCampaignAllocation(10000,retired).nextCapCents,2000);

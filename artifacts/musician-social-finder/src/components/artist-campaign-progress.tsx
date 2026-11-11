@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { getGetArtistCampaignProgressQueryKey, useGetArtistCampaignProgress } from '@workspace/api-client-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { campaignScopeView, type CampaignScope } from '@/lib/artist-campaign-scope';
 
 const fmt = (n: number) => n.toLocaleString();
 const pct = (n: number) => `${n.toFixed(1)}%`;
@@ -8,19 +11,44 @@ const STATUS: Record<string, string> = { running: 'Running', stop_requested: 'St
 const statusLabel = (s: string) => STATUS[s] ?? s.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase());
 
 export function ArtistCampaignProgress({ className = '' }: { className?: string }) {
+  const [scope, setScope] = useState<CampaignScope>(() =>
+    new URLSearchParams(window.location.search).get('campaignScope') === 'tiers_1_5' ? 'tiers_1_5' : 'all');
+  const changeScope = (value: string) => {
+    if (value !== 'all' && value !== 'tiers_1_5') return;
+    setScope(value);
+    const url = new URL(window.location.href);
+    url.searchParams.set('campaignScope', value);
+    window.history.replaceState(window.history.state, '', url);
+  };
+  return (
+    <Tabs value={scope} onValueChange={changeScope} className={className} data-testid="campaign-scope-tabs">
+      <TabsList aria-label="Artist campaign scope" className="max-w-full">
+        <TabsTrigger value="all" data-testid="campaign-scope-all">All artists</TabsTrigger>
+        <TabsTrigger value="tiers_1_5" data-testid="campaign-scope-tiers">Tiers 1–5</TabsTrigger>
+      </TabsList>
+      <TabsContent value={scope} forceMount>
+        <CampaignProgressView scope={scope} />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function CampaignProgressView({ scope }: { scope: CampaignScope }) {
   const q = useGetArtistCampaignProgress({ query: {
     queryKey: getGetArtistCampaignProgressQueryKey(),
     refetchInterval: 5000, staleTime: 4000, refetchOnMount: 'always', refetchOnWindowFocus: true,
   } });
-  const p = q.data?.progress;
+  const original = q.data?.progress;
+  const view = original ? campaignScopeView(original, scope) : null;
+  const p = original && view?.counts ? { ...original, ...view.counts } : original;
   const failedRefresh = q.isError && !!q.data;
   const stale = !!p?.stale || failedRefresh;
 
-  const shell = `rounded-xl border border-border/80 bg-card text-card-foreground shadow-sm px-4 py-3 ${className}`;
+  const shell = 'rounded-xl border border-border/80 bg-card text-card-foreground shadow-sm px-4 py-3';
   const Head = (
     <div className="flex items-center gap-2 min-w-0">
       <span className={`h-2 w-2 rounded-full shrink-0 ${p && p.status === 'running' && !stale ? 'bg-primary animate-pulse' : 'bg-muted-foreground/50'}`} aria-hidden />
-      <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground truncate">Artist campaign · Tier 1–5 Instagram</span>
+      <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground truncate">Artist campaign · {scope === 'all' ? 'All campaign artists' : 'Tiers 1–5'} · Instagram</span>
     </div>
   );
 
@@ -51,6 +79,13 @@ export function ArtistCampaignProgress({ className = '' }: { className?: string 
     </section>
   );
 
+  if (!view?.counts) return (
+    <section className={shell} role="status" data-testid="campaign-scope-unavailable">
+      {Head}
+      <p className="mt-2 text-xs text-muted-foreground">{view?.note}</p>
+    </section>
+  );
+
   const value = Math.min(100, Math.max(0, p.processedPercent));
   const budgetPct = p.maximumSpendUsd > 0 ? Math.min(100, (p.reservedUsd / p.maximumSpendUsd) * 100) : 0;
   const updated = new Date(p.updatedAt);
@@ -66,13 +101,15 @@ export function ArtistCampaignProgress({ className = '' }: { className?: string 
         </div>
       </div>
 
+      <p className="mt-2 text-[11px] text-muted-foreground" data-testid="campaign-scope-note">{view.note}</p>
+
       <div className="mt-2.5 grid gap-x-6 gap-y-3 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] items-end">
         <div className="min-w-0">
           <h2 id="campaign-progress-title" className="flex flex-wrap items-baseline gap-x-2 leading-none">
             <span className="text-2xl font-extrabold tracking-tight tabular-nums" data-testid="text-campaign-percent">{pct(value)}</span>
             <span className="text-xs font-semibold text-muted-foreground tabular-nums" data-testid="text-campaign-processed"><b className="text-foreground">{fmt(p.processedArtists)}</b> of {fmt(p.totalArtists)} artists processed</span>
           </h2>
-          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted" role="progressbar" aria-label="Artists processed in the whole campaign queue" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Number(value.toFixed(1))} aria-valuetext={`${fmt(p.processedArtists)} of ${fmt(p.totalArtists)} artists processed, ${pct(value)}`}>
+          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted" role="progressbar" aria-label={scope === 'all' ? 'Artists processed in the whole campaign queue' : 'Tier 1–5 artists processed in this campaign'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Number(value.toFixed(1))} aria-valuetext={`${fmt(p.processedArtists)} of ${fmt(p.totalArtists)} artists processed, ${pct(value)}`}>
             <div className={`h-full rounded-full transition-transform duration-700 ease-out origin-left ${stale ? 'bg-amber-500' : 'bg-primary'}`} style={{ transform: `scaleX(${value / 100})` }} />
           </div>
         </div>

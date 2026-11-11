@@ -113,7 +113,15 @@ export async function readCampaignLedger(client, id, lock = false) {
 }
 
 export async function loadCampaignRecovery(root, ledger) {
-  const approval = await read(root + '/approval.json'), queue = await read(root + '/queue.json');
+  const originalApproval = await read(root + '/approval.json');
+  const approval = ledger.parent.cap_cents===null ? await read(root + '/uncapped-approval.json') : originalApproval;
+  if (ledger.parent.cap_cents===null) {
+    assert.equal(approval.uncappedExplicitlyApproved, true);
+    assert.equal(approval.originalApprovalSha256, digest(originalApproval));
+    assert.equal(approval.maximumSpendCents, null);
+    assert.equal(approval.queueSha256, originalApproval.queueSha256);
+  }
+  const queue = await read(root + '/queue.json');
   assert.equal(digest(queue), approval.queueSha256);
   unique(queue, 'profile_id', 'queue identity');
   unique(queue, 'cm_artist', 'Chartmetric identity');
@@ -134,6 +142,7 @@ export async function loadCampaignRecovery(root, ledger) {
   }
   for (const name of ['approval.json', 'queue.json', 'progress.json', 'artist-outcomes.json', 'chunks.json'])
     await tracked(root + '/' + name);
+  if (ledger.parent.cap_cents===null) await tracked(root + '/uncapped-approval.json');
   const priorDeferred = await fs.access(root + '/deferred-artists.json').then(
     () => tracked(root + '/deferred-artists.json'), e => {
       if (e.code !== 'ENOENT') throw e;
@@ -146,9 +155,12 @@ export async function loadCampaignRecovery(root, ledger) {
     covered.add(id);
   }
   const cursor = covered.size;
-  const selectedCovered = new Set([...savedRows.map(r => String(r.profileId)), ...deferredById.keys()]);
-  assert.deepEqual(selectedCovered, new Set(queue.slice(0, selectedCovered.size).map(r => String(r.profile_id))),
-    'Saved selection is not a contiguous frozen queue prefix.');
+  const frozenIds = new Set(queue.map(r => String(r.profile_id)));
+  assert.ok([...covered].every(id => frozenIds.has(id)), 'Saved work contains a foreign identity.');
+  for (const row of priorDeferred) {
+    const frozen = queue.find(r=>String(r.profile_id)===String(row.profileId));
+    assert.equal(String(row.cmArtist), String(frozen.cm_artist), 'Deferred identity changed.');
+  }
   // Deferrals may occur after the timeout within the selected chunk. Preserve
   // them, but return every untouched artist to the worklist in frozen order.
   const workQueue = [...queue.filter(r => covered.has(String(r.profile_id))),
@@ -213,7 +225,7 @@ export function buildCampaignRecoveryPlan(state, eligibility, collectedAt) {
     originalQueueArtists: state.queue.length, maximumSpendCents: state.approval.maximumSpendCents,
     processedArtists: state.rows.length, likelyMatches: state.rows.filter(r => r.likelyReviewSuggestion).length,
     reservedCents: state.funds.reservedCents,
-    remainingAllowanceCents: state.approval.maximumSpendCents - state.funds.allocatedCents,
+    remainingAllowanceCents: state.approval.maximumSpendCents===null?null:state.approval.maximumSpendCents - state.funds.allocatedCents,
     reconciledPaidRequests: state.paidAdmissions, uncertainRequests: 0,
     cursor: state.cursor, nextOrdinal: state.nextOrdinal,
     nextDirectory: state.root + '-chunk-' + String(state.nextOrdinal).padStart(3, '0'),
@@ -231,7 +243,7 @@ export function buildCampaignRecoveryPlan(state, eligibility, collectedAt) {
 export async function claimPreparedCampaignRecovery(pool, plan) {
   assert.equal(plan.status, 'prepared_not_started');
   assert.equal(plan.requiresExplicitActivation, true);
-  assert.equal(plan.maximumSpendCents, 10000);
+  assert.ok(plan.maximumSpendCents===10000||plan.maximumSpendCents===null);
   const c = await pool.connect();
   try {
     await c.query('BEGIN');

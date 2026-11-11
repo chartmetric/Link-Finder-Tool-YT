@@ -64,6 +64,21 @@ it is deliberately not a deployed application service. Web/API workflows do not
 need restarting for this preparation. The read-only progress observer is separate
 and cannot authorize or establish liveness of paid work.
 
+## Explicit uncapped continuation
+
+Only after explicit approval, the one-time operations command
+`node scripts/src/authorize-uncapped-instagram-campaign.mjs --approve-uncapped-remaining`
+records a supplemental approval, retaining the original approval and all charges.
+It makes the development operations ledger's total ceiling nullable and sets this
+campaign's ceiling to null (unlimited). It does not change any per-child $20 gate,
+admission key, reservation, or ownership decision.
+
+Prepare a fresh recovery plan as above, then activate it with the additional
+`--uncapped-approved` argument. Old capped launches cannot claim the newly
+authorized campaign. The original frozen queue and saved-first ordering remain
+unchanged. Artists without saved candidates require the separate discovery phase;
+this saved-candidate executor must stop rather than silently count them as searched.
+
 ## Offline checks
 
 ```sh

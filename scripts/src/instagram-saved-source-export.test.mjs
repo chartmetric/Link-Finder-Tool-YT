@@ -105,6 +105,20 @@ test('catalog-only artists need a validated profile, not an invented external re
   assert.deepEqual(targets[0].context.items.map(i=>i.kind),['country']);
   assert.equal(targets[1].context.items.length,0);
 });
+test('empty catalog URLs are retained for audit but never delivered as identity evidence',async t=>{
+  const f=await fixture(t,{mutate:d=>{
+    d.accounts.push({profile_id:'1',cm_artist:'1001',account_id:'10',platform:'youtube',account_url:''});
+    d.accounts.push({profile_id:'1',cm_artist:'1001',account_id:'11',platform:'youtube',account_url:null});
+  }});
+  const [target]=await prepareNextSavedBatch(f.dir,previous);
+  assert.equal(target.player.accounts.length,1);
+  assert.equal(target.unusedCatalogAccounts.length,2);
+  assert.ok(target.unusedCatalogAccounts.every(a=>a.exclusionReason==='missing_account_url_not_identity_evidence'));
+  const raw=JSON.parse(await fs.readFile(path.join(f.dir,'frozen-accounts.json'),'utf8'));
+  assert.equal(raw.length,3);
+  const r=enrichedRequest(target,{url:instagram,displayName:'Candidate',externalUrls:[]});
+  assert.equal(r.body.state.catalogAccountEvidence.accounts.length,1);
+});
 test('contextual snapshots cannot supply frozen accounts or ownership proof',async t=>{
   const f=await fixture(t,{mutate:d=>{d.accounts=[];}});
   await fs.writeFile(path.join(f.dir,'snapshots.json'),JSON.stringify([

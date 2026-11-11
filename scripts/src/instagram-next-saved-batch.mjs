@@ -30,7 +30,8 @@ export async function prepareNextSavedBatch(dir,previous,{expectedArtists=500}={
       const url=instagramProfileUrl(candidate.url);
       if(url&&!seen.has(url)){candidates.push({...candidate,url});seen.add(url);}
     }
-    const aa=accounts.get(id)??[];
+    const allAccounts=accounts.get(id)??[];
+    const aa=allAccounts.filter(a=>typeof a.account_url==='string'&&a.account_url.trim());
     const player={profile_id:id,cm_artist:String(row.cm_artist),artist:p.name,tier_rank:row.tier_rank,
       accounts:aa,account_ids:aa.map(a=>a.account_id),source_identity_matches:true,catalog_profile:p,
       source_export_sha256:sources.sourceExportSha256,
@@ -41,7 +42,9 @@ export async function prepareNextSavedBatch(dir,previous,{expectedArtists=500}={
     return {player,artist:p.name,profileId:id,sourceCapturedAt:row.captured_at,
       sourceExportSha256:sources.sourceExportSha256,
       sourceArtistName:row.artist,sourceRunEvidenceSha256:digest(row.result_json),
-      candidates,selected:candidates[0]??null,context,catalogCountryRecord:country??null};
+      candidates,selected:candidates[0]??null,context,catalogCountryRecord:country??null,
+      unusedCatalogAccounts:allAccounts.filter(a=>!aa.includes(a)).map(a=>({...a,
+        exclusionReason:'missing_account_url_not_identity_evidence'}))};
   });
   assert.equal(new Set(targets.map(t=>t.player.cm_artist)).size,expectedArtists);
   return targets;
