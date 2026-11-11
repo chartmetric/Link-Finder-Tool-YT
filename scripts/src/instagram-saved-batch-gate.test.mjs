@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
-import {openSavedBatchGate} from './instagram-saved-batch-gate.mjs';
+import {openSavedBatchGate,SAVED_BATCH_REQUEST_TIMEOUT_MS} from './instagram-saved-batch-gate.mjs';
 const hash=v=>createHash('sha256').update(v).digest('hex');
 function fixture(cap=2000){
   const body={state:{artist:'Frozen artist'},questions:{}};
@@ -74,6 +74,62 @@ test('provider failure fences later work, never refunds and never retries',async
     const rows=(await fs.readFile(path.join(dir,'admissions'),'utf8')).trim().split('\n').map(JSON.parse);
     assert.equal(rows[0].phase,'admitted');assert.equal(rows[1].phase,'stopped_no_retry');
   }finally{await gate.close();await fs.rm(dir,{recursive:true,force:true});}
+});
+test('a slow response beyond the old 25-second deadline completes once within the two-minute window',async t=>{
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'saved-slow-gate-')),f=fixture();
+  t.mock.timers.enable({apis:['setTimeout']});
+  let started;
+  const dispatchStarted=new Promise(resolve=>{started=resolve;});
+  let calls=0;
+  f.transport.dispatch=async()=>{
+    calls++;started();
+    await new Promise(resolve=>setTimeout(resolve,60000));
+    return {cost:0.001};
+  };
+  const gate=await openSavedBatchGate({...f,journalPath:path.join(dir,'admissions')});
+  try{
+    assert.equal(SAVED_BATCH_REQUEST_TIMEOUT_MS,120000);
+    const pending=gate.request('one');
+    await dispatchStarted;
+    t.mock.timers.tick(25001);
+    assert.equal(gate.snapshot().stopped,false);
+    t.mock.timers.tick(34999);
+    await pending;
+    assert.equal(calls,1);assert.equal(f.row.reserved_cents,2);
+    assert.equal(gate.snapshot().returned,1);
+    const rows=(await fs.readFile(path.join(dir,'admissions'),'utf8')).trim().split('\n').map(JSON.parse);
+    assert.equal(rows[0].timeoutMs,120000);
+    assert.deepEqual(rows.map(r=>r.phase),['admitted','returned']);
+  }finally{await gate.close();t.mock.timers.reset();await fs.rm(dir,{recursive:true,force:true});}
+});
+test('a genuinely hung request still aborts at two minutes, keeps its charge and cannot be replayed',async t=>{
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'saved-hung-gate-')),f=fixture();
+  t.mock.timers.enable({apis:['setTimeout']});
+  let started,lateResponse,signal,calls=0;
+  const dispatchStarted=new Promise(resolve=>{started=resolve;});
+  f.transport.dispatch=request=>{
+    calls++;signal=request.signal;started();
+    return new Promise(resolve=>{lateResponse=resolve;});
+  };
+  const gate=await openSavedBatchGate({...f,journalPath:path.join(dir,'admissions')});
+  try{
+    const pending=assert.rejects(gate.request('one'),/Timed-out request is uncertain; no retry/);
+    await dispatchStarted;
+    t.mock.timers.tick(119999);
+    assert.equal(gate.snapshot().stopped,false);
+    assert.equal(signal.aborted,false);
+    t.mock.timers.tick(1);
+    await pending;
+    assert.equal(signal.aborted,true);
+    assert.equal(f.row.reserved_cents,2);
+    await assert.rejects(gate.request('two'),/stopped/);
+    lateResponse({cost:0.001});
+    await Promise.resolve();
+    assert.equal(calls,1);
+    assert.equal(gate.snapshot().returned,0);
+    const rows=(await fs.readFile(path.join(dir,'admissions'),'utf8')).trim().split('\n').map(JSON.parse);
+    assert.deepEqual(rows.map(r=>r.phase),['admitted','stopped_no_retry']);
+  }finally{await gate.close();t.mock.timers.reset();await fs.rm(dir,{recursive:true,force:true});}
 });
 test('tampered requests and unapproved scopes never claim a budget',async()=>{
   const f=fixture();f.scope.requests[0].body.state.artist='Changed';

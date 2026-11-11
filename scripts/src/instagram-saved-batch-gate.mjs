@@ -3,6 +3,9 @@ import fs from 'node:fs/promises';
 import {createHash,randomUUID} from 'node:crypto';
 import {instagramProfileUrl} from './musician-instagram-matching.mjs';
 import {digest,enrichedRequest,validateSavedAlternativeScope} from './instagram-next-saved-batch.mjs';
+// Allow slow provider responses without leaving a paid dispatch hung forever.
+// Expiry still means uncertain billing, never permission to retry or refund.
+export const SAVED_BATCH_REQUEST_TIMEOUT_MS=120000;
 const sha=v=>createHash('sha256').update(v).digest('hex');
 export async function connectSavedBatchPool(){
   const {default:pg}=await import('pg');
@@ -129,11 +132,12 @@ async function openGate({pool,scope,scopeSha256,journalPath,transport,metadataMo
         });
         // A failed journal or unknown COMMIT still consumes its reservation.
         await append({phase:'admitted',key,profileId:r.profileId,reservedCents:2,
+          timeoutMs:SAVED_BATCH_REQUEST_TIMEOUT_MS,
           ...(recordRequest?{request:r}:{})});admitted++;
         controller=new AbortController();
         const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{
           stopped=true;controller.abort();reject(Error('Timed-out request is uncertain; no retry.'));
-        },25000);});
+        },SAVED_BATCH_REQUEST_TIMEOUT_MS);});
         const result=await Promise.race([transport.dispatch({kind:r.kind,key,
           payload:{body:r.body,inputSha256:r.sha256},signal:controller.signal}),timeout]);
         if(!Number.isFinite(result.cost)||result.cost<0||result.cost>0.02)throw Error('Unknown or excessive reported cost.');

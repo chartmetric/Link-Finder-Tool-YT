@@ -81,6 +81,14 @@ this saved-candidate executor must stop rather than silently count them as searc
 
 ## Offline checks
 
+Paid saved-candidate requests now wait up to two minutes (previously 25 seconds).
+This is a bounded provider-response deadline, not a promise that the provider
+will respond. A deadline expiry still stops the gate, preserves the reservation,
+and never retries the uncertain request. Removing the deadline entirely could
+leave unattended work waiting forever. Timeout changes do not start or resume a
+worker; prepare a fresh plan before any explicit continuation because executable
+fingerprints changed.
+
 ```sh
 node --test scripts/src/instagram-campaign-recovery.test.mjs \
   scripts/src/instagram-campaign-budget.test.mjs \
