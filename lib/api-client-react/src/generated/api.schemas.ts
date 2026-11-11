@@ -1146,6 +1146,47 @@ export interface ArchivedBulkEvidencePage {
   hasMore: boolean;
 }
 
+/**
+ * @nullable
+ */
+export type GetArtistCampaignProgress200Progress = {
+  status: string;
+  /** @minimum 0 */
+  totalArtists: number;
+  /** @minimum 0 */
+  processedArtists: number;
+  /** @minimum 0 */
+  checkedArtists: number;
+  /** @minimum 0 */
+  likelyMatches: number;
+  /** @minimum 0 */
+  notAcceptedArtists: number;
+  /** @minimum 0 */
+  incompleteArtists: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  processedPercent: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     * @nullable
+     */
+  successRate: number | null;
+  /** @minimum 0 */
+  reservedUsd: number;
+  /** @minimum 0 */
+  maximumSpendUsd: number;
+  updatedAt: string;
+  stale: boolean;
+} | null;
+
+export type GetArtistCampaignProgress200 = {
+  /** @nullable */
+  progress: GetArtistCampaignProgress200Progress;
+};
+
 export type ListArtistResultBatches200 = {
   batches: ArtistResultBatch[];
   warnings: string[];

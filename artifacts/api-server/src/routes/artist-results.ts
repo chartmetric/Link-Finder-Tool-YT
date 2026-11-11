@@ -1,9 +1,18 @@
 import { Router } from "express";
-import { GetArtistResultRowsParams, GetArtistResultRowsResponse, ListArtistResultBatchesResponse } from "@workspace/api-zod";
+import { GetArtistCampaignProgressResponse, GetArtistResultRowsParams, GetArtistResultRowsResponse, ListArtistResultBatchesResponse } from "@workspace/api-zod";
+import { readArtistCampaignProgress } from "../lib/artist-campaign-progress";
 import { artistResultDocument, listArtistResults } from "../lib/artist-results";
 import { paginateResults, resultCsv } from "../lib/artist-result-model";
 
 const router = Router();
+router.get("/bulk/artist-campaign-progress", async (req, res): Promise<void> => {
+  res.setHeader("Cache-Control", "no-store");
+  try { res.json(GetArtistCampaignProgressResponse.parse(await readArtistCampaignProgress())); }
+  catch (error) {
+    req.log.error({ err: error }, "Artist campaign progress unavailable");
+    res.status(503).json({ error: "Progress is temporarily unavailable. No paid work was started or retried." });
+  }
+});
 const validId = (id: string) => /^[A-Za-z0-9][A-Za-z0-9._-]{0,179}$/.test(id);
 router.get("/bulk/artist-results", async (req, res) => {
   try { res.json(ListArtistResultBatchesResponse.parse(await listArtistResults())); }

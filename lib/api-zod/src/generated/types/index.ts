@@ -66,6 +66,8 @@ export * from './candidatePostDelivery';
 export * from './existingProfile';
 export * from './existingProfileAccount';
 export * from './existingProfilePage';
+export * from './getArtistCampaignProgress200';
+export * from './getArtistCampaignProgress200Progress';
 export * from './getArtistResultRows200';
 export * from './healthStatus';
 export * from './identityComparison';

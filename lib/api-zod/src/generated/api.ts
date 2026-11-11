@@ -9,6 +9,52 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Read the continuous artist campaign without starting paid work
+ */
+export const getArtistCampaignProgressResponseProgressTotalArtistsMin = 0;
+
+export const getArtistCampaignProgressResponseProgressProcessedArtistsMin = 0;
+
+export const getArtistCampaignProgressResponseProgressCheckedArtistsMin = 0;
+
+export const getArtistCampaignProgressResponseProgressLikelyMatchesMin = 0;
+
+export const getArtistCampaignProgressResponseProgressNotAcceptedArtistsMin = 0;
+
+export const getArtistCampaignProgressResponseProgressIncompleteArtistsMin = 0;
+
+export const getArtistCampaignProgressResponseProgressProcessedPercentMin = 0;
+export const getArtistCampaignProgressResponseProgressProcessedPercentMax = 100;
+
+export const getArtistCampaignProgressResponseProgressSuccessRateMin = 0;
+export const getArtistCampaignProgressResponseProgressSuccessRateMax = 100;
+
+export const getArtistCampaignProgressResponseProgressReservedUsdMin = 0;
+
+export const getArtistCampaignProgressResponseProgressMaximumSpendUsdMin = 0;
+
+
+
+export const GetArtistCampaignProgressResponse = zod.object({
+  "progress": zod.object({
+  "status": zod.string(),
+  "totalArtists": zod.number().min(getArtistCampaignProgressResponseProgressTotalArtistsMin),
+  "processedArtists": zod.number().min(getArtistCampaignProgressResponseProgressProcessedArtistsMin),
+  "checkedArtists": zod.number().min(getArtistCampaignProgressResponseProgressCheckedArtistsMin),
+  "likelyMatches": zod.number().min(getArtistCampaignProgressResponseProgressLikelyMatchesMin),
+  "notAcceptedArtists": zod.number().min(getArtistCampaignProgressResponseProgressNotAcceptedArtistsMin),
+  "incompleteArtists": zod.number().min(getArtistCampaignProgressResponseProgressIncompleteArtistsMin),
+  "processedPercent": zod.number().min(getArtistCampaignProgressResponseProgressProcessedPercentMin).max(getArtistCampaignProgressResponseProgressProcessedPercentMax),
+  "successRate": zod.number().min(getArtistCampaignProgressResponseProgressSuccessRateMin).max(getArtistCampaignProgressResponseProgressSuccessRateMax).nullable(),
+  "reservedUsd": zod.number().min(getArtistCampaignProgressResponseProgressReservedUsdMin),
+  "maximumSpendUsd": zod.number().min(getArtistCampaignProgressResponseProgressMaximumSpendUsdMin),
+  "updatedAt": zod.string(),
+  "stale": zod.boolean()
+}).nullable()
+})
+
+
+/**
  * @summary Read-only saved artist batches and diagnostic exports
  */
 export const listArtistResultBatchesResponseBatchesItemObservationScopeIdentityRegExp = new RegExp('^[a-f0-9]{24}$');

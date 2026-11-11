@@ -8,6 +8,7 @@ import { Activity, Type, ArrowRight, ArrowUpRight, Check, ChevronDown, CircleAle
 import { SiInstagram, SiSpotify, SiTiktok, SiYoutube } from 'react-icons/si';
 import { getGetMusicianCoverageQueryKey, getListProfileInvestigationsQueryKey, searchProfiles, type ProfileInvestigation, type ProfileMatch, type ProfileSearchResponse } from '@workspace/api-client-react';
 import { MusicianCoverage } from '@/components/musician-coverage';
+import { ArtistCampaignProgress } from '@/components/artist-campaign-progress';
 import { InvestigationHistory } from '@/components/investigation-history';
 import { EvidenceDelivery } from '@/components/evidence-delivery';
 import { ArchivedBulkEvidence } from '@/components/archived-bulk-evidence';
@@ -315,6 +316,7 @@ export default function SingleArtist() {
 
       <main>
         <div className="inv-wrap inv-workspace">
+          <ArtistCampaignProgress />
           <div className="inv-section-head">
             <div><div className="inv-kicker">01 / Starting point</div><h2>{mode === 'url' ? 'Enter a known profile' : 'Describe the person'}</h2></div>
             <p className="inv-section-note">{mode === 'url' ? 'Use a public profile or reference page, such as ESPN.' : 'Type a role, a name, and optionally one platform.'}</p>

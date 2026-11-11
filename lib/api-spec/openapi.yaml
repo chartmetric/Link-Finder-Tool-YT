@@ -13,6 +13,39 @@ tags:
   - name: profile-search
     description: Public profile discovery
 paths:
+  /bulk/artist-campaign-progress:
+    get:
+      operationId: getArtistCampaignProgress
+      tags: [profile-search]
+      summary: Read the continuous artist campaign without starting paid work
+      responses:
+        "200":
+          description: Current workspace campaign totals, including active checkpoints
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [progress]
+                properties:
+                  progress:
+                    type: [object, "null"]
+                    required: [status, totalArtists, processedArtists, checkedArtists, likelyMatches, notAcceptedArtists, incompleteArtists, processedPercent, successRate, reservedUsd, maximumSpendUsd, updatedAt, stale]
+                    properties:
+                      status: { type: string }
+                      totalArtists: { type: number, minimum: 0 }
+                      processedArtists: { type: number, minimum: 0 }
+                      checkedArtists: { type: number, minimum: 0 }
+                      likelyMatches: { type: number, minimum: 0 }
+                      notAcceptedArtists: { type: number, minimum: 0 }
+                      incompleteArtists: { type: number, minimum: 0 }
+                      processedPercent: { type: number, minimum: 0, maximum: 100 }
+                      successRate: { type: [number, "null"], minimum: 0, maximum: 100 }
+                      reservedUsd: { type: number, minimum: 0 }
+                      maximumSpendUsd: { type: number, minimum: 0 }
+                      updatedAt: { type: string }
+                      stale: { type: boolean }
+        "503":
+          description: Progress could not be read; missing information is not zero progress
   /bulk/artist-results:
     get:
       operationId: listArtistResultBatches

@@ -35,6 +35,7 @@ import type {
   BulkRunControl,
   BulkRunResumeInput,
   ExistingProfilePage,
+  GetArtistCampaignProgress200,
   GetArtistResultRows200,
   HealthStatus,
   ListArchivedBulkEvidenceParams,
@@ -82,6 +83,83 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetArtistCampaignProgressUrl = () => {
+
+
+
+
+  return `/api/bulk/artist-campaign-progress`
+}
+
+/**
+ * @summary Read the continuous artist campaign without starting paid work
+ */
+export const getArtistCampaignProgress = async ( options?: Parameters<typeof customFetch>[1]): Promise<GetArtistCampaignProgress200> => {
+
+  return customFetch<GetArtistCampaignProgress200>(getGetArtistCampaignProgressUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetArtistCampaignProgressQueryKey = () => {
+    return [
+    `/api/bulk/artist-campaign-progress`
+    ] as const;
+    }
+
+
+export const getGetArtistCampaignProgressQueryOptions = <TData = Awaited<ReturnType<typeof getArtistCampaignProgress>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArtistCampaignProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetArtistCampaignProgressQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getArtistCampaignProgress>>> = ({ signal }) => getArtistCampaignProgress({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getArtistCampaignProgress>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetArtistCampaignProgressQueryResult = NonNullable<Awaited<ReturnType<typeof getArtistCampaignProgress>>>
+export type GetArtistCampaignProgressQueryError = ErrorType<void>
+
+
+/**
+ * @summary Read the continuous artist campaign without starting paid work
+ */
+
+export function useGetArtistCampaignProgress<TData = Awaited<ReturnType<typeof getArtistCampaignProgress>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArtistCampaignProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetArtistCampaignProgressQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListArtistResultBatchesUrl = () => {
 
