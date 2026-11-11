@@ -1,6 +1,6 @@
 // Pure offline assembly. Catalog observations are not newly fetched source pages,
 // and release consistency never establishes ownership on its own.
-import {evidenceDigest,youtubeOwnershipUrl,boundYoutubeCapture} from './youtube-ownership-policy.mjs';
+import {evidenceDigest,youtubeOwnershipUrl,boundYoutubeCapture,youtubeMusicKey} from './youtube-ownership-policy.mjs';
 
 const same=(a,b)=>String(a)===String(b);
 export function assertYoutubeCatalogBinding(artist,packet){
@@ -145,10 +145,8 @@ function instagramHandle(raw){
   }catch{return null;}
 }
 export function spotifyId(raw){
-  try{const u=new URL(raw);
-    return u.protocol==='https:'&&u.hostname==='open.spotify.com'&&!u.username&&!u.password&&!u.port
-      &&/^\/artist\/[A-Za-z0-9]{22}\/?$/.test(u.pathname)?u.pathname.split('/')[2]:null;
-  }catch{return null;}
+  const key=youtubeMusicKey(raw);
+  return key?.startsWith('spotify:')?key.slice('spotify:'.length):null;
 }
 export function youtubeArtistFromCatalogPacket(packet){
   const artist={profileId:packet.profileId,cmArtist:packet.cmArtist,name:packet.artist,catalogProfile:packet.catalogProfile,

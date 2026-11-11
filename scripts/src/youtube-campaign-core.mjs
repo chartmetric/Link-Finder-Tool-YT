@@ -123,14 +123,17 @@ export function campaignTransport({admit,returned,root,assertFrozen,fetchImpl=fe
     }finally{clearTimeout(timer);}
   };
 }
-export async function evaluateCandidate({artist,candidate,request,channelConflict}){
+export async function evaluateCandidate({artist,candidate,request,channelConflict,channelCache=null}){
   const url=youtubeOwnershipUrl(candidate.url);
+  if(channelCache?.reuse(artist,candidate))return candidate;
   const packet=await request(artist.profileId,'metadata','channel-'+artist.profileId+'-'+evidenceDigest(url),{
     method:'GET',url:'https://api.scrapecreators.com/v1/youtube/channel?'+new URLSearchParams({url})});
   candidate.capture=normalizeYoutubeChannel(packet,url);
+  if(channelCache?.observe(artist,candidate))return candidate;
   let conflict=false;
   if(candidate.capture)conflict=await channelConflict(candidate.capture.body.channelId,artist.profileId);
-  let decision=evaluateYoutubeOwnership(artist,candidate,{sharedChannel:conflict});
+  let decision=evaluateYoutubeOwnership(artist,candidate,{sharedChannel:conflict,
+    contradictoryPair:candidate.contradictoryPair===true});
   if(decision.status==='needs_identity_check'){
     const input=youtubeVerificationInput(artist,candidate),prepared=youtubeDecisionRequest(input,MODEL_PLAN);
     candidate.metadataActuallyUsed=input;
@@ -143,5 +146,6 @@ export async function evaluateCandidate({artist,candidate,request,channelConflic
       decision=evaluateYoutubeOwnership(artist,candidate,{sharedChannel:conflict,answer:candidate.recordedAnswer});
     }
   }
-  return {...candidate,decision};
+  candidate.decision=decision;
+  return candidate;
 }

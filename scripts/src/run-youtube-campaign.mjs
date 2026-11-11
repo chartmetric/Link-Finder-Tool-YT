@@ -3,7 +3,10 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
-import {select,metadataQueries,buildMetadataOverlay} from './instagram-artist-metadata-overlay.mjs';
+import {select,buildMetadataOverlay} from './instagram-artist-metadata-overlay.mjs';
+import {youtubeMetadataQueries,bindYoutubeCatalogAccounts} from './youtube-catalog-metadata.mjs';
+import {youtubeArtistSearchQuery,rankYoutubeMusicCandidates} from './youtube-music-search.mjs';
+import {createYoutubeChannelCache} from './youtube-channel-dedup.mjs';
 import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
 import {youtubeEligibilitySql,youtubeSearchCandidates} from './youtube-discovery-test.mjs';
 import {evidenceDigest} from './youtube-ownership-policy.mjs';
@@ -16,7 +19,8 @@ const save=async(name,value)=>fs.writeFile(root+'/'+name,JSON.stringify(value),{
 const ownFiles=['scripts/src/run-youtube-campaign.mjs','scripts/src/youtube-campaign-core.mjs',
   'scripts/src/youtube-ownership-policy.mjs','scripts/src/youtube-ownership-transport.mjs',
   'scripts/src/youtube-discovery-test.mjs','scripts/src/instagram-artist-metadata-overlay.mjs',
-  'scripts/src/youtube-ownership-evidence.mjs'];
+  'scripts/src/youtube-ownership-evidence.mjs','scripts/src/youtube-catalog-metadata.mjs',
+  'scripts/src/youtube-music-search.mjs','scripts/src/youtube-channel-dedup.mjs'];
 export function eligibilitySql(ids){
   if(ids){
     assert.ok(ids.length&&ids.every(id=>/^\d+$/.test(id)));
@@ -70,15 +74,12 @@ export async function prepareYoutubeCampaign(){
     tiers:Object.fromEntries([1,2,3,4,5].map(t=>[t,queue.filter(a=>a.tier===t).length])),paidCalls:0}));
 }
 async function catalogContext(targets){
-  const manifest={artists:targets.map(a=>({...a,accounts:[],account_ids:[]}))};
-  const accounts=await select(metadataQueries(manifest).accounts.replaceAll("platform!='instagram'","platform!='youtube'"));
-  for(const a of manifest.artists){
-    a.accounts=accounts.filter(x=>x.profile_id===a.profile_id&&x.account_url?.trim());
-    a.account_ids=a.accounts.map(x=>x.account_id);
-  }
-  const queries=metadataQueries(manifest),data={accounts:manifest.artists.flatMap(a=>a.accounts)};
+  let manifest={artists:targets.map(a=>({...a,accounts:[],account_ids:[]}))};
+  const accounts=await select(youtubeMetadataQueries(manifest).accounts);
+  manifest=bindYoutubeCatalogAccounts(manifest,accounts);
+  const queries=youtubeMetadataQueries(manifest),data={accounts:manifest.artists.flatMap(a=>a.accounts)};
   for(const key of Object.keys(queries).filter(k=>k!=='accounts'))
-    data[key]=await select(queries[key].replaceAll("platform!='instagram'","platform!='youtube'"));
+    data[key]=await select(queries[key]);
   const overlay=buildMetadataOverlay(manifest,data,new Date().toISOString());
   const out=new Map();
   for(const p of overlay.packets){
@@ -197,13 +198,15 @@ export async function runYoutubeCampaign(){
         });
         activeProfile=target.profile_id;
         const artist=metadata.get(activeProfile);assert.ok(artist);assert.equal(artist.cmArtist,target.cm_artist);
-        const search={method:'POST',url:'https://google.serper.dev/search',body:{q:`${artist.name} artist official YouTube channel`,num:10}};
+        const search={method:'POST',url:'https://google.serper.dev/search',body:{q:youtubeArtistSearchQuery(artist),num:10}};
         const packet=await request(activeProfile,'search','search-'+activeProfile,search);
         assert.equal(packet.status,200,'Search failed; this is not a no-match.');
-        const found=youtubeSearchCandidates(packet.data);
-        const record={artist,searchStatus:found.length?'candidates_found':'no_match',candidates:[]};
-        for(const candidate of found){
-          const checked=await evaluateCandidate({artist,candidate,request,
+        const ranked=rankYoutubeMusicCandidates(artist,youtubeSearchCandidates(packet.data));
+        const record={artist,searchStatus:ranked.allCandidates.length?'candidates_found':'no_match',
+          allSearchCandidates:ranked.allCandidates,relatedTopicCandidates:ranked.relatedTopicCandidates,candidates:[]};
+        const channelCache=createYoutubeChannelCache(artist);
+        for(const candidate of ranked.candidates){
+          const checked=await evaluateCandidate({artist,candidate,request,channelCache,
             channelConflict:async(channelId,profileId)=>transaction(async c=>{
               await assertOwner(c);
               await c.query(`INSERT INTO youtube_link_campaign_channels(campaign_id,channel_id,profile_id)
@@ -217,7 +220,7 @@ export async function runYoutubeCampaign(){
                 WHERE campaign_id=$1 AND profile_id=$2`,[id,other.profile_id]);
               return others.length>0;
             })});
-          record.candidates.push(checked);
+          if(!checked.aliasOf)record.candidates.push(checked);
           await save('inputs/'+activeProfile+'-'+evidenceDigest(candidate.url)+'.json',checked);
         }
         const resultHash=evidenceDigest(record);

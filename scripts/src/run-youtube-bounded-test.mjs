@@ -5,7 +5,10 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
-import {select,metadataQueries,buildMetadataOverlay} from './instagram-artist-metadata-overlay.mjs';
+import {select,buildMetadataOverlay} from './instagram-artist-metadata-overlay.mjs';
+import {youtubeMetadataQueries,bindYoutubeCatalogAccounts} from './youtube-catalog-metadata.mjs';
+import {youtubeArtistSearchQuery,rankYoutubeMusicCandidates} from './youtube-music-search.mjs';
+import {createYoutubeChannelCache} from './youtube-channel-dedup.mjs';
 import {eligibilitySql} from './run-youtube-campaign.mjs';
 import {youtubeTestSchema,youtubeSearchCandidates} from './youtube-discovery-test.mjs';
 import {exportYoutubeCatalogEvidence} from './youtube-ownership-catalog-export.mjs';
@@ -15,11 +18,15 @@ import {evidenceDigest as hash,youtubeVerificationInput,evaluateYoutubeOwnership
 import {normalizeYoutubeChannel,youtubeDecisionRequest,parseYoutubeDecision} from './youtube-ownership-transport.mjs';
 import {boundedYoutubeSchema,boundedYoutubeGate} from './youtube-bounded-test-gate.mjs';
 import {freezeLocalModules} from './seal-youtube-campaign-runtime.mjs';
-const id='youtube-test-20-usd5-2026-11-11';
-const root='generated-artifacts/'+id,parentId='full-tiers-1-5-no-youtube-uncapped';
+import {boundedTestOptions,approveBoundedTestPlan} from './youtube-bounded-test-plan.mjs';
+const {id,root}=boundedTestOptions(process.argv.slice(2));
+const parentId='full-tiers-1-5-no-youtube-uncapped';
 const read=async p=>JSON.parse(await fs.readFile(p,'utf8'));
 const save=async(name,value)=>fs.writeFile(root+'/'+name,JSON.stringify(value),{flag:'wx'});
 async function prepare(){
+  assert.ok(process.argv.includes('--prepare-only'),'Preparation cannot imply spending approval');
+  try{await fs.access(root);throw Error('Test destination already exists; prepare a fresh ID');}
+  catch(e){if(e.code!=='ENOENT')throw e;}
   const pool=await connectSavedBatchPool();
   let options;
   try{
@@ -37,22 +44,24 @@ async function prepare(){
     .sort((a,b)=>a.tier-b.tier||a.ordinal-b.ordinal);
   assert.equal(artists.length,20);
   assert.ok(artists.every(a=>Date.now()-Date.parse(a.snapshot_at.replace(' ','T')+'Z')<36*3600000));
-  const manifest={artists:artists.map(a=>({...a,accounts:[],account_ids:[]}))};
-  const data={};
-  for(const [name,sql] of Object.entries(metadataQueries(manifest)))data[name]=await select(sql);
+  let manifest={artists:artists.map(a=>({...a,accounts:[],account_ids:[]}))};
+  const accounts=await select(youtubeMetadataQueries(manifest).accounts);
+  manifest=bindYoutubeCatalogAccounts(manifest,accounts);
+  const data={accounts:manifest.artists.flatMap(a=>a.accounts)};
+  for(const [name,sql] of Object.entries(youtubeMetadataQueries(manifest)))
+    if(name!=='accounts')data[name]=await select(sql);
   const packets=buildMetadataOverlay(manifest,data,{queryCount:Object.keys(data).length,modelCalls:0,
     newSearches:0,scrapeCalls:0,startedAt:new Date().toISOString()}).packets;
   await fs.mkdir(root);
   for(const dir of ['receipts','metadata','artists','inputs'])await fs.mkdir(root+'/'+dir);
   for(const p of packets){
-    for(const a of p.linkedAccounts)a.wasInFrozenBatch=true;
     await save('metadata/'+p.profileId+'.json',p);
   }
   await exportYoutubeCatalogEvidence(root,root+'/supplemental-catalog');
   const enriched=await read(root+'/supplemental-catalog/packets.json');
-  const scope={id,artists,scopeSha256:hash(artists),userCapCents:500,operationalCapCents:200,
-    candidatesPerArtist:2,maxCalls:100,explicitApproval:true,
-    approvedBy:'User approved a 20-artist YouTube test with a $5 maximum.',
+  const scope={id,artists,scopeSha256:hash(artists),userCapCents:null,proposedCapCents:200,operationalCapCents:200,
+    candidatesPerArtist:2,maxCalls:100,explicitApproval:false,approvalStatus:'awaiting_spending_approval',
+    approvedBy:null,
     noCatalogWrites:true,noAutomaticRetries:true,fullCampaignRemainsPaused:true,
     catalogEvidenceSha256:hash(enriched),model:MODEL_PLAN};
   const files=await freezeLocalModules(fileURLToPath(import.meta.url),root+'/runtime');
@@ -61,15 +70,31 @@ async function prepare(){
     const name=path.basename(source);
     scope.runtimeFiles[name]=hash(await fs.readFile(root+'/runtime/'+name,'utf8'));
   }
-  await save('approval.json',scope);
+  await save('plan.json',scope);
   console.log(JSON.stringify({status:'prepared',id,artists:20,tiers:artists.map(a=>a.tier),
-    operationalMaximumUsd:2,userMaximumUsd:5,paidCalls:0}));
+    proposedMaximumUsd:2,spendingApproved:false,paidCalls:0}));
+}
+async function authorize(){
+  assert.ok(process.argv.includes('--approve-usd=2'),'Explicit $2 spending approval required');
+  assert.equal(path.dirname(fileURLToPath(import.meta.url)),path.resolve(root,'runtime'),'Authorize the frozen runtime only');
+  const plan=await read(root+'/plan.json');
+  const expectedPlanSha256=process.argv.find(a=>a.startsWith('--plan-sha256='))?.slice('--plan-sha256='.length);
+  assert.equal(hash(await read(root+'/supplemental-catalog/packets.json')),plan.catalogEvidenceSha256);
+  for(const [name,sha] of Object.entries(plan.runtimeFiles)){
+    assert.equal(path.basename(name),name);
+    assert.equal(hash(await fs.readFile(root+'/runtime/'+name,'utf8')),sha);
+  }
+  await save('approval.json',approveBoundedTestPlan(plan,{id,capCents:200,approvedAt:new Date().toISOString(),expectedPlanSha256}));
+  console.log(JSON.stringify({status:'authorized_not_started',id,maximumUsd:2,paidCalls:0}));
 }
 async function run(){
   assert.ok(process.argv.includes('--run-approved'));
+  assert.equal(path.dirname(fileURLToPath(import.meta.url)),path.resolve(root,'runtime'),'Run the frozen runtime only');
   const scope=await read(root+'/approval.json'),packets=await read(root+'/supplemental-catalog/packets.json');
+  assert.equal(scope.explicitApproval,true);assert.equal(scope.approvalStatus,'approved');
+  assert.equal(hash(await read(root+'/plan.json')),scope.planSha256);
   assert.equal(scope.scopeSha256,hash(scope.artists));assert.equal(hash(packets),scope.catalogEvidenceSha256);
-  assert.equal(scope.artists.length,20);assert.equal(scope.userCapCents,500);
+  assert.equal(scope.artists.length,20);assert.equal(scope.userCapCents,200);
   assert.equal(scope.operationalCapCents,200);assert.equal(scope.candidatesPerArtist,2);
   const fresh=await select(eligibilitySql(scope.artists.map(a=>a.profile_id)));
   assert.ok(scope.artists.every(a=>fresh.some(f=>f.profile_id===a.profile_id&&f.cm_artist===a.cm_artist&&Number(f.tier)===a.tier)));
@@ -114,16 +139,19 @@ async function run(){
       const packet=packets.find(p=>p.profileId===a.profile_id);assert.ok(packet);
       const artist=youtubeArtistFromCatalogPacket(packet);
       const response=await request(a.profile_id,'search','search-'+a.profile_id+'-0',{
-        method:'POST',url:'https://google.serper.dev/search',body:{q:`${a.artist} artist official YouTube channel`,num:10}});
+        method:'POST',url:'https://google.serper.dev/search',body:{q:youtubeArtistSearchQuery(artist),num:10}});
       assert.equal(response.status,200);
-      const all=youtubeSearchCandidates(response.data),candidates=all.slice(0,2);
-      for(const candidate of candidates){
+      const ranked=rankYoutubeMusicCandidates(artist,youtubeSearchCandidates(response.data));
+      const all=ranked.allCandidates,candidates=[],channelCache=createYoutubeChannelCache(artist);
+      for(const candidate of ranked.candidates.slice(0,scope.candidatesPerArtist)){
+        if(channelCache.reuse(artist,candidate))continue;
         const response=await request(a.profile_id,'metadata','metadata-'+a.profile_id+'-'+hash(candidate.url),{
           method:'GET',url:'https://api.scrapecreators.com/v1/youtube/channel?'+new URLSearchParams({url:candidate.url})});
         candidate.capture=normalizeYoutubeChannel(response,candidate.url);
+        if(!channelCache.observe(artist,candidate))candidates.push(candidate);
       }
       const record={artist,tier:a.tier,searchStatus:all.length?'candidates_found':'no_match',
-        allSearchCandidates:all,candidates};
+        allSearchCandidates:all,relatedTopicCandidates:ranked.relatedTopicCandidates,candidates};
       records.push(record);await save('artists/'+a.profile_id+'-captures.json',record);
       console.log(JSON.stringify({phase:'captures',artists:records.length,total:20,candidates:candidates.length}));
     }
@@ -140,7 +168,7 @@ async function run(){
           [channel,r.artist.profileId])).rows:[];
         const shared=Boolean(prior.length||(channel&&ownership.get(channel).size>1));
         const artist={...r.artist,ownershipEvidence:assembleYoutubeOwnershipEvidence(r.artist,packet,candidate)};
-        let decision=evaluateYoutubeOwnership(artist,candidate,{sharedChannel:shared});
+        let decision=evaluateYoutubeOwnership(artist,candidate,{sharedChannel:shared,contradictoryPair:candidate.contradictoryPair===true});
         if(decision.status==='needs_identity_check'){
           const input=youtubeVerificationInput(artist,candidate),prepared=youtubeDecisionRequest(input,MODEL_PLAN);
           candidate.metadataActuallyUsed=input;
@@ -148,7 +176,8 @@ async function run(){
           else{
             const reply=await request(r.artist.profileId,'model','model-'+r.artist.profileId+'-'+hash(candidate.url),prepared.request);
             candidate.recordedAnswer=parseYoutubeDecision(reply,input,MODEL_PLAN,prepared.inputSha256);
-            decision=evaluateYoutubeOwnership(artist,candidate,{sharedChannel:shared,answer:candidate.recordedAnswer});
+            decision=evaluateYoutubeOwnership(artist,candidate,{sharedChannel:shared,
+              contradictoryPair:candidate.contradictoryPair===true,answer:candidate.recordedAnswer});
           }
         }
         candidate.decision=decision;
@@ -171,9 +200,10 @@ async function run(){
       const completed=records.filter(r=>r.classification),checked=completed.filter(r=>r.classification.checked),likely=completed.filter(r=>r.classification.likely);
       const summary={id,status,stopReason,artistsCompleted:completed.length,artistsCaptured:records.length,
         checkedArtists:checked.length,likelyMatches:likely.length,successRate:checked.length?likely.length/checked.length:null,
-        noChannelFound:completed.filter(r=>!r.candidates.length).length,
+        noChannelFound:completed.filter(r=>!r.allSearchCandidates.length).length,
+        noArtistChannelSelected:completed.filter(r=>r.allSearchCandidates.length&&!r.candidates.length).length,
         checkedNotAccepted:checked.filter(r=>!r.classification.likely).length,
-        reservedUsd:Number(budget.reserved_cents)/100,operationalMaximumUsd:2,userMaximumUsd:5,admissions,
+        reservedUsd:Number(budget.reserved_cents)/100,operationalMaximumUsd:2,userMaximumUsd:scope.userCapCents/100,admissions,
         catalogWrites:0,fullYoutubeCampaignResumed:false,instagramChanged:false,recordedAt:new Date().toISOString()};
       await save('summary.json',summary);
       if(completed.length){
@@ -195,7 +225,8 @@ async function run(){
   }
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
-  if(process.argv.includes('--prepare-approved'))await prepare();
+  if(process.argv.includes('--prepare-only'))await prepare();
+  else if(process.argv.includes('--authorize-prepared'))await authorize();
   else if(process.argv.includes('--run-approved'))await run();
-  else throw Error('Use --prepare-approved or --run-approved; no automatic paid execution');
+  else throw Error('Use --prepare-only, --authorize-prepared, or --run-approved; preparation never authorizes paid work');
 }

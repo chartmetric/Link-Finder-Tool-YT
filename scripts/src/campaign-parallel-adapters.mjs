@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import {select,metadataQueries,buildMetadataOverlay} from './instagram-artist-metadata-overlay.mjs';
+import {youtubeMetadataQueries,bindYoutubeCatalogAccounts} from './youtube-catalog-metadata.mjs';
+import {youtubeArtistSearchQuery,rankYoutubeMusicCandidates} from './youtube-music-search.mjs';
+import {createYoutubeChannelCache} from './youtube-channel-dedup.mjs';
 import {youtubeEligibilitySql,youtubeSearchCandidates} from './youtube-discovery-test.mjs';
 import {instagramProfileUrl} from './musician-instagram-matching.mjs';
 import {instagramSearchCandidates} from './instagram-search-clues.mjs';
@@ -26,18 +29,19 @@ export async function catalogContexts(platform,root,targets){
     }catch(e){if(e.code!=='ENOENT')throw e;missing.push(a);}
   }
   if(missing.length){
-    const manifest={artists:missing.map(a=>({...a,accounts:[],account_ids:[]}))};
-    const query=q=>platform==='youtube'?q.replaceAll("platform!='instagram'","platform!='youtube'"):q;
-    const accounts=await select(query(metadataQueries(manifest).accounts));
-    for(const a of manifest.artists){
+    let manifest={artists:missing.map(a=>({...a,accounts:[],account_ids:[]}))};
+    const queriesFor=m=>platform==='youtube'?youtubeMetadataQueries(m):metadataQueries(m);
+    const accounts=await select(queriesFor(manifest).accounts);
+    if(platform==='youtube')manifest=bindYoutubeCatalogAccounts(manifest,accounts);
+    else for(const a of manifest.artists){
       a.accounts=accounts.filter(x=>x.profile_id===a.profile_id&&x.account_url?.trim()
         &&(x.platform!=='spotify'||/^https:\/\/open\.spotify\.com\/artist\/[A-Za-z0-9]{22}\/?(?:\?.*)?$/.test(x.account_url)));
       a.account_ids=a.accounts.map(x=>x.account_id);
     }
-    const data={accounts},queries=metadataQueries(manifest);
+    const data={accounts:platform==='youtube'?manifest.artists.flatMap(a=>a.accounts):accounts},queries=queriesFor(manifest);
     // Independent catalog reads in bounded groups, not paid provider requests.
     const keys=Object.keys(queries).filter(k=>k!=='accounts');
-    for(let i=0;i<keys.length;i+=3)await Promise.all(keys.slice(i,i+3).map(async k=>{data[k]=await select(query(queries[k]));}));
+    for(let i=0;i<keys.length;i+=3)await Promise.all(keys.slice(i,i+3).map(async k=>{data[k]=await select(queries[k]);}));
     for(const p of buildMetadataOverlay(manifest,data,new Date().toISOString()).packets){
       await saveJson(root+'/metadata/'+p.profileId+'.json',p);cached.set(p.profileId,p);
     }
@@ -127,12 +131,15 @@ export async function processInstagram({target,a,source,root,request,conflict}){
 }
 export async function processYoutube({target:artist,a,root,request,conflict}){
   const packet=await request(a.profile_id,'search','search-'+a.profile_id,{method:'POST',
-    url:'https://google.serper.dev/search',body:{q:`${artist.name} artist official YouTube channel`,num:10}});
+    url:'https://google.serper.dev/search',body:{q:youtubeArtistSearchQuery(artist),num:10}});
   assert.equal(packet.status,200,'Search failure is not absence.');
-  const found=youtubeSearchCandidates(packet.data),result={artist,searchStatus:found.length?'candidates_found':'no_match',candidates:[]};
-  for(const candidate of found){
-    const checked=await evaluateCandidate({artist,candidate,request,channelConflict:conflict});
-    result.candidates.push(checked);
+  const ranked=rankYoutubeMusicCandidates(artist,youtubeSearchCandidates(packet.data));
+  const result={artist,searchStatus:ranked.allCandidates.length?'candidates_found':'no_match',
+    allSearchCandidates:ranked.allCandidates,relatedTopicCandidates:ranked.relatedTopicCandidates,candidates:[]};
+  const channelCache=createYoutubeChannelCache(artist);
+  for(const candidate of ranked.candidates){
+    const checked=await evaluateCandidate({artist,candidate,request,channelConflict:conflict,channelCache});
+    if(!checked.aliasOf)result.candidates.push(checked);
     await saveJson(root+'/inputs/'+a.profile_id+'-'+hash(candidate.url)+'.json',checked);
   }
   return {result,stats:classifyYoutubeResult(result),reason:null};

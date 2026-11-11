@@ -68,12 +68,15 @@ function musicKey(raw){
     const u=new URL(raw),host=u.hostname.replace(/^www\./,'');
     if(u.protocol!=='https:'||u.username||u.password||u.port)return null;
     const p=u.pathname.split('/').filter(Boolean);
-    if(host==='open.spotify.com'&&p.length===2&&p[0]==='artist'&&/^[a-zA-Z0-9]{22}$/.test(p[1]))
-      return 'spotify:'+p[1];
+    if(u.hostname==='open.spotify.com'){
+      if(p.length===3&&/^intl-[a-z]{2}$/.test(p[0]))p.shift();
+      if(p.length===2&&p[0]==='artist'&&/^[a-zA-Z0-9]{22}$/.test(p[1]))return 'spotify:'+p[1];
+    }
     if(host==='instagram.com'&&p.length===1&&/^[\w.]+$/.test(p[0]))return 'instagram:'+p[0].toLowerCase();
     return null;
   }catch{return null;}
 }
+export {musicKey as youtubeMusicKey};
 
 // A search snippet is never converted into a channel biography. Aliases require
 // an archived response binding the requested handle/custom URL to a channel ID.

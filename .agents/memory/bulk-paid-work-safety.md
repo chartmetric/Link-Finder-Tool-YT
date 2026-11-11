@@ -9,6 +9,16 @@ Bulk recovery must not automatically retry admitted work whose provider outcome 
 
 **How to apply:** Preserve uncertain admissions across worker generations. Manual resume may continue untouched work and explicitly retry acknowledged failures, but an uncertain brand requires provider review and a deliberately new run before new spend.
 
+Approval to prepare a fresh test is not approval to spend on it.
+
+**Why:** The user requested preparation after applying YouTube fixes, while the
+earlier pilot's paid approval applied only to that earlier, completed scope.
+
+**How to apply:** Keep a fresh preparation non-executable, freeze its evidence
+and runtime, and bind any later spending approval to the exact reviewed plan
+fingerprint and explicit cap. Never reuse a completed test ID, infer a new paid
+approval from its old budget, or silently update the reviewed cohort.
+
 Keep read-only catalog failures distinct from paid-provider failures, and retain
 sanitized structured diagnostics rather than only a generic stop reason.
 
@@ -141,6 +151,11 @@ dispatch on the first failure, drain already-sent responses, then stop. Bind a
 new execution supplement to reconciled histories without resetting charges,
 original approvals or terminal artists; copy evidence dependencies from that
 platform's previous sealed runtime, not newer source.
+For an operational-only repair, prefer a derivative of the immediately preceding
+sealed runtime with an explicit module/import-change allowlist. Verify the other
+modules byte-for-byte and retain the original approval and queue. This prevents
+concurrent source merges from silently upgrading aliases, ownership rules or
+acceptance behavior during recovery.
 
 Pausing a sealed worker without a cooperative pause handler requires a drained
 admission boundary, not killing its process or changing its owner mid-request.
@@ -239,6 +254,16 @@ alone can consume the pool with transactions waiting on the same row lock.
 separate connection-acquisition allowance from provider deadlines. Retain closed
 dispatch gates, owner checks, receipt persistence and draining of existing work;
 never replay a charge to recover from local queue congestion.
+
+Check query plans for serialized admission checks before increasing worker count.
+
+**Why:** Repeated scans of the entire admission history and artist queue can
+limit total throughput as the campaign grows, even when many worker slots are
+available. Queueing safely does not remove that bottleneck.
+
+**How to apply:** Index the pending-request, earlier-tier and historical-attempt
+lookups instead of weakening their checks. Measure whole-run progress after
+restart; faster individual database queries do not establish an end-to-end ETA.
 
 A saved response that was not acknowledged in the coordinator is not
 automatically a completed admission. Exact receipt acknowledgment needs explicit,

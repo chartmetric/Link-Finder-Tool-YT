@@ -1498,3 +1498,31 @@ mtime_ms = 1794434493933
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/1722da19-b212-45b8-90f7-ac21756e9b98/68a2890c-c865-4d1c-bd6b-db70c35dc9a8"
 storage_version_token = "1794434540778137"
 content_type = "text/plain"
+
+[[outputs]]
+id = "3i_hmQZ2bIRPItR6iTRG4"
+uri = "file://generated-artifacts/youtube-main-agent-fixes-2026-11-11/validation-report.txt"
+type = "text"
+title = "YouTube fixes — offline validation"
+description = "What changed in Main, the 147 passing offline checks, and proof that historical evidence and frozen Instagram code stayed unchanged."
+logical_id = "05f4f596-41e6-4e58-a483-713f03e4c519"
+content_hash = "sha256:5f9b3b816595529d351ebaf43d89ee0392572185fba5b8927da1c8a18b2f5a28"
+size = 1305
+mtime_ms = 1794439525250
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/05f4f596-41e6-4e58-a483-713f03e4c519/d9928b3f-5292-481a-b6f4-de8b45d88506"
+storage_version_token = "1794439619123385"
+content_type = "text/plain"
+
+[[outputs]]
+id = "9rjxSadhbkfbsCqtRFRWw"
+uri = "file://generated-artifacts/youtube-test-20-main-fixes-2026-11-11/youtube-test-findings.csv"
+type = "table"
+title = "Fresh YouTube test — 20 artists"
+description = "Candidate-level findings from the completed test. No likely matches were accepted; candidate URLs are not verified artist accounts."
+logical_id = "de987c56-337f-407c-b9e1-bae71a5b5884"
+content_hash = "sha256:0e28420e3a307982b3ddf8db2b12c5a7fb9b30bf98180caa7d9d64332a0e6844"
+size = 163291
+mtime_ms = 1794440968541
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/de987c56-337f-407c-b9e1-bae71a5b5884/b9a3cc24-827a-41cd-a081-341f926c61d6"
+storage_version_token = "1794441011152217"
+content_type = "text/csv"
