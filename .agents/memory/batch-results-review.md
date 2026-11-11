@@ -20,6 +20,16 @@ model and metadata-used fields aligned to the same observation. Preserve the
 historical records and expose their values separately; never silently update
 live-link ownership when correcting an export.
 
+Instagram CSVs must have one Instagram account URL per row, not joined URL lists.
+
+**Why:** The user explicitly requested one Instagram URL per row after receiving
+artist-level exports.
+
+**How to apply:** Repeat artist names and IDs as needed, but bind each row's score,
+verdict, and reason to that URL's own saved check. When splitting by candidate
+outcome, explain that an artist can appear in both files and that URL-row counts
+are not distinct-artist counts.
+
 Treat saved-run grouping as display-only identity, not a spending ledger or permission to resume.
 
 **Why:** Checkpoints repeat cumulative parent spending, and a final saved summary can describe a stopped run. Adding snapshots together or equating finality with successful completion would misrepresent the evidence.
