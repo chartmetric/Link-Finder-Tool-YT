@@ -2,42 +2,12 @@ import { access, readFile, open, stat } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import type { ArtistCampaignTierProgress } from "@workspace/api-zod";
-
-type Counts = { processed: number; checked: number; likely: number; reserved: number };
+import { loadCampaignSnapshot, snapshotProgress } from "./artist-campaign-snapshot";
+import { CAMPAIGN_ID, CAMPAIGN_QUEUE_SHA256, CAMPAIGN_DIRECTORY, checkpointCounts,
+  progressTotals, artistTotals, count, zero, type Counts } from "./artist-campaign-model";
+export { CAMPAIGN_ID, CAMPAIGN_QUEUE_SHA256, checkpointCounts, progressTotals } from "./artist-campaign-model";
 type ArtistCounts = { cmArtist: string; counts: Counts };
-const zero = (): Counts => ({ processed: 0, checked: 0, likely: 0, reserved: 0 });
-const count = (value: unknown) => {
-  if (!Number.isSafeInteger(value) || Number(value) < 0) throw Error("Invalid campaign count.");
-  return Number(value);
-};
-export function checkpointCounts(artist: any): Counts {
-  const candidate = artist.candidates?.[0];
-  const checked = Boolean(candidate?.recordedAnswer);
-  const processed = checked || ["unavailable", "unsupported"].includes(candidate?.status)
-    || candidate?.reason === "interrupted_or_uncertain_no_retry";
-  return { processed: Number(processed), checked: Number(checked),
-    likely: Number(checked && candidate?.review?.reviewSuggestion === true), reserved: 0 };
-}
-function artistTotals(total: number, totals: Counts) {
-  count(total); Object.values(totals).forEach(count);
-  if (totals.likely > totals.checked || totals.checked > totals.processed || totals.processed > total)
-    throw Error("Campaign totals do not agree.");
-  return {
-    totalArtists: total, processedArtists: totals.processed, checkedArtists: totals.checked,
-    likelyMatches: totals.likely, notAcceptedArtists: totals.checked - totals.likely,
-    incompleteArtists: totals.processed - totals.checked,
-    processedPercent: total ? totals.processed / total * 100 : 0,
-    successRate: totals.checked ? totals.likely / totals.checked * 100 : null,
-  };
-}
-export function progressTotals(total: number, totals: Counts, status: string, updatedAt: string, now = Date.now()) {
-  return {
-    ...artistTotals(total, totals), status,
-    reservedUsd: totals.reserved / 100, maximumSpendUsd: 100, updatedAt,
-    stale: status === "running" && now - Date.parse(updatedAt) > 120_000,
-  };
-}
-async function workspaceRoot() {
+export async function workspaceRoot() {
   let dir = process.cwd();
   while (true) {
     try { await access(path.join(dir, "pnpm-workspace.yaml")); return dir; }
@@ -119,7 +89,12 @@ async function tierProgress(root: string, approval: any, artists: Map<string, Ar
   }
   return tiers.map(({ tier, total, counts }) => ({ tier, ...artistTotals(total, counts) }));
 }
-export async function readArtistCampaignFiles(root: string, workspace: string) {
+export async function readArtistCampaignFiles(root: string, workspace: string): Promise<{
+  progress: (ReturnType<typeof progressTotals> & {
+    tierBreakdown?: ArtistCampaignTierProgress[];
+    tierBreakdownUnavailableReason?: string;
+  }) | null;
+}> {
   const approval = await json(path.join(root, "approval.json"), true);
   if (!approval) return { progress: null };
   const progress = await json(path.join(root, "progress.json"));
@@ -163,18 +138,42 @@ export async function readArtistCampaignFiles(root: string, workspace: string) {
   }
 }
 
-let cached: { at: number; value: Awaited<ReturnType<typeof readArtistCampaignFiles>> } | undefined;
-let pending: Promise<Awaited<ReturnType<typeof readArtistCampaignFiles>>> | undefined;
-export async function readArtistCampaignProgress() {
-  if (cached && Date.now() - cached.at < 4000) return cached.value;
-  // Serialize tail offsets across tabs and clients. A failed read must not
-  // replace known evidence with an empty or zero snapshot.
-  pending ??= (async () => {
-    const workspace = await workspaceRoot();
-    const value = await readArtistCampaignFiles(
-      path.join(workspace, "generated-artifacts/next-saved-full-tiers-1-5-usd100"), workspace);
-    cached = { at: Date.now(), value };
-    return value;
-  })().finally(() => { pending = undefined; });
-  return pending;
+// Only the explicitly launched observer reads local files. Bind the entire
+// approved queue before mirroring counters; never start or retry paid work.
+export async function captureArtistCampaignSnapshot(workspace: string) {
+  const root = path.join(workspace, CAMPAIGN_DIRECTORY);
+  const approval = await json(path.join(root, "approval.json"));
+  const queue = await json(path.join(root, "queue.json"));
+  const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+  const claimed = await json(path.join(root, "claimed.json"));
+  if (approval.id !== CAMPAIGN_ID || approval.queueSha256 !== CAMPAIGN_QUEUE_SHA256
+    || digest(queue) !== approval.queueSha256 || queue.length !== approval.eligibleArtists
+    || approval.maximumSpendCents !== 10000 || claimed.id !== approval.id
+    || claimed.scopeSha256 !== digest(approval)) throw Error("Campaign approval or queue binding changed.");
+  const result = await readArtistCampaignFiles(root, workspace);
+  if (!result.progress) throw Error("Approved campaign progress is missing.");
+  const p = result.progress;
+  return {
+    version: 1 as const, campaignId: approval.id as string, queueSha256: approval.queueSha256 as string,
+    totalArtists: p.totalArtists, processed: p.processedArtists, checked: p.checkedArtists,
+    likely: p.likelyMatches, reserved: Math.round(p.reservedUsd * 100),
+    status: p.status, updatedAt: p.updatedAt, capturedAt: new Date().toISOString(),
+    workerEnvironment: "workspace" as const, tierBreakdown: p.tierBreakdown,
+    tierBreakdownUnavailableReason: p.tierBreakdownUnavailableReason,
+  };
 }
+
+export function createCampaignProgressReader(load = loadCampaignSnapshot, now = Date.now) {
+  let cached: { at: number; value: Awaited<ReturnType<typeof load>> } | undefined;
+  let pending: ReturnType<typeof load> | undefined;
+  return async () => {
+    if (!cached || now() - cached.at >= 4000) {
+      pending ??= load().then(value => {
+        cached = { at: now(), value }; return value;
+      }).finally(() => { pending = undefined; });
+      await pending;
+    }
+    return { progress: cached!.value ? snapshotProgress(cached!.value, now()) : null };
+  };
+}
+export const readArtistCampaignProgress = createCampaignProgressReader();

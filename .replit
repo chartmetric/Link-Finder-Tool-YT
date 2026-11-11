@@ -11,6 +11,23 @@ env = { "CI" = "true" }
 [workflows]
 runButton = "Project"
 
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Artist campaign progress observer"
+
+[[workflows.workflow]]
+name = "Artist campaign progress observer"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/api-server run campaign:publish-progress --publish --campaign-id=full-tiers-1-5-no-ig-usd100 --queue-sha256=9d7abb7e11a718f465725115d46b678afeb50a114cba1efc61c921aab0364928 --watch"
+
 [agent]
 stack = "PNPM_WORKSPACE"
 expertMode = true

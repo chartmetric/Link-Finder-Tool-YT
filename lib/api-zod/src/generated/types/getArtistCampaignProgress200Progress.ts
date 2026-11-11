@@ -6,11 +6,18 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ArtistCampaignTierProgress } from './artistCampaignTierProgress';
+import type { GetArtistCampaignProgress200ProgressWorkerEnvironment } from './getArtistCampaignProgress200ProgressWorkerEnvironment';
+import type { GetArtistCampaignProgress200ProgressWorkerStatus } from './getArtistCampaignProgress200ProgressWorkerStatus';
 
 /**
  * @nullable
  */
 export type GetArtistCampaignProgress200Progress = {
+  campaignId: string;
+  queueSha256: string;
+  capturedAt: string;
+  workerEnvironment: GetArtistCampaignProgress200ProgressWorkerEnvironment;
+  workerStatus: GetArtistCampaignProgress200ProgressWorkerStatus;
   status: string;
   /** @minimum 0 */
   totalArtists: number;

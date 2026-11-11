@@ -60,7 +60,7 @@ export function ArtistCampaignProgress({ className = '' }: { className?: string 
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         {Head}
         <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground">
-          <span className="rounded border border-border bg-background px-1.5 py-0.5 font-bold uppercase tracking-wider text-foreground" data-testid="status-campaign">{statusLabel(p.status)}</span>
+          <span className="rounded border border-border bg-background px-1.5 py-0.5 font-bold uppercase tracking-wider text-foreground" data-testid="status-campaign">Last recorded: {statusLabel(p.status)}</span>
           <span title={updated.toLocaleString()}>Updated {updated.toLocaleTimeString()}</span>
           {q.isFetching && <RefreshCw className="h-3 w-3 animate-spin" aria-label="Refreshing" />}
         </div>
@@ -99,6 +99,18 @@ export function ArtistCampaignProgress({ className = '' }: { className?: string 
           <span className="hidden sm:block h-1 w-12 overflow-hidden rounded-full bg-muted" aria-hidden><span className="block h-full bg-muted-foreground/60 origin-left" style={{ transform: `scaleX(${budgetPct / 100})` }} /></span>
         </div>
       </dl>
+
+      <p className="mt-2 text-[11px] text-muted-foreground" data-testid="text-campaign-worker">
+        Worker location: workspace, separate from this website. {p.workerStatus === 'recent_activity'
+          ? 'Recent checkpoint activity recorded; this is not a live worker connection.'
+          : p.workerStatus === 'stale'
+            ? 'No fresh worker checkpoint. The worker may be stopped or disconnected.'
+            : 'Last recorded worker state is not running.'}
+        {' '}This read-only page never starts or retries paid work.
+      </p>
+      <p className="mt-1 text-[10px] font-mono text-muted-foreground break-all" data-testid="text-campaign-identity">
+        Campaign: {p.campaignId} · Snapshot saved {new Date(p.capturedAt).toLocaleString()}
+      </p>
 
       <details className="mt-2.5 border-t border-border/60 pt-2" data-testid="campaign-tier-details">
         <summary className="w-fit cursor-pointer rounded text-xs font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">

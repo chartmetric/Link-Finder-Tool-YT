@@ -1223,10 +1223,31 @@ export interface ArchivedBulkEvidencePage {
   hasMore: boolean;
 }
 
+export type GetArtistCampaignProgress200ProgressWorkerEnvironment = typeof GetArtistCampaignProgress200ProgressWorkerEnvironment[keyof typeof GetArtistCampaignProgress200ProgressWorkerEnvironment];
+
+
+export const GetArtistCampaignProgress200ProgressWorkerEnvironment = {
+  workspace: 'workspace',
+} as const;
+
+export type GetArtistCampaignProgress200ProgressWorkerStatus = typeof GetArtistCampaignProgress200ProgressWorkerStatus[keyof typeof GetArtistCampaignProgress200ProgressWorkerStatus];
+
+
+export const GetArtistCampaignProgress200ProgressWorkerStatus = {
+  recent_activity: 'recent_activity',
+  stale: 'stale',
+  not_running: 'not_running',
+} as const;
+
 /**
  * @nullable
  */
 export type GetArtistCampaignProgress200Progress = {
+  campaignId: string;
+  queueSha256: string;
+  capturedAt: string;
+  workerEnvironment: GetArtistCampaignProgress200ProgressWorkerEnvironment;
+  workerStatus: GetArtistCampaignProgress200ProgressWorkerStatus;
   status: string;
   /** @minimum 0 */
   totalArtists: number;

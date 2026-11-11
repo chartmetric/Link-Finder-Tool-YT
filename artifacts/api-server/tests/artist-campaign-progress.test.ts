@@ -95,7 +95,10 @@ test("tier details join frozen identities across completed and active chunks, no
       await writeFile(path.join(workspace, dir(n), "execution/artist-checkpoints.jsonl"), content);
     }
     const result = await readArtistCampaignFiles(root, workspace);
-    GetArtistCampaignProgressResponse.parse(result);
+    // Local evidence is enriched with shared identity/freshness by the snapshot reader.
+    GetArtistCampaignProgressResponse.parse({ progress: { ...result.progress,
+      campaignId: "fixture", queueSha256: "fixture", capturedAt: new Date().toISOString(),
+      workerEnvironment: "workspace", workerStatus: "recent_activity" } });
     const p = result.progress!;
     assert.equal(p.processedArtists, 5);
     assert.equal(p.checkedArtists, 3);

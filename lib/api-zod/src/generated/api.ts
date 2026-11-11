@@ -55,6 +55,11 @@ export const getArtistCampaignProgressResponseProgressTierBreakdownItemSuccessRa
 
 export const GetArtistCampaignProgressResponse = zod.object({
   "progress": zod.object({
+  "campaignId": zod.string(),
+  "queueSha256": zod.string(),
+  "capturedAt": zod.string(),
+  "workerEnvironment": zod.enum(['workspace']),
+  "workerStatus": zod.enum(['recent_activity', 'stale', 'not_running']),
   "status": zod.string(),
   "totalArtists": zod.number().min(getArtistCampaignProgressResponseProgressTotalArtistsMin),
   "processedArtists": zod.number().min(getArtistCampaignProgressResponseProgressProcessedArtistsMin),

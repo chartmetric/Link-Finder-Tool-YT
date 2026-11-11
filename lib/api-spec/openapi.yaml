@@ -20,7 +20,7 @@ paths:
       summary: Read the continuous artist campaign without starting paid work
       responses:
         "200":
-          description: Current workspace campaign totals, including active checkpoints
+          description: Durable shared campaign totals, including frozen tier counters; reading never starts or retries a worker
           content:
             application/json:
               schema:
@@ -29,8 +29,13 @@ paths:
                 properties:
                   progress:
                     type: [object, "null"]
-                    required: [status, totalArtists, processedArtists, checkedArtists, likelyMatches, notAcceptedArtists, incompleteArtists, processedPercent, successRate, reservedUsd, maximumSpendUsd, updatedAt, stale]
+                    required: [campaignId, queueSha256, capturedAt, workerEnvironment, workerStatus, status, totalArtists, processedArtists, checkedArtists, likelyMatches, notAcceptedArtists, incompleteArtists, processedPercent, successRate, reservedUsd, maximumSpendUsd, updatedAt, stale]
                     properties:
+                      campaignId: { type: string }
+                      queueSha256: { type: string }
+                      capturedAt: { type: string }
+                      workerEnvironment: { type: string, enum: [workspace] }
+                      workerStatus: { type: string, enum: [recent_activity, stale, not_running] }
                       status: { type: string }
                       totalArtists: { type: number, minimum: 0 }
                       processedArtists: { type: number, minimum: 0 }

@@ -70,6 +70,8 @@ export * from './existingProfileAccount';
 export * from './existingProfilePage';
 export * from './getArtistCampaignProgress200';
 export * from './getArtistCampaignProgress200Progress';
+export * from './getArtistCampaignProgress200ProgressWorkerEnvironment';
+export * from './getArtistCampaignProgress200ProgressWorkerStatus';
 export * from './getArtistResultRows200';
 export * from './healthStatus';
 export * from './identityComparison';

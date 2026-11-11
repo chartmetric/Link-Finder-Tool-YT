@@ -8,6 +8,7 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "campaign:publish-progress": "esbuild src/cli/publish-artist-campaign-progress.ts --bundle --platform=node --format=esm --external:@google-cloud/storage --external:pino --outfile=.local/campaign-progress-observer.mjs && node .local/campaign-progress-observer.mjs",
     "test": "esbuild tests/*.test.ts --bundle --platform=node --format=esm --external:pino --banner:js='import { createRequire as testRequire } from \"node:module\"; const require = testRequire(import.meta.url);' --outdir=.local/test-build && node --test .local/test-build/*.test.js"
   },
   "dependencies": {

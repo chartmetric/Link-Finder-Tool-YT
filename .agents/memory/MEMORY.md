@@ -26,3 +26,4 @@
 - [CLI dependency resolution](cli-package-resolution.md) — generated runners should use workspace-local helpers for dependencies declared only in that package.
 - [Saved candidate provenance](saved-candidate-provenance.md) — local recheck captures are not the full saved search pool; snippets are not captured account metadata.
 - [Paid batch continuation](paid-batch-continuation.md) — skip acknowledged server errors without retrying; retire unused allocations before continuing under the same spending cap.
+- [Campaign observation boundary](campaign-observation-boundary.md) — mirror progress separately from frozen paid workers; observer uploads never prove worker liveness.
