@@ -43,6 +43,12 @@ the expanded launch widget, during draining and after reload. Cold saved stops
 must not say the user requested them. Closing/reopening the monitor (including
 its saved-state refresh) must send no writes: start, stop, and resume are all
 counted, and unexpected endpoints remain blocked.
+The shared harness explicitly serves only `GET /api/bulk/billing-health`,
+with no outages by default. This is independent of historical run errors:
+Resume is available when shared billing is healthy, and disabled while a
+fixture outage is active. A recovery observed through polling re-enables the
+controls without sending a recovery acknowledgement or resuming any run.
+Credit-stop cases use the read-only mutation guard throughout.
 
 Run only the credit-stop cases with:
 

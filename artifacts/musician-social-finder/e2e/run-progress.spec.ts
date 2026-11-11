@@ -40,7 +40,7 @@ for (const source of ['manual', 'automatic', 'floating'] as const) {
     if (source === 'floating') {
       await expect(page.getByTestId('button-toggle-widget')).toHaveAttribute('aria-expanded', 'false');
     }
-    await figures(page, { processed: '0/4', running: '2', queued: '2', completed: '0', failed: '0' });
+    await figures(page, { processed: '0/4', running: '2', queued: '2', completed: '0', failed: '0', skipped: '0' });
     await expect(page.getByTestId('status-rp')).toHaveText('running');
     const scrolls = await page.evaluate(() => (window as unknown as {
       progressScrolls: { target: string; options: ScrollIntoViewOptions }[];
@@ -57,7 +57,7 @@ for (const source of ['manual', 'automatic', 'floating'] as const) {
     expect(box!.x + box!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
     const columns = await summary(page).locator('dl').evaluate(el =>
       getComputedStyle(el).gridTemplateColumns.split(' ').length);
-    expect(columns).toBe(page.viewportSize()!.width < 600 ? 3 : 6);
+    expect(columns).toBe(page.viewportSize()!.width < 600 ? 3 : 7);
     if (source === 'manual') {
       await testInfo.attach('compact-progress', {
         body: await page.screenshot(), contentType: 'image/png',

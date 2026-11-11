@@ -5,6 +5,11 @@ import { CREDIT_REASON, creditRun, draining, stopped } from './credit-stop-fixtu
 const summary = (page: Page) => page.getByTestId('section-run-progress');
 const monitor = (page: Page) => page.getByTestId('dialog-run-monitor');
 
+test.beforeEach(async ({ api }) => {
+  // Observing credit stops must never acknowledge recovery or resume paid work.
+  api.readOnly = true;
+});
+
 async function openMonitor(page: Page) {
   await page.getByTestId('button-rp-open-detail').click();
   await expect(monitor(page)).toBeVisible();
@@ -126,5 +131,37 @@ test('a saved automatic stop opened cold keeps its billing reason without user-s
   await closeMonitor(page);
   await widgetReason(page, 'stopped');
   expect(api.starts).toEqual([]);
+  expect(api.writes).toEqual([]);
+});
+
+test('shared billing blocks saved Resume controls until a read reports recovery without resuming', async ({ page, api }) => {
+  api.root = stopped(draining(creditRun()));
+  api.billingHealth = { outages: [{
+    provider: 'OpenRouter', httpStatus: 402, incidentId: 'fixture-credit-outage',
+    observedAt: '2026-10-27T12:00:03.000Z',
+  }] };
+  await open(page, ROOT);
+  await openMonitor(page);
+  await monitorReason(page, 'stopped');
+  await expect(monitor(page).getByTestId('billing-outage-OpenRouter')).toBeVisible();
+  await expect(monitor(page).getByTestId('button-resume-run')).toBeDisabled();
+  await closeMonitor(page);
+  await page.getByTestId('button-toggle-widget').click();
+  await expect(page.getByTestId('button-widget-resume')).toBeDisabled();
+  await page.getByTestId('button-toggle-widget').click();
+
+  // Funding was acknowledged elsewhere. Only the read-only polling response
+  // changes here: neither a recovery POST nor a Resume POST is permitted.
+  api.billingHealth = { outages: [] };
+  const reads = api.billingHealthReads;
+  await page.clock.fastForward(5100);
+  await expect.poll(() => api.billingHealthReads).toBeGreaterThan(reads);
+  await widgetReason(page, 'stopped');
+  await openMonitor(page);
+  await expect(monitor(page).getByTestId('button-resume-run')).toBeEnabled();
+  await monitorReason(page, 'stopped');
+  await closeMonitor(page);
+  expect(api.starts).toEqual([]);
+  expect(api.mutations).toEqual([]);
   expect(api.writes).toEqual([]);
 });

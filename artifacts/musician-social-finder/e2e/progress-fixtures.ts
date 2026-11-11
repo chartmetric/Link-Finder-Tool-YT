@@ -1,5 +1,5 @@
 import { test as base, expect, type Page } from '@playwright/test';
-import type { BulkBrandCandidate, BulkBrandRun, BulkBrandRunInput } from '@workspace/api-client-react';
+import type { BulkBillingHealth, BulkBrandCandidate, BulkBrandRun, BulkBrandRunInput, MusicianInstagramResearchCoverage, MusicianInstagramRerunEligibility } from '@workspace/api-client-react';
 
 export const ROOT = 'fixture-root-progress';
 export const ARCHIVE = 'fixture-archive-1';
@@ -67,6 +67,10 @@ export class ProgressApi {
   saved = false;
   writes: string[] = [];
   reads: Record<string, number> = {};
+  // Saved run errors and the shared billing gate are independent snapshots.
+  // Healthy by default so Start/Resume availability has an explicit fixture.
+  billingHealth: BulkBillingHealth = { outages: [] };
+  billingHealthReads = 0;
   errors = false;
   holdStart = false;
   releaseStart?: () => void;
@@ -91,6 +95,21 @@ export class ProgressApi {
           }
         }
         const json = (body: unknown, status = 200) => route.fulfill({ status, json: body });
+        if (path === '/api/bulk/billing-health' && req.method() === 'GET') {
+          this.billingHealthReads++;
+          return json(this.billingHealth);
+        }
+        // The artist scope loads saved research summaries, never a new search.
+        if (path === '/api/bulk/artist-results' && req.method() === 'GET')
+          return json({ batches: [], warnings: [] });
+        if (path === '/api/profiles/musician-instagram-research-coverage' && req.method() === 'GET')
+          return json({
+            snapshotAt: null, snapshotStatus: 'unavailable', tiers: [], history: [], generatedAt: time,
+          } satisfies MusicianInstagramResearchCoverage);
+        if (path === '/api/profiles/musician-instagram-rerun-eligibility' && req.method() === 'GET')
+          return json({
+            count: 0, selectionToken: '0'.repeat(64), generatedAt: time,
+          } satisfies MusicianInstagramRerunEligibility);
         if (path === '/api/bulk/coverage' && req.method() === 'GET')
           return json({ generatedAt: time, types: [], platforms: ['Instagram', 'TikTok', 'YouTube'] });
         if (path === '/api/bulk/brands/candidates' && req.method() === 'GET')
