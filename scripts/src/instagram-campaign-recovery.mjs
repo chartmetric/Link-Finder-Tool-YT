@@ -37,7 +37,7 @@ export function partitionCampaignEligibility(selected, current) {
   return {eligible, deferred};
 }
 
-export function reconcileCampaignArchive({scope, journal, packets, budget, admissions}) {
+export function reconcileCampaignArchive({scope, journal, packets, budget, admissions, abandonment = null}) {
   assert.equal(budget.id, scope.authorization.budgetId);
   assert.equal(budget.scope_sha256, digest(scope), 'Changed historical scope.');
   const sent = journal.filter(r => r.phase === 'admitted');
@@ -52,6 +52,14 @@ export function reconcileCampaignArchive({scope, journal, packets, budget, admis
   assert.equal(budget.reserved_cents, sent.length * 2, 'Reservation mismatch.');
   assert.equal(budget.cap_cents, budget.reserved_cents, 'Child allocation is not retired.');
   assert.ok(budget.cap_cents <= scope.authorization.maxSpendCents);
+  const abandoned = new Set(abandonment?.uncertainKeysPermanentlySkipped ?? []);
+  if (abandoned.size) {
+    assert.equal(abandonment.oldAdmissionsNeverReplay, true);
+    assert.equal(abandonment.scopeSha256, digest(scope));
+    assert.equal(abandonment.journalSha256, digest(journal));
+    assert.equal(abandonment.preservedReservedCents, budget.reserved_cents);
+    assert.ok([...abandoned].every(key => stopped.has(key) && !returned.has(key) && sentByKey.has(key)));
+  }
   for (const a of sent) {
     const entry = ledger.get(a.key);
     assert.ok(entry, 'Missing paid admission in ledger.');
@@ -60,6 +68,10 @@ export function reconcileCampaignArchive({scope, journal, packets, budget, admis
     assert.equal(a.reservedCents, 2);
     assert.equal(a.request.sha256, digest(a.request.body), 'Changed paid request.');
     const packet = packets[a.key];
+    if (abandoned.has(a.key)) {
+      assert.equal(packet, undefined, 'Abandoned request unexpectedly has a response.');
+      continue; // Charged, terminal, and never replayable; not a successful response.
+    }
     assert.ok(packet, 'Missing paid response; no replay.');
     assert.ok(Number.isInteger(packet.status) && packet.status >= 100 && packet.status <= 599);
     // Auth, funding and rate-limit stops require separate investigation.
@@ -110,9 +122,10 @@ export async function loadCampaignRecovery(root, ledger) {
   assert.equal(ledger.parent.cap_cents, approval.maximumSpendCents);
   const progress = await read(root + '/progress.json');
   assert.equal(progress.status, 'stopped', 'Campaign must be stopped.');
-  const rows = await read(root + '/artist-outcomes.json'), chunks = await read(root + '/chunks.json');
+  const savedRows = await read(root + '/artist-outcomes.json'), chunks = await read(root + '/chunks.json');
+  const rows = savedRows.filter(r => r.reason !== 'not_inspected_within_approved_run');
   unique(rows, 'profileId', 'completed artist');
-  assert.equal(progress.completedArtists, rows.length);
+  assert.equal(progress.completedArtists ?? progress.processedArtists, savedRows.length);
   const files = new Map();
   async function tracked(p) {
     const content = await fs.readFile(p, 'utf8');
@@ -133,8 +146,13 @@ export async function loadCampaignRecovery(root, ledger) {
     covered.add(id);
   }
   const cursor = covered.size;
-  assert.deepEqual(covered, new Set(queue.slice(0, cursor).map(r => String(r.profile_id))),
-    'Saved work is not a contiguous frozen queue prefix.');
+  const selectedCovered = new Set([...savedRows.map(r => String(r.profileId)), ...deferredById.keys()]);
+  assert.deepEqual(selectedCovered, new Set(queue.slice(0, selectedCovered.size).map(r => String(r.profile_id))),
+    'Saved selection is not a contiguous frozen queue prefix.');
+  // Deferrals may occur after the timeout within the selected chunk. Preserve
+  // them, but return every untouched artist to the worklist in frozen order.
+  const workQueue = [...queue.filter(r => covered.has(String(r.profile_id))),
+    ...queue.filter(r => !covered.has(String(r.profile_id)))];
   assert.equal(chunks.length, ledger.children.length, 'Unknown campaign child.');
   const archivedRows = [], reconciled = [];
   for (const chunk of chunks) {
@@ -146,14 +164,23 @@ export async function loadCampaignRecovery(root, ledger) {
     const journalText = await fs.readFile(journalPath, 'utf8');
     files.set(journalPath, digest(journalText));
     const journal = journalText.trim().split('\n').filter(Boolean).map(JSON.parse);
+    const retirementPath = chunk.dir + '/retired-unused-allocation.json';
+    const abandonment = await fs.access(retirementPath).then(() => tracked(retirementPath), e => {
+      if (e.code !== 'ENOENT') throw e;
+      return null;
+    });
     const packets = {};
     for (const a of journal.filter(r => r.phase === 'admitted')) {
       assert.match(a.key, /^[a-zA-Z0-9_-]+$/, 'Unsafe receipt key.');
       const kind = a.request.kind === 'scrapecreators_candidate' ? 'metadata-responses' : 'model-responses';
-      packets[a.key] = await tracked(chunk.dir + '/execution/' + kind + '/' + a.key + '.json');
+      const packetPath = chunk.dir + '/execution/' + kind + '/' + a.key + '.json';
+      packets[a.key] = await fs.access(packetPath).then(() => tracked(packetPath), e => {
+        if (e.code !== 'ENOENT' || !abandonment?.uncertainKeysPermanentlySkipped?.includes(a.key)) throw e;
+        return undefined;
+      });
     }
     reconciled.push(reconcileCampaignArchive({scope, journal, packets, budget,
-      admissions: ledger.admissions.filter(a => a.budget_id === budget.id)}));
+      admissions: ledger.admissions.filter(a => a.budget_id === budget.id), abandonment}));
     const outcomes = await tracked(chunk.dir + '/execution/artist-outcomes.json');
     for (const row of outcomes) {
       if (row.reason === 'not_inspected_within_approved_run') {
@@ -170,7 +197,7 @@ export async function loadCampaignRecovery(root, ledger) {
     && /^\d+$/.test(n.slice((base + '-chunk-').length))).sort();
   const nextOrdinal = 1 + Math.max(0, ...dirs.map(n => Number(n.slice((base + '-chunk-').length))));
   const funds = nextCampaignAllocation(approval.maximumSpendCents, ledger.children);
-  return {root, approval, queue, rows, chunks, priorDeferred, cursor, nextOrdinal, funds,
+  return {root, approval, queue: workQueue, rows, chunks, priorDeferred, cursor, nextOrdinal, funds,
     ledgerSha256: digest(ledger), files: Object.fromEntries(files),
     paidAdmissions: reconciled.reduce((sum, r) => sum + r.admissions, 0),
     preservedPartialDirectories: dirs};

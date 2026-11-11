@@ -17,3 +17,15 @@ ineligibility.
 requests to the fresh eligible subset, and preserve unfinished preparation
 directories. Recovery preparation stays read-only; only an explicitly approved
 restart may take ownership and admit new paid work under the unchanged shared cap.
+
+After an interrupted chunk, reconstruct remaining work by identity, not by
+subtracting a count from the frozen queue. Keep never-inspected artists pending;
+preserve deferrals even when they occur after the last paid artist.
+
+**Why:** An interrupted chunk contains placeholders for untouched artists, while
+eligibility deferrals can be scattered throughout that selection. Counts alone
+can skip untouched artists or replay already paid ones.
+
+**How to apply:** Reconcile all saved child outcomes and paid admissions first.
+Exclude terminal and deferred identities, then process the remaining identities
+in original frozen order without changing the original denominator or approval.

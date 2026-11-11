@@ -77,6 +77,20 @@ test('model receipts bind to the exact saved request, and acknowledged server er
   f.packets.key.requestBodySha256 = 'other';
   assert.throws(() => reconcileCampaignArchive(f));
 });
+
+test('explicit abandonment preserves the charge, requires a stopped admission and cannot conceal a response', () => {
+  const f = archiveFixture();
+  f.journal[1].phase = 'stopped_no_retry';
+  delete f.packets.key;
+  f.abandonment = {uncertainKeysPermanentlySkipped: ['key'], oldAdmissionsNeverReplay: true,
+    scopeSha256: digest(f.scope), journalSha256: digest(f.journal), preservedReservedCents: 2};
+  assert.equal(reconcileCampaignArchive(f).reservedCents, 2);
+  f.abandonment.journalSha256 = 'changed';
+  assert.throws(() => reconcileCampaignArchive(f));
+  f.abandonment.journalSha256 = digest(f.journal);
+  f.packets.key = {status: 200};
+  assert.throws(() => reconcileCampaignArchive(f));
+});
 test('prepared plan retains denominator, completed work, allowance and partial-directory history', () => {
   const state = {root: 'generated-artifacts/campaign', approval: {id: 'campaign',
     queueSha256: 'frozen', maximumSpendCents: 10000},
