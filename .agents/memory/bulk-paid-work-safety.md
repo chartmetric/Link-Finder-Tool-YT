@@ -199,3 +199,17 @@ admissions, keep preparation inside the sealed metadata policy's bounds, and
 preserve every receipt and stop fence. Treat a finish time as unproven until
 actual sustained completions meet the required rate; never weaken identity
 checks or replay charges to make a deadline appear satisfied.
+
+Recovery ownership changes must remain separate from the original campaign's
+scope and spending authorization.
+
+**Why:** Replacing the original approval to permit a new worker would break the
+evidence and publication chain and could conceal previously reserved charges.
+An owner-bound recovery approval authorizes continuation, not a fresh budget or
+a refund.
+
+**How to apply:** Bind the new sealed runtime, drained prior owner and complete
+reconciliation to a separate immutable plan. Keep the original queue, approval,
+reservations and global conflict history intact. A stale heartbeat is not
+drain proof; a local approval file without a committed coordinator approval is
+not permission to dispatch.

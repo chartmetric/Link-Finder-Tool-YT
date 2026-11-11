@@ -85,3 +85,119 @@ Progress and success are different: processed artists include completed
 no-channel searches; success is likely artists divided by artists with at least
 one ownership assessment. Held metadata, deferred identities and provider
 failures are not account absence or ordinary rejections.
+
+## Explicit interruption recovery (new runtime, never the active runtime)
+
+Recovery is an operator action, **not** an observer action, workflow restart,
+deployment migration, provider probe, or automatic retry. Installing this code
+does not authorize or start recovery. Do not rerun initial preparation, reseal
+the original runtime, edit its approval, reset its status, or delete its files.
+No recovery commands were run as part of implementing this capability.
+
+### 1. Drain and prepare
+
+First stop and **confirm the prior worker and any in-flight requests have
+drained**. Record the exact coordinator owner UUID and how drain was established.
+A stale progress timestamp, dead observer, expired lease, or absent local process
+alone does not prove remote requests have finished. An interrupted request whose
+outcome is unknown stays uncertain even after the process exits.
+
+Only then, from the workspace root:
+
+```
+node scripts/src/recover-youtube-campaign.mjs --prepare-recovery \
+  --prior-worker-drained --prior-owner=PRIOR_OWNER_UUID \
+  --operator="Operator name" --drain-evidence="How worker exit and request drain were confirmed"
+```
+
+Preparation has zero provider calls and no catalog writes. It:
+
+- Locks the original campaign and reconciles **every** committed admission,
+  reservation, exact request hash, and returned receipt hash, regardless of
+  whether a local admission journal or final artist file was saved.
+- Freezes original metadata packets and result hashes. Search snippets are not
+  substituted for missing metadata. A completed result must still match its
+  committed hash.
+- Retains all artist states, the whole queue denominator, historical deferrals,
+  channel ownership rows, original approval hash, and every reserved cent.
+- Creates a new, separately sealed dependency graph and immutable
+  `recoveries/NEW_OWNER_UUID/plan.json`, then claims that prior-owner generation
+  transactionally. Competing plans cannot replace its owner or authorization.
+  Preparation never changes the campaign's running/stopped status or owner.
+
+The command prints the new owner, plan SHA-256 and blockers. **Inspect the plan
+before approval.** Missing or mismatched committed receipts, acknowledged
+provider failures, missing original metadata for paid work, and uncertain
+admissions block approval and all further paid continuation. A locally saved
+receipt without a committed `returned` state remains uncertain: recovery never
+promotes it, removes its admission, repeats it, or infers a refund.
+
+A blocked plan is an evidence record, not permission to proceed around the
+blocker. Stop for operator review; do not hand-edit the plan or coordinator.
+Evidence or coordinator changes after preparation invalidate approval. There is
+no timeout-based takeover or automatic replacement of an existing claim.
+
+### 2. Record separate approval (does not start work)
+
+After reviewing the exact owner-bound plan and its unchanged evidence, explicitly
+authorize continuation of the same uncapped scope:
+
+```
+node scripts/src/recover-youtube-campaign.mjs --approve-recovery \
+  --owner=NEW_OWNER_UUID --plan-sha256=REVIEWED_PLAN_SHA256 \
+  --operator="Approving operator" --uncapped-approved
+```
+
+This records a resume attestation in both `resume-approval.json` and the
+transactional recovery claim. The database claim is authoritative; a local file
+alone is not authorization. Repeating this approval with the same operator and
+plan is idempotent, including after an interruption between file save and commit.
+It never launches a worker. Original spending approval and reservations are not
+replaced or reset.
+
+### 3. Explicitly resume the new sealed runtime
+
+Only after the separate approval was recorded:
+
+```
+node generated-artifacts/full-tiers-1-5-no-youtube-uncapped/recoveries/NEW_OWNER_UUID/runtime/recover-youtube-campaign.mjs \
+  --resume-recovery --owner=NEW_OWNER_UUID \
+  --plan-sha256=REVIEWED_PLAN_SHA256 --uncapped-approved
+```
+
+Resume refuses mutable source execution. Under the campaign row lock, it checks
+the prior owner, unchanged snapshot and all frozen evidence again, then consumes
+the approval once and rotates ownership. The old worker is fenced out of new
+admissions and result commits. Operator drain remains required because old code
+also has local filesystem activity outside that transaction fence.
+
+The new worker reconstructs interrupted artist work using the original full
+metadata. Returned search, channel and model requests must match their exact
+saved request/receipt hashes and are returned from disk **without dispatch or a
+new reservation**. Changed inputs stop rather than creating replacement keys.
+Only untouched operations may receive new two-cent reservations. An uncertain
+new dispatch stops this generation with its reservation intact; restarting this
+same plan cannot resume it.
+
+Completed results are not replayed or overwritten. A result saved just before
+interruption can be committed only if reconstruction matches it exactly. Global
+channel conflicts survive ownership changes, hold both earlier and later
+positive summaries, and never rewrite the original evidence. Current catalog
+eligibility is still rechecked before processing remaining artists.
+
+Recovered candidate inputs use the original campaign's `inputs/` directory,
+which the read-only publisher archives for every completed artist. An existing
+input must match reconstructed evidence exactly; a mismatch stops recovery
+without overwriting the input or marking that artist completed.
+
+### Isolated checks
+
+```
+node --test scripts/src/youtube-campaign-recovery.test.mjs \
+  scripts/src/youtube-campaign.test.mjs \
+  scripts/src/youtube-ownership-execution.test.mjs
+```
+
+These use temporary directories, fake HTTP responses and in-memory transactional
+coordinators/SQL doubles. They do not connect to the campaign database, call
+providers, run recovery, restart a workflow, or modify the catalog.
