@@ -121,7 +121,7 @@ test("snapshots reject foreign approvals, corrupt totals and regressing evidence
   assert.equal(cloud.saves(), 1);
 });
 
-test("snapshot allowlist discards evidence and response errors do not become zero counts", async () => {
+test("snapshot allowlist discards evidence and refresh failures retain counters explicitly", async () => {
   const cloud = fakeObject();
   const store = createCampaignSnapshotStore(() => cloud.file);
   await store.publish({ ...snapshot(), privateEvidence: "not stored" } as any);
@@ -131,8 +131,48 @@ test("snapshot allowlist discards evidence and response errors do not become zer
   await reader();
   now = 5000;
   cloud.fail(500);
-  await assert.rejects(reader);
+  const retained = await reader();
+  assert.equal(retained.progress?.processedArtists, 100);
+  assert.equal(retained.progress?.snapshotUnavailable, true);
   assert.equal(cloud.saves(), 1);
+});
+
+test("uncapped publication exceeds the retired cap offline and cannot regress to it", async () => {
+  const cloud = fakeObject();
+  const store = createCampaignSnapshotStore(() => cloud.file);
+  await store.publish(snapshot()); // legacy capped snapshot
+  const uncapped = { ...snapshot(), version: 2 as const, maximumSpendCents: null,
+    authorizationSha256: "a".repeat(64), reserved: 12456 };
+  await store.publish(uncapped);
+  const loaded = await store.load();
+  assert.equal(loaded?.maximumSpendCents, null);
+  const result = await createCampaignProgressReader(store.load)();
+  GetArtistCampaignProgressResponse.parse(result);
+  assert.equal(result.progress?.maximumSpendUsd, null);
+  assert.equal(result.progress?.reservedUsd, 124.56);
+  await assert.rejects(store.publish({ ...uncapped, maximumSpendCents: 10000, reserved: 9999 }), /approval/);
+  assert.throws(() => validateCampaignSnapshot({ ...uncapped, maximumSpendCents: -1 }));
+  assert.throws(() => validateCampaignSnapshot({ ...uncapped, maximumSpendCents: "unlimited" }));
+  assert.equal(cloud.saves(), 2);
+});
+
+test("missing refresh keeps last evidence without refreshing the worker clock and recovers", async () => {
+  let now = Date.parse(snapshot().capturedAt);
+  let value: CampaignSnapshot | null = snapshot();
+  const reader = createCampaignProgressReader(async () => value, () => now);
+  await reader();
+  value = null; now += 180_000;
+  const retained = await reader();
+  assert.equal(retained.progress?.processedArtists, 100);
+  assert.equal(retained.progress?.snapshotUnavailable, true);
+  assert.equal(retained.progress?.updatedAt, snapshot().updatedAt);
+  assert.equal(retained.progress?.capturedAt, snapshot().capturedAt);
+  assert.equal(retained.progress?.workerStatus, "stale");
+  value = { ...snapshot(), processed: 101, capturedAt: new Date(now).toISOString() };
+  now += 5000;
+  const recovered = await reader();
+  assert.equal(recovered.progress?.processedArtists, 101);
+  assert.equal(recovered.progress?.snapshotUnavailable, false);
 });
 
 test("shared snapshots retain frozen tier counters across API restarts without local evidence", async () => {

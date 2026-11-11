@@ -1302,6 +1302,7 @@ export const GetArtistCampaignProgress200ProgressWorkerStatus = {
 export type GetArtistCampaignProgress200Progress = {
   campaignId: string;
   queueSha256: string;
+  /** Time the observer captured the snapshot; not evidence of worker activity. */
   capturedAt: string;
   workerEnvironment: GetArtistCampaignProgress200ProgressWorkerEnvironment;
   workerStatus: GetArtistCampaignProgress200ProgressWorkerStatus;
@@ -1332,12 +1333,16 @@ export type GetArtistCampaignProgress200Progress = {
   /** @minimum 0 */
   reservedUsd: number;
   /**
+     * Total approved spending ceiling; null explicitly means no total spending cap.
      * @minimum 0
      * @nullable
      */
   maximumSpendUsd: number | null;
+  /** Latest saved worker evidence time */
   updatedAt: string;
   stale: boolean;
+  /** Refresh unavailable; counters are retained from the last readable snapshot. */
+  snapshotUnavailable?: boolean;
   /** Tier 1–5 counts bound to the approved frozen queue and exact terminal artist identities. Omitted when those bindings cannot be verified. */
   tierBreakdown?: ArtistCampaignTierProgress[];
   /** Why tier details are unavailable; headline progress is still readable. */

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { checkpointCounts, progressTotals, readArtistCampaignFiles } from "../src/lib/artist-campaign-progress";
-import { mkdtemp, mkdir, writeFile, appendFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, readFile, appendFile, rm } from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { createHash } from "node:crypto";
@@ -132,10 +132,47 @@ test("tier details join frozen identities across completed and active chunks, no
     assert.equal(unbound.processedArtists, 6);
     assert.equal(unbound.tierBreakdown, undefined);
     assert.match(unbound.tierBreakdownUnavailableReason!, /could not be verified/);
-    // Duplicate cross-chunk identities cannot inflate either totals or tiers.
+    // A compatible duplicate artifact does not inflate either totals or tiers.
     await appendFile(path.join(workspace, dir(2), "execution/artist-checkpoints.jsonl"),
       packet([artist(1, { status: "unavailable" })], 6));
-    await assert.rejects(readArtistCampaignFiles(root, workspace), /Duplicate campaign artist/);
+    assert.equal((await readArtistCampaignFiles(root, workspace)).progress!.processedArtists, 6);
+    await appendFile(path.join(workspace, dir(2), "execution/artist-checkpoints.jsonl"),
+      packet([artist(1, { recordedAnswer: {}, review: { reviewSuggestion: false } })], 6));
+    await assert.rejects(readArtistCampaignFiles(root, workspace), /Conflicting duplicate campaign artist/);
+  } finally { await rm(workspace, { recursive: true, force: true }); }
+});
+
+test("read-only uncapped approval binds to the original and repeated artifacts count once", async () => {
+  const workspace = await mkdtemp(path.join(os.tmpdir(), "campaign-uncapped-"));
+  const root = path.join(workspace, "campaign");
+  const dir = "generated-artifacts/next-saved-full-tiers-1-5-usd100-chunk-001";
+  const file = path.join(workspace, dir, "execution/artist-checkpoints.jsonl");
+  const json = (name: string, value: unknown) => writeFile(path.join(root, name), JSON.stringify(value));
+  const digest = (v: unknown) => createHash("sha256").update(JSON.stringify(v)).digest("hex");
+  const queue = [{ profile_id: "1", cm_artist: "101", tier: 1 }];
+  const original = { id: "fixture", eligibleArtists: 1, queueSha256: digest(queue), maximumSpendCents: 10000 };
+  const uncapped = { ...original, maximumSpendCents: null, uncappedExplicitlyApproved: true,
+    originalApprovalSha256: digest(original), approvedAt: new Date().toISOString() };
+  try {
+    await mkdir(root); await mkdir(path.dirname(file), { recursive: true });
+    await json("approval.json", original); await json("queue.json", queue);
+    await json("uncapped-approval.json", uncapped);
+    await json("progress.json", { status: "running", activeChunk: dir });
+    await json("chunks.json", [{ dir }, { dir }]);
+    await writeFile(file, JSON.stringify({ changes: [{ profileId: "1", cmArtist: "101",
+      candidates: [{ recordedAnswer: {}, review: { reviewSuggestion: true } }] }],
+      budget: { reservedCents: 12456 } }) + "\n");
+    const before = await readFile(file, "utf8");
+    const p = (await readArtistCampaignFiles(root, workspace)).progress!;
+    assert.equal(p.maximumSpendUsd, null);
+    assert.equal(p.reservedUsd, 124.56);
+    assert.equal(p.processedArtists, 1);
+    assert.equal(p.tierBreakdown![0].checkedArtists, 1);
+    assert.equal(await readFile(file, "utf8"), before);
+    await json("uncapped-approval.json", { ...uncapped, originalApprovalSha256: "foreign" });
+    await assert.rejects(readArtistCampaignFiles(root, workspace), /approval could not be verified/);
+    await rm(path.join(root, "uncapped-approval.json"));
+    await assert.rejects(readArtistCampaignFiles(root, workspace), /approved cap/);
   } finally { await rm(workspace, { recursive: true, force: true }); }
 });
 

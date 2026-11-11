@@ -33,7 +33,7 @@ paths:
                     properties:
                       campaignId: { type: string }
                       queueSha256: { type: string }
-                      capturedAt: { type: string }
+                      capturedAt: { type: string, description: Time the observer captured the snapshot; not evidence of worker activity. }
                       workerEnvironment: { type: string, enum: [workspace] }
                       workerStatus: { type: string, enum: [recent_activity, stale, not_running] }
                       status: { type: string }
@@ -46,9 +46,10 @@ paths:
                       processedPercent: { type: number, minimum: 0, maximum: 100 }
                       successRate: { type: [number, "null"], minimum: 0, maximum: 100 }
                       reservedUsd: { type: number, minimum: 0 }
-                      maximumSpendUsd: { type: [number, "null"], minimum: 0 }
-                      updatedAt: { type: string }
+                      maximumSpendUsd: { type: [number, "null"], minimum: 0, description: Total approved spending ceiling; null explicitly means no total spending cap. }
+                      updatedAt: { type: string, description: Latest saved worker evidence time, independent of observer capture or website polling. }
                       stale: { type: boolean }
+                      snapshotUnavailable: { type: boolean, description: Refresh unavailable; counters are retained from the last readable snapshot. }
                       tierBreakdown:
                         type: array
                         description: Tier 1–5 counts bound to the approved frozen queue and exact terminal artist identities. Omitted when those bindings cannot be verified.

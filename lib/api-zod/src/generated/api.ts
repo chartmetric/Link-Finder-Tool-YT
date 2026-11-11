@@ -57,7 +57,7 @@ export const GetArtistCampaignProgressResponse = zod.object({
   "progress": zod.object({
   "campaignId": zod.string(),
   "queueSha256": zod.string(),
-  "capturedAt": zod.string(),
+  "capturedAt": zod.string().describe('Time the observer captured the snapshot; not evidence of worker activity.'),
   "workerEnvironment": zod.enum(['workspace']),
   "workerStatus": zod.enum(['recent_activity', 'stale', 'not_running']),
   "status": zod.string(),
@@ -70,9 +70,10 @@ export const GetArtistCampaignProgressResponse = zod.object({
   "processedPercent": zod.number().min(getArtistCampaignProgressResponseProgressProcessedPercentMin).max(getArtistCampaignProgressResponseProgressProcessedPercentMax),
   "successRate": zod.number().min(getArtistCampaignProgressResponseProgressSuccessRateMin).max(getArtistCampaignProgressResponseProgressSuccessRateMax).nullable(),
   "reservedUsd": zod.number().min(getArtistCampaignProgressResponseProgressReservedUsdMin),
-  "maximumSpendUsd": zod.number().min(getArtistCampaignProgressResponseProgressMaximumSpendUsdMin).nullable(),
-  "updatedAt": zod.string(),
+  "maximumSpendUsd": zod.number().min(getArtistCampaignProgressResponseProgressMaximumSpendUsdMin).nullable().describe('Total approved spending ceiling; null explicitly means no total spending cap.'),
+  "updatedAt": zod.string().describe('Latest saved worker evidence time'),
   "stale": zod.boolean(),
+  "snapshotUnavailable": zod.boolean().optional().describe('Refresh unavailable; counters are retained from the last readable snapshot.'),
   "tierBreakdown": zod.array(zod.object({
   "tier": zod.union([zod.literal(1),zod.literal(2),zod.literal(3),zod.literal(4),zod.literal(5)]),
   "totalArtists": zod.number().min(getArtistCampaignProgressResponseProgressTierBreakdownItemTotalArtistsMin),

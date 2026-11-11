@@ -68,12 +68,16 @@ function add(a: Counts, b: Counts) {
 }
 async function spendingApproval(root: string, original: any, progress: any) {
   const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
-  if (progress.maximumSpendCents !== null) return { maximumSpendCents: 10000, authorizationSha256: digest(original) };
-  const uncapped = await json(path.join(root, "uncapped-approval.json"));
+  const uncapped = await json(path.join(root, "uncapped-approval.json"), true);
+  if (!uncapped) {
+    if (progress.maximumSpendCents === null) throw Error("Uncapped spending approval could not be verified.");
+    return { maximumSpendCents: 10000, authorizationSha256: digest(original) };
+  }
   if (uncapped.uncappedExplicitlyApproved !== true || uncapped.maximumSpendCents !== null
     || uncapped.originalApprovalSha256 !== digest(original)
     || uncapped.id !== original.id || uncapped.queueSha256 !== original.queueSha256
-    || uncapped.eligibleArtists !== original.eligibleArtists)
+    || uncapped.eligibleArtists !== original.eligibleArtists
+    || (uncapped.approvedAt !== undefined && !Number.isFinite(Date.parse(uncapped.approvedAt))))
     throw Error("Uncapped spending approval could not be verified.");
   return { maximumSpendCents: null, authorizationSha256: digest(uncapped) };
 }
@@ -127,8 +131,13 @@ export async function readArtistCampaignFiles(root: string, workspace: string): 
       // Interrupted chunks retain untouched scope placeholders. They may occur
       // again in a continuation but are neither processed nor a second verdict.
       if (artist.counts.processed === 0) continue;
-      if (artists.has(id)) throw Error("Duplicate campaign artist across chunks.");
-      artists.set(id, artist); add(totals, artist.counts);
+      const prior = artists.get(id);
+      if (prior?.counts.checked && artist.counts.checked)
+        throw Error("Conflicting duplicate campaign artist across chunks.");
+      // An unavailable capture is not a second completed identity decision.
+      // Prefer completed checks over unavailable copies, counting identity once.
+      if (!prior || artist.counts.checked > prior.counts.checked)
+        artists.set(id, artist);
     }
     totals.reserved += snapshot.reserved;
     if (snapshot.updatedAt > updatedAt) updatedAt = snapshot.updatedAt;
@@ -136,7 +145,7 @@ export async function readArtistCampaignFiles(root: string, workspace: string): 
   for (const chunk of chunks) {
     if (!/^generated-artifacts\/next-saved-full-tiers-1-5-usd100-chunk-\d{3}$/.test(chunk.dir))
       throw Error("Unbound campaign chunk.");
-    if (seen.has(chunk.dir)) throw Error("Duplicate campaign chunk.");
+    if (seen.has(chunk.dir)) continue; // Count a physical artifact and its reservation once.
     seen.add(chunk.dir);
     // Even completed scope summaries are row counts, not artist-level evidence.
     // Use the same terminal identity checkpoints for all chunk states.
@@ -145,6 +154,7 @@ export async function readArtistCampaignFiles(root: string, workspace: string): 
   if (progress.activeChunk && !seen.has(progress.activeChunk)) {
     await includeChunk(progress.activeChunk);
   }
+  for (const artist of artists.values()) add(totals, artist.counts);
   const headline = progressTotals(count(approval.eligibleArtists), totals, String(progress.status), updatedAt,
     Date.now(), spending.maximumSpendCents);
   try {
@@ -187,15 +197,23 @@ export async function captureArtistCampaignSnapshot(workspace: string) {
 
 export function createCampaignProgressReader(load = loadCampaignSnapshot, now = Date.now) {
   let cached: { at: number; value: Awaited<ReturnType<typeof load>> } | undefined;
-  let pending: ReturnType<typeof load> | undefined;
+  let pending: Promise<void> | undefined;
+  let snapshotUnavailable = false;
   return async () => {
     if (!cached || now() - cached.at >= 4000) {
       pending ??= load().then(value => {
-        cached = { at: now(), value }; return value;
+        snapshotUnavailable = !value && !!cached?.value;
+        cached = { at: now(), value: value ?? cached?.value ?? null };
+      }).catch(error => {
+        if (!cached?.value) throw error;
+        snapshotUnavailable = true;
+        cached = { ...cached, at: now() };
       }).finally(() => { pending = undefined; });
       await pending;
     }
-    return { progress: cached!.value ? snapshotProgress(cached!.value, now()) : null };
+    return { progress: cached!.value ? {
+      ...snapshotProgress(cached!.value, now()), snapshotUnavailable,
+    } : null };
   };
 }
 export const readArtistCampaignProgress = createCampaignProgressReader();

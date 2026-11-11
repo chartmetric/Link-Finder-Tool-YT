@@ -26,5 +26,16 @@ ones. Rejecting all repeated identities stopped progress publication while the
 paid worker continued, leaving the page stuck at an early percentage.
 
 **How to apply:** Preserve identity consistency across every occurrence, count
-only processed evidence, and still reject two terminal decisions for one artist.
+only processed evidence, and still reject two completed identity decisions for one artist.
 Do not clear the archive or restart paid work to repair an observer.
+Keep the original queue and approval files intact when an additional approval
+removes the total ceiling; bind that approval to the original digest. A legacy
+campaign name containing a dollar amount is an identity, not the current cap.
+Null explicitly means no total spending cap, not zero or an absent setting.
+
+**Why:** The user approved uncapped continuation while the paid worker's
+dependencies remained frozen. Reporting must not rewrite authorization or
+present the retired ceiling as current.
+
+**How to apply:** Change only the separate read-only observer and reporting
+contract; retain historical cap labels on legacy snapshots until refreshed.

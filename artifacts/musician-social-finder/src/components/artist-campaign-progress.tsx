@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
-import { getGetArtistCampaignProgressQueryKey, useGetArtistCampaignProgress } from '@workspace/api-client-react';
+import { replaceEqualDeep } from '@tanstack/react-query';
+import { getGetArtistCampaignProgressQueryKey, useGetArtistCampaignProgress, type GetArtistCampaignProgress200 } from '@workspace/api-client-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { campaignScopeView, type CampaignScope } from '@/lib/artist-campaign-scope';
 
@@ -10,9 +11,17 @@ const usd = (n: number) => `$${n.toFixed(2)}`;
 const STATUS: Record<string, string> = { running: 'Running', stop_requested: 'Stopping', stopped: 'Stopped', completed: 'Completed', paused: 'Paused', budget_exhausted: 'Budget reached' };
 const statusLabel = (s: string) => STATUS[s] ?? s.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase());
 
+export function retainCampaignProgress(previous: unknown, current: unknown) {
+  const old = previous as GetArtistCampaignProgress200 | undefined;
+  const next = current as GetArtistCampaignProgress200;
+  if (next?.progress === null && old?.progress)
+    return { ...next, progress: { ...old.progress, snapshotUnavailable: true } };
+  return replaceEqualDeep(previous, current);
+}
+
 export function ArtistCampaignProgress({ className = '' }: { className?: string }) {
   const [scope, setScope] = useState<CampaignScope>(() =>
-    new URLSearchParams(window.location.search).get('campaignScope') === 'tiers_1_5' ? 'tiers_1_5' : 'all');
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('campaignScope') === 'tiers_1_5' ? 'tiers_1_5' : 'all');
   const changeScope = (value: string) => {
     if (value !== 'all' && value !== 'tiers_1_5') return;
     setScope(value);
@@ -37,11 +46,12 @@ function CampaignProgressView({ scope }: { scope: CampaignScope }) {
   const q = useGetArtistCampaignProgress({ query: {
     queryKey: getGetArtistCampaignProgressQueryKey(),
     refetchInterval: 5000, staleTime: 4000, refetchOnMount: 'always', refetchOnWindowFocus: true,
+    structuralSharing: retainCampaignProgress,
   } });
   const original = q.data?.progress;
   const view = original ? campaignScopeView(original, scope) : null;
   const p = original && view?.counts ? { ...original, ...view.counts } : original;
-  const failedRefresh = q.isError && !!q.data;
+  const failedRefresh = (q.isError && !!q.data) || !!p?.snapshotUnavailable;
   const stale = !!p?.stale || failedRefresh;
 
   const shell = 'rounded-xl border border-border/80 bg-card text-card-foreground shadow-sm px-4 py-3';
@@ -95,9 +105,9 @@ function CampaignProgressView({ scope }: { scope: CampaignScope }) {
     <section className={`${shell} ${stale ? 'border-amber-500/50' : ''}`} aria-labelledby="campaign-progress-title" data-testid="section-campaign-progress">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         {Head}
-        <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono text-muted-foreground">
           <span className="rounded border border-border bg-background px-1.5 py-0.5 font-bold uppercase tracking-wider text-foreground" data-testid="status-campaign">Last recorded: {statusLabel(p.status)}</span>
-          <span title={updated.toLocaleString()}>Updated {updated.toLocaleTimeString()}</span>
+          <span title={updated.toLocaleString()}>Worker evidence {updated.toLocaleString()}</span>
           {q.isFetching && <RefreshCw className="h-3 w-3 animate-spin" aria-label="Refreshing" />}
         </div>
       </div>
@@ -131,9 +141,9 @@ function CampaignProgressView({ scope }: { scope: CampaignScope }) {
         ].map(([k, v, id]) => (
           <div key={id} className="flex items-baseline gap-1.5"><dt className="text-muted-foreground">{k}</dt><dd className="font-bold tabular-nums" data-testid={`text-campaign-${id}`}>{v}</dd></div>
         ))}
-        <div className="flex items-center gap-1.5 sm:ml-auto">
+        <div className="flex flex-wrap items-center gap-1.5 sm:ml-auto">
           <dt className="text-muted-foreground">Reserved</dt>
-          <dd className="font-bold tabular-nums" data-testid="text-campaign-budget">{usd(p.reservedUsd)} <span className="font-normal text-muted-foreground">{p.maximumSpendUsd === null ? '· No total cap' : `/ ${usd(p.maximumSpendUsd)} cap`}</span></dd>
+          <dd className="font-bold tabular-nums" data-testid="text-campaign-budget">{usd(p.reservedUsd)} <span className="font-normal text-muted-foreground">{p.maximumSpendUsd === null ? '· No total spending cap' : `/ ${usd(p.maximumSpendUsd)} recorded cap`}</span></dd>
           {p.maximumSpendUsd !== null && <span className="hidden sm:block h-1 w-12 overflow-hidden rounded-full bg-muted" aria-hidden><span className="block h-full bg-muted-foreground/60 origin-left" style={{ transform: `scaleX(${budgetPct / 100})` }} /></span>}
         </div>
       </dl>
@@ -147,7 +157,7 @@ function CampaignProgressView({ scope }: { scope: CampaignScope }) {
         {' '}This read-only page never starts or retries paid work.
       </p>
       <p className="mt-1 text-[10px] font-mono text-muted-foreground break-all" data-testid="text-campaign-identity">
-        Campaign: {p.campaignId} · Snapshot saved {new Date(p.capturedAt).toLocaleString()}
+        Campaign: {p.campaignId} · Observer snapshot captured {new Date(p.capturedAt).toLocaleString()} (not worker activity)
       </p>
 
       <details className="mt-2.5 border-t border-border/60 pt-2" data-testid="campaign-tier-details">

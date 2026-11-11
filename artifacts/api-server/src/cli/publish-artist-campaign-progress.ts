@@ -21,10 +21,19 @@ async function main() {
     stopped = true; abort.abort();
   });
   do {
-    const snapshot = await captureArtistCampaignSnapshot(workspace);
-    await publishCampaignSnapshot(snapshot);
-    logger.info({ campaignId: snapshot.campaignId, processedArtists: snapshot.processed,
-      totalArtists: snapshot.totalArtists, updatedAt: snapshot.updatedAt }, "Shared campaign counters saved; no paid work performed");
+    try {
+      const snapshot = await captureArtistCampaignSnapshot(workspace);
+      await publishCampaignSnapshot(snapshot);
+      logger.info({ campaignId: snapshot.campaignId, processedArtists: snapshot.processed,
+        totalArtists: snapshot.totalArtists, updatedAt: snapshot.updatedAt,
+        capturedAt: snapshot.capturedAt, maximumSpendCents: snapshot.maximumSpendCents },
+      "Shared campaign counters saved; no paid work performed");
+    } catch (error) {
+      if (!args.includes("--watch")) throw error;
+      // A transient partial file/storage read must not kill the independent
+      // observer. Leave the last shared snapshot intact until a readable cycle.
+      logger.warn({ err: error }, "Campaign snapshot unavailable; previous counters retained; no paid work performed");
+    }
     if (!args.includes("--watch") || stopped) break;
     await delay(15_000, undefined, { signal: abort.signal }).catch(error => {
       if (error.name !== "AbortError") throw error;
