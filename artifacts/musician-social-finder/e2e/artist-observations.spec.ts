@@ -165,6 +165,86 @@ for (const theme of ['light', 'dark'] as const) {
     });
 
     for (const chosen of [checkpoint, final]) {
+      test(`history polling failure and reordered recovery retain selected ${chosen === checkpoint ? 'checkpoint' : 'final'} evidence`, async ({ page, api }, testInfo) => {
+        await page.clock.install();
+        await page.goto(`${api.url}/bulk/artists`);
+        await expect(page.locator('html')).toHaveClass(theme === 'dark' ? /dark/ : /^(?!.*dark).*$/);
+        await selected(page, checkpoint);
+        await displayedRows(page, checkpoint);
+        // Exercise a real user selection, including when choosing the default.
+        await radio(page, chosen).click();
+        await selected(page, chosen);
+        await displayedRows(page, chosen);
+        const originalSummary = await section(page).getByTestId(`summary-batch-${chosen.id}`).innerText();
+        const originalRequests = [...api.rowRequests];
+        await download(page, chosen);
+        await expect.poll(() => api.batchResponses.length).toBe(1);
+
+        // Only the history poll fails; the selected archive's saved rows and
+        // native CSV remain healthy. No Refresh click can cause this failure.
+        api.batchErrors = true;
+        await page.clock.fastForward(30_100);
+        await expect.poll(() => api.batchFailures).toBe(1);
+        // Exhaust React Query's real retry/backoff so this is a visible error,
+        // not merely a transient failed request with the picker still present.
+        for (const attempt of [2, 3, 4]) {
+          await page.clock.fastForward(8_100);
+          await expect.poll(() => api.batchFailures).toBe(attempt);
+        }
+        const alert = section(page).getByRole('alert');
+        const retry = section(page).getByTestId('button-retry-artist-batches');
+        await expect(alert).toContainText('Fixture saved history unavailable');
+        await expect(retry).toBeVisible();
+        // The current error UI hides evidence, rather than showing stale or
+        // another archive's evidence. The independent CSV stays on our choice.
+        await expect(section(page).getByRole('radio')).toHaveCount(0);
+        await expect(section(page).locator('.abr-summary')).toHaveCount(0);
+        await expect(section(page).locator('.abr-rows > li')).toHaveCount(0);
+        await expect(section(page).getByTestId('text-artist-rows-range')).toHaveCount(0);
+        for (const r of [...checkpointRows, ...finalRows, ...newerRows]) {
+          await expect(section(page).getByTestId(`row-artist-result-${r.id}`)).toHaveCount(0);
+          await expect(section(page).getByTestId(`detail-artist-row-${r.id}`)).toHaveCount(0);
+        }
+        await expect(section(page).getByTestId('link-download-artist-csv')).toHaveAttribute('href', csvPath(chosen.id));
+        await layout(page, [alert, retry, section(page).getByTestId('link-download-artist-csv')]);
+        await download(page, chosen);
+        expect(api.rowRequests).toEqual(originalRequests);
+        expect(api.batchResponses).toHaveLength(1);
+        await testInfo.attach(`${theme}-history-unavailable`, {
+          body: await section(page).screenshot(), contentType: 'image/png',
+        });
+
+        // Insert a new first archive and reverse the old pair on recovery.
+        // Neither the default nor the selected archive's list index is stable.
+        api.batches = [newer, final, checkpoint];
+        api.batchErrors = false;
+        await retry.click();
+        await expect.poll(() => api.batchResponses.length).toBe(2);
+        expect(api.batchResponses.at(-1)).toEqual([newer.id, final.id, checkpoint.id]);
+        await expect(alert).toHaveCount(0);
+        await expect(retry).toHaveCount(0);
+        await expect.poll(() => section(page).getByRole('radio').evaluateAll(
+          elements => elements.map(el => el.getAttribute('data-testid')),
+        )).toEqual(api.batches.map(b => `button-batch-${b.id}`));
+        await expect(radio(page, newer)).toHaveAttribute('aria-checked', 'false');
+        await selected(page, chosen);
+        await displayedRows(page, chosen);
+        await expect(section(page).getByTestId(`summary-batch-${chosen.id}`)).toHaveText(originalSummary, { useInnerText: true });
+        for (const r of rowsFor(chosen.id)) {
+          await section(page).getByTestId(`button-expand-row-${r.id}`).click();
+          const detail = section(page).getByTestId(`detail-artist-row-${r.id}`);
+          await detail.locator('summary').filter({ hasText: 'Provenance' }).click();
+          await expect(detail.getByTestId(`field-${r.id}-provenance-0`)).toHaveText(
+            `Saved archive evidence${r.id} original evidence`,
+          );
+        }
+        await download(page, chosen);
+        // Retry reads the history only, never a different archive's rows.
+        expect(api.rowRequests).toEqual(originalRequests);
+        expect(api.batchFailures).toBe(4);
+        expect(api.csvRequests).toEqual(Array(3).fill(csvPath(chosen.id)));
+      });
+
       test(`history refresh preserves explicitly selected ${chosen === checkpoint ? 'checkpoint' : 'final'} while rows are pending`, async ({ page, api }) => {
         api.hold(chosen.id);
         await page.clock.install();

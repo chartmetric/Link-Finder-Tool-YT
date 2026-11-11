@@ -89,6 +89,8 @@ export class ObservationApi extends ProgressApi {
   url = '';
   batches: ArtistResultBatch[] = [checkpoint, final];
   batchResponses: string[][] = [];
+  batchErrors = false;
+  batchFailures = 0;
   rowRequests: string[] = [];
   csvRequests: string[] = [];
   delivered: string[] = [];
@@ -171,6 +173,11 @@ export class ObservationApi extends ProgressApi {
       if (path === '/api/profiles/musician-instagram-rerun-eligibility')
         return json({ count: 0, selectionToken: '0'.repeat(64), generatedAt: time });
       if (path === '/api/bulk/artist-results') {
+        if (this.batchErrors) {
+          await route.fulfill({ status: 503, json: { error: 'Fixture saved history unavailable' } });
+          this.batchFailures++;
+          return;
+        }
         const batches = [...this.batches];
         await json({ batches, warnings: [] });
         this.batchResponses.push(batches.map(b => b.id));
