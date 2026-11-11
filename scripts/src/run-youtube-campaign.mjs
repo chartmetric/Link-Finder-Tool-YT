@@ -7,6 +7,7 @@ import {select,metadataQueries,buildMetadataOverlay} from './instagram-artist-me
 import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
 import {youtubeEligibilitySql,youtubeSearchCandidates} from './youtube-discovery-test.mjs';
 import {evidenceDigest} from './youtube-ownership-policy.mjs';
+import {youtubeArtistFromCatalogPacket} from './youtube-ownership-evidence.mjs';
 import {YOUTUBE_CAMPAIGN_ID as id,YOUTUBE_CAMPAIGN_ROOT as root,MODEL_PLAN,youtubeCampaignSchema,
   validateQueue,assertAdmission,campaignTransport,evaluateCandidate,classifyYoutubeResult} from './youtube-campaign-core.mjs';
 
@@ -14,7 +15,8 @@ const read=async file=>JSON.parse(await fs.readFile(file,'utf8'));
 const save=async(name,value)=>fs.writeFile(root+'/'+name,JSON.stringify(value),{flag:'wx'});
 const ownFiles=['scripts/src/run-youtube-campaign.mjs','scripts/src/youtube-campaign-core.mjs',
   'scripts/src/youtube-ownership-policy.mjs','scripts/src/youtube-ownership-transport.mjs',
-  'scripts/src/youtube-discovery-test.mjs','scripts/src/instagram-artist-metadata-overlay.mjs'];
+  'scripts/src/youtube-discovery-test.mjs','scripts/src/instagram-artist-metadata-overlay.mjs',
+  'scripts/src/youtube-ownership-evidence.mjs'];
 export function eligibilitySql(ids){
   if(ids){
     assert.ok(ids.length&&ids.every(id=>/^\d+$/.test(id)));
@@ -80,12 +82,8 @@ async function catalogContext(targets){
   const overlay=buildMetadataOverlay(manifest,data,new Date().toISOString());
   const out=new Map();
   for(const p of overlay.packets){
-    const artist={profileId:p.profileId,cmArtist:p.cmArtist,name:p.artist,catalogProfile:p.catalogProfile,
-      country:p.chartmetric?.code2??null,label:p.chartmetric?.label??p.chartmetric?.record_label??null,
-      accounts:p.linkedAccounts.filter(a=>a.account_url?.trim()),releases:[...p.releases,...p.catalogTracks],
-      context:{chartmetric:p.chartmetric,tags:p.tags,spotify:p.spotifyMetadata,platformSnapshots:p.platformSnapshots,
-        profileMetadata:p.profileMetadata,
-        warning:'Catalog context is not independent ownership proof. Platform snapshots are not account-bound captures.'}};
+    // Same baseline shape; supplemental ownership evidence remains offline-only.
+    const artist=youtubeArtistFromCatalogPacket(p);
     await save('metadata/'+p.profileId+'.json',p);out.set(p.profileId,artist);
   }
   return out;

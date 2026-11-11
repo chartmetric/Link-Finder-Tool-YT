@@ -142,13 +142,27 @@ export const YOUTUBE_OWNERSHIP_RULES=[
 export function youtubeVerificationInput(artist,candidate){
   assertNoGradingInputs({artist,candidate});
   if(!validArtist(artist))throw Error('Unbound artist catalog identity.');
+  if(artist.ownershipEvidence){
+    const e=artist.ownershipEvidence;
+    if(String(e.profileId)!==String(artist.profileId)||String(e.cmArtist)!==String(artist.cmArtist))
+      throw Error('Unbound supplemental ownership evidence.');
+    for(const d of e.declarations??[]){
+      if(String(d.profileId)!==String(artist.profileId)||String(d.cmArtist)!==String(artist.cmArtist)
+        ||d.sourceRecordSha256!==evidenceDigest(d.sourceRecord)
+        ||!(artist.accounts??[]).some(a=>String(a.profile_id)===String(artist.profileId)
+          &&String(a.cm_artist)===String(artist.cmArtist)&&String(a.account_id)===String(d.accountId)
+          &&exactUrl(a.url??a.account_url)===exactUrl(d.sourceUrl)))
+        throw Error('Unbound supplemental account declaration.');
+    }
+  }
   const url=youtubeOwnershipUrl(candidate.url);
   if(!url)throw Error('Invalid YouTube channel URL.');
   const capture=boundYoutubeCapture(url,candidate.capture);
   const state={artist:{profileId:String(artist.profileId),cmArtist:String(artist.cmArtist),name:artist.name,
     catalogProfile:artist.catalogProfile,country:artist.country??null,label:artist.label??null,
     aliases:artist.aliases??[],accounts:artist.accounts??[],releases:artist.releases??[],
-    context:artist.context??null,declarations:artist.declarations??[]},
+    context:artist.context??null,declarations:artist.declarations??[],
+    ...(artist.ownershipEvidence?{ownershipEvidence:artist.ownershipEvidence}:{})},
     candidate:{url,channelCapture:capture,searchEvidence:{title:text(candidate.title),
       snippet:text(candidate.snippet),sourceUrl:candidate.sourceUrl??candidate.url,source:'saved_search_result'}}};
   const input={policy:YOUTUBE_OWNERSHIP_POLICY,rules:YOUTUBE_OWNERSHIP_RULES,state};

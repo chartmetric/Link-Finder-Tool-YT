@@ -1358,3 +1358,17 @@ mtime_ms = 1794426052601
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/65f73b2c-d828-499d-8235-35efd5015007/0a35e7c2-7995-44fb-bee8-25c92aaf5529"
 storage_version_token = "1794426088929488"
 content_type = "text/csv"
+
+[[outputs]]
+id = "UqaGeCs4TwgmiwW0y4qaM"
+uri = "file://generated-artifacts/youtube-ownership-offline-review/review.html"
+type = "html"
+title = "Offline YouTube ownership evidence review"
+description = "32 reconstructed captures for 28 artists, preserved historical evidence, remaining ownership gaps, and an unexecuted approval-bound plan. No spending or acceptance changes."
+logical_id = "d9404bed-3b32-4596-9723-7762e1a85a26"
+content_hash = "sha256:d8294ced993f2038ef15132cb044113cf0374f660c001299aee25b3eb7ec99b3"
+size = 4664
+mtime_ms = 1794414590128
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/d9404bed-3b32-4596-9723-7762e1a85a26/4fd9196f-35ab-4e4a-8f1f-22da084d1ac9"
+storage_version_token = "1794426159708376"
+content_type = "text/html"

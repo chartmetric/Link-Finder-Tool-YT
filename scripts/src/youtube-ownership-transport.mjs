@@ -30,7 +30,7 @@ export function normalizeYoutubeChannel(packet,requestedUrl){
     ...youtubeBadgeMetadata(raw)};
   const capture={status:200,requestedUrl,capturedAt:packet.at,body,
     bodySha256:evidenceDigest(body),rawReceiptSha256:evidenceDigest(packet),
-    ...(/\/(?:c|user)\//.test(youtubeOwnershipUrl(requestedUrl)??'')?{rawReceipt:packet}:{})};
+    ...(/\/(?:c|user)\//.test(youtubeOwnershipUrl(requestedUrl)??'')||Array.isArray(raw.videos)?{rawReceipt:packet}:{})};
   return boundYoutubeCapture(requestedUrl,capture)?capture:null;
 }
 export function youtubeDecisionRequest(input,plan){
