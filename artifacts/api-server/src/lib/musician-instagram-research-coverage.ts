@@ -72,7 +72,7 @@ export const musicianTierSnapshotSql = `
   FORMAT JSON
 `;
 
-export const musicianInstagramResearchCoverageSql = `
+export const musicianInstagramResearchProfileSql = `
   WITH fresh_tier_rows AS (
     SELECT profile, tier, computed_at, updated_at
     FROM new_vertical.l_profile_tier FINAL
@@ -124,6 +124,7 @@ export const musicianInstagramResearchCoverageSql = `
   ),
   profile_coverage AS (
     SELECT
+      profile,
       tier,
       research_status,
       research_status = 'candidates_found' AND notEmpty(instagram_urls) AS has_research_url,
@@ -134,7 +135,9 @@ export const musicianInstagramResearchCoverageSql = `
         AND research_status IN ('candidates_found', 'needs_review') AS unresolved_candidates,
       research_status = 'no_candidates' AND NOT has_catalog_instagram_url AS no_supported_match
     FROM research_evidence
-  )
+  )`;
+
+export const musicianInstagramResearchCoverageSql = `${musicianInstagramResearchProfileSql}
   SELECT
     tier,
     count() AS total_profiles,

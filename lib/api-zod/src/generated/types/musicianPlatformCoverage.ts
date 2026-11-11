@@ -14,5 +14,11 @@ export interface MusicianPlatformCoverage {
   snapshotAt: string | null;
   snapshotStatus: MusicianPlatformCoverageSnapshotStatus;
   generatedAt: string;
+  /** Computation time of the catalog and historical research membership snapshot. */
+  catalogGeneratedAt?: string;
+  campaignObservedAt?: string | null;
+  campaignStatus?: string | null;
+  campaignIncluded?: boolean;
+  campaignError?: string | null;
   tiers: MusicianPlatformCoverageTiersItem[];
 }

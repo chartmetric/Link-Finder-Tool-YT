@@ -11,6 +11,8 @@ export type MusicianPlatformCoverageTiersItem = {
   totalProfiles: number;
   catalogUrls: number;
   supportedResearchUrls: number;
+  /** Additional unique artists with a current campaign likely match */
+  campaignLikelyUrls?: number;
   unresolvedCandidates: number;
   noSupportedMatch: number;
   failed: number;

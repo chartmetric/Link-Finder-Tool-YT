@@ -1302,3 +1302,31 @@ mtime_ms = 1794360172183
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2115756a-f864-48e9-ba1e-ed1eabf585e3/1b49a447-a98f-41a7-98fd-b0b9d83a3f61"
 storage_version_token = "1794360360579118"
 content_type = "text/csv"
+
+[[outputs]]
+id = "ThZ7PsqckHhGpLWCAbgq7"
+uri = "file://generated-artifacts/instagram-csv-export-2026-11-11/downloads/instagram-likely-matches.csv"
+type = "table"
+title = "Instagram likely matches — 24,399 artists"
+description = "November 11, 11:29 AM Pacific snapshot. One row per artist, with candidate links, IDs, scores, decisions, reasons, and saved artist/profile metadata. Excludes raw model-input text and search snippets. Likely matches are suggestions, not catalog additions."
+logical_id = "d0c0990c-0ff2-442b-8ce3-cece14720505"
+content_hash = "sha256:d650e332f7432db8dc9775b0ae444c23b598778bea3affec6e73f05e7490735f"
+size = 101388099
+mtime_ms = 1794425720345
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/d0c0990c-0ff2-442b-8ce3-cece14720505/b02fe1e2-5e23-492f-b31c-cee44bd0822d"
+storage_version_token = "1794425738265711"
+content_type = "text/csv"
+
+[[outputs]]
+id = "1G2sn5LWsrPsLmqFe6hoX"
+uri = "file://generated-artifacts/instagram-csv-export-2026-11-11/downloads/instagram-checked-not-accepted.csv"
+type = "table"
+title = "Instagram checked, not accepted — 10,150 artists"
+description = "Same 11:29 AM Pacific snapshot. One row per artist, with checked candidate links, IDs, scores, decisions, reasons, and saved artist/profile metadata. Excludes raw model-input text, search snippets, and unchecked artists."
+logical_id = "52e1cfaa-d2d5-4c88-8a40-f4f85c6f20bf"
+content_hash = "sha256:64bec8acfbcd78eea57c895e6b2ef01845ceaa670af5d1b110acce0d8b8564a6"
+size = 69538007
+mtime_ms = 1794425725981
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/52e1cfaa-d2d5-4c88-8a40-f4f85c6f20bf/6a0a2f72-b8a2-451d-bad5-b7130cbb48b0"
+storage_version_token = "1794425739912198"
+content_type = "text/csv"

@@ -4,8 +4,9 @@ import { clickHouseJson } from "./clickhouse-profiles";
 import { createCoverageCache } from "./coverage-cache";
 import { logger } from "./logger";
 import {
-  getMusicianInstagramResearchCoverage, musicianTierSnapshotSql, musicianTierSnapshotStatus,
+  musicianInstagramResearchProfileSql, musicianTierSnapshotSql, musicianTierSnapshotStatus,
 } from "./musician-instagram-research-coverage";
+import { createCampaignCoverageReader, type CoverageProfile } from "./campaign-coverage";
 
 type Platform = "instagram" | "youtube";
 type Tier = MusicianPlatformCoverage["tiers"][number];
@@ -29,7 +30,7 @@ export function youtubePilotSql(rows: PilotRow[]) {
 // The YouTube surface intentionally reports catalog links plus the new test.
 // Reconstructing all historical investigations exceeded the read deadline;
 // those sources are explicitly excluded in the UI, not presented as zero matches.
-export function youtubeCoverageSql(pilotRows: PilotRow[]) {
+export function youtubeCoverageProfileSql(pilotRows: PilotRow[]) {
   return `WITH snapshot_tiers AS (
     SELECT profile,argMax(tier,tuple(computed_at,updated_at)) tier
     FROM new_vertical.l_profile_tier FINAL
@@ -53,7 +54,7 @@ export function youtubeCoverageSql(pilotRows: PilotRow[]) {
       WHERE cm_source='cm_artist' AND deleted_at IS NULL) p ON p.id=t.profile
     LEFT JOIN pilot y ON y.profile_id=p.id
   ), classified AS (
-    SELECT tier,multiIf(
+    SELECT profile_id,tier,multiIf(
       catalog,'catalog',
       use_pilot AND pilot_status='candidates_found' AND pilot_candidates>0,'candidates',
       use_pilot AND pilot_status='no_match','no_match',
@@ -61,7 +62,11 @@ export function youtubeCoverageSql(pilotRows: PilotRow[]) {
       use_pilot AND pilot_status='admitted','pending',
       'not_searched') state
     FROM evidence
-  )
+  )`;
+}
+
+export function youtubeCoverageSql(pilotRows: PilotRow[]) {
+  return `${youtubeCoverageProfileSql(pilotRows)}
   SELECT tier,count() total,
     countIf(state='catalog') catalog,countIf(state='supported') supported,
     countIf(state='candidates') candidates,countIf(state='no_match') no_match,
@@ -92,32 +97,44 @@ export function youtubeCoverageResponse(rows: YoutubeRow[], snapshotAt: string |
     }) : [] };
 }
 
-const youtubeCache = createCoverageCache(async () => {
+async function readMembership(platform: Platform) {
   const snapshot = await clickHouseJson<{snapshot_at: string | null}>(musicianTierSnapshotSql, {}, 30_000);
   const raw = snapshot.data[0]?.snapshot_at;
   const at = raw ? new Date(raw.replace(" ", "T") + "Z").toISOString() : null;
   const status = musicianTierSnapshotStatus(at);
-  if (status === "stale" || status === "unavailable") return youtubeCoverageResponse([], at);
-  const { rows } = await pool.query<PilotRow>(`SELECT DISTINCT ON(profile_id) profile_id,cm_artist,status,
-    jsonb_array_length(candidates_json) candidate_count,checked_at
-    FROM youtube_discovery_test_results ORDER BY profile_id,checked_at DESC,run_id DESC`);
-  const result = await clickHouseJson<YoutubeRow>(youtubeCoverageSql(rows), {snapshotAt: raw!}, 45_000);
-  return youtubeCoverageResponse(result.data, at);
-}, error => logger.warn({err: error}, "YouTube coverage refresh failed"));
+  if (status === "stale" || status === "unavailable") return { platform, snapshotAt: at, generatedAt: new Date().toISOString(), profiles: [] as CoverageProfile[] };
+  let sql: string;
+  if (platform === "instagram") {
+    sql = `${musicianInstagramResearchProfileSql}
+      SELECT toString(v.profile) profile_id,toString(p.cm_source_id) cm_artist,v.tier tier,
+        multiIf(has_catalog_instagram_url,'catalog',supported_research_only,'supported',
+          no_supported_match,'no_match',unresolved_candidates,'candidates',
+          research_status='failed','failed',research_status IN ('queued','running'),'pending','not_searched') state
+      FROM profile_coverage v
+      LEFT JOIN (SELECT id,cm_source_id FROM new_vertical.profile FINAL
+        WHERE cm_source='cm_artist' AND deleted_at IS NULL AND id IN (SELECT profile FROM tier_assignments)) p ON p.id=v.profile
+      FORMAT JSON`;
+  } else {
+    const { rows } = await pool.query<PilotRow>(`SELECT DISTINCT ON(profile_id) profile_id,cm_artist,status,
+      jsonb_array_length(candidates_json) candidate_count,checked_at
+      FROM youtube_discovery_test_results ORDER BY profile_id,checked_at DESC,run_id DESC`);
+    sql = `${youtubeCoverageProfileSql(rows)}
+      SELECT toString(c.profile_id) profile_id,toString(p.cm_source_id) cm_artist,c.tier tier,c.state state
+      FROM classified c
+      INNER JOIN (SELECT id,cm_source_id FROM new_vertical.profile FINAL WHERE cm_source='cm_artist'
+        AND deleted_at IS NULL AND id IN (SELECT profile FROM snapshot_tiers)) p ON p.id=c.profile_id
+      FORMAT JSON`;
+  }
+  const result = await clickHouseJson<CoverageProfile>(sql, {snapshotAt: raw!}, 45_000);
+  return { platform, snapshotAt: at, generatedAt: new Date().toISOString(), profiles: result.data };
+}
+
+const membershipCaches = {
+  instagram: createCoverageCache(() => readMembership("instagram"), error => logger.warn({err: error}, "Instagram coverage membership refresh failed")),
+  youtube: createCoverageCache(() => readMembership("youtube"), error => logger.warn({err: error}, "YouTube coverage membership refresh failed")),
+};
+const readCoverage = createCampaignCoverageReader(platform => membershipCaches[platform].get());
 
 export async function getMusicianPlatformCoverage(platform: Platform): Promise<MusicianPlatformCoverage> {
-  if (platform === "youtube") {
-    const result = await youtubeCache.get();
-    const status = musicianTierSnapshotStatus(result.snapshotAt);
-    return {...result, snapshotStatus: status, tiers: status === "current" || status === "recent" ? result.tiers : []};
-  }
-  const result = await getMusicianInstagramResearchCoverage();
-  return { platform, snapshotAt: result.snapshotAt, snapshotStatus: result.snapshotStatus, generatedAt: result.generatedAt,
-    tiers: result.tiers.map(t => ({
-      tier: t.tier, totalProfiles: t.totalProfiles, catalogUrls: t.profilesWithCatalogInstagramUrls,
-      supportedResearchUrls: t.profilesWithSupportedResearchUrls,
-      unresolvedCandidates: t.profilesWithUnresolvedCandidates, noSupportedMatch: t.profilesWithNoSupportedMatch,
-      failed: t.failedProfiles, pending: t.pendingProfiles,
-      notSearched: Math.max(0, t.profilesWithFailedOrIncompleteSearches - t.failedProfiles - t.pendingProfiles),
-    })) };
+  return readCoverage(platform);
 }

@@ -354,6 +354,8 @@ export type MusicianPlatformCoverageTiersItem = {
   totalProfiles: number;
   catalogUrls: number;
   supportedResearchUrls: number;
+  /** Additional unique artists with a current campaign likely match */
+  campaignLikelyUrls?: number;
   unresolvedCandidates: number;
   noSupportedMatch: number;
   failed: number;
@@ -366,6 +368,12 @@ export interface MusicianPlatformCoverage {
   snapshotAt: string | null;
   snapshotStatus: MusicianPlatformCoverageSnapshotStatus;
   generatedAt: string;
+  /** Computation time of the catalog and historical research membership snapshot. */
+  catalogGeneratedAt?: string;
+  campaignObservedAt?: string | null;
+  campaignStatus?: string | null;
+  campaignIncluded?: boolean;
+  campaignError?: string | null;
   tiers: MusicianPlatformCoverageTiersItem[];
 }
 

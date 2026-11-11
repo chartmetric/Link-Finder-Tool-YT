@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { replaceEqualDeep } from '@tanstack/react-query';
 import { getGetArtistCampaignProgressQueryKey, useGetArtistCampaignProgress, type GetArtistCampaignProgress200 } from '@workspace/api-client-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { campaignScopeView, type CampaignScope } from '@/lib/artist-campaign-scope';
 
 const fmt = (n: number) => n.toLocaleString();
@@ -31,10 +31,6 @@ export function ArtistCampaignProgress({ className = '' }: { className?: string 
   };
   return (
     <Tabs value={scope} onValueChange={changeScope} className={className} data-testid="campaign-scope-tabs">
-      <TabsList aria-label="Artist campaign scope" className="max-w-full">
-        <TabsTrigger value="all" data-testid="campaign-scope-all">All artists</TabsTrigger>
-        <TabsTrigger value="tiers_1_5" data-testid="campaign-scope-tiers">Tiers 1–5</TabsTrigger>
-      </TabsList>
       <TabsContent value={scope} forceMount>
         <CampaignProgressView scope={scope} />
       </TabsContent>

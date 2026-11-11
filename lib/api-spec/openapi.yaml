@@ -848,6 +848,11 @@ components:
         snapshotAt: { type: string, nullable: true }
         snapshotStatus: { type: string, enum: [current, recent, stale, unavailable] }
         generatedAt: { type: string }
+        catalogGeneratedAt: { type: string, description: Computation time of the catalog and historical research membership snapshot. }
+        campaignObservedAt: { type: string, nullable: true }
+        campaignStatus: { type: string, nullable: true }
+        campaignIncluded: { type: boolean }
+        campaignError: { type: string, nullable: true }
         tiers:
           type: array
           items:
@@ -858,6 +863,7 @@ components:
               totalProfiles: { type: number }
               catalogUrls: { type: number }
               supportedResearchUrls: { type: number }
+              campaignLikelyUrls: { type: number, description: Additional unique artists with a current campaign likely match, excluding catalog and supported research overlap. Review suggestions, not catalog links. }
               unresolvedCandidates: { type: number }
               noSupportedMatch: { type: number }
               failed: { type: number }

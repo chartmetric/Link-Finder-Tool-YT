@@ -54,3 +54,15 @@ the entire catalog, repeated for every tiered profile.
 **How to apply:** Check membership complexity before increasing timeouts or
 discarding evidence sources. Keep the visible research-source scope explicit if
 a new platform initially includes only catalog links and a limited research archive.
+
+Include current campaign likely matches in combined coverage, but keep their
+category visibly separate from catalog links.
+
+**Why:** The user approved connecting campaign findings to coverage, then
+clarified that a separate live counter without changing the headline percentage
+did not meet their expectation. Suggestions are not permission to add catalog links.
+
+**How to apply:** Show source-labelled counts and their own evidence timestamps.
+Combine distinct artist identities with matching catalog identities and current
+tier membership, assigning each artist to only one category: catalog, supported
+research, then campaign likely. Never add aggregate campaign totals to coverage.
