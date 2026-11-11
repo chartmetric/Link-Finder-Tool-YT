@@ -28,10 +28,13 @@ export function artistTotals(total: number, totals: Counts) {
     successRate: totals.checked ? totals.likely / totals.checked * 100 : null,
   };
 }
-export function progressTotals(total: number, totals: Counts, status: string, updatedAt: string, now = Date.now()) {
+export function progressTotals(total: number, totals: Counts, status: string, updatedAt: string, now = Date.now(),
+  maximumSpendCents: number | null = 10000) {
+  if (maximumSpendCents !== null && maximumSpendCents !== 10000) throw Error("Unrecognized campaign spending approval.");
+  if (maximumSpendCents !== null && totals.reserved > maximumSpendCents) throw Error("Campaign reservations exceed the approved cap.");
   return {
     ...artistTotals(total, totals), status,
-    reservedUsd: totals.reserved / 100, maximumSpendUsd: 100, updatedAt,
+    reservedUsd: totals.reserved / 100, maximumSpendUsd: maximumSpendCents === null ? null : maximumSpendCents / 100, updatedAt,
     stale: status === "running" && now - Date.parse(updatedAt) > 120_000,
   };
 }

@@ -46,7 +46,7 @@ paths:
                       processedPercent: { type: number, minimum: 0, maximum: 100 }
                       successRate: { type: [number, "null"], minimum: 0, maximum: 100 }
                       reservedUsd: { type: number, minimum: 0 }
-                      maximumSpendUsd: { type: number, minimum: 0 }
+                      maximumSpendUsd: { type: [number, "null"], minimum: 0 }
                       updatedAt: { type: string }
                       stale: { type: boolean }
                       tierBreakdown:
@@ -618,11 +618,12 @@ components:
         notAcceptedArtists: { type: number, minimum: 0 }
         uncheckedArtists: { type: number, minimum: 0 }
         noChannelFound: { type: number, minimum: 0 }
+        deferredArtists: { type: number, minimum: 0 }
         heldCandidates: { type: number, minimum: 0 }
         pendingCandidates: { type: number, minimum: 0 }
         successRate: { type: [number, "null"], minimum: 0, maximum: 100 }
         reservedUsd: { type: number, minimum: 0 }
-        maximumSpendUsd: { type: number, minimum: 0 }
+        maximumSpendUsd: { type: [number, "null"], minimum: 0 }
         updatedAt: { type: string }
         capturedAt: { type: string }
     ArtistCampaignTierProgress:

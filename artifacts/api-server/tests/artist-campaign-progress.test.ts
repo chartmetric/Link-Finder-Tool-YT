@@ -159,3 +159,39 @@ test("empty tiers remain explicit; missing or invalid frozen queues never become
     assert.equal(invalid.processedArtists, 0);
   } finally { await rm(workspace, { recursive: true, force: true }); }
 });
+
+test("carried untouched artists do not stop observation or double-count completed work; uncapped approval is bound", async () => {
+  const workspace = await mkdtemp(path.join(os.tmpdir(), "campaign-continuation-"));
+  const root = path.join(workspace, "campaign");
+  const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+  const dir = (n: number) => `generated-artifacts/next-saved-full-tiers-1-5-usd100-chunk-01${n}`;
+  const queue = [{ profile_id: "1", cm_artist: "101", tier: 1 }, { profile_id: "2", cm_artist: "102", tier: 5 }];
+  const original = { id: "fixture", eligibleArtists: 2, queueSha256: hash(queue), maximumSpendCents: 10000 };
+  const json = (name: string, data: unknown) => writeFile(path.join(root, name), JSON.stringify(data));
+  const artist = (id: number, terminal: boolean) => ({ profileId: String(id), cmArtist: String(id + 100),
+    candidates: [terminal ? { recordedAnswer: {}, review: { reviewSuggestion: true } } : { status: "uninspected" }] });
+  try {
+    await mkdir(root);
+    await json("approval.json", original);
+    await json("uncapped-approval.json", { ...original, maximumSpendCents: null, uncappedExplicitlyApproved: true,
+      originalApprovalSha256: hash(original) });
+    await json("queue.json", queue);
+    await json("progress.json", { status: "running", activeChunk: dir(2), maximumSpendCents: null });
+    await json("chunks.json", [{ dir: dir(1) }]);
+    for (const [n, changes] of [[1, [artist(1, true), artist(2, false)]], [2, [artist(2, true)]]] as const) {
+      const file = path.join(workspace, dir(n), "execution/artist-checkpoints.jsonl");
+      await mkdir(path.dirname(file), { recursive: true });
+      await writeFile(file, JSON.stringify({ changes, budget: { reservedCents: 6000 } }) + "\n");
+    }
+    const p = (await readArtistCampaignFiles(root, workspace)).progress!;
+    assert.equal(p.processedArtists, 2);
+    assert.equal(p.checkedArtists, 2);
+    assert.equal(p.likelyMatches, 2);
+    assert.equal(p.maximumSpendUsd, null);
+    assert.equal(p.reservedUsd, 120);
+    assert.equal(p.tierBreakdown!.reduce((sum, t) => sum + t.processedArtists, 0), 2);
+    await json("uncapped-approval.json", { ...original, maximumSpendCents: null, uncappedExplicitlyApproved: true,
+      originalApprovalSha256: "changed" });
+    await assert.rejects(readArtistCampaignFiles(root, workspace), /approval could not be verified/);
+  } finally { await rm(workspace, { recursive: true, force: true }); }
+});

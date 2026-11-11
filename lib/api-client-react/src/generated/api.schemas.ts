@@ -40,6 +40,8 @@ export interface YoutubeArtistProgress {
   /** @minimum 0 */
   noChannelFound: number;
   /** @minimum 0 */
+  deferredArtists?: number;
+  /** @minimum 0 */
   heldCandidates: number;
   /** @minimum 0 */
   pendingCandidates: number;
@@ -51,8 +53,11 @@ export interface YoutubeArtistProgress {
   successRate: number | null;
   /** @minimum 0 */
   reservedUsd: number;
-  /** @minimum 0 */
-  maximumSpendUsd: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  maximumSpendUsd: number | null;
   updatedAt: string;
   capturedAt: string;
 }
@@ -1326,8 +1331,11 @@ export type GetArtistCampaignProgress200Progress = {
   successRate: number | null;
   /** @minimum 0 */
   reservedUsd: number;
-  /** @minimum 0 */
-  maximumSpendUsd: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  maximumSpendUsd: number | null;
   updatedAt: string;
   stale: boolean;
   /** Tier 1–5 counts bound to the approved frozen queue and exact terminal artist identities. Omitted when those bindings cannot be verified. */

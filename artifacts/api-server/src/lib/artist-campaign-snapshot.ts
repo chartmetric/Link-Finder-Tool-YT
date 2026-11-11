@@ -3,7 +3,9 @@ import { CAMPAIGN_ID, CAMPAIGN_QUEUE_SHA256, progressTotals, artistTotals } from
 import type { ArtistCampaignTierProgress } from "@workspace/api-zod";
 
 export type CampaignSnapshot = {
-  version: 1;
+  version: 1 | 2;
+  maximumSpendCents?: number | null;
+  authorizationSha256?: string;
   campaignId: string;
   queueSha256: string;
   totalArtists: number;
@@ -44,18 +46,24 @@ function snapshotTiers(s: CampaignSnapshot): Pick<CampaignSnapshot, "tierBreakdo
 
 export function validateCampaignSnapshot(value: unknown): CampaignSnapshot {
   const s = value as CampaignSnapshot;
-  if (!s || s.version !== 1 || s.campaignId !== CAMPAIGN_ID || s.queueSha256 !== CAMPAIGN_QUEUE_SHA256
+  if (!s || ![1, 2].includes(s.version) || s.campaignId !== CAMPAIGN_ID || s.queueSha256 !== CAMPAIGN_QUEUE_SHA256
     || s.workerEnvironment !== "workspace" || typeof s.status !== "string" || !/^[a-z_]{1,60}$/.test(s.status)
     || typeof s.updatedAt !== "string" || typeof s.capturedAt !== "string"
     || !Number.isFinite(Date.parse(s.updatedAt)) || !Number.isFinite(Date.parse(s.capturedAt))
     || Date.parse(s.updatedAt) > Date.parse(s.capturedAt) + 5000
-    || !Number.isSafeInteger(s.reserved) || s.reserved < 0 || s.reserved > 10000) {
+    || !Number.isSafeInteger(s.reserved) || s.reserved < 0
+    || (s.version === 1 && s.reserved > 10000)
+    || (s.version === 2 && ((s.maximumSpendCents !== null && s.maximumSpendCents !== 10000)
+      || typeof s.authorizationSha256 !== "string" || !/^[a-f0-9]{64}$/.test(s.authorizationSha256)))) {
     throw Error("Shared campaign snapshot is invalid or belongs to another approval.");
   }
   progressTotals(s.totalArtists, { processed: s.processed, checked: s.checked,
-    likely: s.likely, reserved: s.reserved }, s.status, s.updatedAt);
+    likely: s.likely, reserved: s.reserved }, s.status, s.updatedAt, Date.now(),
+    s.version === 2 ? s.maximumSpendCents! : 10000);
   // Allowlist counters only; never persist account evidence, scope queries or credentials.
-  return { version: 1, campaignId: s.campaignId, queueSha256: s.queueSha256,
+  return { version: s.version,
+    ...(s.version === 2 ? { maximumSpendCents: s.maximumSpendCents, authorizationSha256: s.authorizationSha256 } : {}),
+    campaignId: s.campaignId, queueSha256: s.queueSha256,
     totalArtists: s.totalArtists, processed: s.processed, checked: s.checked, likely: s.likely,
     reserved: s.reserved, status: s.status, updatedAt: s.updatedAt, capturedAt: s.capturedAt,
     workerEnvironment: s.workerEnvironment, ...snapshotTiers(s) };
@@ -65,7 +73,7 @@ export function snapshotProgress(value: CampaignSnapshot, now = Date.now()) {
   const s = validateCampaignSnapshot(value);
   const totals = progressTotals(s.totalArtists, {
     processed: s.processed, checked: s.checked, likely: s.likely, reserved: s.reserved,
-  }, s.status, s.updatedAt, now);
+  }, s.status, s.updatedAt, now, s.version === 2 ? s.maximumSpendCents! : 10000);
   const active = ["running", "stop_requested", "preparing"].includes(s.status);
   const stale = active && now - Date.parse(s.updatedAt) > 120_000;
   return { ...totals, campaignId: s.campaignId, queueSha256: s.queueSha256, capturedAt: s.capturedAt,
@@ -103,6 +111,11 @@ async publish(value: CampaignSnapshot) {
     generation = metadata.generation!;
     const [bytes] = await file.bucket.file(file.name, { generation }).download({ validation: "crc32c" });
     const prior = validateCampaignSnapshot(JSON.parse(bytes.toString("utf8")));
+    if (prior.version === 2 && (s.version !== 2
+      || (prior.maximumSpendCents === null && s.maximumSpendCents !== null)
+      || (prior.maximumSpendCents === s.maximumSpendCents && prior.authorizationSha256 !== s.authorizationSha256))) {
+      throw Error("Refusing to downgrade or replace the recorded spending approval.");
+    }
     if (s.totalArtists !== prior.totalArtists || s.processed < prior.processed || s.checked < prior.checked
       || s.likely < prior.likely || s.reserved < prior.reserved
       || Date.parse(s.updatedAt) < Date.parse(prior.updatedAt)

@@ -3,6 +3,29 @@ name: Coverage availability
 description: Freshness versus availability decision for expensive coverage counts.
 ---
 
+For Tier 1–5 missing-link campaign denominators, the user wants artists missing
+that platform's catalog link, not artists missing both Instagram and YouTube.
+
+**Why:** The user explicitly selected “Missing that platform’s link” when asked
+whether having either platform should exclude an artist from both.
+
+**How to apply:** Missing catalog Instagram determines Instagram eligibility;
+missing catalog YouTube determines YouTube eligibility. Having the other
+platform's link does not exclude the artist. Saved candidates are separate from
+catalog links. Keep each approved campaign's frozen denominator distinct from
+newly refreshed catalog-wide eligibility counts.
+
+The artist workload includes profiles missing either catalog Instagram or
+catalog YouTube, or both. Source only the missing platform for each artist.
+Saved candidates alone never exclude an artist from that platform's workload.
+
+**Why:** The user clarified that missing catalog links, not missing candidates,
+determine the real bulk sourcing work.
+
+**How to apply:** Use a union of eligible artist IDs for any combined artist
+count, while keeping each platform's own queue and denominator separate. Do not
+add the platform denominators together because artists can be in both.
+
 Keep the last successful coverage counts visible while refreshing, and clearly show their actual computation time when stale. Never substitute zero counts for a failed calculation.
 
 **Why:** The user reported repeated loading-only charts. Discarding valid snapshots on every saved investigation and retrying long reads makes an otherwise functional dashboard appear permanently unavailable.

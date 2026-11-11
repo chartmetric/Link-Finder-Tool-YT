@@ -70,7 +70,7 @@ export const GetArtistCampaignProgressResponse = zod.object({
   "processedPercent": zod.number().min(getArtistCampaignProgressResponseProgressProcessedPercentMin).max(getArtistCampaignProgressResponseProgressProcessedPercentMax),
   "successRate": zod.number().min(getArtistCampaignProgressResponseProgressSuccessRateMin).max(getArtistCampaignProgressResponseProgressSuccessRateMax).nullable(),
   "reservedUsd": zod.number().min(getArtistCampaignProgressResponseProgressReservedUsdMin),
-  "maximumSpendUsd": zod.number().min(getArtistCampaignProgressResponseProgressMaximumSpendUsdMin),
+  "maximumSpendUsd": zod.number().min(getArtistCampaignProgressResponseProgressMaximumSpendUsdMin).nullable(),
   "updatedAt": zod.string(),
   "stale": zod.boolean(),
   "tierBreakdown": zod.array(zod.object({
@@ -111,6 +111,8 @@ export const getYoutubeArtistProgressResponseProgressOneUncheckedArtistsMin = 0;
 
 export const getYoutubeArtistProgressResponseProgressOneNoChannelFoundMin = 0;
 
+export const getYoutubeArtistProgressResponseProgressOneDeferredArtistsMin = 0;
+
 export const getYoutubeArtistProgressResponseProgressOneHeldCandidatesMin = 0;
 
 export const getYoutubeArtistProgressResponseProgressOnePendingCandidatesMin = 0;
@@ -138,11 +140,12 @@ export const GetYoutubeArtistProgressResponse = zod.object({
   "notAcceptedArtists": zod.number().min(getYoutubeArtistProgressResponseProgressOneNotAcceptedArtistsMin),
   "uncheckedArtists": zod.number().min(getYoutubeArtistProgressResponseProgressOneUncheckedArtistsMin),
   "noChannelFound": zod.number().min(getYoutubeArtistProgressResponseProgressOneNoChannelFoundMin),
+  "deferredArtists": zod.number().min(getYoutubeArtistProgressResponseProgressOneDeferredArtistsMin).optional(),
   "heldCandidates": zod.number().min(getYoutubeArtistProgressResponseProgressOneHeldCandidatesMin),
   "pendingCandidates": zod.number().min(getYoutubeArtistProgressResponseProgressOnePendingCandidatesMin),
   "successRate": zod.number().min(getYoutubeArtistProgressResponseProgressOneSuccessRateMin).max(getYoutubeArtistProgressResponseProgressOneSuccessRateMax).nullable(),
   "reservedUsd": zod.number().min(getYoutubeArtistProgressResponseProgressOneReservedUsdMin),
-  "maximumSpendUsd": zod.number().min(getYoutubeArtistProgressResponseProgressOneMaximumSpendUsdMin),
+  "maximumSpendUsd": zod.number().min(getYoutubeArtistProgressResponseProgressOneMaximumSpendUsdMin).nullable(),
   "updatedAt": zod.string(),
   "capturedAt": zod.string()
 }),zod.null()])

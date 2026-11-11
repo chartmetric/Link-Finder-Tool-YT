@@ -52,7 +52,7 @@ export function MusicianPlatformCoverage({ platform }: { platform: CoveragePlatf
   const data = q.data && q.data.platform === platform ? q.data : undefined;
   const name = NAME[platform];
   const usable = data && (data.snapshotStatus === 'current' || data.snapshotStatus === 'recent');
-  const tiers = data?.tiers ?? [];
+  const tiers = (data?.tiers ?? []).filter(t => Number.isInteger(t.tier) && t.tier >= 1 && t.tier <= 5);
   const total = tiers.reduce((s, t) => s + t.totalProfiles, 0);
   const links = tiers.reduce((s, t) => s + t.catalogUrls + t.supportedResearchUrls, 0);
   const noMatch = tiers.reduce((s, t) => s + t.noSupportedMatch, 0);
@@ -87,7 +87,7 @@ export function MusicianPlatformCoverage({ platform }: { platform: CoveragePlatf
             <div>
               <strong data-testid="text-platform-coverage-total-percent">{pct(view === 'urls' ? links : links + noMatch, total)}</strong>
               <span data-testid="text-platform-coverage-total">
-                {fmt(links)} of {fmt(total)} artists have a {name} link
+                {fmt(links)} of {fmt(total)} Tier 1–5 artists have a {name} link
                 {view === 'resolved' && <>, {fmt(noMatch)} more searched with no match</>}
               </span>
             </div>

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type { YoutubeArtistProgress } from "@workspace/api-zod";
 
 export const YOUTUBE_RUN_ID = "youtube-no-link-20-usd2";
+export const YOUTUBE_CAMPAIGN_ID = "full-tiers-1-5-no-youtube-uncapped";
 export const youtubeDigest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const requireValue = (condition: unknown, message: string) => {
   if (!condition) throw Error(message);
@@ -78,7 +79,7 @@ export function buildYoutubeArtistProgress(approval: Approval, outcomes: Outcome
 
 export function validateYoutubeArtistProgress(value: unknown): YoutubeArtistProgress {
   const p = value as YoutubeArtistProgress;
-  requireValue(p && p.runId === YOUTUBE_RUN_ID && /^[a-f0-9]{64}$/.test(p.scopeSha256)
+  requireValue(p && [YOUTUBE_RUN_ID, YOUTUBE_CAMPAIGN_ID].includes(p.runId) && /^[a-f0-9]{64}$/.test(p.scopeSha256)
     && ["completed", "stopped", "running"].includes(p.status), "Invalid YouTube snapshot identity.");
   for (const n of [p.totalArtists, p.searchedArtists, p.artistsWithCandidates, p.checkedArtists,
     p.likelyMatches, p.notAcceptedArtists, p.uncheckedArtists, p.noChannelFound, p.heldCandidates, p.pendingCandidates])
@@ -91,13 +92,18 @@ export function validateYoutubeArtistProgress(value: unknown): YoutubeArtistProg
   requireValue(p.processedPercent === (p.totalArtists ? p.searchedArtists / p.totalArtists * 100 : 0)
     && p.successRate === (p.checkedArtists ? p.likelyMatches / p.checkedArtists * 100 : null),
     "YouTube rate denominator changed.");
-  requireValue(Number.isFinite(p.reservedUsd) && p.reservedUsd >= 0 && p.reservedUsd <= p.maximumSpendUsd
-    && p.maximumSpendUsd === 2, "YouTube budget counters disagree.");
+  requireValue(Number.isFinite(p.reservedUsd) && p.reservedUsd >= 0
+    && (p.runId === YOUTUBE_RUN_ID
+      ? p.maximumSpendUsd === 2 && p.reservedUsd <= 2
+      : p.maximumSpendUsd === null), "YouTube budget counters disagree.");
+  requireValue(p.deferredArtists === undefined || (Number.isSafeInteger(p.deferredArtists)
+    && p.deferredArtists >= 0 && p.deferredArtists + p.searchedArtists <= p.totalArtists),
+    "Invalid deferred YouTube artists.");
   requireValue(Number.isFinite(Date.parse(p.updatedAt)) && Number.isFinite(Date.parse(p.capturedAt))
     && Date.parse(p.updatedAt) <= Date.parse(p.capturedAt) + 5000, "Invalid evidence timestamp.");
   // Counters only. Never mirror bios, candidate URLs, SQL or credentials.
   return Object.fromEntries(["runId", "scopeSha256", "status", "totalArtists", "searchedArtists",
     "processedPercent", "artistsWithCandidates", "checkedArtists", "likelyMatches", "notAcceptedArtists",
     "uncheckedArtists", "noChannelFound", "heldCandidates", "pendingCandidates", "successRate",
-    "reservedUsd", "maximumSpendUsd", "updatedAt", "capturedAt"].map(k => [k, p[k as keyof YoutubeArtistProgress]])) as unknown as YoutubeArtistProgress;
+    "reservedUsd", "maximumSpendUsd", "deferredArtists", "updatedAt", "capturedAt"].map(k => [k, p[k as keyof YoutubeArtistProgress]])) as unknown as YoutubeArtistProgress;
 }

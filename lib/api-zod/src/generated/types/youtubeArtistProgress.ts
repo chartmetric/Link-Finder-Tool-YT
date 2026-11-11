@@ -33,6 +33,8 @@ export interface YoutubeArtistProgress {
   /** @minimum 0 */
   noChannelFound: number;
   /** @minimum 0 */
+  deferredArtists?: number;
+  /** @minimum 0 */
   heldCandidates: number;
   /** @minimum 0 */
   pendingCandidates: number;
@@ -44,8 +46,11 @@ export interface YoutubeArtistProgress {
   successRate: number | null;
   /** @minimum 0 */
   reservedUsd: number;
-  /** @minimum 0 */
-  maximumSpendUsd: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  maximumSpendUsd: number | null;
   updatedAt: string;
   capturedAt: string;
 }

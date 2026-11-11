@@ -29,3 +29,16 @@ can skip untouched artists or replay already paid ones.
 **How to apply:** Reconcile all saved child outcomes and paid admissions first.
 Exclude terminal and deferred identities, then process the remaining identities
 in original frozen order without changing the original denominator or approval.
+
+The user wants artist sourcing prioritized strictly Tier 1, then 2, 3, 4, 5,
+not saved candidates across all tiers before fresh discovery.
+
+**Why:** The user explicitly asked for this order on the active campaign.
+Saved-first execution otherwise checks lower-tier artists while higher-tier
+artists without candidates remain untouched.
+
+**How to apply:** Tier must be the first pending-work priority for both
+platforms. Preserve completed work, paid admissions and the frozen denominator.
+If an existing approval froze another ordering, prepare a separate, explicit
+handoff that retains the original queue for audit. Higher-tier fresh discovery
+must be supported, not silently skipped in favor of lower-tier saved candidates.

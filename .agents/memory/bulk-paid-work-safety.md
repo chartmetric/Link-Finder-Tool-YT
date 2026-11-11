@@ -89,3 +89,15 @@ which work each approval covered.
 
 **How to apply:** Freeze each batch's scope and ceiling separately, retain all
 historical reservations, and keep uncertain calls non-replayable across batches.
+
+Long-running paid campaigns should execute a sealed, isolated copy of their
+reviewed code rather than silently adopting application merges mid-run.
+
+**Why:** Other approved tasks can merge while a campaign runs for hours or days.
+Changing its verification policy mid-campaign makes outcomes incomparable;
+fingerprinting mutable workspace files also turns unrelated merges into stops.
+
+**How to apply:** Seal the local dependency graph before the first admission and
+bind its fingerprints to the same approved scope. Keep the progress observer
+separate. New policies need a deliberate later cutover; never patch the active
+copy or reset an already launched campaign to adopt new code.

@@ -44,8 +44,11 @@ export type GetArtistCampaignProgress200Progress = {
   successRate: number | null;
   /** @minimum 0 */
   reservedUsd: number;
-  /** @minimum 0 */
-  maximumSpendUsd: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  maximumSpendUsd: number | null;
   updatedAt: string;
   stale: boolean;
   /** Tier 1–5 counts bound to the approved frozen queue and exact terminal artist identities. Omitted when those bindings cannot be verified. */

@@ -66,6 +66,17 @@ function identity(value: unknown): string {
 function add(a: Counts, b: Counts) {
   a.processed += b.processed; a.checked += b.checked; a.likely += b.likely;
 }
+async function spendingApproval(root: string, original: any, progress: any) {
+  const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+  if (progress.maximumSpendCents !== null) return { maximumSpendCents: 10000, authorizationSha256: digest(original) };
+  const uncapped = await json(path.join(root, "uncapped-approval.json"));
+  if (uncapped.uncappedExplicitlyApproved !== true || uncapped.maximumSpendCents !== null
+    || uncapped.originalApprovalSha256 !== digest(original)
+    || uncapped.id !== original.id || uncapped.queueSha256 !== original.queueSha256
+    || uncapped.eligibleArtists !== original.eligibleArtists)
+    throw Error("Uncapped spending approval could not be verified.");
+  return { maximumSpendCents: null, authorizationSha256: digest(uncapped) };
+}
 async function tierProgress(root: string, approval: any, artists: Map<string, ArtistCounts>): Promise<ArtistCampaignTierProgress[]> {
   const queue = await json(path.join(root, "queue.json"));
   if (!Array.isArray(queue) || queue.length !== count(approval.eligibleArtists)
@@ -98,16 +109,24 @@ export async function readArtistCampaignFiles(root: string, workspace: string): 
   const approval = await json(path.join(root, "approval.json"), true);
   if (!approval) return { progress: null };
   const progress = await json(path.join(root, "progress.json"));
+  const spending = await spendingApproval(root, approval, progress);
   const chunks = await json(path.join(root, "chunks.json"), true) ?? [];
   let updatedAt = (await stat(path.join(root, "progress.json"))).mtime.toISOString();
   const totals = zero();
   const seen = new Set<string>();
   const artists = new Map<string, ArtistCounts>();
+  const observedIdentities = new Map<string, string>();
   const includeChunk = async (dir: string) => {
     if (!/^generated-artifacts\/next-saved-full-tiers-1-5-usd100-chunk-\d{3}$/.test(dir))
       throw Error("Unbound campaign checkpoint.");
     const snapshot = await checkpoint(path.join(workspace, dir, "execution/artist-checkpoints.jsonl"));
     for (const [id, artist] of snapshot.artists) {
+      if (observedIdentities.has(id) && observedIdentities.get(id) !== artist.cmArtist)
+        throw Error("Campaign artist identity changed across chunks.");
+      observedIdentities.set(id, artist.cmArtist);
+      // Interrupted chunks retain untouched scope placeholders. They may occur
+      // again in a continuation but are neither processed nor a second verdict.
+      if (artist.counts.processed === 0) continue;
       if (artists.has(id)) throw Error("Duplicate campaign artist across chunks.");
       artists.set(id, artist); add(totals, artist.counts);
     }
@@ -126,8 +145,8 @@ export async function readArtistCampaignFiles(root: string, workspace: string): 
   if (progress.activeChunk && !seen.has(progress.activeChunk)) {
     await includeChunk(progress.activeChunk);
   }
-  if (totals.reserved > 10000) throw Error("Campaign reservations exceed the approved cap.");
-  const headline = progressTotals(count(approval.eligibleArtists), totals, String(progress.status), updatedAt);
+  const headline = progressTotals(count(approval.eligibleArtists), totals, String(progress.status), updatedAt,
+    Date.now(), spending.maximumSpendCents);
   try {
     return { progress: { ...headline, tierBreakdown: await tierProgress(root, approval, artists) } };
   } catch {
@@ -153,8 +172,11 @@ export async function captureArtistCampaignSnapshot(workspace: string) {
   const result = await readArtistCampaignFiles(root, workspace);
   if (!result.progress) throw Error("Approved campaign progress is missing.");
   const p = result.progress;
+  const spending = await spendingApproval(root, approval, await json(path.join(root, "progress.json")));
+  if (p.maximumSpendUsd !== (spending.maximumSpendCents === null ? null : spending.maximumSpendCents / 100))
+    throw Error("Campaign spending approval changed during capture.");
   return {
-    version: 1 as const, campaignId: approval.id as string, queueSha256: approval.queueSha256 as string,
+    version: 2 as const, ...spending, campaignId: approval.id as string, queueSha256: approval.queueSha256 as string,
     totalArtists: p.totalArtists, processed: p.processedArtists, checked: p.checkedArtists,
     likely: p.likelyMatches, reserved: Math.round(p.reservedUsd * 100),
     status: p.status, updatedAt: p.updatedAt, capturedAt: new Date().toISOString(),

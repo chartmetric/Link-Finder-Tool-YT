@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {buildYoutubeArtistProgress, validateYoutubeArtistProgress, youtubeDigest, YOUTUBE_RUN_ID}
+import {buildYoutubeArtistProgress, validateYoutubeArtistProgress, youtubeDigest, YOUTUBE_RUN_ID, YOUTUBE_CAMPAIGN_ID}
   from "../src/lib/youtube-artist-progress-model";
 import {createYoutubeProgressStore} from "../src/lib/youtube-artist-progress";
 
@@ -26,6 +26,16 @@ function fixture() {
     "2026-11-11T01:00:00Z", "2026-11-11T02:00:00Z");
   return {approval, budget, rows, build};
 }
+
+test("continuous YouTube has a separate identity and uncapped approval, without weakening the saved test", () => {
+  const legacy=fixture().build();
+  const campaign={...legacy,runId:YOUTUBE_CAMPAIGN_ID,maximumSpendUsd:null,reservedUsd:25,deferredArtists:1};
+  assert.equal(validateYoutubeArtistProgress(campaign).maximumSpendUsd,null);
+  assert.throws(()=>validateYoutubeArtistProgress({...legacy,maximumSpendUsd:null}));
+  assert.throws(()=>validateYoutubeArtistProgress({...campaign,maximumSpendUsd:20}));
+  assert.throws(()=>validateYoutubeArtistProgress({...campaign,runId:"unapproved"}));
+  assert.throws(()=>validateYoutubeArtistProgress({...campaign,deferredArtists:5}));
+});
 test("artist-level progress separates completed search, ownership checks, held evidence and no-result searches", () => {
   const p = fixture().build();
   assert.equal(p.totalArtists, 5);

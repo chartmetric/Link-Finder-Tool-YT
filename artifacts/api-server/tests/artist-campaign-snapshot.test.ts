@@ -11,6 +11,25 @@ const snapshot = (): CampaignSnapshot => ({
   status: "running", updatedAt: "2026-11-11T00:00:00.000Z", capturedAt: "2026-11-11T00:00:05.000Z",
   workerEnvironment: "workspace",
 });
+test("new snapshots carry explicit uncapped approval while old snapshots remain capped", async () => {
+  const s: CampaignSnapshot = { ...snapshot(), version: 2, maximumSpendCents: null,
+    authorizationSha256: "a".repeat(64), reserved: 12000 };
+  const p = snapshotProgress(s);
+  assert.equal(p.maximumSpendUsd, null);
+  assert.equal(p.reservedUsd, 120);
+  GetArtistCampaignProgressResponse.parse({ progress: p });
+  assert.equal(snapshotProgress(snapshot()).maximumSpendUsd, 100);
+  assert.throws(() => validateCampaignSnapshot({ ...s, authorizationSha256: undefined }));
+  assert.throws(() => validateCampaignSnapshot({ ...s, maximumSpendCents: 10000 }));
+  const o = fakeObject();
+  const store = createCampaignSnapshotStore(() => o.file);
+  await store.publish(snapshot());
+  await store.publish(s);
+  assert.equal((await store.load())!.maximumSpendCents, null);
+  await assert.rejects(store.publish({ ...snapshot(), reserved: 12000 }), /invalid/);
+  await assert.rejects(store.publish({ ...s, reserved: 9999, maximumSpendCents: 10000 }), /approval/);
+  await assert.rejects(store.publish({ ...s, authorizationSha256: "b".repeat(64) }), /approval/);
+});
 // Persist the object outside the API reader to model two environments/restarts.
 function fakeObject() {
   let bytes: Buffer | undefined;

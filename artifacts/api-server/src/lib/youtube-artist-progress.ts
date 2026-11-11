@@ -1,5 +1,5 @@
 import { artistExportObject } from "./artist-result-storage";
-import { YOUTUBE_RUN_ID, validateYoutubeArtistProgress } from "./youtube-artist-progress-model";
+import { YOUTUBE_RUN_ID, YOUTUBE_CAMPAIGN_ID, validateYoutubeArtistProgress } from "./youtube-artist-progress-model";
 import type { YoutubeArtistProgress } from "@workspace/api-zod";
 
 const object = () => artistExportObject(`campaign-progress/${YOUTUBE_RUN_ID}.json`);
@@ -34,11 +34,13 @@ export function createYoutubeProgressStore(getObject = object) {
   };
 }
 const store = createYoutubeProgressStore();
+const campaignStore = createYoutubeProgressStore(() => artistExportObject(`campaign-progress/${YOUTUBE_CAMPAIGN_ID}.json`));
 let cache: {at: number; value: YoutubeArtistProgress | null} | undefined;
 export const publishYoutubeProgress = store.publish;
+export const publishYoutubeCampaignProgress = campaignStore.publish;
 export async function readYoutubeArtistProgress() {
   if (cache && Date.now() - cache.at < 5000) return {progress: cache.value};
-  const value = await store.load();
+  const value = await campaignStore.load() ?? await store.load();
   cache = {at: Date.now(), value};
   return {progress: value};
 }

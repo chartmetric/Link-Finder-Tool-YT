@@ -48,7 +48,7 @@ function CampaignProgressView({ scope }: { scope: CampaignScope }) {
   const Head = (
     <div className="flex items-center gap-2 min-w-0">
       <span className={`h-2 w-2 rounded-full shrink-0 ${p && p.status === 'running' && !stale ? 'bg-primary animate-pulse' : 'bg-muted-foreground/50'}`} aria-hidden />
-      <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground truncate">Artist campaign · {scope === 'all' ? 'All campaign artists' : 'Tiers 1–5'} · Instagram</span>
+      <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground truncate">Instagram campaign · {scope === 'all' ? 'All campaign artists' : 'Tiers 1–5'}</span>
     </div>
   );
 
@@ -87,7 +87,8 @@ function CampaignProgressView({ scope }: { scope: CampaignScope }) {
   );
 
   const value = Math.min(100, Math.max(0, p.processedPercent));
-  const budgetPct = p.maximumSpendUsd > 0 ? Math.min(100, (p.reservedUsd / p.maximumSpendUsd) * 100) : 0;
+  const budgetPct = p.maximumSpendUsd !== null && p.maximumSpendUsd > 0
+    ? Math.min(100, (p.reservedUsd / p.maximumSpendUsd) * 100) : 0;
   const updated = new Date(p.updatedAt);
 
   return (
@@ -107,9 +108,9 @@ function CampaignProgressView({ scope }: { scope: CampaignScope }) {
         <div className="min-w-0">
           <h2 id="campaign-progress-title" className="flex flex-wrap items-baseline gap-x-2 leading-none">
             <span className="text-2xl font-extrabold tracking-tight tabular-nums" data-testid="text-campaign-percent">{pct(value)}</span>
-            <span className="text-xs font-semibold text-muted-foreground tabular-nums" data-testid="text-campaign-processed"><b className="text-foreground">{fmt(p.processedArtists)}</b> of {fmt(p.totalArtists)} artists processed</span>
+            <span className="text-xs font-semibold text-muted-foreground tabular-nums" data-testid="text-campaign-processed"><b className="text-foreground">{fmt(p.processedArtists)}</b> of {fmt(p.totalArtists)} artists processed for Instagram</span>
           </h2>
-          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted" role="progressbar" aria-label={scope === 'all' ? 'Artists processed in the whole campaign queue' : 'Tier 1–5 artists processed in this campaign'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Number(value.toFixed(1))} aria-valuetext={`${fmt(p.processedArtists)} of ${fmt(p.totalArtists)} artists processed, ${pct(value)}`}>
+          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted" role="progressbar" aria-label={scope === 'all' ? 'Artists processed in the Instagram campaign queue' : 'Tier 1–5 artists processed in the Instagram campaign'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Number(value.toFixed(1))} aria-valuetext={`${fmt(p.processedArtists)} of ${fmt(p.totalArtists)} artists processed for Instagram, ${pct(value)}`}>
             <div className={`h-full rounded-full transition-transform duration-700 ease-out origin-left ${stale ? 'bg-amber-500' : 'bg-primary'}`} style={{ transform: `scaleX(${value / 100})` }} />
           </div>
         </div>
@@ -132,8 +133,8 @@ function CampaignProgressView({ scope }: { scope: CampaignScope }) {
         ))}
         <div className="flex items-center gap-1.5 sm:ml-auto">
           <dt className="text-muted-foreground">Reserved</dt>
-          <dd className="font-bold tabular-nums" data-testid="text-campaign-budget">{usd(p.reservedUsd)} <span className="font-normal text-muted-foreground">/ {usd(p.maximumSpendUsd)} cap</span></dd>
-          <span className="hidden sm:block h-1 w-12 overflow-hidden rounded-full bg-muted" aria-hidden><span className="block h-full bg-muted-foreground/60 origin-left" style={{ transform: `scaleX(${budgetPct / 100})` }} /></span>
+          <dd className="font-bold tabular-nums" data-testid="text-campaign-budget">{usd(p.reservedUsd)} <span className="font-normal text-muted-foreground">{p.maximumSpendUsd === null ? '· No total cap' : `/ ${usd(p.maximumSpendUsd)} cap`}</span></dd>
+          {p.maximumSpendUsd !== null && <span className="hidden sm:block h-1 w-12 overflow-hidden rounded-full bg-muted" aria-hidden><span className="block h-full bg-muted-foreground/60 origin-left" style={{ transform: `scaleX(${budgetPct / 100})` }} /></span>}
         </div>
       </dl>
 

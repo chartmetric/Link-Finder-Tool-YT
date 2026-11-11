@@ -244,7 +244,7 @@ export function MusicianInstagramResearchProgress() {
       <div className="blk-cov-head">
         <div>
           <div className="inv-kicker">Coverage / artists · Tiers 1–5</div>
-          <h2 id="blk-ig-title">Artist link coverage</h2>
+          <h2 id="blk-ig-title">Tier 1–5 artist link coverage</h2>
         </div>
         <div className="mpc-platforms" role="radiogroup" aria-label="Platform">
           {(['instagram', 'youtube'] as const).map(p => (

@@ -9,16 +9,18 @@ type Progress = Counters & {
   tierBreakdown?: (Counters & { tier: number })[];
 };
 const tierOnlyCampaign = 'full-tiers-1-5-no-ig-usd100';
+const tierOnlyNote = 'Fixed starting group: Tier 1–5 artists without a catalog Instagram link. Having a YouTube link does not exclude them.';
 
 /** Display projection only: never changes the paid queue or its approval. */
 export function campaignScopeView(progress: Progress, scope: CampaignScope):
   { counts: Counters | null; note: string } {
   if (scope === 'all') return {
     counts: progress,
-    note: 'All artists in this campaign—not the entire artist catalog.',
+    note: progress.campaignId === tierOnlyCampaign ? tierOnlyNote
+      : 'Artists without a catalog Instagram link when this campaign started—not the entire catalog or a combined Instagram/YouTube total.',
   };
   if (!progress.tierBreakdown) return progress.campaignId === tierOnlyCampaign
-    ? { counts: progress, note: 'This campaign includes only tiers 1–5, so both tabs show the same totals.' }
+    ? { counts: progress, note: tierOnlyNote }
     : { counts: null, note: 'Tier-filtered progress is unavailable for this campaign. No counts have been guessed.' };
   const rows = progress.tierBreakdown.filter(t => t.tier >= 1 && t.tier <= 5);
   if (rows.length !== 5 || new Set(rows.map(t => t.tier)).size !== 5
@@ -40,7 +42,7 @@ export function campaignScopeView(progress: Progress, scope: CampaignScope):
   return {
     counts,
     note: counts.totalArtists === progress.totalArtists
-      ? 'This campaign includes only tiers 1–5, so both tabs show the same totals.'
-      : 'Only artists assigned to tiers 1–5 when this campaign was approved. Spending is campaign-wide.',
+      ? tierOnlyNote
+      : 'Tier 1–5 artists without a catalog Instagram link at campaign start. YouTube links do not affect eligibility; spending is campaign-wide.',
   };
 }

@@ -9,6 +9,7 @@ export function YoutubeArtistProgress({className = ''}: {className?: string}) {
     staleTime: 5000, refetchOnMount: 'always', refetchOnWindowFocus: true,
   }});
   const p = q.data?.progress;
+  const campaign = p?.runId === 'full-tiers-1-5-no-youtube-uncapped';
   const shell = `rounded-xl border border-border/80 bg-card text-card-foreground shadow-sm px-4 py-3 ${className}`;
   const retry = <button type="button" onClick={() => q.refetch()} disabled={q.isFetching}
     aria-label="Refresh saved YouTube progress"
@@ -17,7 +18,7 @@ export function YoutubeArtistProgress({className = ''}: {className?: string}) {
   </button>;
   const head = <div className="flex items-center gap-2 min-w-0">
     <span className="h-2 w-2 shrink-0 rounded-full bg-primary/60" aria-hidden />
-    <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">Artist test · Tier 1–5 YouTube</span>
+    <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">{campaign ? 'YouTube campaign' : 'Artist test'} · Tier 1–5{!campaign && ' YouTube'}</span>
   </div>;
   if (q.isLoading) return <section className={shell} aria-label="Loading YouTube progress" aria-busy="true">
     {head}<div className="mt-3 h-2 rounded-full bg-muted animate-pulse" />
@@ -49,16 +50,17 @@ export function YoutubeArtistProgress({className = ''}: {className?: string}) {
         {retry}
       </div>
     </div>
+    {campaign && <p className="mt-2 text-[11px] text-muted-foreground">Fixed starting group: Tier 1–5 artists without a catalog YouTube link. Having an Instagram link does not exclude them.</p>}
     <div className="mt-2.5 grid gap-x-6 gap-y-3 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] items-end">
       <div className="min-w-0">
         <h2 id="youtube-progress-title" className="flex flex-wrap items-baseline gap-x-2 leading-none">
           <span className="text-2xl font-extrabold tracking-tight tabular-nums">{pct(p.processedPercent)}</span>
           <span className="text-xs font-semibold text-muted-foreground tabular-nums">
-            <b className="text-foreground">{fmt(p.searchedArtists)}</b> of {fmt(p.totalArtists)} artists searched
+            <b className="text-foreground">{fmt(p.searchedArtists)}</b> of {fmt(p.totalArtists)} artists {campaign ? 'processed for YouTube' : 'searched'}
           </span>
         </h2>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted" role="progressbar"
-          aria-label="Artists searched in the approved YouTube test" aria-valuemin={0} aria-valuemax={100}
+          aria-label={campaign ? 'Artists processed in the YouTube campaign' : 'Artists searched in the approved YouTube test'} aria-valuemin={0} aria-valuemax={100}
           aria-valuenow={Number(p.processedPercent.toFixed(1))}
           aria-valuetext={`${p.searchedArtists} of ${p.totalArtists} artists searched`}>
           <div className="h-full rounded-full bg-primary origin-left transition-transform duration-700"
@@ -81,11 +83,12 @@ export function YoutubeArtistProgress({className = ''}: {className?: string}) {
       </div>)}
       <div className="flex items-baseline gap-1.5 sm:ml-auto">
         <dt className="text-muted-foreground">Reserved</dt>
-        <dd className="font-bold tabular-nums">${p.reservedUsd.toFixed(2)} <span className="font-normal text-muted-foreground">/ ${p.maximumSpendUsd.toFixed(2)} cap</span></dd>
+        <dd className="font-bold tabular-nums">${p.reservedUsd.toFixed(2)} <span className="font-normal text-muted-foreground">{p.maximumSpendUsd === null ? '· No total cap' : `/ $${p.maximumSpendUsd.toFixed(2)} cap`}</span></dd>
       </div>
     </dl>
     <p className="mt-2 text-[11px] text-muted-foreground">
-      {active ? 'Saved test progress.' : 'Saved test; no continuous YouTube campaign is running.'}
+      {campaign ? 'Saved campaign progress; viewing this card never starts or retries paid work.' : 'Saved test results, not the continuous campaign.'}
+      {!!p.deferredArtists && ` ${fmt(p.deferredArtists)} artists deferred to preserve prior paid attempts or because catalog eligibility changed.`}
       {p.pendingCandidates > 0 && ` ${fmt(p.pendingCandidates)} candidates still need more checking.`}
     </p>
     <details className="mt-2 border-t border-border/60 pt-2">
@@ -93,7 +96,7 @@ export function YoutubeArtistProgress({className = ''}: {className?: string}) {
         How these numbers are counted
       </summary>
       <div className="mt-2 space-y-1 text-[11px] leading-relaxed text-muted-foreground">
-        <p>This is the approved {fmt(p.totalArtists)}-artist test, not all Tier 1–5 artists. Search progress is separate from ownership checks.</p>
+        <p>{campaign ? 'This is the frozen Tier 1–5 queue missing catalog YouTube links. It is separate from the Instagram queue.' : `This is the approved ${fmt(p.totalArtists)}-artist test, not all Tier 1–5 artists.`} Search progress is separate from ownership checks.</p>
         <p>{fmt(p.checkedArtists)} of {fmt(p.artistsWithCandidates)} artists with candidates have at least one recorded ownership assessment.
           Multiple candidates count as one artist. An assessment can be uncertain or identify a Topic or organization channel.</p>
         <p>{fmt(p.uncheckedArtists)} artists with candidates have no completed ownership assessment.
