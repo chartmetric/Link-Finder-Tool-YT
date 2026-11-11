@@ -9,16 +9,16 @@ const radio = (page: Page, b: ArtistResultBatch) => section(page).getByTestId(`b
 const shortcut = (page: Page) => section(page).getByTestId(`button-final-observation-${final.id}`);
 
 async function selected(page: Page, b: ArtistResultBatch) {
-  const other = b.id === checkpoint.id ? final : checkpoint;
   const root = section(page);
   await expect(radio(page, b)).toHaveAttribute('aria-checked', 'true');
-  await expect(radio(page, other)).toHaveAttribute('aria-checked', 'false');
   await expect(root.getByRole('radio', { checked: true })).toHaveCount(1);
   await expect(root.locator('.abr-summary')).toHaveCount(1);
   await expect(root.getByTestId('link-download-artist-csv')).toHaveAttribute('href', csvPath(b.id));
   const summary = root.getByTestId(`summary-batch-${b.id}`);
   await expect(summary).toBeVisible();
-  await expect(root.getByTestId(`summary-batch-${other.id}`)).toHaveCount(0);
+  for (const other of [checkpoint, final, newer].filter(other => other.id !== b.id)) {
+    await expect(root.getByTestId(`summary-batch-${other.id}`)).toHaveCount(0);
+  }
   await expect(summary).toContainText(`Archive: ${b.id}`);
   await expect(summary).toContainText(b.status);
   await expect(summary).toContainText(b.explanation);
@@ -270,15 +270,7 @@ for (const theme of ['light', 'dark'] as const) {
         // Poll the actual list query independently of the held rows. The Refresh
         // button is deliberately disabled while those rows are in flight.
         for (const batches of [[final, checkpoint], [newer, final, checkpoint]]) {
-          const before = api.batchResponses.length;
-          api.batches = batches;
-          await page.clock.fastForward(30_100);
-          await expect.poll(() => api.batchResponses.length).toBeGreaterThan(before);
-          expect(api.batchResponses.at(-1)).toEqual(batches.map(b => b.id));
-          await expect(section(page).getByRole('radio')).toHaveCount(batches.length);
-          await expect.poll(() => section(page).getByRole('radio').evaluateAll(
-            elements => elements.map(el => el.getAttribute('data-testid')),
-          )).toEqual(batches.map(b => `button-batch-${b.id}`));
+          await api.refreshHistory(page, batches);
           await expect(section(page).getByRole('group', {
             name: `Approved run fixture-approved-parent, scope ${'a'.repeat(24)}`, exact: true,
           })).toContainText(`${batches.length} saved observations`);
@@ -308,6 +300,86 @@ for (const theme of ['light', 'dark'] as const) {
         expect(api.rowRequests).toEqual(expectedRows);
         expect(api.csvRequests).toEqual(Array(4).fill(csvPath(chosen.id)));
       });
+
+      for (const empty of [false, true]) {
+        test(`history refresh removes explicitly selected ${chosen === checkpoint ? 'checkpoint' : 'final'} into ${empty ? 'empty history' : 'the first remaining archive'}`, async ({ page, api }) => {
+          api.hold(chosen.id);
+          // Hold the new fallback too: no old rows may leak into its loading state.
+          if (!empty) api.hold(newer.id);
+          await page.clock.install();
+          await page.goto(`${api.url}/bulk/artists`);
+          await selected(page, checkpoint);
+          if (chosen.id === final.id) await displayedRows(page, checkpoint);
+          await radio(page, chosen).click();
+          await selected(page, chosen);
+          await expect.poll(() => api.rowRequests.includes(rowPath(chosen.id))).toBe(true);
+          await expect(section(page).getByLabel('Loading rows', { exact: true })).toBeVisible();
+          await expect(section(page).locator('.abr-rows > li')).toHaveCount(0);
+          expect(api.delivered).not.toContain(chosen.id);
+          await expect(section(page).getByTestId('button-refresh-artist-results')).toBeDisabled();
+          await download(page, chosen);
+
+          const remaining = chosen.id === checkpoint.id ? final : checkpoint;
+          await api.refreshHistory(page, empty ? [] : [newer, remaining]);
+          await expect(radio(page, chosen)).toHaveCount(0);
+          const expectedRows = chosen.id === checkpoint.id
+            ? [rowPath(checkpoint.id)] : [rowPath(checkpoint.id), rowPath(final.id)];
+          if (!empty) expectedRows.push(rowPath(newer.id));
+
+          const emptyHistory = async () => {
+            const root = section(page);
+            await expect(root.getByTestId('text-no-artist-batches')).toHaveText(
+              'No saved artist result batches yet. Imported archives appear here once stored.',
+            );
+            await expect(root.getByRole('radio')).toHaveCount(0);
+            await expect(root.locator('.abr-summary')).toHaveCount(0);
+            await expect(root.locator('.abr-rows > li')).toHaveCount(0);
+            await expect(root.getByTestId('text-artist-rows-range')).toHaveCount(0);
+            await expect(root.getByTestId('link-download-artist-csv')).toHaveCount(0);
+            await expect(root.getByLabel('Loading rows', { exact: true })).toHaveCount(0);
+            await expect(root.getByTestId('text-no-artist-rows')).toHaveCount(0);
+            await expect(root.getByTestId('input-artist-results-search')).toHaveCount(0);
+          };
+
+          if (empty) {
+            await emptyHistory();
+          } else {
+            // List order, not the removed selection or the surviving old
+            // archive, determines the fallback. Summary/CSV agree even before
+            // the fallback's own row response has arrived.
+            await selected(page, newer);
+            await expect(radio(page, remaining)).toHaveAttribute('aria-checked', 'false');
+            await expect(section(page).getByLabel('Loading rows', { exact: true })).toBeVisible();
+            await expect(section(page).locator('.abr-rows > li')).toHaveCount(0);
+            await expect(section(page).getByTestId('text-artist-rows-range')).toHaveCount(0);
+            await expect.poll(() => api.rowRequests).toEqual(expectedRows);
+            await download(page, newer);
+            api.release(newer.id);
+            await expect.poll(() => api.delivered.includes(newer.id)).toBe(true);
+            await selected(page, newer);
+            await displayedRows(page, newer);
+          }
+
+          // Release the removed archive only after the refreshed state settled.
+          // Flush scheduled query notifications too, so an overwrite cannot
+          // hide behind a passing assertion made before React rendered it.
+          api.release(chosen.id);
+          await expect.poll(() => api.delivered.includes(chosen.id)).toBe(true);
+          await page.clock.runFor(100);
+          if (empty) {
+            await emptyHistory();
+          } else {
+            await selected(page, newer);
+            await displayedRows(page, newer);
+            await expect(radio(page, chosen)).toHaveCount(0);
+            await download(page, newer);
+          }
+          expect(api.rowRequests).toEqual(expectedRows);
+          expect(api.csvRequests).toEqual(empty
+            ? [csvPath(chosen.id)]
+            : [csvPath(chosen.id), csvPath(newer.id), csvPath(newer.id)]);
+        });
+      }
     }
 
     for (const failing of [checkpoint, final]) {

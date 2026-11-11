@@ -109,6 +109,19 @@ export class ObservationApi extends ProgressApi {
   release(target: string) { this.holds.get(target)?.release(); }
   releaseAll() { for (const hold of this.holds.values()) hold.release(); }
 
+  // Exercise the real saved-history poll without clicking Refresh (which is
+  // disabled during row reads). Callers install a running Playwright clock.
+  async refreshHistory(page: Page, batches: ArtistResultBatch[]) {
+    const before = this.batchResponses.length;
+    this.batches = [...batches];
+    await page.clock.fastForward(30_100);
+    await expect.poll(() => this.batchResponses.length).toBeGreaterThan(before);
+    expect(this.batchResponses.at(-1)).toEqual(batches.map(b => b.id));
+    await expect.poll(() => page.getByTestId('section-artist-batch-results')
+      .getByRole('radio').evaluateAll(elements => elements.map(el => el.getAttribute('data-testid'))))
+      .toEqual(batches.map(b => `button-batch-${b.id}`));
+  }
+
   async close() {
     this.releaseAll();
     if (this.server) {
