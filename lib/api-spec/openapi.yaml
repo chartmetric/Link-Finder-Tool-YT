@@ -44,6 +44,13 @@ paths:
                       maximumSpendUsd: { type: number, minimum: 0 }
                       updatedAt: { type: string }
                       stale: { type: boolean }
+                      tierBreakdown:
+                        type: array
+                        description: Tier 1–5 counts bound to the approved frozen queue and exact terminal artist identities. Omitted when those bindings cannot be verified.
+                        items: { $ref: "#/components/schemas/ArtistCampaignTierProgress" }
+                      tierBreakdownUnavailableReason:
+                        type: string
+                        description: Why tier details are unavailable; headline progress is still readable.
         "503":
           description: Progress could not be read; missing information is not zero progress
   /bulk/artist-results:
@@ -570,6 +577,23 @@ paths:
           description: Suggestion storage is unavailable
 components:
   schemas:
+    ArtistCampaignTierProgress:
+      type: object
+      required: [tier, totalArtists, processedArtists, checkedArtists, likelyMatches, notAcceptedArtists, incompleteArtists, processedPercent, successRate]
+      properties:
+        tier: { type: number, enum: [1, 2, 3, 4, 5] }
+        totalArtists: { type: number, minimum: 0 }
+        processedArtists: { type: number, minimum: 0 }
+        checkedArtists: { type: number, minimum: 0 }
+        likelyMatches: { type: number, minimum: 0 }
+        notAcceptedArtists: { type: number, minimum: 0 }
+        incompleteArtists: { type: number, minimum: 0 }
+        processedPercent: { type: number, minimum: 0, maximum: 100 }
+        successRate:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 100
+          description: Likely matches divided by checked artists, times 100; null when no artists in this tier have been checked.
     ArtistResultBatch:
       type: object
       required: [id, title, createdAt, status, source, artistCount, candidateCount, rowCount, verifiedCount, reviewCount, notInspectedCount, metadataFailedCount, noCandidateCount, reservedUsd, reportedUsd, explanation]

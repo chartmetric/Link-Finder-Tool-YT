@@ -100,6 +100,39 @@ export function ArtistCampaignProgress({ className = '' }: { className?: string 
         </div>
       </dl>
 
+      <details className="mt-2.5 border-t border-border/60 pt-2" data-testid="campaign-tier-details">
+        <summary className="w-fit cursor-pointer rounded text-xs font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          Progress by artist tier
+        </summary>
+        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+          Tiers are frozen at queue approval, not current catalog tiers. Likely-match rate = likely matches / checked artists.
+          Incomplete artists are processed but not checked and are excluded from that rate. Suggestions are not confirmed ownership.
+        </p>
+        {p.tierBreakdown ? (
+          <ul className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-5" aria-label="Progress by frozen artist tier">
+            {p.tierBreakdown.map(t => (
+              <li key={t.tier} className="min-w-0 rounded-lg border border-border bg-background/50 p-3" data-testid={`campaign-tier-${t.tier}`}>
+                <h3 className="text-xs font-bold">Tier {t.tier}</h3>
+                <p className="mt-1 text-[11px] tabular-nums text-muted-foreground">
+                  <b className="text-foreground">{fmt(t.processedArtists)} / {fmt(t.totalArtists)}</b> processed ({pct(t.processedPercent)})
+                </p>
+                <dl className="mt-2 space-y-1 text-[11px] tabular-nums">
+                  <div className="flex flex-wrap justify-between gap-x-2"><dt className="text-muted-foreground">Likely-match rate</dt><dd className="font-bold text-primary">{t.successRate === null ? 'n/a' : pct(t.successRate)}</dd></div>
+                  <div className="flex flex-wrap justify-between gap-x-2"><dt className="text-muted-foreground">Likely / checked</dt><dd className="font-semibold">{fmt(t.likelyMatches)} / {fmt(t.checkedArtists)}</dd></div>
+                  <div className="flex flex-wrap justify-between gap-x-2"><dt className="text-muted-foreground">Checked, not accepted</dt><dd>{fmt(t.notAcceptedArtists)}</dd></div>
+                  <div className="flex flex-wrap justify-between gap-x-2"><dt className="text-muted-foreground">Incomplete</dt><dd>{fmt(t.incompleteArtists)}</dd></div>
+                </dl>
+                {t.checkedArtists === 0 && <p className="mt-2 text-[10px] text-muted-foreground">No artists checked yet.</p>}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 text-xs text-muted-foreground" role="status" data-testid="campaign-tier-unavailable">
+            {p.tierBreakdownUnavailableReason ?? 'Tier details are not available for this campaign.'}
+          </p>
+        )}
+      </details>
+
       {stale && (
         <p className="mt-2.5 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-[11px] font-medium text-amber-800 dark:text-amber-300" role="alert" data-testid="text-campaign-stale">
           <AlertTriangle className="h-3.5 w-3.5 mt-px shrink-0" />

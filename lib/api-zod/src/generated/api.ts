@@ -33,6 +33,24 @@ export const getArtistCampaignProgressResponseProgressReservedUsdMin = 0;
 
 export const getArtistCampaignProgressResponseProgressMaximumSpendUsdMin = 0;
 
+export const getArtistCampaignProgressResponseProgressTierBreakdownItemTotalArtistsMin = 0;
+
+export const getArtistCampaignProgressResponseProgressTierBreakdownItemProcessedArtistsMin = 0;
+
+export const getArtistCampaignProgressResponseProgressTierBreakdownItemCheckedArtistsMin = 0;
+
+export const getArtistCampaignProgressResponseProgressTierBreakdownItemLikelyMatchesMin = 0;
+
+export const getArtistCampaignProgressResponseProgressTierBreakdownItemNotAcceptedArtistsMin = 0;
+
+export const getArtistCampaignProgressResponseProgressTierBreakdownItemIncompleteArtistsMin = 0;
+
+export const getArtistCampaignProgressResponseProgressTierBreakdownItemProcessedPercentMin = 0;
+export const getArtistCampaignProgressResponseProgressTierBreakdownItemProcessedPercentMax = 100;
+
+export const getArtistCampaignProgressResponseProgressTierBreakdownItemSuccessRateMin = 0;
+export const getArtistCampaignProgressResponseProgressTierBreakdownItemSuccessRateMax = 100;
+
 
 
 export const GetArtistCampaignProgressResponse = zod.object({
@@ -49,7 +67,19 @@ export const GetArtistCampaignProgressResponse = zod.object({
   "reservedUsd": zod.number().min(getArtistCampaignProgressResponseProgressReservedUsdMin),
   "maximumSpendUsd": zod.number().min(getArtistCampaignProgressResponseProgressMaximumSpendUsdMin),
   "updatedAt": zod.string(),
-  "stale": zod.boolean()
+  "stale": zod.boolean(),
+  "tierBreakdown": zod.array(zod.object({
+  "tier": zod.union([zod.literal(1),zod.literal(2),zod.literal(3),zod.literal(4),zod.literal(5)]),
+  "totalArtists": zod.number().min(getArtistCampaignProgressResponseProgressTierBreakdownItemTotalArtistsMin),
+  "processedArtists": zod.number().min(getArtistCampaignProgressResponseProgressTierBreakdownItemProcessedArtistsMin),
+  "checkedArtists": zod.number().min(getArtistCampaignProgressResponseProgressTierBreakdownItemCheckedArtistsMin),
+  "likelyMatches": zod.number().min(getArtistCampaignProgressResponseProgressTierBreakdownItemLikelyMatchesMin),
+  "notAcceptedArtists": zod.number().min(getArtistCampaignProgressResponseProgressTierBreakdownItemNotAcceptedArtistsMin),
+  "incompleteArtists": zod.number().min(getArtistCampaignProgressResponseProgressTierBreakdownItemIncompleteArtistsMin),
+  "processedPercent": zod.number().min(getArtistCampaignProgressResponseProgressTierBreakdownItemProcessedPercentMin).max(getArtistCampaignProgressResponseProgressTierBreakdownItemProcessedPercentMax),
+  "successRate": zod.number().min(getArtistCampaignProgressResponseProgressTierBreakdownItemSuccessRateMin).max(getArtistCampaignProgressResponseProgressTierBreakdownItemSuccessRateMax).nullable().describe('Likely matches divided by checked artists, times 100; null when no artists in this tier have been checked.')
+})).optional().describe('Tier 1–5 counts bound to the approved frozen queue and exact terminal artist identities. Omitted when those bindings cannot be verified.'),
+  "tierBreakdownUnavailableReason": zod.string().optional().describe('Why tier details are unavailable; headline progress is still readable.')
 }).nullable()
 })
 

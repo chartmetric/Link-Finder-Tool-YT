@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ArtistCampaignTierProgress } from './artistCampaignTierProgress';
 
 /**
  * @nullable
@@ -40,4 +41,8 @@ export type GetArtistCampaignProgress200Progress = {
   maximumSpendUsd: number;
   updatedAt: string;
   stale: boolean;
+  /** Tier 1–5 counts bound to the approved frozen queue and exact terminal artist identities. Omitted when those bindings cannot be verified. */
+  tierBreakdown?: ArtistCampaignTierProgress[];
+  /** Why tier details are unavailable; headline progress is still readable. */
+  tierBreakdownUnavailableReason?: string;
 } | null;

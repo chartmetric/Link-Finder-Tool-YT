@@ -5,6 +5,45 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type ArtistCampaignTierProgressTier = typeof ArtistCampaignTierProgressTier[keyof typeof ArtistCampaignTierProgressTier];
+
+
+export const ArtistCampaignTierProgressTier = {
+  NUMBER_1: 1,
+  NUMBER_2: 2,
+  NUMBER_3: 3,
+  NUMBER_4: 4,
+  NUMBER_5: 5,
+} as const;
+
+export interface ArtistCampaignTierProgress {
+  tier: ArtistCampaignTierProgressTier;
+  /** @minimum 0 */
+  totalArtists: number;
+  /** @minimum 0 */
+  processedArtists: number;
+  /** @minimum 0 */
+  checkedArtists: number;
+  /** @minimum 0 */
+  likelyMatches: number;
+  /** @minimum 0 */
+  notAcceptedArtists: number;
+  /** @minimum 0 */
+  incompleteArtists: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  processedPercent: number;
+  /**
+     * Likely matches divided by checked artists, times 100; null when no artists in this tier have been checked.
+     * @minimum 0
+     * @maximum 100
+     * @nullable
+     */
+  successRate: number | null;
+}
+
 export type ArtistResultBatchSource = typeof ArtistResultBatchSource[keyof typeof ArtistResultBatchSource];
 
 
@@ -1218,6 +1257,10 @@ export type GetArtistCampaignProgress200Progress = {
   maximumSpendUsd: number;
   updatedAt: string;
   stale: boolean;
+  /** Tier 1–5 counts bound to the approved frozen queue and exact terminal artist identities. Omitted when those bindings cannot be verified. */
+  tierBreakdown?: ArtistCampaignTierProgress[];
+  /** Why tier details are unavailable; headline progress is still readable. */
+  tierBreakdownUnavailableReason?: string;
 } | null;
 
 export type GetArtistCampaignProgress200 = {

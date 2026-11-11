@@ -1,7 +1,10 @@
 import { access, readFile, open, stat } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
+import type { ArtistCampaignTierProgress } from "@workspace/api-zod";
 
 type Counts = { processed: number; checked: number; likely: number; reserved: number };
+type ArtistCounts = { cmArtist: string; counts: Counts };
 const zero = (): Counts => ({ processed: 0, checked: 0, likely: 0, reserved: 0 });
 const count = (value: unknown) => {
   if (!Number.isSafeInteger(value) || Number(value) < 0) throw Error("Invalid campaign count.");
@@ -15,16 +18,21 @@ export function checkpointCounts(artist: any): Counts {
   return { processed: Number(processed), checked: Number(checked),
     likely: Number(checked && candidate?.review?.reviewSuggestion === true), reserved: 0 };
 }
-export function progressTotals(total: number, totals: Counts, status: string, updatedAt: string, now = Date.now()) {
+function artistTotals(total: number, totals: Counts) {
   count(total); Object.values(totals).forEach(count);
   if (totals.likely > totals.checked || totals.checked > totals.processed || totals.processed > total)
     throw Error("Campaign totals do not agree.");
   return {
-    status, totalArtists: total, processedArtists: totals.processed, checkedArtists: totals.checked,
+    totalArtists: total, processedArtists: totals.processed, checkedArtists: totals.checked,
     likelyMatches: totals.likely, notAcceptedArtists: totals.checked - totals.likely,
     incompleteArtists: totals.processed - totals.checked,
     processedPercent: total ? totals.processed / total * 100 : 0,
     successRate: totals.checked ? totals.likely / totals.checked * 100 : null,
+  };
+}
+export function progressTotals(total: number, totals: Counts, status: string, updatedAt: string, now = Date.now()) {
+  return {
+    ...artistTotals(total, totals), status,
     reservedUsd: totals.reserved / 100, maximumSpendUsd: 100, updatedAt,
     stale: status === "running" && now - Date.parse(updatedAt) > 120_000,
   };
@@ -42,11 +50,18 @@ async function json(file: string, optional = false): Promise<any> {
 }
 // Incremental, read-only tail. A partial final line is read again next time.
 // Keep counts only; do not retain account bios or other evidence in this cache.
-let tail: { file: string; inode: number; offset: number; counts: Map<string, Counts>; reserved: number } | undefined;
+type Tail = { inode: number; offset: number; counts: Map<string, ArtistCounts>; reserved: number };
+// Each chunk has its own cursor so polling does not reread completed evidence.
+const tails = new Map<string, Tail>();
 async function checkpoint(file: string) {
   const info = await stat(file);
-  if (!tail || tail.file !== file || tail.inode !== info.ino || info.size < tail.offset)
-    tail = { file, inode: info.ino, offset: 0, counts: new Map(), reserved: 0 };
+  let tail = tails.get(file);
+  if (!tail || tail.inode !== info.ino || info.size < tail.offset) {
+    tail = { inode: info.ino, offset: 0, counts: new Map(), reserved: 0 };
+    tails.set(file, tail);
+    // Bound cached file handles' metadata even if campaign directories change.
+    if (tails.size > 256) tails.delete(tails.keys().next().value!);
+  }
   const handle = await open(file, "r");
   try {
     while (tail.offset < info.size) {
@@ -59,17 +74,50 @@ async function checkpoint(file: string) {
       }
       for (const line of buffer.subarray(0, lastNewline).toString("utf8").split("\n").filter(Boolean)) {
         const packet = JSON.parse(line);
-        for (const artist of packet.changes ?? []) tail.counts.set(String(artist.profileId), checkpointCounts(artist));
+        for (const artist of packet.changes ?? []) {
+          const id = identity(artist.profileId);
+          const cmArtist = identity(artist.cmArtist);
+          if (tail.counts.has(id) && tail.counts.get(id)!.cmArtist !== cmArtist)
+            throw Error("Campaign artist identity changed.");
+          tail.counts.set(id, { cmArtist, counts: checkpointCounts(artist) });
+        }
         tail.reserved = count(packet.budget?.reservedCents);
       }
       tail.offset += lastNewline + 1;
     }
   } finally { await handle.close(); }
-  const totals = [...tail.counts.values()].reduce((a, b) => ({
-    processed: a.processed + b.processed, checked: a.checked + b.checked,
-    likely: a.likely + b.likely, reserved: 0,
-  }), zero());
-  return { ...totals, reserved: tail.reserved, updatedAt: info.mtime.toISOString() };
+  return { artists: tail.counts, reserved: tail.reserved, updatedAt: info.mtime.toISOString() };
+}
+function identity(value: unknown): string {
+  if ((typeof value !== "string" && typeof value !== "number") || !/^[1-9]\d*$/.test(String(value)))
+    throw Error("Invalid campaign artist identity.");
+  return String(value);
+}
+function add(a: Counts, b: Counts) {
+  a.processed += b.processed; a.checked += b.checked; a.likely += b.likely;
+}
+async function tierProgress(root: string, approval: any, artists: Map<string, ArtistCounts>): Promise<ArtistCampaignTierProgress[]> {
+  const queue = await json(path.join(root, "queue.json"));
+  if (!Array.isArray(queue) || queue.length !== count(approval.eligibleArtists)
+    || createHash("sha256").update(JSON.stringify(queue)).digest("hex") !== approval.queueSha256)
+    throw Error("Frozen queue does not match approval.");
+  const bindings = new Map<string, { cmArtist: string; tier: 1 | 2 | 3 | 4 | 5 }>();
+  const cmArtists = new Set<string>();
+  const tiers = ([1, 2, 3, 4, 5] as const).map(tier => ({ tier, total: 0, counts: zero() }));
+  for (const row of queue) {
+    const id = identity(row.profile_id), cmArtist = identity(row.cm_artist), tier = Number(row.tier);
+    if (!Number.isInteger(tier) || tier < 1 || tier > 5 || bindings.has(id) || cmArtists.has(cmArtist))
+      throw Error("Frozen queue has invalid or duplicate assignments.");
+    bindings.set(id, { cmArtist, tier: tier as 1 | 2 | 3 | 4 | 5 });
+    cmArtists.add(cmArtist);
+    tiers[tier - 1].total++;
+  }
+  for (const [id, artist] of artists) {
+    const binding = bindings.get(id);
+    if (!binding || binding.cmArtist !== artist.cmArtist) throw Error("Campaign artist is not bound to frozen queue.");
+    add(tiers[binding.tier - 1].counts, artist.counts);
+  }
+  return tiers.map(({ tier, total, counts }) => ({ tier, ...artistTotals(total, counts) }));
 }
 export async function readArtistCampaignFiles(root: string, workspace: string) {
   const approval = await json(path.join(root, "approval.json"), true);
@@ -79,34 +127,40 @@ export async function readArtistCampaignFiles(root: string, workspace: string) {
   let updatedAt = (await stat(path.join(root, "progress.json"))).mtime.toISOString();
   const totals = zero();
   const seen = new Set<string>();
+  const artists = new Map<string, ArtistCounts>();
+  const includeChunk = async (dir: string) => {
+    if (!/^generated-artifacts\/next-saved-full-tiers-1-5-usd100-chunk-\d{3}$/.test(dir))
+      throw Error("Unbound campaign checkpoint.");
+    const snapshot = await checkpoint(path.join(workspace, dir, "execution/artist-checkpoints.jsonl"));
+    for (const [id, artist] of snapshot.artists) {
+      if (artists.has(id)) throw Error("Duplicate campaign artist across chunks.");
+      artists.set(id, artist); add(totals, artist.counts);
+    }
+    totals.reserved += snapshot.reserved;
+    if (snapshot.updatedAt > updatedAt) updatedAt = snapshot.updatedAt;
+  };
   for (const chunk of chunks) {
     if (!/^generated-artifacts\/next-saved-full-tiers-1-5-usd100-chunk-\d{3}$/.test(chunk.dir))
       throw Error("Unbound campaign chunk.");
     if (seen.has(chunk.dir)) throw Error("Duplicate campaign chunk.");
     seen.add(chunk.dir);
-    if (chunk.summary.status === "completed") {
-      totals.processed += count(chunk.summary.artistRecords);
-      totals.checked += count(chunk.summary.evaluatedArtists);
-      totals.likely += count(chunk.summary.likelyReviewArtists);
-      totals.reserved += count(chunk.summary.conservativeReservedCents);
-    } else {
-      // A stopped scope can contain hundreds of untouched artists. Count only
-      // terminal checkpoints, never the number of rows allocated to that scope.
-      const stopped = await checkpoint(path.join(workspace, chunk.dir, "execution/artist-checkpoints.jsonl"));
-      totals.processed += stopped.processed; totals.checked += stopped.checked;
-      totals.likely += stopped.likely; totals.reserved += stopped.reserved;
-    }
+    // Even completed scope summaries are row counts, not artist-level evidence.
+    // Use the same terminal identity checkpoints for all chunk states.
+    await includeChunk(chunk.dir);
   }
   if (progress.activeChunk && !seen.has(progress.activeChunk)) {
-    if (!/^generated-artifacts\/next-saved-full-tiers-1-5-usd100-chunk-\d{3}$/.test(progress.activeChunk))
-      throw Error("Unbound campaign checkpoint.");
-    const active = await checkpoint(path.join(workspace, progress.activeChunk, "execution/artist-checkpoints.jsonl"));
-    totals.processed += active.processed; totals.checked += active.checked;
-    totals.likely += active.likely; totals.reserved += active.reserved;
-    if (active.updatedAt > updatedAt) updatedAt = active.updatedAt;
+    await includeChunk(progress.activeChunk);
   }
   if (totals.reserved > 10000) throw Error("Campaign reservations exceed the approved cap.");
-  return { progress: progressTotals(count(approval.eligibleArtists), totals, String(progress.status), updatedAt) };
+  const headline = progressTotals(count(approval.eligibleArtists), totals, String(progress.status), updatedAt);
+  try {
+    return { progress: { ...headline, tierBreakdown: await tierProgress(root, approval, artists) } };
+  } catch {
+    // Tier assignments are optional. Do not turn missing/mismatched assignments
+    // into invented zero tiers or discard independently readable headline counts.
+    return { progress: { ...headline, tierBreakdownUnavailableReason:
+      "Tier details unavailable: frozen queue assignments could not be verified against saved artist identities." } };
+  }
 }
 
 let cached: { at: number; value: Awaited<ReturnType<typeof readArtistCampaignFiles>> } | undefined;

@@ -10,6 +10,8 @@ export * from './archivedBulkEvidenceCandidate';
 export * from './archivedBulkEvidencePage';
 export * from './archivedBulkEvidenceRecord';
 export * from './archivedBulkEvidenceRecordDeliverySource';
+export * from './artistCampaignTierProgress';
+export * from './artistCampaignTierProgressTier';
 export * from './artistResultBatch';
 export * from './artistResultBatchMetricsItem';
 export * from './artistResultBatchSource';
