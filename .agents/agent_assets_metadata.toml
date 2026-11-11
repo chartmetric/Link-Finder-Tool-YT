@@ -1260,3 +1260,31 @@ mtime_ms = 1794352282123
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2e0f6dbb-7a67-43f1-b31a-93f0afbac1b9/d92096c8-88f6-4b2c-a0e5-e5ac7841b5e1"
 storage_version_token = "1794352299146580"
 content_type = "text/csv"
+
+[[outputs]]
+id = "I1Jjr5xjaczI_0SdpNP3o"
+uri = "file://generated-artifacts/youtube-no-link-20-usd2/youtube-findings.csv"
+type = "table"
+title = "YouTube discovery findings — 20 artists"
+description = "All channel candidates, search snippets, artist IDs and catalog metadata. Candidates are unverified; four artists had no channel result."
+logical_id = "61ce1d3e-c4a0-4fb0-ae22-cfa8041fba58"
+content_hash = "sha256:a060f5c504771a768b8731b68369cb884e80104269b0093efd537bca7c97c2b7"
+size = 15290
+mtime_ms = 1794357697861
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/61ce1d3e-c4a0-4fb0-ae22-cfa8041fba58/3503ad9b-2fb9-4dd6-bf1d-3f8e52865f5d"
+storage_version_token = "1794358222372021"
+content_type = "text/csv"
+
+[[outputs]]
+id = "oa71WRXYalmCROI6FC8_D"
+uri = "file://generated-artifacts/youtube-no-link-20-usd2/ownership-review-ready/youtube-ownership-findings.csv"
+type = "table"
+title = "YouTube ownership review — saved 20 artists"
+description = "All 34 candidates, review reasons, possible Topic labels, and the exact catalog metadata used. Search-only candidates remain unverified; no additional paid calls."
+logical_id = "07c695ea-0077-45d3-a7e1-82eee64be6cf"
+content_hash = "sha256:8eeed06043c852789cf183c744f0f88034c0ad7f8c4ae5bbf8df8463b2ff2cc6"
+size = 144986
+mtime_ms = 1794358799819
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/07c695ea-0077-45d3-a7e1-82eee64be6cf/f181da38-754a-4674-a00f-4ea07ee8368f"
+storage_version_token = "1794358820702928"
+content_type = "text/csv"

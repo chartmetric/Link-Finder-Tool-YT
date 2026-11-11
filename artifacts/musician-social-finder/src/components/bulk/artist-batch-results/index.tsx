@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Download, RefreshCw } from 'lucide-react';
+import { ChevronDown, Download, RefreshCw } from 'lucide-react';
 import { getDownloadArtistResultCsvUrl, getGetArtistResultRowsQueryKey, getListArtistResultBatchesQueryKey, useGetArtistResultRows, useListArtistResultBatches } from '@workspace/api-client-react';
 import { apiError } from '@/lib/bulk';
 import { FILTERS, PAGE_SIZE, type ResultFilter } from './model';
@@ -45,18 +45,21 @@ export function ArtistBatchResults() {
 
   return (
     <section className="blk-cov abr" aria-labelledby="abr-title" data-testid="section-artist-batch-results">
-      <div className="blk-cov-head">
+      <details className="abr-disclosure">
+      <summary className="blk-cov-head abr-disclosure-toggle" data-testid="toggle-artist-batch-results">
         <div>
           <div className="inv-kicker">Results / Instagram discovery and verification</div>
           <h2 id="abr-title">Saved artist batch results</h2>
         </div>
+        <ChevronDown className="abr-disclosure-chevron" size={20} aria-hidden="true" />
+      </summary>
+      <div className="abr-scroll" role="region" aria-labelledby="abr-title" tabIndex={0}>
         <div className="blk-ig-head-actions">
           <button type="button" className="inv-retry" onClick={() => { list.refetch(); if (batchId) rows.refetch(); }} disabled={list.isFetching || rows.isFetching} data-testid="button-refresh-artist-results">
             <RefreshCw size={12} className={list.isFetching || rows.isFetching ? 'inv-spin' : ''} /> {list.isFetching || rows.isFetching ? 'Refreshing' : 'Refresh'}
           </button>
           {batchId && <a className="inv-retry" href={`${base()}${getDownloadArtistResultCsvUrl(safeId)}`} download data-testid="link-download-artist-csv"><Download size={12} /> Full CSV</a>}
         </div>
-      </div>
       <p className="abr-hint abr-lead">Read-only. Scores are uncalibrated model identity scores, not probabilities. A candidate that was not accepted is not proof of a wrong account or a missing link.</p>
 
       {list.data?.warnings.map((w, i) => <p key={i} className="abr-warn" role="status">{w}</p>)}
@@ -90,6 +93,8 @@ export function ArtistBatchResults() {
               </div>
             </>}
         </>}
+      </div>
+      </details>
     </section>
   );
 }

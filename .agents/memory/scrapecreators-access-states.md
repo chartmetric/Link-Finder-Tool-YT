@@ -17,6 +17,18 @@ Skip confirmed restricted starting profiles and continue the batch; do not retry
 
 Source: https://docs.scrapecreators.com/ — introduction and October 18–19, 2026 contract notes.
 
+Confirmed restrictions also occur as HTTP 404 with `success: true`,
+`error: "not_found"`, `errorStatus: 404`, and `message: "Profile is restricted"`.
+Require the returned handle to match the requested account before treating this
+as an individual skip.
+
+**Why:** This exact archived response stopped a continuous campaign despite
+confirming an account restriction rather than a provider-wide failure.
+
+**How to apply:** Retain the receipt and reservation, skip without retry or
+claiming account absence, and let untouched artists continue. Funding and rate-limit
+checks must run first; a generic 404 or mismatched handle is not sufficient.
+
 In a saved-candidate verification job, inspect retained profile fields even when
 the response flags private content as unavailable.
 

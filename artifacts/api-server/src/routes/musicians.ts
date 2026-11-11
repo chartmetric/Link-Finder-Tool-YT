@@ -28,6 +28,8 @@ import {
 } from "../lib/clickhouse-profiles";
 import { listProfileInvestigations, saveProfileInvestigation } from "../lib/profile-investigations";
 import { getMusicianCoverage, invalidateMusicianCoverage } from "../lib/musician-coverage";
+import { getMusicianPlatformCoverage } from "../lib/musician-platform-coverage";
+import { GetMusicianPlatformCoverageParams, GetMusicianPlatformCoverageResponse } from "@workspace/api-zod";
 import {
   getMusicianInstagramResearchCoverage,
   getMusicianInstagramResearchNoCandidates,
@@ -48,6 +50,17 @@ router.get("/profiles/musician-coverage", async (req, res): Promise<void> => {
   } catch (error) {
     req.log.error({ err: error }, "Musician coverage statistics failed");
     res.status(503).json({ error: "Musician coverage statistics are unavailable. Please retry." });
+  }
+});
+
+router.get("/profiles/musician-platform-coverage/:platform", async (req, res): Promise<void> => {
+  const parsed = GetMusicianPlatformCoverageParams.safeParse(req.params);
+  if (!parsed.success) { res.status(400).json({error: "Unsupported coverage platform."}); return; }
+  try {
+    res.json(GetMusicianPlatformCoverageResponse.parse(await getMusicianPlatformCoverage(parsed.data.platform)));
+  } catch (error) {
+    req.log.error({err: error}, "Artist platform coverage failed");
+    res.status(503).json({error: "Platform coverage is unavailable. Please retry."});
   }
 });
 

@@ -14,6 +14,7 @@ import {
   type MusicianInstagramResearchTier,
   type MusicianInstagramResearchHistoryDay,
 } from '@workspace/api-client-react';
+import { MusicianPlatformCoverage, type CoveragePlatform } from './musician-platform-coverage';
 import { apiError, readStorage, writeStorage } from '@/lib/bulk';
 import { downloadMusicianInstagramNoCandidatesCsv } from '@/lib/musician-instagram-research-csv';
 
@@ -144,6 +145,7 @@ function LatestResearchSummary({ tiers }: { tiers: MusicianInstagramResearchTier
 
 export function MusicianInstagramResearchProgress() {
   const [view, setView] = useState<CoverageView>('urls');
+  const [platform, setPlatform] = useState<CoveragePlatform>('instagram');
   const [exporting, setExporting] = useState(false);
   const [exportMessage, setExportMessage] = useState<{ kind: 'status' | 'error'; text: string } | null>(null);
   const qc = useQueryClient();
@@ -241,9 +243,25 @@ export function MusicianInstagramResearchProgress() {
     <section className="blk-cov blk-ig" aria-labelledby="blk-ig-title" data-testid="section-instagram-research-progress">
       <div className="blk-cov-head">
         <div>
-          <div className="inv-kicker">Coverage / Instagram · Tiers 1–5</div>
-          <h2 id="blk-ig-title">Instagram URL evidence coverage</h2>
+          <div className="inv-kicker">Coverage / artists · Tiers 1–5</div>
+          <h2 id="blk-ig-title">Artist link coverage</h2>
         </div>
+        <div className="mpc-platforms" role="radiogroup" aria-label="Platform">
+          {(['instagram', 'youtube'] as const).map(p => (
+            <button key={p} type="button" role="radio" aria-checked={platform === p} tabIndex={platform === p ? 0 : -1}
+              onClick={() => setPlatform(p)}
+              onKeyDown={e => { if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) { e.preventDefault(); const n = p === 'instagram' ? 'youtube' : 'instagram'; setPlatform(n); (e.currentTarget.parentElement?.querySelector(`[data-platform="${n}"]`) as HTMLElement | null)?.focus(); } }}
+              data-platform={p} data-testid={`button-platform-${p}`}>
+              {p === 'instagram' ? 'Instagram' : 'YouTube'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <MusicianPlatformCoverage key={platform} platform={platform} />
+
+      <details className="mpc-details" data-testid="details-instagram-research">
+        <summary data-testid="button-toggle-instagram-details">Instagram research details, history, export and paid recheck</summary>
         <div className="blk-ig-head-actions">
           {data && <span className="blk-cov-time inv-mono" data-testid="text-instagram-research-updated">
             Updated {new Date(data.generatedAt).toLocaleString()}
@@ -255,7 +273,6 @@ export function MusicianInstagramResearchProgress() {
             <Download size={12} className={exporting ? 'inv-spin' : ''} /> {exporting ? 'Preparing CSV' : 'Download no-URL CSV'}
           </button>
         </div>
-      </div>
 
       {exportMessage && <p className="blk-ig-message" role={exportMessage.kind === 'error' ? 'alert' : 'status'} data-testid="status-instagram-no-candidate-export">{exportMessage.text}</p>}
 
@@ -413,6 +430,7 @@ export function MusicianInstagramResearchProgress() {
           </div>
         )}
       </section>
+      </details>
     </section>
   );
 }

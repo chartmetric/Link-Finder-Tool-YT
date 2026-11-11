@@ -62,6 +62,24 @@ test('metadata transport only fetches frozen Instagram handles, binds returned u
     const restricted=await ageRestricted.dispatch({...request,key:'age-restricted'});
     assert.equal(restricted.available,false);
     assert.equal(restricted.reason,'confirmed_age_restricted_profile_not_retried');
+    const restrictedBody={success:true,handle:'test_artist',error:'not_found',
+      errorStatus:404,message:'Profile is restricted',credits_charged:0};
+    const unavailable=capturedInstagramTransport({apiKey:'fixture',responseDir:dir,
+      fetchImpl:async()=>Response.json(restrictedBody,{status:404})});
+    const skipped=await unavailable.dispatch({...request,key:'confirmed-restricted'});
+    assert.equal(skipped.available,false);
+    assert.equal(skipped.reason,'confirmed_restricted_profile_not_retried');
+    for(const [key,override] of [
+      ['restriction-wrong-handle',{handle:'someone_else'}],
+      ['restriction-failed',{success:false}],
+      ['restriction-generic',{message:'Unexpected failure'}],
+      ['restriction-funding',{message:'Insufficient credits'}],
+      ['restriction-rate-limit',{errorStatus:429}],
+    ]){
+      const denied=capturedInstagramTransport({apiKey:'fixture',responseDir:dir,
+        fetchImpl:async()=>Response.json({...restrictedBody,...override},{status:404})});
+      await assert.rejects(denied.dispatch({...request,key}),/HTTP 404|funding|rate limit/);
+    }
     for(const [key,data] of [
       ['generic-403',{success:false,message:'Forbidden'}],
       ['wrong-age-handle',{success:true,handle:'someone_else',age_restricted:true}],

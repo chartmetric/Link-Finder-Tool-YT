@@ -1,0 +1,53 @@
+.mpc { margin-top: 14px; }
+.mpc-platforms { display: inline-flex; gap: 3px; padding: 3px; border: 1px solid #d3e0e4; border-radius: 9px; background: #f2f7f7; }
+.mpc-platforms button { min-height: 34px; padding: 6px 14px; border: 0; border-radius: 6px; background: transparent; color: #4a6177; font: 700 12px var(--app-font); cursor: pointer; }
+.mpc-platforms button[aria-checked="true"] { background: var(--ink, #14313a); color: #f4faf8; }
+.mpc-platforms button:focus-visible, .mpc-more summary:focus-visible, .mpc-details > summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.mpc-hero { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.mpc-hero strong { display: block; font: 700 34px/1 var(--app-font-mono); letter-spacing: -.05em; color: var(--ink); }
+.mpc-hero span { color: #4a6177; font-size: 12px; }
+.mpc-view { margin-top: 0; }
+.mpc-rows { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 6px; }
+.mpc-row { display: grid; grid-template-columns: 54px 1fr 56px 96px auto; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid #e1e9ed; border-radius: 8px; background: #f4faf8; }
+.mpc-tier { font-size: 12px; font-weight: 800; }
+.mpc-track { display: flex; height: 8px; overflow: hidden; border-radius: 6px; background: #d7e1e7; }
+.mpc-seg { height: 100%; }
+.mpc-seg.catalog, .mpc-legend i.catalog { background: #176b62; }
+.mpc-seg.research, .mpc-legend i.research { background: #467fb2; }
+.mpc-seg.nomatch, .mpc-legend i.nomatch { background: repeating-linear-gradient(45deg, #b9a46a 0 3px, #e3d6ad 3px 6px); }
+.mpc-pct { font: 700 14px var(--app-font-mono); text-align: right; }
+.mpc-count { color: #4a6177; font: 11px var(--app-font-mono); text-align: right; }
+.mpc-more summary { cursor: pointer; color: #176b62; font-size: 11px; font-weight: 700; }
+.mpc-more[open] { grid-column: 1 / -1; }
+.mpc-more dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 14px; margin-top: 8px; font-size: 11px; }
+.mpc-more dl div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed #d3e0e4; padding-bottom: 3px; }
+.mpc-more dt { color: #4a6177; }
+.mpc-more dd { font-family: var(--app-font-mono); }
+.mpc-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; color: #4a6177; font-size: 10px; }
+.mpc-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.mpc-legend i { width: 9px; height: 9px; border-radius: 2px; }
+.mpc-foot { margin-top: 8px; color: #4a6177; font-size: 11px; }
+.mpc-skel { display: grid; gap: 6px; }
+.mpc-skel i { display: block; height: 34px; border-radius: 8px; background: #e4edef; animation: mpc-pulse 1.4s ease-in-out infinite; }
+@keyframes mpc-pulse { 50% { opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { .mpc-skel i { animation: none; } }
+.mpc-details { margin-top: 16px; border-top: 1px solid #e1e9ed; padding-top: 10px; }
+.mpc-details > summary { cursor: pointer; font-size: 12px; font-weight: 800; color: var(--ink); }
+.mpc-details[open] > summary { margin-bottom: 10px; }
+.mpc-topbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-top: 12px; }
+@media (max-width: 640px) {
+  .mpc-row { grid-template-columns: 54px 1fr auto; }
+  .mpc-track { grid-column: 1 / -1; grid-row: 2; }
+  .mpc-count { display: none; }
+}
+.dark .mpc-platforms { border-color: hsl(var(--border)); background: hsl(var(--background)); }
+.dark .mpc-platforms button { color: hsl(var(--muted-foreground)); }
+.dark .mpc-platforms button[aria-checked="true"] { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+.dark .mpc-row { border-color: hsl(var(--border)); background: hsl(var(--background)); }
+.dark .mpc-track { background: hsl(var(--muted)); }
+.dark .mpc-hero strong, .dark .mpc-details > summary { color: hsl(var(--foreground)); }
+.dark .mpc-hero span, .dark .mpc-count, .dark .mpc-more dt, .dark .mpc-legend, .dark .mpc-foot { color: hsl(var(--muted-foreground)); }
+.dark .mpc-more summary { color: hsl(var(--primary)); }
+.dark .mpc-more dl div { border-color: hsl(var(--border)); }
+.dark .mpc-details { border-color: hsl(var(--border)); }
+.dark .mpc-skel i { background: hsl(var(--muted)); }

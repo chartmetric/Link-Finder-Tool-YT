@@ -235,6 +235,44 @@ export interface MusicianCoverage {
   generatedAt: string;
 }
 
+export type MusicianPlatformCoveragePlatform = typeof MusicianPlatformCoveragePlatform[keyof typeof MusicianPlatformCoveragePlatform];
+
+
+export const MusicianPlatformCoveragePlatform = {
+  instagram: 'instagram',
+  youtube: 'youtube',
+} as const;
+
+export type MusicianPlatformCoverageSnapshotStatus = typeof MusicianPlatformCoverageSnapshotStatus[keyof typeof MusicianPlatformCoverageSnapshotStatus];
+
+
+export const MusicianPlatformCoverageSnapshotStatus = {
+  current: 'current',
+  recent: 'recent',
+  stale: 'stale',
+  unavailable: 'unavailable',
+} as const;
+
+export type MusicianPlatformCoverageTiersItem = {
+  tier: number;
+  totalProfiles: number;
+  catalogUrls: number;
+  supportedResearchUrls: number;
+  unresolvedCandidates: number;
+  noSupportedMatch: number;
+  failed: number;
+  pending: number;
+  notSearched: number;
+};
+
+export interface MusicianPlatformCoverage {
+  platform: MusicianPlatformCoveragePlatform;
+  snapshotAt: string | null;
+  snapshotStatus: MusicianPlatformCoverageSnapshotStatus;
+  generatedAt: string;
+  tiers: MusicianPlatformCoverageTiersItem[];
+}
+
 export interface MusicianInstagramResearchTier {
   tier: number;
   totalProfiles: number;

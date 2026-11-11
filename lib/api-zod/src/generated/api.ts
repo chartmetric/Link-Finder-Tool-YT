@@ -413,6 +413,32 @@ export const GetMusicianInstagramResearchCoverageResponse = zod.object({
 
 
 /**
+ * @summary Artist link coverage by platform and global tier
+ */
+export const GetMusicianPlatformCoverageParams = zod.object({
+  "platform": zod.enum(['instagram', 'youtube'])
+})
+
+export const GetMusicianPlatformCoverageResponse = zod.object({
+  "platform": zod.enum(['instagram', 'youtube']),
+  "snapshotAt": zod.string().nullable(),
+  "snapshotStatus": zod.enum(['current', 'recent', 'stale', 'unavailable']),
+  "generatedAt": zod.string(),
+  "tiers": zod.array(zod.object({
+  "tier": zod.number(),
+  "totalProfiles": zod.number(),
+  "catalogUrls": zod.number(),
+  "supportedResearchUrls": zod.number(),
+  "unresolvedCandidates": zod.number(),
+  "noSupportedMatch": zod.number(),
+  "failed": zod.number(),
+  "pending": zod.number(),
+  "notSearched": zod.number()
+}))
+})
+
+
+/**
  * @summary Count eligible completed no-match Instagram searches
  */
 export const getMusicianInstagramRerunEligibilityResponseCountMin = 0;

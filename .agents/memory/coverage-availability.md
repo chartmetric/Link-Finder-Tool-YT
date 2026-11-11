@@ -20,3 +20,14 @@ For Instagram research history, treat each `(run_id, profile_id)` as one attempt
 **Why:** Research event rows are append-only lifecycle snapshots, while a new run for the same profile is a distinct retry. Raw event-row counts inflate both attempts and profile totals.
 
 **How to apply:** Aggregate events by run and profile before daily outcome totals; use distinct profile IDs for unique and cumulative profile counts.
+
+Catalog-scale coverage membership must use a set-based join or `IN`, not a
+materialized catalog array searched once for every artist.
+
+**Why:** Repeated coverage reads exceeded their deadline even after historical
+sources were removed; the actual bottleneck was linear array membership across
+the entire catalog, repeated for every tiered profile.
+
+**How to apply:** Check membership complexity before increasing timeouts or
+discarding evidence sources. Keep the visible research-source scope explicit if
+a new platform initially includes only catalog links and a limited research archive.

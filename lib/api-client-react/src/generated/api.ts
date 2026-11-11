@@ -49,6 +49,7 @@ import type {
   MusicianInstagramRerunRun,
   MusicianInstagramResearchCoverage,
   MusicianInstagramResearchNoCandidates,
+  MusicianPlatformCoverage,
   ProfileInvestigationPage,
   ProfileSearchInput,
   ProfileSearchResponse,
@@ -818,6 +819,83 @@ export function useGetMusicianInstagramResearchCoverage<TData = Awaited<ReturnTy
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetMusicianInstagramResearchCoverageQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMusicianPlatformCoverageUrl = (platform: 'instagram' | 'youtube',) => {
+
+
+
+
+  return `/api/profiles/musician-platform-coverage/${platform}`
+}
+
+/**
+ * @summary Artist link coverage by platform and global tier
+ */
+export const getMusicianPlatformCoverage = async (platform: 'instagram' | 'youtube', options?: Parameters<typeof customFetch>[1]): Promise<MusicianPlatformCoverage> => {
+
+  return customFetch<MusicianPlatformCoverage>(getGetMusicianPlatformCoverageUrl(platform),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMusicianPlatformCoverageQueryKey = (platform: 'instagram' | 'youtube',) => {
+    return [
+    `/api/profiles/musician-platform-coverage/${platform}`
+    ] as const;
+    }
+
+
+export const getGetMusicianPlatformCoverageQueryOptions = <TData = Awaited<ReturnType<typeof getMusicianPlatformCoverage>>, TError = ErrorType<void>>(platform: 'instagram' | 'youtube', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMusicianPlatformCoverage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMusicianPlatformCoverageQueryKey(platform);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMusicianPlatformCoverage>>> = ({ signal }) => getMusicianPlatformCoverage(platform, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: platform !== null && platform !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMusicianPlatformCoverage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMusicianPlatformCoverageQueryResult = NonNullable<Awaited<ReturnType<typeof getMusicianPlatformCoverage>>>
+export type GetMusicianPlatformCoverageQueryError = ErrorType<void>
+
+
+/**
+ * @summary Artist link coverage by platform and global tier
+ */
+
+export function useGetMusicianPlatformCoverage<TData = Awaited<ReturnType<typeof getMusicianPlatformCoverage>>, TError = ErrorType<void>>(
+ platform: 'instagram' | 'youtube', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMusicianPlatformCoverage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMusicianPlatformCoverageQueryOptions(platform,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

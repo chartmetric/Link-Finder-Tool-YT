@@ -184,6 +184,29 @@ paths:
                 $ref: "#/components/schemas/MusicianInstagramResearchCoverage"
         "503":
           description: Instagram research statistics unavailable
+  /profiles/musician-platform-coverage/{platform}:
+    get:
+      operationId: getMusicianPlatformCoverage
+      tags: [profile-search]
+      summary: Artist link coverage by platform and global tier
+      parameters:
+        - in: path
+          name: platform
+          required: true
+          schema:
+            type: string
+            enum: [instagram, youtube]
+      responses:
+        "200":
+          description: Catalog links and saved research, without treating raw candidates as accepted links
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MusicianPlatformCoverage"
+        "400":
+          description: Unsupported platform
+        "503":
+          description: Coverage unavailable
   /profiles/musician-instagram-rerun-eligibility:
     get:
       operationId: getMusicianInstagramRerunEligibility
@@ -742,6 +765,29 @@ components:
           items:
             $ref: "#/components/schemas/MusicianCoverageTier"
         generatedAt: { type: string, format: date-time }
+    MusicianPlatformCoverage:
+      type: object
+      required: [platform, tiers, snapshotAt, snapshotStatus, generatedAt]
+      properties:
+        platform: { type: string, enum: [instagram, youtube] }
+        snapshotAt: { type: string, nullable: true }
+        snapshotStatus: { type: string, enum: [current, recent, stale, unavailable] }
+        generatedAt: { type: string }
+        tiers:
+          type: array
+          items:
+            type: object
+            required: [tier, totalProfiles, catalogUrls, supportedResearchUrls, unresolvedCandidates, noSupportedMatch, failed, pending, notSearched]
+            properties:
+              tier: { type: number }
+              totalProfiles: { type: number }
+              catalogUrls: { type: number }
+              supportedResearchUrls: { type: number }
+              unresolvedCandidates: { type: number }
+              noSupportedMatch: { type: number }
+              failed: { type: number }
+              pending: { type: number }
+              notSearched: { type: number }
     MusicianInstagramResearchTier:
       type: object
       required: [tier, totalProfiles, processedProfiles, profilesWithInstagramUrls, profilesWithResearchUrls, profilesWithNoSupportedMatch, profilesWithUrlOrNoSupportedMatch, completedNoCandidateProfiles, failedProfiles, pendingProfiles, profilesWithCatalogInstagramUrls, profilesWithResearchCandidates, profilesWithFailedOrIncompleteSearches, profilesWithSupportedResearchUrls, profilesWithUnresolvedCandidates]
