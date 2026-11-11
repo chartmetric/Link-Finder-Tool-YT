@@ -2,6 +2,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { CAMPAIGN_ID, CAMPAIGN_QUEUE_SHA256, captureArtistCampaignSnapshot, workspaceRoot } from "../lib/artist-campaign-progress";
 import { publishCampaignSnapshot } from "../lib/artist-campaign-snapshot";
 import { logger } from "../lib/logger";
+import { captureTierPrioritySnapshot } from "../lib/instagram-tier-priority-progress";
 
 // An independent, read-only observer: never import campaign executors, provider
 // clients, budget coordinators or admission code. Never launched by the API.
@@ -22,7 +23,7 @@ async function main() {
   });
   do {
     try {
-      const snapshot = await captureArtistCampaignSnapshot(workspace);
+      const snapshot = await captureTierPrioritySnapshot(workspace) ?? await captureArtistCampaignSnapshot(workspace);
       await publishCampaignSnapshot(snapshot);
       logger.info({ campaignId: snapshot.campaignId, processedArtists: snapshot.processed,
         totalArtists: snapshot.totalArtists, updatedAt: snapshot.updatedAt,

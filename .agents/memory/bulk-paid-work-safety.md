@@ -101,3 +101,15 @@ fingerprinting mutable workspace files also turns unrelated merges into stops.
 bind its fingerprints to the same approved scope. Keep the progress observer
 separate. New policies need a deliberate later cutover; never patch the active
 copy or reset an already launched campaign to adopt new code.
+
+Distinguish a pre-dispatch ownership-fence stop from an uncertain paid request.
+A stop journal entry alone does not establish that a provider call was admitted.
+
+**Why:** A deliberately drained gate can journal `stopped_no_retry` after its
+owner check fails but before any reservation or network dispatch. Treating that
+as a paid uncertainty blocks a safe handoff; ignoring genuine admissions risks
+double spending.
+
+**How to apply:** Require the explicit handoff proof and cross-check the locked
+owner, admission ledger, reservations and timestamps. Preserve every actual
+admission and receipt; never infer replay permission from a journal label.

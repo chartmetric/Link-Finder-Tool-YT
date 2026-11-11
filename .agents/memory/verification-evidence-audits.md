@@ -156,3 +156,16 @@ explicit spending approval even when the metadata is already available.
 evidence and candidate scope, preserve historical packets and source dates, and
 retain non-replayable admissions. Never repeat discovery or enable experimental
 acceptance as a side effect of supplementing evidence.
+
+For YouTube evidence, absent Official Artist Channel and auto-generation flags
+mean unknown, not false. A generic verified badge is not an Official Artist
+Channel badge.
+
+**Why:** Archived provider responses supplied a generic verification field but
+omitted both channel-role flags. Defaulting those missing fields to false adds
+negative assertions that the source did not make.
+
+**How to apply:** Preserve field presence and uncertainty in future evidence
+normalization. Do not infer channel ownership from generic verification, and
+do not claim that correcting these inputs improves archived model decisions
+without a separately approved comparison.

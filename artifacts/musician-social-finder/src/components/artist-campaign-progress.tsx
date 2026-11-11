@@ -137,7 +137,7 @@ function CampaignProgressView({ scope }: { scope: CampaignScope }) {
         {[
           ['Likely matches', fmt(p.likelyMatches), 'likely'],
           ['Checked, not accepted', fmt(p.notAcceptedArtists), 'not-accepted'],
-          ['Incomplete', fmt(p.incompleteArtists), 'incomplete'],
+          ['Other outcomes', fmt(p.incompleteArtists), 'incomplete'],
         ].map(([k, v, id]) => (
           <div key={id} className="flex items-baseline gap-1.5"><dt className="text-muted-foreground">{k}</dt><dd className="font-bold tabular-nums" data-testid={`text-campaign-${id}`}>{v}</dd></div>
         ))}
@@ -166,7 +166,7 @@ function CampaignProgressView({ scope }: { scope: CampaignScope }) {
         </summary>
         <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
           Tiers are frozen at queue approval, not current catalog tiers. Likely-match rate = likely matches / checked artists.
-          Incomplete artists are processed but not checked and are excluded from that rate. Suggestions are not confirmed ownership.
+          Other outcomes include completed searches with no candidates, unavailable evidence and unfinished checks; they are excluded from that rate. Suggestions are not confirmed ownership.
         </p>
         {p.tierBreakdown ? (
           <ul className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-5" aria-label="Progress by frozen artist tier">
@@ -180,7 +180,7 @@ function CampaignProgressView({ scope }: { scope: CampaignScope }) {
                   <div className="flex flex-wrap justify-between gap-x-2"><dt className="text-muted-foreground">Likely-match rate</dt><dd className="font-bold text-primary">{t.successRate === null ? 'n/a' : pct(t.successRate)}</dd></div>
                   <div className="flex flex-wrap justify-between gap-x-2"><dt className="text-muted-foreground">Likely / checked</dt><dd className="font-semibold">{fmt(t.likelyMatches)} / {fmt(t.checkedArtists)}</dd></div>
                   <div className="flex flex-wrap justify-between gap-x-2"><dt className="text-muted-foreground">Checked, not accepted</dt><dd>{fmt(t.notAcceptedArtists)}</dd></div>
-                  <div className="flex flex-wrap justify-between gap-x-2"><dt className="text-muted-foreground">Incomplete</dt><dd>{fmt(t.incompleteArtists)}</dd></div>
+                  <div className="flex flex-wrap justify-between gap-x-2"><dt className="text-muted-foreground">Other outcomes</dt><dd>{fmt(t.incompleteArtists)}</dd></div>
                 </dl>
                 {t.checkedArtists === 0 && <p className="mt-2 text-[10px] text-muted-foreground">No artists checked yet.</p>}
               </li>
