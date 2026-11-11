@@ -5,12 +5,12 @@ import {randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {select,buildMetadataOverlay} from './instagram-artist-metadata-overlay.mjs';
 import {youtubeMetadataQueries,bindYoutubeCatalogAccounts} from './youtube-catalog-metadata.mjs';
-import {youtubeArtistSearchQuery,rankYoutubeMusicCandidates} from './youtube-music-search.mjs';
 import {createYoutubeChannelCache} from './youtube-channel-dedup.mjs';
 import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
 import {youtubeEligibilitySql,youtubeSearchCandidates} from './youtube-discovery-test.mjs';
 import {evidenceDigest} from './youtube-ownership-policy.mjs';
 import {youtubeArtistFromCatalogPacket} from './youtube-ownership-evidence.mjs';
+import {youtubeSearchPlan,rankYoutubeSearchCandidates} from './youtube-search-plan.mjs';
 import {YOUTUBE_CAMPAIGN_ID as id,YOUTUBE_CAMPAIGN_ROOT as root,MODEL_PLAN,youtubeCampaignSchema,
   validateQueue,assertAdmission,campaignTransport,evaluateCandidate,classifyYoutubeResult} from './youtube-campaign-core.mjs';
 
@@ -20,7 +20,8 @@ const ownFiles=['scripts/src/run-youtube-campaign.mjs','scripts/src/youtube-camp
   'scripts/src/youtube-ownership-policy.mjs','scripts/src/youtube-ownership-transport.mjs',
   'scripts/src/youtube-discovery-test.mjs','scripts/src/instagram-artist-metadata-overlay.mjs',
   'scripts/src/youtube-ownership-evidence.mjs','scripts/src/youtube-catalog-metadata.mjs',
-  'scripts/src/youtube-music-search.mjs','scripts/src/youtube-channel-dedup.mjs'];
+  'scripts/src/youtube-music-search.mjs','scripts/src/youtube-channel-dedup.mjs',
+  'scripts/src/youtube-search-plan.mjs'];
 export function eligibilitySql(ids){
   if(ids){
     assert.ok(ids.length&&ids.every(id=>/^\d+$/.test(id)));
@@ -41,7 +42,7 @@ export async function prepareYoutubeCampaign(){
   assert.notEqual(process.env.REPLIT_DEPLOYMENT,'1','Prepare the coordinator only in the workspace.');
   const queue=validateQueue((await select(eligibilitySql())).map(a=>({...a,tier:Number(a.tier)})));
   assert.ok(queue.every(a=>Date.now()-Date.parse(a.snapshot_at.replace(' ','T')+'Z')<36*3600000),'Stale global tier snapshot.');
-  const approval={version:1,id,at:new Date().toISOString(),platform:'youtube',tiers:[1,2,3,4,5],
+  const approval={version:1,discoveryPolicyVersion:1,id,at:new Date().toISOString(),platform:'youtube',tiers:[1,2,3,4,5],
     explicitApproval:true,approvedBy:'User selected Approve uncapped YouTube run.',
     maximumSpendCents:null,totalArtists:queue.length,scopeSha256:evidenceDigest(queue),
     scope:'Tier 1–5 musicians missing a connected catalog YouTube URL, regardless of saved candidates or Instagram links.',
@@ -97,6 +98,7 @@ export async function runYoutubeCampaign(){
   for(const key of ['SERPERDEV_API_KEY','SCRAPECREATORS_API_KEY','OPENROUTER_API_KEY'])
     assert.ok(process.env[key],'A required provider credential is unavailable.');
   const approval=await read(root+'/approval.json'),queue=validateQueue(await read(root+'/queue.json'));
+  assert.equal(approval.discoveryPolicyVersion,1,'Legacy approvals cannot authorize changed search wording.');
   assert.equal(approval.id,id);assert.equal(approval.explicitApproval,true);
   assert.equal(approval.maximumSpendCents,null);assert.equal(approval.scopeSha256,evidenceDigest(queue));
   assert.equal(approval.totalArtists,queue.length);
@@ -198,14 +200,14 @@ export async function runYoutubeCampaign(){
         });
         activeProfile=target.profile_id;
         const artist=metadata.get(activeProfile);assert.ok(artist);assert.equal(artist.cmArtist,target.cm_artist);
-        const search={method:'POST',url:'https://google.serper.dev/search',body:{q:youtubeArtistSearchQuery(artist),num:10}};
+        const searchPlan=youtubeSearchPlan(artist);
+        const search={method:'POST',url:'https://google.serper.dev/search',body:searchPlan.request};
         const packet=await request(activeProfile,'search','search-'+activeProfile,search);
         assert.equal(packet.status,200,'Search failed; this is not a no-match.');
-        const ranked=rankYoutubeMusicCandidates(artist,youtubeSearchCandidates(packet.data));
-        const record={artist,searchStatus:ranked.allCandidates.length?'candidates_found':'no_match',
-          allSearchCandidates:ranked.allCandidates,relatedTopicCandidates:ranked.relatedTopicCandidates,candidates:[]};
+        const discovery=rankYoutubeSearchCandidates(youtubeSearchCandidates(packet.data),searchPlan);
+        const record={artist,searchPlan,...discovery,relatedTopicCandidates:discovery.topicCandidates,candidates:[]};
         const channelCache=createYoutubeChannelCache(artist);
-        for(const candidate of ranked.candidates){
+        for(const candidate of discovery.candidates){
           const checked=await evaluateCandidate({artist,candidate,request,channelCache,
             channelConflict:async(channelId,profileId)=>transaction(async c=>{
               await assertOwner(c);

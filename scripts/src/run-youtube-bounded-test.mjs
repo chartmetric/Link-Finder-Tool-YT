@@ -7,7 +7,6 @@ import {fileURLToPath} from 'node:url';
 import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
 import {select,buildMetadataOverlay} from './instagram-artist-metadata-overlay.mjs';
 import {youtubeMetadataQueries,bindYoutubeCatalogAccounts} from './youtube-catalog-metadata.mjs';
-import {youtubeArtistSearchQuery,rankYoutubeMusicCandidates} from './youtube-music-search.mjs';
 import {createYoutubeChannelCache} from './youtube-channel-dedup.mjs';
 import {eligibilitySql} from './run-youtube-campaign.mjs';
 import {youtubeTestSchema,youtubeSearchCandidates} from './youtube-discovery-test.mjs';
@@ -19,6 +18,7 @@ import {normalizeYoutubeChannel,youtubeDecisionRequest,parseYoutubeDecision} fro
 import {boundedYoutubeSchema,boundedYoutubeGate} from './youtube-bounded-test-gate.mjs';
 import {freezeLocalModules} from './seal-youtube-campaign-runtime.mjs';
 import {boundedTestOptions,approveBoundedTestPlan} from './youtube-bounded-test-plan.mjs';
+import {youtubeSearchPlan,rankYoutubeSearchCandidates} from './youtube-search-plan.mjs';
 const {id,root}=boundedTestOptions(process.argv.slice(2));
 const parentId='full-tiers-1-5-no-youtube-uncapped';
 const read=async p=>JSON.parse(await fs.readFile(p,'utf8'));
@@ -59,7 +59,7 @@ async function prepare(){
   }
   await exportYoutubeCatalogEvidence(root,root+'/supplemental-catalog');
   const enriched=await read(root+'/supplemental-catalog/packets.json');
-  const scope={id,artists,scopeSha256:hash(artists),userCapCents:null,proposedCapCents:200,operationalCapCents:200,
+  const scope={id,artists,scopeSha256:hash(artists),discoveryPolicyVersion:1,userCapCents:null,proposedCapCents:200,operationalCapCents:200,
     candidatesPerArtist:2,maxCalls:100,explicitApproval:false,approvalStatus:'awaiting_spending_approval',
     approvedBy:null,
     noCatalogWrites:true,noAutomaticRetries:true,fullCampaignRemainsPaused:true,
@@ -93,6 +93,7 @@ async function run(){
   const scope=await read(root+'/approval.json'),packets=await read(root+'/supplemental-catalog/packets.json');
   assert.equal(scope.explicitApproval,true);assert.equal(scope.approvalStatus,'approved');
   assert.equal(hash(await read(root+'/plan.json')),scope.planSha256);
+  assert.equal(scope.discoveryPolicyVersion,1,'Legacy approvals cannot authorize changed search wording.');
   assert.equal(scope.scopeSha256,hash(scope.artists));assert.equal(hash(packets),scope.catalogEvidenceSha256);
   assert.equal(scope.artists.length,20);assert.equal(scope.userCapCents,200);
   assert.equal(scope.operationalCapCents,200);assert.equal(scope.candidatesPerArtist,2);
@@ -138,20 +139,21 @@ async function run(){
     for(const a of scope.artists){
       const packet=packets.find(p=>p.profileId===a.profile_id);assert.ok(packet);
       const artist=youtubeArtistFromCatalogPacket(packet);
+      const searchPlan=youtubeSearchPlan(artist);
       const response=await request(a.profile_id,'search','search-'+a.profile_id+'-0',{
-        method:'POST',url:'https://google.serper.dev/search',body:{q:youtubeArtistSearchQuery(artist),num:10}});
+        method:'POST',url:'https://google.serper.dev/search',body:searchPlan.request});
       assert.equal(response.status,200);
-      const ranked=rankYoutubeMusicCandidates(artist,youtubeSearchCandidates(response.data));
-      const all=ranked.allCandidates,candidates=[],channelCache=createYoutubeChannelCache(artist);
-      for(const candidate of ranked.candidates.slice(0,scope.candidatesPerArtist)){
+      const discovery=rankYoutubeSearchCandidates(youtubeSearchCandidates(response.data),searchPlan,{limit:2});
+      const candidates=[],channelCache=createYoutubeChannelCache(artist);
+      for(const candidate of discovery.candidates){
         if(channelCache.reuse(artist,candidate))continue;
         const response=await request(a.profile_id,'metadata','metadata-'+a.profile_id+'-'+hash(candidate.url),{
           method:'GET',url:'https://api.scrapecreators.com/v1/youtube/channel?'+new URLSearchParams({url:candidate.url})});
         candidate.capture=normalizeYoutubeChannel(response,candidate.url);
         if(!channelCache.observe(artist,candidate))candidates.push(candidate);
       }
-      const record={artist,tier:a.tier,searchStatus:all.length?'candidates_found':'no_match',
-        allSearchCandidates:all,relatedTopicCandidates:ranked.relatedTopicCandidates,candidates};
+      const record={artist,tier:a.tier,searchPlan,...discovery,
+        relatedTopicCandidates:discovery.topicCandidates,candidates};
       records.push(record);await save('artists/'+a.profile_id+'-captures.json',record);
       console.log(JSON.stringify({phase:'captures',artists:records.length,total:20,candidates:candidates.length}));
     }
@@ -202,6 +204,9 @@ async function run(){
         checkedArtists:checked.length,likelyMatches:likely.length,successRate:checked.length?likely.length/checked.length:null,
         noChannelFound:completed.filter(r=>!r.allSearchCandidates.length).length,
         noArtistChannelSelected:completed.filter(r=>r.allSearchCandidates.length&&!r.candidates.length).length,
+        noChannelResult:completed.filter(r=>r.searchStatus==='no_match').length,
+        offTargetOnly:completed.filter(r=>r.outcome==='off_target_results_only').length,
+        topicOnly:completed.filter(r=>r.outcome==='topic_only').length,channelAbsenceProven:false,
         checkedNotAccepted:checked.filter(r=>!r.classification.likely).length,
         reservedUsd:Number(budget.reserved_cents)/100,operationalMaximumUsd:2,userMaximumUsd:scope.userCapCents/100,admissions,
         catalogWrites:0,fullYoutubeCampaignResumed:false,instagramChanged:false,recordedAt:new Date().toISOString()};
@@ -212,7 +217,7 @@ async function run(){
           ...c.decision,search_title:c.title,search_snippet:c.snippet,
           recorded_answer:c.recordedAnswer??null,metadata_actually_used:c.metadataActuallyUsed??null,
           captured_channel:c.capture?.body??null,artist_catalog_metadata:r.artist,
-        })):[{artist:r.artist.name,tier:r.tier,profile_id:r.artist.profileId,cm_artist:r.artist.cmArtist,youtube_url:'',status:'no_channel_found'}]);
+        })):[{artist:r.artist.name,tier:r.tier,profile_id:r.artist.profileId,cm_artist:r.artist.cmArtist,youtube_url:'',status:r.outcome,channelAbsenceProven:false}]);
         const columns=[...new Set(rows.flatMap(Object.keys))],cell=v=>{
           let s=v==null?'':typeof v==='object'?JSON.stringify(v):String(v);
           if(/^[=+\-@\t\r\n]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';

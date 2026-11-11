@@ -1,0 +1,59 @@
+{
+  "description": "Recorded projections of search receipts, not responses to the proposed new query. Non-channel entries omitted except Cytrena's generic pages. Originals remain untouched.",
+  "archive": "generated-artifacts/youtube-test-20-usd5-2026-11-11",
+  "searches": [
+    {
+      "artist": "ODF",
+      "profileId": "3766408",
+      "cmArtist": "4380669",
+      "receipt": "receipts/50d6f902f2920f0075506263ddeb972a469b0618b4ccf7bd140adc167d3faf04.json",
+      "query": "ODF artist official YouTube channel",
+      "echo": "ODF artist official YouTube channel",
+      "organic": [
+        {"title":"Bob Ross","link":"https://www.youtube.com/channel/UCxcnsr1R5Ge_fbTu5ajt8DQ","snippet":"The official YouTube channel of \"The Joy of Painting\" and Bob Ross. Watch and paint along with every episode of The Joy of Painting! Happy painting! ...more"}
+      ]
+    },
+    {
+      "artist": "Pencing",
+      "profileId": "3892503",
+      "cmArtist": "10543374",
+      "receipt": "receipts/6f74500ee97fa94db53858dc92f44c6d59b059498ba9d2ff939ebf0a78dc8500.json",
+      "query": "Pencing artist official YouTube channel",
+      "echo": "Pencing artist official YouTube channel",
+      "organic": [
+        {"title":"Proko","link":"https://www.youtube.com/channel/UClM2LuQ1q5WEc23462tQzBg","snippet":"My name is Stan Prokopenko, I'm an artist and teacher. Proko is a resource for artists to get good art instruction videos."},
+        {"title":"Easy Pencil Art Drawing Tutorials","link":"https://www.youtube.com/channel/UCqUOcvbIXinAezsVdExGuOQ","snippet":"Welcome to easy pencil art drawing tutorials! Here you'll find easy, step-by-step drawing lessons designed for beginners. New videos every week."},
+        {"title":"Bob Ross","link":"https://www.youtube.com/channel/UCxcnsr1R5Ge_fbTu5ajt8DQ","snippet":"The official YouTube channel of \"The Joy of Painting\" and Bob Ross. Watch and paint along with every episode of The Joy of Painting! Happy painting! ...more"}
+      ]
+    },
+    {
+      "artist": "Cytrena",
+      "profileId": "3574321",
+      "cmArtist": "12811718",
+      "receipt": "receipts/19a8e4d062ba5f3e1361a6a62baf5d1ab361a14c0ac9624ec39b1b13b5c3bd74.json",
+      "query": "Cytrena artist official YouTube channel",
+      "echo": "Cytrena artist official YouTube channel",
+      "organic": [
+        {"title":"Artist","link":"https://en.wikipedia.org/wiki/Artist","snippet":"An artist is a person who creates art or practices the arts. The most common usage in everyday speech and academic discourse refers to a practitioner of the ..."},
+        {"title":"Spotify for Artists: Where Your Music is Everything","link":"https://artists.spotify.com/en/home","snippet":"Connect with fansInvite listeners into your creative world. Customize your artist profile, create videos & visuals, and bring the story behind your music to ..."}
+      ]
+    },
+    {
+      "artist": "Victor Aupecle",
+      "receipt": "receipts/c2f6f1d836da51b691445b1a1b61c82dba3dd50a12665192fffe0dfc7d8d62e6.json",
+      "query": "Victor Aupecle artist official YouTube channel",
+      "echo": "Victor Aupecle artist official YouTube channel",
+      "organic": [
+        {"title":"Victor Aupecle - Topic","link":"https://www.youtube.com/channel/UCaKN4E1ayJduSOY6PqRaHOQ","snippet":"Victor Aupecle - Topic - YouTube … 1.96K subscribers. This channel doesn't have any content"},
+        {"title":"Victor Aupecle","link":"https://www.youtube.com/channel/UCY9_hicQONFrUd5f24z0y8w","snippet":"Victor Aupecle. Home. Shorts. Library. Victor Aupecle. @viko_apc. 6.08K subscribers•3 videos. More about this channel ...more. More about this channel ...more ."}
+      ]
+    },
+    {
+      "artist": "島民",
+      "organic": [
+        {"title":"islandman","link":"https://www.youtube.com/@islandmanmusic","snippet":""}
+      ],
+      "description": "Recorded channel title and URL from the 島民 search; snippet intentionally omitted rather than reconstructed."
+    }
+  ]
+}

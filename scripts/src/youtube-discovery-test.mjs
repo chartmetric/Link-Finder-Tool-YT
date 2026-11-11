@@ -1,11 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
-import {youtubeArtistSearchQuery,rankYoutubeMusicCandidates} from './youtube-music-search.mjs';
 import {createHash, randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {select} from './instagram-artist-metadata-overlay.mjs';
 import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
+import {youtubeSearchPlan,rankYoutubeSearchCandidates} from './youtube-search-plan.mjs';
 
 export const youtubeTestSchema = `
 CREATE TABLE IF NOT EXISTS youtube_discovery_test_runs (
@@ -93,7 +93,7 @@ export async function runYoutubeTest(live=false) {
         FROM (SELECT id,cm_source_id,name FROM new_vertical.profile FINAL WHERE id IN (${ids}) AND cm_source='cm_artist') p
         LEFT JOIN (SELECT id,code2,label,record_label FROM new_vertical.cm_artist FINAL WHERE id IN (${cms})) c ON toString(c.id)=toString(p.cm_source_id)`);
       assert.equal(metadata.length,scope.length);
-      const approval={id:'youtube-no-link-20-usd2',scope,metadata,scopeSha256:digest(scope),
+      const approval={id:'youtube-no-link-20-usd2',scope,metadata,scopeSha256:digest(scope),discoveryPolicyVersion:1,
         capCents:200,artists:20,reservationPerSearchCents:2,
         approvedBy:'User approved the proposed 20-artist YouTube test with a separate $2 cap.',
         discoveryOnly:true,noLiveLinkChanges:true,noAutomaticRetries:true,createdAt:new Date().toISOString()};
@@ -105,6 +105,7 @@ export async function runYoutubeTest(live=false) {
     }
     assert.ok(process.env.SERPERDEV_API_KEY,'Missing search provider credential.');
     const approval=await read('approval.json');
+    assert.equal(approval.discoveryPolicyVersion,1,'Legacy approvals cannot authorize changed search wording.');
     assert.equal(approval.scopeSha256,digest(approval.scope));assert.equal(approval.capCents,200);
     assert.equal(approval.scope.length,20);assert.equal(approval.discoveryOnly,true);
     // Revalidate the exact cohort immediately before the first paid request.
@@ -113,13 +114,19 @@ export async function runYoutubeTest(live=false) {
     const owner=randomUUID(),id=approval.id;
     await pool.query('INSERT INTO youtube_discovery_test_runs(id,owner,scope_sha256,cap_cents,status) VALUES($1,$2,$3,$4,$5)',
       [id,owner,approval.scopeSha256,200,'running']);
-    const codeHash=digest(await fs.readFile(fileURLToPath(import.meta.url),'utf8'));
+    const codeFingerprint=async()=>digest(await Promise.all([
+      fs.readFile(fileURLToPath(import.meta.url),'utf8'),
+      fs.readFile(new URL('./youtube-search-plan.mjs',import.meta.url),'utf8'),
+      fs.readFile(new URL('./youtube-music-search.mjs',import.meta.url),'utf8')]));
+    const codeHash=await codeFingerprint();
     const outcomes=[];
     for(const target of approval.scope){
-      assert.equal(codeHash,digest(await fs.readFile(fileURLToPath(import.meta.url),'utf8')),'Code changed; no further paid calls.');
+      assert.equal(codeHash,await codeFingerprint(),'Code changed; no further paid calls.');
       const metadata=approval.metadata.find(r=>r.profile_id===target.profile_id);
       assert.equal(metadata.cm_artist,target.cm_artist);
-      const request={q:youtubeArtistSearchQuery(target),num:10};
+      const searchPlan=youtubeSearchPlan({profileId:target.profile_id,cmArtist:target.cm_artist,
+        name:target.artist,catalogProfile:metadata});
+      const request=searchPlan.request;
       const client=await pool.connect();
       try {
         await client.query('BEGIN');
@@ -134,7 +141,7 @@ export async function runYoutubeTest(live=false) {
       } catch(e){await client.query('ROLLBACK');throw e;} finally{client.release();}
       // An admitted request is never automatically retried, even after interruption.
       await fs.appendFile(root+'/admissions.jsonl',JSON.stringify({at:new Date().toISOString(),profileId:target.profile_id,request,reservedCents:2})+'\n');
-      let status,candidates=[],searchRanking=null;
+      let status,candidates=[],discovery;
       try {
         const response=await fetch('https://google.serper.dev/search',{method:'POST',
           headers:{'X-API-KEY':process.env.SERPERDEV_API_KEY,'Content-Type':'application/json'},
@@ -145,17 +152,17 @@ export async function runYoutubeTest(live=false) {
         await save('response-'+target.profile_id+'.json',{status:response.status,request,body:packet});
         if(!response.ok||packet.error||/insufficient.{0,20}credit|not enough credits|invalid api.?key/i.test(JSON.stringify(packet)))
           throw Error('Search provider failed; stopped without retry.');
-        searchRanking=rankYoutubeMusicCandidates(target,youtubeSearchCandidates(packet));
-        candidates=searchRanking.candidates;
-        status=searchRanking.allCandidates.length?'candidates_found':'no_match';
+        discovery=rankYoutubeSearchCandidates(youtubeSearchCandidates(packet),searchPlan);
+        candidates=discovery.candidates;
+        status=discovery.searchStatus;
       }catch(e){
         await pool.query(`UPDATE youtube_discovery_test_results SET status='failed',checked_at=now() WHERE run_id=$1 AND profile_id=$2`,[id,target.profile_id]);
         await pool.query("UPDATE youtube_discovery_test_runs SET status='stopped' WHERE id=$1",[id]);
         await save('stopped.json',{profileId:target.profile_id,reason:'Search request failed or is uncertain; no retry.',reservedChargeRetained:true});
         throw e;
       }
-      const outcome={...target,status,candidates,allSearchCandidates:searchRanking?.allCandidates??[],
-        relatedTopicCandidates:searchRanking?.relatedTopicCandidates??[],artistMetadata:metadata,verified:false};
+      const outcome={...target,status,...discovery,searchPlan,candidates,
+        relatedTopicCandidates:discovery.topicCandidates,artistMetadata:metadata,verified:false};
       await save('artist-'+target.profile_id+'.json',outcome);
       await pool.query(`UPDATE youtube_discovery_test_results SET status=$3,candidates_json=$4,checked_at=now()
         WHERE run_id=$1 AND profile_id=$2`,[id,target.profile_id,status,JSON.stringify(candidates)]);
@@ -164,7 +171,8 @@ export async function runYoutubeTest(live=false) {
     }
     await pool.query("UPDATE youtube_discovery_test_runs SET status='completed' WHERE id=$1",[id]);
     await save('summary.json',{status:'completed',artists:20,artistsWithCandidates:outcomes.filter(r=>r.candidates.length).length,
-      noMatch:outcomes.filter(r=>!r.candidates.length).length,reservedUsd:.4,maximumSpendUsd:2,verified:0,noLiveLinkChanges:true});
+      noMatch:outcomes.filter(r=>r.status==='no_match').length,channelAbsenceProven:false,
+      reservedUsd:.4,maximumSpendUsd:2,verified:0,noLiveLinkChanges:true});
     const fields=['artist','profile_id','cm_artist','tier','status','youtubeUrl','title','snippet','artistMetadata','verified'];
     const rows=outcomes.flatMap(r=>(r.candidates.length?r.candidates:[{}]).map(c=>({
       ...r,youtubeUrl:c.url??'',title:c.title??'',snippet:c.snippet??''})));
