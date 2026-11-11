@@ -3,6 +3,28 @@ name: Verification evidence audits
 description: Distinguish original verifier inputs from reconstructions and synthetic fixtures.
 ---
 
+No direct channel candidate is not the same as no YouTube evidence.
+
+**Why:** A saved YouTube pilot contained music-video search results while its
+channel-only URL parser produced no candidates. Those results had not been
+followed to uploader channels; some snippets also mentioned possible handles.
+
+**How to apply:** Audit raw search receipts alongside selected channels.
+Distinguish empty searches, video-only discovery gaps, Topic results and
+ownership rejections. Video text and handle mentions remain unverified clues,
+not captured channel metadata, ownership proof or sourced account absence.
+
+Repeated retrieval of a channel is not proof of competing ownership.
+
+**Why:** A collaborator's channel surfaced for several artists in one saved
+test, and the shared-channel guard held every artist/channel pair before
+model checking, including the same-named artist's candidate.
+
+**How to apply:** Describe these as unresolved shared-candidate holds, not
+confirmed wrong identities or confirmed missed matches. Any future change
+must be separately approved, retain explicit ownership conflicts, and keep
+assessments bound to each exact artist/channel pair.
+
 Treat lossless source reconstruction and model-readable equivalence as separate
 claims. Measure a compact format against the same complete evidence, not only
 against historical requests containing bounded summaries.

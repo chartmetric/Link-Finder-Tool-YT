@@ -1526,3 +1526,17 @@ mtime_ms = 1794440968541
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/de987c56-337f-407c-b9e1-bae71a5b5884/b9a3cc24-827a-41cd-a081-341f926c61d6"
 storage_version_token = "1794441011152217"
 content_type = "text/csv"
+
+[[outputs]]
+id = "EA6yNQTQl37OVM0ygGLN2"
+uri = "file://generated-artifacts/youtube-test-20-main-fixes-2026-11-11-offline-review/artist-review.csv"
+type = "table"
+title = "YouTube test — review of all 20 artists"
+description = "Explains discovery gaps, saved reference availability and recorded rejection reasons. No new paid checks or changed decisions."
+logical_id = "a4ea92af-eeff-4f34-9eb1-4f276f2dc2ae"
+content_hash = "sha256:d844d60143f2ada099cd20ed1a5f12d145cf4e152f45d69ec7fe2e804a8a205a"
+size = 8502
+mtime_ms = 1794441336101
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/a4ea92af-eeff-4f34-9eb1-4f276f2dc2ae/ec827a18-6880-4014-bbc3-8146236782e6"
+storage_version_token = "1794441523792820"
+content_type = "text/csv"
