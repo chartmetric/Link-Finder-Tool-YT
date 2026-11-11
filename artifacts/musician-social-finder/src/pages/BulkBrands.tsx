@@ -16,6 +16,7 @@ import { bulkRequest, completeBulkRequest } from '@/lib/bulk-requests';
 import { BillingHealthNotice, useBulkBillingGate } from '@/components/bulk/billing-health';
 import { MusicianInstagramResearchProgress } from '@/components/bulk/musician-instagram-research-progress';
 import { ArtistCampaignProgress } from '@/components/artist-campaign-progress';
+import { YoutubeArtistProgress } from '@/components/youtube-artist-progress';
 import { ArtistBatchResults } from '@/components/bulk/artist-batch-results';
 
 type Selections = Record<ProfileKind, Map<number, BulkBrandCandidate>>;
@@ -138,6 +139,7 @@ export default function BulkBrands() {
 
           <BillingHealthNotice />
           {kind === 'artist' && <ArtistCampaignProgress className="mb-4" />}
+          {kind === 'artist' && <YoutubeArtistProgress className="mb-4" />}
           <AutoLauncher kind={kind} blocked={!!startBlocked} onRun={showRun} />
 
           {summaryId ? <RunProgress ref={summaryRef} kind={kind} runId={summaryId} run={summary.data} loading={summary.isLoading} fetching={summary.isFetching} isError={summary.isError} error={summary.error} onRetry={() => summary.refetch()} onOpenDetail={openDetail} /> : (

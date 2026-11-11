@@ -1,10 +1,19 @@
 import { Router } from "express";
-import { GetArtistCampaignProgressResponse, GetArtistResultRowsParams, GetArtistResultRowsResponse, ListArtistResultBatchesResponse } from "@workspace/api-zod";
+import { GetArtistCampaignProgressResponse, GetYoutubeArtistProgressResponse, GetArtistResultRowsParams, GetArtistResultRowsResponse, ListArtistResultBatchesResponse } from "@workspace/api-zod";
 import { readArtistCampaignProgress } from "../lib/artist-campaign-progress";
 import { artistResultDocument, listArtistResults } from "../lib/artist-results";
 import { paginateResults, resultCsv } from "../lib/artist-result-model";
+import { readYoutubeArtistProgress } from "../lib/youtube-artist-progress";
 
 const router = Router();
+router.get("/bulk/youtube-artist-progress", async (req, res): Promise<void> => {
+  res.setHeader("Cache-Control", "no-store");
+  try { res.json(GetYoutubeArtistProgressResponse.parse(await readYoutubeArtistProgress())); }
+  catch (error) {
+    req.log.error({err: error}, "Saved YouTube progress unavailable");
+    res.status(503).json({error: "Saved YouTube progress is unavailable. No paid work was started or retried."});
+  }
+});
 router.get("/bulk/artist-campaign-progress", async (req, res): Promise<void> => {
   res.setHeader("Cache-Control", "no-store");
   try { res.json(GetArtistCampaignProgressResponse.parse(await readArtistCampaignProgress())); }

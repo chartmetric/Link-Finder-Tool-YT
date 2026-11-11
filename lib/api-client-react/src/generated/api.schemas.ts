@@ -5,6 +5,58 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type YoutubeArtistProgressStatus = typeof YoutubeArtistProgressStatus[keyof typeof YoutubeArtistProgressStatus];
+
+
+export const YoutubeArtistProgressStatus = {
+  completed: 'completed',
+  stopped: 'stopped',
+  running: 'running',
+} as const;
+
+export interface YoutubeArtistProgress {
+  runId: string;
+  scopeSha256: string;
+  status: YoutubeArtistProgressStatus;
+  /** @minimum 0 */
+  totalArtists: number;
+  /** @minimum 0 */
+  searchedArtists: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  processedPercent: number;
+  /** @minimum 0 */
+  artistsWithCandidates: number;
+  /** @minimum 0 */
+  checkedArtists: number;
+  /** @minimum 0 */
+  likelyMatches: number;
+  /** @minimum 0 */
+  notAcceptedArtists: number;
+  /** @minimum 0 */
+  uncheckedArtists: number;
+  /** @minimum 0 */
+  noChannelFound: number;
+  /** @minimum 0 */
+  heldCandidates: number;
+  /** @minimum 0 */
+  pendingCandidates: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     * @nullable
+     */
+  successRate: number | null;
+  /** @minimum 0 */
+  reservedUsd: number;
+  /** @minimum 0 */
+  maximumSpendUsd: number;
+  updatedAt: string;
+  capturedAt: string;
+}
+
 export type ArtistCampaignTierProgressTier = typeof ArtistCampaignTierProgressTier[keyof typeof ArtistCampaignTierProgressTier];
 
 
@@ -1287,6 +1339,10 @@ export type GetArtistCampaignProgress200Progress = {
 export type GetArtistCampaignProgress200 = {
   /** @nullable */
   progress: GetArtistCampaignProgress200Progress;
+};
+
+export type GetYoutubeArtistProgress200 = {
+  progress: YoutubeArtistProgress | null;
 };
 
 export type ListArtistResultBatches200 = {

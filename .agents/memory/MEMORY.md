@@ -27,3 +27,5 @@
 - [Saved candidate provenance](saved-candidate-provenance.md) — local recheck captures are not the full saved search pool; snippets are not captured account metadata.
 - [Paid batch continuation](paid-batch-continuation.md) — skip acknowledged server errors without retrying; retire unused allocations before continuing under the same spending cap.
 - [Campaign observation boundary](campaign-observation-boundary.md) — mirror progress separately from frozen paid workers; observer uploads never prove worker liveness.
+- [Model alias resolution](model-alias-resolution.md) — a stable model alias can return a dated release; inspect and reuse the charged receipt rather than replaying it.
+- [Campaign eligibility deferrals](campaign-eligibility-deferrals.md) — defer unconfirmed current eligibility without counting a search or changing the frozen queue denominator.

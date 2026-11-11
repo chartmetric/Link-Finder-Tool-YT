@@ -90,6 +90,66 @@ export const GetArtistCampaignProgressResponse = zod.object({
 
 
 /**
+ * @summary Read-only saved YouTube test progress, separate from the Instagram campaign
+ */
+export const getYoutubeArtistProgressResponseProgressOneTotalArtistsMin = 0;
+
+export const getYoutubeArtistProgressResponseProgressOneSearchedArtistsMin = 0;
+
+export const getYoutubeArtistProgressResponseProgressOneProcessedPercentMin = 0;
+export const getYoutubeArtistProgressResponseProgressOneProcessedPercentMax = 100;
+
+export const getYoutubeArtistProgressResponseProgressOneArtistsWithCandidatesMin = 0;
+
+export const getYoutubeArtistProgressResponseProgressOneCheckedArtistsMin = 0;
+
+export const getYoutubeArtistProgressResponseProgressOneLikelyMatchesMin = 0;
+
+export const getYoutubeArtistProgressResponseProgressOneNotAcceptedArtistsMin = 0;
+
+export const getYoutubeArtistProgressResponseProgressOneUncheckedArtistsMin = 0;
+
+export const getYoutubeArtistProgressResponseProgressOneNoChannelFoundMin = 0;
+
+export const getYoutubeArtistProgressResponseProgressOneHeldCandidatesMin = 0;
+
+export const getYoutubeArtistProgressResponseProgressOnePendingCandidatesMin = 0;
+
+export const getYoutubeArtistProgressResponseProgressOneSuccessRateMin = 0;
+export const getYoutubeArtistProgressResponseProgressOneSuccessRateMax = 100;
+
+export const getYoutubeArtistProgressResponseProgressOneReservedUsdMin = 0;
+
+export const getYoutubeArtistProgressResponseProgressOneMaximumSpendUsdMin = 0;
+
+
+
+export const GetYoutubeArtistProgressResponse = zod.object({
+  "progress": zod.union([zod.object({
+  "runId": zod.string(),
+  "scopeSha256": zod.string(),
+  "status": zod.enum(['completed', 'stopped', 'running']),
+  "totalArtists": zod.number().min(getYoutubeArtistProgressResponseProgressOneTotalArtistsMin),
+  "searchedArtists": zod.number().min(getYoutubeArtistProgressResponseProgressOneSearchedArtistsMin),
+  "processedPercent": zod.number().min(getYoutubeArtistProgressResponseProgressOneProcessedPercentMin).max(getYoutubeArtistProgressResponseProgressOneProcessedPercentMax),
+  "artistsWithCandidates": zod.number().min(getYoutubeArtistProgressResponseProgressOneArtistsWithCandidatesMin),
+  "checkedArtists": zod.number().min(getYoutubeArtistProgressResponseProgressOneCheckedArtistsMin),
+  "likelyMatches": zod.number().min(getYoutubeArtistProgressResponseProgressOneLikelyMatchesMin),
+  "notAcceptedArtists": zod.number().min(getYoutubeArtistProgressResponseProgressOneNotAcceptedArtistsMin),
+  "uncheckedArtists": zod.number().min(getYoutubeArtistProgressResponseProgressOneUncheckedArtistsMin),
+  "noChannelFound": zod.number().min(getYoutubeArtistProgressResponseProgressOneNoChannelFoundMin),
+  "heldCandidates": zod.number().min(getYoutubeArtistProgressResponseProgressOneHeldCandidatesMin),
+  "pendingCandidates": zod.number().min(getYoutubeArtistProgressResponseProgressOnePendingCandidatesMin),
+  "successRate": zod.number().min(getYoutubeArtistProgressResponseProgressOneSuccessRateMin).max(getYoutubeArtistProgressResponseProgressOneSuccessRateMax).nullable(),
+  "reservedUsd": zod.number().min(getYoutubeArtistProgressResponseProgressOneReservedUsdMin),
+  "maximumSpendUsd": zod.number().min(getYoutubeArtistProgressResponseProgressOneMaximumSpendUsdMin),
+  "updatedAt": zod.string(),
+  "capturedAt": zod.string()
+}),zod.null()])
+})
+
+
+/**
  * @summary Read-only saved artist batches and diagnostic exports
  */
 export const listArtistResultBatchesResponseBatchesItemObservationScopeIdentityRegExp = new RegExp('^[a-f0-9]{24}$');

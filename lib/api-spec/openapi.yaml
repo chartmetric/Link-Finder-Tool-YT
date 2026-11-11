@@ -58,6 +58,26 @@ paths:
                         description: Why tier details are unavailable; headline progress is still readable.
         "503":
           description: Progress could not be read; missing information is not zero progress
+  /bulk/youtube-artist-progress:
+    get:
+      operationId: getYoutubeArtistProgress
+      tags: [profile-search]
+      summary: Read-only saved YouTube test progress, separate from the Instagram campaign
+      responses:
+        "200":
+          description: Saved counters only; reading never starts or retries paid work
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [progress]
+                properties:
+                  progress:
+                    anyOf:
+                      - { $ref: "#/components/schemas/YoutubeArtistProgress" }
+                      - { type: "null" }
+        "503":
+          description: Saved progress could not be read; missing evidence is not zero progress
   /bulk/artist-results:
     get:
       operationId: listArtistResultBatches
@@ -582,6 +602,29 @@ paths:
           description: Suggestion storage is unavailable
 components:
   schemas:
+    YoutubeArtistProgress:
+      type: object
+      required: [runId, scopeSha256, status, totalArtists, searchedArtists, processedPercent, artistsWithCandidates, checkedArtists, likelyMatches, notAcceptedArtists, uncheckedArtists, noChannelFound, heldCandidates, pendingCandidates, successRate, reservedUsd, maximumSpendUsd, updatedAt, capturedAt]
+      properties:
+        runId: { type: string }
+        scopeSha256: { type: string }
+        status: { type: string, enum: [completed, stopped, running] }
+        totalArtists: { type: number, minimum: 0 }
+        searchedArtists: { type: number, minimum: 0 }
+        processedPercent: { type: number, minimum: 0, maximum: 100 }
+        artistsWithCandidates: { type: number, minimum: 0 }
+        checkedArtists: { type: number, minimum: 0 }
+        likelyMatches: { type: number, minimum: 0 }
+        notAcceptedArtists: { type: number, minimum: 0 }
+        uncheckedArtists: { type: number, minimum: 0 }
+        noChannelFound: { type: number, minimum: 0 }
+        heldCandidates: { type: number, minimum: 0 }
+        pendingCandidates: { type: number, minimum: 0 }
+        successRate: { type: [number, "null"], minimum: 0, maximum: 100 }
+        reservedUsd: { type: number, minimum: 0 }
+        maximumSpendUsd: { type: number, minimum: 0 }
+        updatedAt: { type: string }
+        capturedAt: { type: string }
     ArtistCampaignTierProgress:
       type: object
       required: [tier, totalArtists, processedArtists, checkedArtists, likelyMatches, notAcceptedArtists, incompleteArtists, processedPercent, successRate]

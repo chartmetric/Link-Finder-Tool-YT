@@ -37,6 +37,7 @@ import type {
   ExistingProfilePage,
   GetArtistCampaignProgress200,
   GetArtistResultRows200,
+  GetYoutubeArtistProgress200,
   HealthStatus,
   ListArchivedBulkEvidenceParams,
   ListArtistResultBatches200,
@@ -150,6 +151,83 @@ export function useGetArtistCampaignProgress<TData = Awaited<ReturnType<typeof g
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetArtistCampaignProgressQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetYoutubeArtistProgressUrl = () => {
+
+
+
+
+  return `/api/bulk/youtube-artist-progress`
+}
+
+/**
+ * @summary Read-only saved YouTube test progress, separate from the Instagram campaign
+ */
+export const getYoutubeArtistProgress = async ( options?: Parameters<typeof customFetch>[1]): Promise<GetYoutubeArtistProgress200> => {
+
+  return customFetch<GetYoutubeArtistProgress200>(getGetYoutubeArtistProgressUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetYoutubeArtistProgressQueryKey = () => {
+    return [
+    `/api/bulk/youtube-artist-progress`
+    ] as const;
+    }
+
+
+export const getGetYoutubeArtistProgressQueryOptions = <TData = Awaited<ReturnType<typeof getYoutubeArtistProgress>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getYoutubeArtistProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetYoutubeArtistProgressQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getYoutubeArtistProgress>>> = ({ signal }) => getYoutubeArtistProgress({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getYoutubeArtistProgress>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetYoutubeArtistProgressQueryResult = NonNullable<Awaited<ReturnType<typeof getYoutubeArtistProgress>>>
+export type GetYoutubeArtistProgressQueryError = ErrorType<void>
+
+
+/**
+ * @summary Read-only saved YouTube test progress, separate from the Instagram campaign
+ */
+
+export function useGetYoutubeArtistProgress<TData = Awaited<ReturnType<typeof getYoutubeArtistProgress>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getYoutubeArtistProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetYoutubeArtistProgressQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

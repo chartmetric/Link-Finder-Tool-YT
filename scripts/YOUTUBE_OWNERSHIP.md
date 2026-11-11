@@ -60,3 +60,65 @@ extend that approval to channel collection or model calls. Any paid execution
 needs a separately frozen scope and explicit authorization, with all historical
 charges retained and uncertain admissions never replayed. Do not alter or borrow
 the live Instagram campaign's spending allowance.
+
+### Approved saved-20 ownership check
+
+Preparation: `node scripts/src/youtube-ownership-check-prep.mjs`.
+Offline preflight: `node scripts/src/run-youtube-ownership-check.mjs`.
+The live command additionally requires `--run-approved`,
+`--additional-cap-cents=136`, and `--plan-sha256=` with the exact saved plan
+digest. Those flags do not themselves grant permission; an explicit user
+approval for that frozen scope is required.
+
+The approved check includes 34 channel-profile requests and up to 34 conditional
+model requests. It preserves the original $0.40 conservative discovery
+reservation. At two cents reserved per request, the additional allowance is
+$1.36, with a maximum combined reservation of $1.76 under the unchanged $2
+YouTube ceiling. Reservations are not provider invoices.
+
+The two additive coordination tables, `youtube_ownership_checks` and
+`youtube_ownership_admissions`, share the existing discovery parent budget.
+Every admission locks that parent and the ownership phase, checks ownership,
+checks the frozen request hash and approved operation, checks for unresolved
+admissions, and increments both counters transactionally. The parent must
+always equal its original reservation plus the phase's reservations. A unique
+parent-phase binding prevents a second worker from resetting the allowance.
+Original discovery results and catalog links are not updated.
+
+An admission is never deleted or retried. Raw receipts are written before an
+admission becomes returned. Funding, access/authentication, rate-limit,
+unreadable-response, and uncertain-transport outcomes stop execution. An
+archived unavailable-channel response or a response that cannot bind the
+requested channel is missing evidence, not proof that no account exists.
+
+The provider's documented channel response has `channelId`, `channel`, `name`,
+`description`, `links`, and `subscriberCount`. Normalize only returned fields;
+the documented HTTP YouTube canonical channel URL can become HTTPS on the
+same allowed host. Do not invent a handle from the requested URL or treat a
+generic badge as an Official Artist Channel badge. Keep the full raw receipt.
+
+All channel captures are collected before ownership checks so reused channel
+IDs and handle aliases can be assessed across the cohort. Known Topic, fan,
+organizational, and conflicting channels do not consume model calls. Models
+receive the full frozen artist context, full channel capture, search evidence,
+and ownership rules. Requests above the approved 6,000-byte limit are held
+explicitly; no biography or catalog context is silently cut. Freeze the exact
+request before admission and bind typed answers to that request and policy
+input. A low `likely` score is not vetoed solely by an arbitrary threshold.
+
+Execution evidence and CSVs are saved additively under the frozen batch's
+`ownership-check-execution` directory. None of these scripts changes the live
+Instagram executor or its funding.
+
+The requested JEV alias can return the concrete dated model name. Accept only
+the exact observed release allowed by the transport and preserve both names;
+an unrelated or unknown release still stops the phase. This is not a model
+fallback.
+
+An explicit `--continue-approved` recovery is supported only for a stopped,
+drained phase with every admission reconciled to its local journal, exact
+request and archived receipt. The transaction rotates the owner and seals a
+new continuation authorization without changing either spending counter or
+ceiling. Previously returned requests are reused from their receipts, not sent
+again; immutable capture/input files must compare exactly before reuse. An
+uncertain admission blocks this continuation.

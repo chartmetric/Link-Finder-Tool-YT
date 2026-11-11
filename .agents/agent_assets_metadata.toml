@@ -1288,3 +1288,17 @@ mtime_ms = 1794358799819
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/07c695ea-0077-45d3-a7e1-82eee64be6cf/f181da38-754a-4674-a00f-4ea07ee8368f"
 storage_version_token = "1794358820702928"
 content_type = "text/csv"
+
+[[outputs]]
+id = "QsN9s4fnj3juPgnq2JCKl"
+uri = "file://generated-artifacts/youtube-no-link-20-usd2/ownership-check-execution/youtube-ownership-findings.csv"
+type = "table"
+title = "YouTube ownership findings — 20 artists"
+description = "All 34 candidates plus four no-result artists, captured channel details, artist metadata, decisions and reasons. Thirteen checks were held for evidence size; no catalog links were changed."
+logical_id = "2115756a-f864-48e9-ba1e-ed1eabf585e3"
+content_hash = "sha256:7cf6d8773a66d4e1e151a4e8af10ab237451732421f0a806c96f4cb5b5f6ddfb"
+size = 172988
+mtime_ms = 1794360172183
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2115756a-f864-48e9-ba1e-ed1eabf585e3/1b49a447-a98f-41a7-98fd-b0b9d83a3f61"
+storage_version_token = "1794360360579118"
+content_type = "text/csv"
