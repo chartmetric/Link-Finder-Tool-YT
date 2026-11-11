@@ -219,7 +219,7 @@ export const GetArtistResultRowsParams = zod.object({
   "offset": zod.coerce.number().min(getArtistResultRowsPathOffsetMin),
   "pageSize": zod.coerce.number().min(1).max(getArtistResultRowsPathPageSizeMax),
   "searchTerm": zod.coerce.string().max(getArtistResultRowsPathSearchTermMax).describe('Prefix the search with q:; q: alone means no search.'),
-  "resultFilter": zod.enum(['all', 'verified', 'review', 'not_inspected', 'metadata_failed', 'no_candidate', 'controls', 'research_supported', 'held', 'skipped', 'partial_failure', 'shared_handle', 'uninspected', 'unavailable', 'inconclusive', 'unsupported', 'positive_review_suggestion', 'no_saved_candidate'])
+  "resultFilter": zod.enum(['all', 'verified', 'review', 'not_inspected', 'metadata_failed', 'no_candidate', 'controls', 'research_supported', 'held', 'skipped', 'partial_failure', 'shared_handle', 'uninspected', 'unavailable', 'inconclusive', 'unsupported', 'positive_review_suggestion', 'no_saved_candidate', 'likely', 'checked_not_accepted', 'no_channel', 'pending', 'deferred', 'failed', 'queued'])
 })
 
 export const getArtistResultRowsResponseBatchObservationScopeIdentityRegExp = new RegExp('^[a-f0-9]{24}$');
@@ -227,6 +227,8 @@ export const getArtistResultRowsResponseBatchObservationScopeIdentityRegExp = ne
 
 export const getArtistResultRowsResponseBatchObservationParentBudgetIdRegExp = new RegExp('\\S');
 export const getArtistResultRowsResponseBatchObservationCheckpointIdentityRegExp = new RegExp('^[a-f0-9]{16}$');
+export const getArtistResultRowsResponsePageArtistCountMin = 0;
+
 
 
 export const GetArtistResultRowsResponse = zod.object({
@@ -280,7 +282,8 @@ export const GetArtistResultRowsResponse = zod.object({
 }))
 })),
   "total": zod.number(),
-  "nextOffset": zod.number().nullable()
+  "nextOffset": zod.number().nullable(),
+  "pageArtistCount": zod.number().min(getArtistResultRowsResponsePageArtistCountMin).optional().describe('Present for artist-indexed YouTube pages. Total and cursors count artists; rows retain every candidate for the selected artists.')
 })
 
 

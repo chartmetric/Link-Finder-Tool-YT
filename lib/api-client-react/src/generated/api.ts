@@ -321,7 +321,7 @@ export const getGetArtistResultRowsUrl = (batchId: string,
     offset: number,
     pageSize: number,
     searchTerm: string,
-    resultFilter: 'all' | 'verified' | 'review' | 'not_inspected' | 'metadata_failed' | 'no_candidate' | 'controls' | 'research_supported' | 'held' | 'skipped' | 'partial_failure' | 'shared_handle' | 'uninspected' | 'unavailable' | 'inconclusive' | 'unsupported' | 'positive_review_suggestion' | 'no_saved_candidate',) => {
+    resultFilter: 'all' | 'verified' | 'review' | 'not_inspected' | 'metadata_failed' | 'no_candidate' | 'controls' | 'research_supported' | 'held' | 'skipped' | 'partial_failure' | 'shared_handle' | 'uninspected' | 'unavailable' | 'inconclusive' | 'unsupported' | 'positive_review_suggestion' | 'no_saved_candidate' | 'likely' | 'checked_not_accepted' | 'no_channel' | 'pending' | 'deferred' | 'failed' | 'queued',) => {
 
 
 
@@ -336,7 +336,7 @@ export const getArtistResultRows = async (batchId: string,
     offset: number,
     pageSize: number,
     searchTerm: string,
-    resultFilter: 'all' | 'verified' | 'review' | 'not_inspected' | 'metadata_failed' | 'no_candidate' | 'controls' | 'research_supported' | 'held' | 'skipped' | 'partial_failure' | 'shared_handle' | 'uninspected' | 'unavailable' | 'inconclusive' | 'unsupported' | 'positive_review_suggestion' | 'no_saved_candidate', options?: Parameters<typeof customFetch>[1]): Promise<GetArtistResultRows200> => {
+    resultFilter: 'all' | 'verified' | 'review' | 'not_inspected' | 'metadata_failed' | 'no_candidate' | 'controls' | 'research_supported' | 'held' | 'skipped' | 'partial_failure' | 'shared_handle' | 'uninspected' | 'unavailable' | 'inconclusive' | 'unsupported' | 'positive_review_suggestion' | 'no_saved_candidate' | 'likely' | 'checked_not_accepted' | 'no_channel' | 'pending' | 'deferred' | 'failed' | 'queued', options?: Parameters<typeof customFetch>[1]): Promise<GetArtistResultRows200> => {
 
   return customFetch<GetArtistResultRows200>(getGetArtistResultRowsUrl(batchId,offset,pageSize,searchTerm,resultFilter),
   {
@@ -355,7 +355,7 @@ export const getGetArtistResultRowsQueryKey = (batchId: string,
     offset: number,
     pageSize: number,
     searchTerm: string,
-    resultFilter: 'all' | 'verified' | 'review' | 'not_inspected' | 'metadata_failed' | 'no_candidate' | 'controls' | 'research_supported' | 'held' | 'skipped' | 'partial_failure' | 'shared_handle' | 'uninspected' | 'unavailable' | 'inconclusive' | 'unsupported' | 'positive_review_suggestion' | 'no_saved_candidate',) => {
+    resultFilter: 'all' | 'verified' | 'review' | 'not_inspected' | 'metadata_failed' | 'no_candidate' | 'controls' | 'research_supported' | 'held' | 'skipped' | 'partial_failure' | 'shared_handle' | 'uninspected' | 'unavailable' | 'inconclusive' | 'unsupported' | 'positive_review_suggestion' | 'no_saved_candidate' | 'likely' | 'checked_not_accepted' | 'no_channel' | 'pending' | 'deferred' | 'failed' | 'queued',) => {
     return [
     `/api/bulk/artist-results/${batchId}/rows/${offset}/${pageSize}/${searchTerm}/${resultFilter}`
     ] as const;
@@ -366,7 +366,7 @@ export const getGetArtistResultRowsQueryOptions = <TData = Awaited<ReturnType<ty
     offset: number,
     pageSize: number,
     searchTerm: string,
-    resultFilter: 'all' | 'verified' | 'review' | 'not_inspected' | 'metadata_failed' | 'no_candidate' | 'controls' | 'research_supported' | 'held' | 'skipped' | 'partial_failure' | 'shared_handle' | 'uninspected' | 'unavailable' | 'inconclusive' | 'unsupported' | 'positive_review_suggestion' | 'no_saved_candidate', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArtistResultRows>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+    resultFilter: 'all' | 'verified' | 'review' | 'not_inspected' | 'metadata_failed' | 'no_candidate' | 'controls' | 'research_supported' | 'held' | 'skipped' | 'partial_failure' | 'shared_handle' | 'uninspected' | 'unavailable' | 'inconclusive' | 'unsupported' | 'positive_review_suggestion' | 'no_saved_candidate' | 'likely' | 'checked_not_accepted' | 'no_channel' | 'pending' | 'deferred' | 'failed' | 'queued', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArtistResultRows>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -397,7 +397,7 @@ export function useGetArtistResultRows<TData = Awaited<ReturnType<typeof getArti
     offset: number,
     pageSize: number,
     searchTerm: string,
-    resultFilter: 'all' | 'verified' | 'review' | 'not_inspected' | 'metadata_failed' | 'no_candidate' | 'controls' | 'research_supported' | 'held' | 'skipped' | 'partial_failure' | 'shared_handle' | 'uninspected' | 'unavailable' | 'inconclusive' | 'unsupported' | 'positive_review_suggestion' | 'no_saved_candidate', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArtistResultRows>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+    resultFilter: 'all' | 'verified' | 'review' | 'not_inspected' | 'metadata_failed' | 'no_candidate' | 'controls' | 'research_supported' | 'held' | 'skipped' | 'partial_failure' | 'shared_handle' | 'uninspected' | 'unavailable' | 'inconclusive' | 'unsupported' | 'positive_review_suggestion' | 'no_saved_candidate' | 'likely' | 'checked_not_accepted' | 'no_channel' | 'pending' | 'deferred' | 'failed' | 'queued', options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getArtistResultRows>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 

@@ -107,7 +107,7 @@ paths:
         - { name: offset, in: path, required: true, schema: { type: number, minimum: 0 } }
         - { name: pageSize, in: path, required: true, schema: { type: number, minimum: 1, maximum: 50 } }
         - { name: searchTerm, in: path, required: true, description: "Prefix the search with q:; q: alone means no search.", schema: { type: string, maxLength: 122 } }
-        - { name: resultFilter, in: path, required: true, schema: { type: string, enum: [all, verified, review, not_inspected, metadata_failed, no_candidate, controls, research_supported, held, skipped, partial_failure, shared_handle, uninspected, unavailable, inconclusive, unsupported, positive_review_suggestion, no_saved_candidate] } }
+        - { name: resultFilter, in: path, required: true, schema: { type: string, enum: [all, verified, review, not_inspected, metadata_failed, no_candidate, controls, research_supported, held, skipped, partial_failure, shared_handle, uninspected, unavailable, inconclusive, unsupported, positive_review_suggestion, no_saved_candidate, likely, checked_not_accepted, no_channel, pending, deferred, failed, queued] } }
       responses:
         "200":
           description: A page of frozen saved results; omitted evidence stays explicitly missing
@@ -121,6 +121,7 @@ paths:
                   rows: { type: array, items: { $ref: "#/components/schemas/ArtistResultRow" } }
                   total: { type: number }
                   nextOffset: { type: [number, "null"] }
+                  pageArtistCount: { type: number, minimum: 0, description: Present for artist-indexed YouTube pages. Total and cursors count artists; rows retain every candidate for the selected artists. }
         "404": { description: Batch not found }
         "400": { description: Invalid filters or pagination }
   /bulk/artist-results/{batchId}/csv:

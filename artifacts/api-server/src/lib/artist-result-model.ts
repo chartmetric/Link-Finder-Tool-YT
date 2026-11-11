@@ -3,7 +3,8 @@ import type { BulkBrandRun, ArtistResultBatch, ArtistResultRow } from "@workspac
 export type BatchDocument = { batch: ArtistResultBatch; rows: ArtistResultRow[] };
 export const artistResultFilters = ["all", "verified", "review", "not_inspected", "metadata_failed", "no_candidate", "controls",
   "research_supported", "held", "skipped", "partial_failure", "shared_handle",
-  "uninspected", "unavailable", "inconclusive", "unsupported", "positive_review_suggestion", "no_saved_candidate"] as const;
+  "uninspected", "unavailable", "inconclusive", "unsupported", "positive_review_suggestion", "no_saved_candidate",
+  "likely", "checked_not_accepted", "no_channel", "pending", "deferred", "failed", "queued"] as const;
 export function csvCell(value: unknown) {
   let text = value == null ? "" : String(value);
   if (/^[\s]*[=+\-@]/.test(text)) text = `'${text}`;
@@ -26,7 +27,7 @@ export function paginateResults(doc: BatchDocument, offset: number, limit: numbe
   const term = search.trim().toLocaleLowerCase();
   const matches = doc.rows.filter(row => (filter === "all"
     || (filter === "controls" ? row.comparisonType === "control" : row.status === filter))
-    && (!term || `${row.artistName} ${row.profileId} ${row.candidateUrl ?? ""} ${row.verifiedUrl ?? ""}`.toLocaleLowerCase().includes(term)));
+    && (!term || `${row.artistName} ${row.profileId} ${row.candidateUrl ?? ""} ${row.verifiedUrl ?? ""} ${row.fields.filter(f => f.group === "identity").map(f => f.value).join(" ")}`.toLocaleLowerCase().includes(term)));
   return { batch: doc.batch, rows: matches.slice(offset, offset + limit), total: matches.length,
     nextOffset: offset + limit < matches.length ? offset + limit : null };
 }

@@ -4,6 +4,7 @@ import { nativeArtistDocument, type BatchDocument } from "./artist-result-model"
 import { storedArtistBatches, storedArtistDocument } from "./artist-result-storage";
 import { bulkOwnership } from "./bulk-ownership-store";
 import type { ArtistResultBatch } from "@workspace/api-zod";
+import { youtubeResultsSummary } from "./youtube-campaign-results";
 
 let nativeCache: { at: number; batches: ArtistResultBatch[] } | undefined;
 let nativeWarnings: string[] = [];
@@ -47,22 +48,25 @@ export async function listArtistResults() {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const nativeRead = loadNativeBatches().then(value => ({ status: "fulfilled" as const, value }),
     () => ({ status: "rejected" as const }));
-  const [exports, native] = await Promise.all([
+  const [exports, native, youtube] = await Promise.all([
     storedArtistBatches().then(value => ({ status: "fulfilled" as const, value }),
       () => ({ status: "rejected" as const })),
     Promise.race([nativeRead, new Promise<{ status: "pending" }>(resolve => {
       timer = setTimeout(() => resolve({ status: "pending" }), 2500);
     })]),
+    youtubeResultsSummary().then(batch => ({ batch, error: false }),
+      () => ({ batch: null, error: true })),
   ]);
   clearTimeout(timer);
-  if (exports.status === "rejected" && native.status === "rejected") throw Error("Saved batch sources are unavailable. No discovery was started.");
+  if (exports.status === "rejected" && native.status === "rejected" && !youtube.batch) throw Error("Saved batch sources are unavailable. No discovery was started.");
   const warnings: string[] = [];
+  if (youtube.error) warnings.push("YouTube campaign results or current channel holds could not be loaded. No archived positive is shown as current without the coordinator.");
   if (exports.status === "rejected") warnings.push("Saved CSV export archives could not be loaded. Refresh to retry; this is not an empty history.");
   if (native.status === "rejected") warnings.push("Live bulk-run history could not be loaded. Saved CSV archives are still available.");
   if (native.status === "pending") warnings.push("Older batch history is still loading. CSV archives are available now; Refresh will include history when it is ready.");
   if (native.status === "fulfilled" && native.value.length >= 1000) warnings.push("Showing the latest 1,000 native batches; older CSV archives remain separate.");
   return { batches: [...(exports.status === "fulfilled" ? exports.value.batches : []),
-    ...(native.status === "fulfilled" ? native.value : [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    ...(native.status === "fulfilled" ? native.value : []), ...(youtube.batch ? [youtube.batch] : [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     warnings: [...warnings, ...(native.status === "fulfilled" ? nativeWarnings : []),
       ...(exports.status === "fulfilled" ? exports.value.warnings : [])] };
 }

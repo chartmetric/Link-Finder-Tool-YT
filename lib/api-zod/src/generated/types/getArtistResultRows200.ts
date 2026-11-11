@@ -14,4 +14,9 @@ export type GetArtistResultRows200 = {
   total: number;
   /** @nullable */
   nextOffset: number | null;
+  /**
+     * Present for artist-indexed YouTube pages. Total and cursors count artists; rows retain every candidate for the selected artists.
+     * @minimum 0
+     */
+  pageArtistCount?: number;
 };

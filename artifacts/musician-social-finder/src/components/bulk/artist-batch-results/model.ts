@@ -10,7 +10,16 @@ export const GROUPS: { key: ArtistResultFieldGroup; label: string; note: string 
 ];
 export type ResultFilter = 'all' | 'verified' | 'review' | 'not_inspected' | 'metadata_failed' | 'no_candidate' | 'controls'
   | 'research_supported' | 'held' | 'skipped' | 'partial_failure' | 'shared_handle'
-  | 'uninspected' | 'unavailable' | 'inconclusive' | 'unsupported' | 'positive_review_suggestion' | 'no_saved_candidate';
+  | 'uninspected' | 'unavailable' | 'inconclusive' | 'unsupported' | 'positive_review_suggestion' | 'no_saved_candidate'
+  | 'likely' | 'checked_not_accepted' | 'no_channel' | 'pending' | 'deferred' | 'failed' | 'queued';
+export const YOUTUBE_FILTERS: { key: ResultFilter; label: string }[] = [
+  { key: 'all', label: 'All artists' }, { key: 'likely', label: 'Artists with likely suggestions' },
+  { key: 'checked_not_accepted', label: 'Artists checked, not accepted' },
+  { key: 'shared_handle', label: 'Artists with channel conflicts' },
+  { key: 'no_channel', label: 'No channel found' },
+  { key: 'pending', label: 'Unchecked / pending artists' }, { key: 'deferred', label: 'Deferred' },
+  { key: 'failed', label: 'Failed' }, { key: 'queued', label: 'Not started' },
+];
 export const FILTERS: { key: ResultFilter; label: string }[] = [
   { key: 'all', label: 'All' }, { key: 'verified', label: 'Verified' }, { key: 'review', label: 'Review' },
   { key: 'not_inspected', label: 'Not inspected' }, { key: 'metadata_failed', label: 'Metadata unavailable' },
@@ -50,6 +59,11 @@ export const statusTone = (s: string) => {
   return 'neutral';
 };
 export const inspectionNotes: Record<string, string> = {
+  likely: 'Likely artist-owned suggestion only. Not verified ownership; no catalog link was accepted.',
+  checked_not_accepted: 'A recorded ownership assessment did not produce a current likely suggestion. Not proof of an absent channel.',
+  shared_handle: 'Held for cross-artist channel reuse. Any earlier likely judgment is historical, not a current suggestion.',
+  no_channel: 'Completed search returned no candidate. This does not prove no channel exists.',
+  held: 'Check held because the prepared model input exceeded the approved size limit; not a rejection.',
   uninspected: 'No completed inspection in this run. The saved URL is preserved.',
   unavailable: 'Completed provider receipt could not supply usable evidence. This does not prove the account is absent.',
   inconclusive: 'Captured evidence or an uncertain outcome does not resolve identity. No automatic retry.',

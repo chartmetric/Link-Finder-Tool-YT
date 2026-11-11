@@ -57,11 +57,14 @@ export function BatchPicker({ batches, selected, onSelect }: { batches: ArtistRe
 }
 
 export function BatchSummary({ b }: { b: ArtistResultBatch }) {
+  const youtube = b.id.startsWith('youtube-');
   const observation = alternativesObservation(b);
   if (b.source === 'live' && b.rowCount === 0) return <p className="abr-explain" role="status">Loading this batch’s saved candidate counts. Missing counts are not zero results.</p>;
   const stats: [string, number | string][] = [
     ['Artists', b.artistCount], ['Candidates', b.candidateCount], ['Rows', b.rowCount], ['Verified', b.verifiedCount],
-    ['Review', b.reviewCount], ['Not inspected', b.notInspectedCount], ['Metadata unavailable', b.metadataFailedCount], ['No candidate', b.noCandidateCount],
+    [youtube ? 'Artists with likely suggestions' : 'Review', b.reviewCount], ['Not inspected', b.notInspectedCount],
+    ...(!youtube ? [['Metadata unavailable', b.metadataFailedCount] as [string, number]] : []),
+    [youtube ? 'Artists with no channel found' : 'No candidate', b.noCandidateCount],
     ['Conservative reservation', usd(b.reservedUsd)], ['Provider reported', usd(b.reportedUsd)],
   ];
   return (

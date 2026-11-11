@@ -148,7 +148,7 @@ export default function BulkBrands() {
             </p>
           )}
 
-          {kind === 'artist' && <ArtistBatchResults />}
+          {kind === 'artist' && <><ArtistBatchResults platform="YouTube" /><ArtistBatchResults /></>}
           {kind === 'artist' && <MusicianInstagramResearchProgress />}
           <CoveragePanel kind={kind} />
 

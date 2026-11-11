@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, Download, RefreshCw } from 'lucide-react';
 import { getDownloadArtistResultCsvUrl, getGetArtistResultRowsQueryKey, getListArtistResultBatchesQueryKey, useGetArtistResultRows, useListArtistResultBatches } from '@workspace/api-client-react';
 import { apiError } from '@/lib/bulk';
-import { FILTERS, PAGE_SIZE, type ResultFilter } from './model';
+import { FILTERS, YOUTUBE_FILTERS, PAGE_SIZE, type ResultFilter } from './model';
 import { BatchPicker, BatchSummary } from './batch-picker';
 import { ResultRow } from './result-row';
 import './artist-batch-results.css';
@@ -11,9 +11,12 @@ import './artist-batch-results.css';
 // Mirror the router base so the link stays inside this artifact's route.
 const base = () => import.meta.env.BASE_URL.replace(/\/$/, '');
 
-export function ArtistBatchResults() {
+export function ArtistBatchResults({ platform = 'Instagram' }: { platform?: 'Instagram' | 'YouTube' }) {
+  const youtube = platform === 'YouTube';
+  const titleId = youtube ? 'abr-youtube-title' : 'abr-title';
+  const [opened, setOpened] = useState(false);
   const list = useListArtistResultBatches({ query: { queryKey: getListArtistResultBatchesQueryKey(), staleTime: 30_000, refetchInterval: 30_000 } });
-  const batches = list.data?.batches ?? [];
+  const batches = (list.data?.batches ?? []).filter(b => b.id.startsWith('youtube-') === youtube);
   const [picked, setPicked] = useState<string | null>(null);
   const batchId = picked && batches.some(b => b.id === picked) ? picked : batches[0]?.id ?? null;
   const batch = batches.find(b => b.id === batchId) ?? null;
@@ -37,23 +40,24 @@ export function ArtistBatchResults() {
   const searchTerm = encodeURIComponent(`q:${search.trim()}`);
   const safeId = encodeURIComponent(batchId ?? '');
   const rows = useGetArtistResultRows(safeId, offset, PAGE_SIZE, searchTerm, filter, { query: {
-    queryKey: getGetArtistResultRowsQueryKey(safeId, offset, PAGE_SIZE, searchTerm, filter), enabled: !!batchId, staleTime: 30_000,
+    queryKey: getGetArtistResultRowsQueryKey(safeId, offset, PAGE_SIZE, searchTerm, filter), enabled: !!batchId && (!youtube || opened), staleTime: youtube ? 0 : 30_000,
+    refetchInterval: youtube && opened ? 15_000 : false, refetchOnMount: youtube ? 'always' : true,
   } });
   const page = rows.data && rows.data.batch.id === batchId ? rows.data : undefined;
   const total = page?.total ?? 0;
   const toggle = (id: string) => setExpanded(s => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   return (
-    <section className="blk-cov abr" aria-labelledby="abr-title" data-testid="section-artist-batch-results">
-      <details className="abr-disclosure">
+    <section className="blk-cov abr" aria-labelledby={titleId} data-testid={youtube ? 'section-youtube-batch-results' : 'section-artist-batch-results'}>
+      <details className="abr-disclosure" onToggle={e => setOpened(e.currentTarget.open)}>
       <summary className="blk-cov-head abr-disclosure-toggle" data-testid="toggle-artist-batch-results">
         <div>
-          <div className="inv-kicker">Results / Instagram discovery and verification</div>
-          <h2 id="abr-title">Saved artist batch results</h2>
+          <div className="inv-kicker">Results / {platform} discovery and verification</div>
+          <h2 id={titleId}>{youtube ? 'Saved YouTube campaign findings' : 'Saved artist batch results'}</h2>
         </div>
         <ChevronDown className="abr-disclosure-chevron" size={20} aria-hidden="true" />
       </summary>
-      <div className="abr-scroll" role="region" aria-labelledby="abr-title" tabIndex={0}>
+      <div className="abr-scroll" role="region" aria-labelledby={titleId} tabIndex={0}>
         <div className="blk-ig-head-actions">
           <button type="button" className="inv-retry" onClick={() => { list.refetch(); if (batchId) rows.refetch(); }} disabled={list.isFetching || rows.isFetching} data-testid="button-refresh-artist-results">
             <RefreshCw size={12} className={list.isFetching || rows.isFetching ? 'inv-spin' : ''} /> {list.isFetching || rows.isFetching ? 'Refreshing' : 'Refresh'}
@@ -72,20 +76,21 @@ export function ArtistBatchResults() {
           {batch && <BatchSummary b={page?.batch ?? batch} />}
 
           <div className="abr-controls">
-            <label className="abr-search"><span>Search artist, profile or URL</span>
+            <label className="abr-search"><span>{youtube ? 'Search artist, profile, Chartmetric or channel ID' : 'Search artist, profile or URL'}</span>
               <input type="search" value={searchInput} maxLength={120} onChange={e => onSearch(e.target.value)} placeholder="Type to filter rows" data-testid="input-artist-results-search" />
             </label>
             <div className="blk-ig-toggle" role="group" aria-label="Status filter">
-              {FILTERS.map(f => <button key={f.key} type="button" aria-pressed={filter === f.key} onClick={() => setFilter(f.key)} data-testid={`button-filter-${f.key}`}>{f.label}</button>)}
+              {(youtube ? YOUTUBE_FILTERS : FILTERS).map(f => <button key={f.key} type="button" aria-pressed={filter === f.key} onClick={() => setFilter(f.key)} data-testid={`button-filter-${f.key}`}>{f.label}</button>)}
             </div>
           </div>
+          {youtube && <p className="abr-hint">Filters and pages select artists. Every candidate for the selected artists remains visible, including other outcomes and missing archive evidence.</p>}
 
           {!page && rows.isLoading || (!page && rows.isFetching) ? <div className="abr-skel" role="status" aria-label="Loading rows"><i /><i /><i /><i /></div>
             : rows.isError ? <div className="blk-cov-error" role="alert"><span>{apiError(rows.error, 'Could not load rows for this batch.')}</span><button type="button" className="inv-retry" onClick={() => rows.refetch()} data-testid="button-retry-artist-rows">Retry</button></div>
             : !page || page.rows.length === 0 ? <p className="blk-cov-empty" data-testid="text-no-artist-rows">{search || filter !== 'all' ? 'No rows match this search and filter. Clear them to see the whole batch.' : 'This batch has no saved rows.'}</p>
             : <>
-              <p className="abr-hint" role="status" data-testid="text-artist-rows-range">Showing {(offset + 1).toLocaleString()}–{(offset + page.rows.length).toLocaleString()} of {total.toLocaleString()} rows</p>
-              <ul className="abr-rows" aria-busy={rows.isFetching}>{page.rows.map(r => <ResultRow key={r.id} row={r} open={expanded.has(r.id)} onToggle={() => toggle(r.id)} />)}</ul>
+              <p className="abr-hint" role="status" data-testid="text-artist-rows-range">Showing {(offset + 1).toLocaleString()}–{(offset + (page.pageArtistCount ?? page.rows.length)).toLocaleString()} of {total.toLocaleString()} {page.pageArtistCount !== undefined ? `artists · ${page.rows.length.toLocaleString()} candidate / outcome rows` : 'rows'}</p>
+              <ul className="abr-rows" aria-busy={rows.isFetching}>{page.rows.map(r => <ResultRow key={r.id} row={r} platform={platform} open={expanded.has(r.id)} onToggle={() => toggle(r.id)} />)}</ul>
               <div className="blk-cov-pages">
                 <button type="button" className="inv-retry" disabled={offset === 0 || rows.isFetching} onClick={() => setOffset(o => Math.max(0, o - PAGE_SIZE))} data-testid="button-prev-artist-rows">Previous</button>
                 <span className="inv-mono abr-hint">Page {Math.floor(offset / PAGE_SIZE) + 1} of {Math.max(1, Math.ceil(total / PAGE_SIZE))}</span>
