@@ -54,6 +54,35 @@ function role(text) {
     return 'organization_or_third_party_possible';
   return 'unknown';
 }
+// A matched phrase can be a recording title, not the catalog performer.
+// These narrow holds affect future uploader-request planning only. They do not
+// establish a different artist or remove archived evidence.
+export function videoMentionHold(artist,row){
+  const boundNames=youtubeSearchNames(artist);
+  const names=boundNames.map(r=>norm(r.name));
+  const title=norm(row.title),snippet=norm(row.snippet);
+  for(const name of names){
+    if((title+' '+snippet).includes(name+' is a ')&&( /\b(?:track|song)\b/.test(title+' '+snippet)))
+      return 'artist_phrase_described_as_recording';
+  }
+  if(/\bsong by ai\b|\bai generated (?:song|music)\b/i.test(String(row.title)+' '+String(row.snippet)))
+    return 'ai_song_identity_unbound';
+  const parts=String(row.snippet??'').split(/[·•]/).map(norm);
+  if(/provided to youtube by/i.test(row.snippet??'')&&parts.length>=2
+    &&!names.some(n=>parts.slice(1).includes(n)))
+    return 'distribution_credits_do_not_match_catalog_name';
+  const rawTitle=String(row.title??'').normalize('NFKC').toLowerCase().replace(/^[^\p{L}\p{N}]+/u,'');
+  const escape=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const titleCredit=boundNames.some(({name})=>{
+    const exact=escape(String(name).normalize('NFKC').toLowerCase().trim());
+    return new RegExp('^'+exact+'\\s*(?:[-–—:|·(\\[]|$|\\b(?:official|music|video|lyrics|nightcore|topic)\\b)','u').test(rawTitle)
+      ||new RegExp('[-–—|·]\\s*'+exact+'\\s*(?:[-–—|·(\\[]|$)','u').test(rawTitle);
+  });
+  const distributionCredit=/provided to youtube by/i.test(row.snippet??'')
+    &&names.some(n=>parts.slice(1).includes(n));
+  if(!titleCredit&&!distributionCredit)return 'artist_mention_without_clear_performer_credit';
+  return null;
+}
 export function planVideoDiscovery(artist, organic, provenance) {
   const bound = binding(artist);
   assert.ok(Array.isArray(organic), 'Missing organic results is not a no-match');
@@ -69,7 +98,7 @@ export function planVideoDiscovery(artist, organic, provenance) {
     const matchedNames = names.filter(name => (' ' + text + ' ').includes(' ' + name + ' '));
     const source = {...provenance, ...bound, resultIndex: index, sourceUrl: row.link, title, snippet,
       resultSha256: digest(row), matchedNames, roleHint: role(title + ' ' + snippet),
-      verified: false, ownershipEvidence: false};
+      videoMentionHold:videoMentionHold(artist,row),verified: false, ownershipEvidence: false};
     if (channel) {
       const clue = channels.get(channel) ?? {...bound, url: channel, sources: [],
         verified: false, ownershipEvidence: false};
@@ -86,7 +115,7 @@ export function planVideoDiscovery(artist, organic, provenance) {
     }
   });
   const allVideos = [...videos.values()].map(v => ({...v,
-    eligible: v.sources.some(s => s.matchedNames.length > 0),
+    eligible: v.sources.some(s => s.matchedNames.length > 0&&!s.videoMentionHold),
     priority: v.sources.some(s => s.roleHint === 'unknown') ? 0 : 1}));
   const eligible = allVideos.filter(v => v.eligible).sort((a, b) => a.priority - b.priority
     || a.sources[0].resultIndex - b.sources[0].resultIndex);

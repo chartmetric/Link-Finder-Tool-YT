@@ -92,3 +92,16 @@ of saved-sample metrics, and measure video-ID deferrals separately from direct
 capture-slot losses. Without resolved uploader IDs and a defined selection
 policy, only channel-diversity bounds and optimistic direct-retention ceilings
 are justified.
+
+Primary uploader-recovery deliverables must separate a small review shortlist
+from the full raw uploader evidence. Neither is an ownership-approved import.
+
+**Why:** The user repeatedly found promotional uploaders, broadcasters and
+song-title collisions in raw uploader exports and requested a shared fix, not
+only per-artist annotations.
+
+**How to apply:** Hold unbound names and shared channels, preserve exact-pair
+user rejections, retain clearly separated Topic leads, and require independent
+ownership evidence after name triage. Keep all held evidence accessible without
+describing it as a likely match or proving that an artist has no channel. A
+stricter shortlist is a precision/recall tradeoff, not demonstrated accuracy.

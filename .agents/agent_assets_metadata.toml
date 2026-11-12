@@ -1918,3 +1918,31 @@ mtime_ms = 1794501026147
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/75a69475-d842-4bfa-a131-912251a609a7/6825e68f-38dc-402d-898f-7e7e701a3593"
 storage_version_token = "1794501034875850"
 content_type = "text/csv"
+
+[[outputs]]
+id = "JW11qdgQPYxnNaizAMTzH"
+uri = "file://generated-artifacts/youtube-uploader-reviewed-audit-2026-11-12/review-candidates.csv"
+type = "table"
+title = "YouTube shortlist — ownership still unverified"
+description = "6 deduplicated channel candidates across 5 artists, including one clearly labeled Topic lead. None approved for catalog import."
+logical_id = "182fdacd-6867-4c64-aab5-7bf1eabe8868"
+content_hash = "sha256:3aa0a6029d41e3296766315dfd36eea48dc124fcc019c2347c7e325e11fc464b"
+size = 2874
+mtime_ms = 1794501601219
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/182fdacd-6867-4c64-aab5-7bf1eabe8868/cad28d65-24da-431c-946c-578ec6124901"
+storage_version_token = "1794501675960122"
+content_type = "text/csv"
+
+[[outputs]]
+id = "VJPb2YCywa3ONjaBdlnnR"
+uri = "file://generated-artifacts/youtube-uploader-reviewed-audit-2026-11-12/all-uploader-evidence-reviewed.csv"
+type = "table"
+title = "Full YouTube evidence with rejection and hold reasons"
+description = "All 37 original observations retained: 6 user-rejected rows, 22 identity holds, and 9 name-matching observations. No catalog changes or paid calls."
+logical_id = "56414489-5820-448f-94fb-27499f2916ca"
+content_hash = "sha256:5a8266503bba7d5bf874d84569076da53f9b2524dc5cd52ba33174e5a9430b75"
+size = 15729
+mtime_ms = 1794501601219
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/56414489-5820-448f-94fb-27499f2916ca/8453f324-72c3-4254-b8f6-7714b380f5db"
+storage_version_token = "1794501676622381"
+content_type = "text/csv"

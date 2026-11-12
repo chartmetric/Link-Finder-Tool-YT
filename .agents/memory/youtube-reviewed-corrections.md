@@ -29,3 +29,13 @@ artist-owned channels for 张碧晨.
 mark these exact artist/channel pairs as user-rejected in separate reviewed
 exports and exclude them from artist-owned channel imports. This correction
 does not establish whether the artist has another YouTube channel.
+
+The user rejects **Midnight Plus → UC6vWjDzkj0JryCDHKimIKfQ**
+(Driving Dark) and **Midnight Plus → UC1yhNRN9qrTmpvCFwfHZ2FA**
+(Music Px Official) as false positives.
+
+**Why:** The saved searches used the artist phrase as a recording description
+or AI-song title, and uploader resolution did not establish artist ownership.
+
+**How to apply:** Preserve the original discovery evidence while excluding these
+exact artist/channel pairs from artist-owned imports and review shortlists.

@@ -127,3 +127,13 @@ The combined reservation is **4 cents already reserved + 76 cents maximum**.
 Neither saved video may be requested again. The exporter retains both derived
 results, with Topic leads labeled separately and ownership still unaccepted.
 Further recovery depth is not supported automatically.
+
+## Uploader triage in newly sealed workers
+
+See `youtube-uploader-triage.md` for the false-positive investigation. Future
+source workers export deduplicated, name-bound **review candidates** separately
+from all raw uploader evidence. Neither set contains accepted ownership links.
+Known user-rejected pairs are excluded from the shortlist; unknown uploader
+names are held rather than labeled as proven wrong identities. Matching Topic
+leads remain clearly separate from artist-owned channels. These source changes
+do not edit, resume or retroactively alter previously sealed stages.

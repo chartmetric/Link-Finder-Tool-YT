@@ -4,6 +4,7 @@ import {digest} from './youtube-video-discovery-offline.mjs';
 import {mapSavedVideoUploader} from './youtube-video-uploader-review.mjs';
 import {assertVideoStageApproval} from './youtube-video-stage.mjs';
 import {savedVideoRecoveryResults} from './youtube-video-stage-recovery.mjs';
+import {buildVideoUploaderReport} from './youtube-uploader-report.mjs';
 
 export async function durableStageFile(path,bytes){
   const f=await fs.open(path,'wx');
@@ -71,6 +72,9 @@ export async function executeVideoStage({plan,approval,root,gate,assertFrozen,cr
     if(started){
       const owners=new Map(),allResults=[...recovered,...results];
       for(const r of allResults){const set=owners.get(r.url)??new Set();set.add(r.profileId);owners.set(r.url,set);}
+      const artistEvidence=await Promise.all(plan.artists.map(async a=>
+        JSON.parse(await fs.readFile(root+'/evidence/'+a.profileId+'.json','utf8'))));
+      const report=buildVideoUploaderReport(artistEvidence.map(e=>e.artist),allResults);
       const summary={id:plan.id,status,returnedCalls:results.length,maximumCalls:plan.maximumCalls,
         acknowledgedReservationCents:results.length*2,maximumSpendCents:plan.maximumSpendCents,
         recoveredSavedResponses:recovered.length,priorReservedCents:plan.recovery?.previousReservedCents??0,
@@ -79,14 +83,10 @@ export async function executeVideoStage({plan,approval,root,gate,assertFrozen,cr
         artistsWithResolvedUploaders:new Set(allResults.map(r=>r.profileId)).size,
         uniqueChannels:new Set(allResults.map(r=>r.url)).size,sharedChannels:[...owners].filter(([,v])=>v.size>1).length,
         acceptedOwnershipLinks:0,channelMetadataCalls:0,modelCalls:0,searchCalls:0,catalogWrites:0,
-        fullCampaignResumed:false,nextStageApprovalRequired:true};
+        fullCampaignResumed:false,nextStageApprovalRequired:true,uploaderTriage:report.summary};
       await durableStageFile(root+'/summary.json',JSON.stringify(summary,null,2));
-      const columns=['artist','tier','profile_id','cm_artist','video_url','youtube_url','uploader_name',
-        'channel_type_label','artist_name_agreement','shared_channel_hold','identity_status'];
-      const cell=value=>{let s=String(value??'');if(/^[=+\-@\t\r\n]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';};
-      const rows=allResults.map(r=>[r.artist,r.tier,r.profileId,r.cmArtist,r.videoUrl,r.url,r.uploaderName,
-        r.topicLabel,r.artistNameAgreement,owners.get(r.url).size>1,'Discovery only — channel and artist identity checks require next approval']);
-      await durableStageFile(root+'/video-uploader-findings.csv','\ufeff'+[columns,...rows].map(r=>r.map(cell).join(',')).join('\r\n'));
+      await durableStageFile(root+'/video-uploader-discovery-evidence.csv',report.evidenceCsv);
+      await durableStageFile(root+'/video-uploader-findings.csv',report.candidatesCsv);
     }
   }
 }
