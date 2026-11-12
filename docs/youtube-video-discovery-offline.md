@@ -45,14 +45,17 @@ channel candidates. This does not establish seven missed owned channels.
 ## Proposed operation and request allocation — not approval
 
 `video_uploader` is a **new** proposed operation, not `metadata` under a different
-URL. Its candidate request is GET
+URL. Its documented request is GET
 `https://api.scrapecreators.com/v1/youtube/video?url=<canonical-watch-url>`.
-The endpoint, response mapping and billing have **not** been confirmed with a
-live request. The fixture receipt's `{videoId,uploader:{channelId,channelUrl?,
-displayName}}` is an adapter contract, not an observed provider response schema.
-Before activation, review provider documentation/schema and conservative
-per-operation pricing; if the existing two-cent reservation cannot bound the
-operation, stop and redesign within the same caps. Do not increase them.
+The [provider review](youtube-video-uploader-review.md) confirms the endpoint,
+documented response mapping and one-credit price from public documentation,
+without a live API request. The original fixture receipt's
+`{videoId,uploader:{channelId,channelUrl?,displayName}}` remains a canonical adapter
+contract, not the provider response schema. The separate offline mapper consumes
+the documented `id`, `channel`, `uploader` and `ownerByline` fields and retains
+raw bytes. Before activation recheck pricing and the account's applicable
+credit cost; if the existing two-cent reservation cannot bound the operation,
+stop and redesign within the same caps. Do not increase them.
 
 For a future separately prepared 20-artist run, replace the existing
 `1 search + 2 captures + 2 model` maximum with:
@@ -107,6 +110,13 @@ cannot be extended and its unused budget cannot be reused.
 `admitted:false, executable:false`; it cannot substitute for these transactional
 requirements or authorize work.
 
+`scripts/src/youtube-video-uploader-review.mjs` adds a separate exact-request
+saved-case proposal, raw-receipt mapper and pure transaction transition model.
+It has no live admission, transport, approval writer or database dependency.
+Its simulated reservations also always return `admitted:false, executable:false`.
+The [review](youtube-video-uploader-review.md) describes the required future
+transaction and fresh approval boundary; neither is activated by this prototype.
+
 ## Offline verification and saved replay
 
 Run fixtures (the network preload fences HTTP, fetch, sockets, TLS and DNS):
@@ -114,6 +124,7 @@ Run fixtures (the network preload fences HTTP, fetch, sockets, TLS and DNS):
 ```sh
 node --import ./scripts/src/youtube-ownership-offline-fence.mjs --test \
   scripts/src/youtube-video-discovery-offline.test.mjs \
+  scripts/src/youtube-video-uploader-review.test.mjs \
   scripts/src/youtube-bounded-test-gate.test.mjs \
   scripts/src/youtube-bounded-test-plan.test.mjs
 ```

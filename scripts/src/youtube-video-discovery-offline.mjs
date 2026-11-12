@@ -98,7 +98,7 @@ export function planVideoDiscovery(artist, organic, provenance) {
     maximumVideoOperations: 2, verifiedMatches: 0, executable: false};
 }
 
-// Proposed adapter contract only. Provider schema/pricing must be reviewed before activation.
+// Documented endpoint; still non-executable. See docs/youtube-video-uploader-review.md.
 export function proposedUploaderRequest(url) {
   const video = normalizeDiscoveryVideo(url);
   assert.ok(video && video.url === url, 'Only canonical YouTube video URLs');
@@ -106,7 +106,8 @@ export function proposedUploaderRequest(url) {
     + new URLSearchParams({url})};
 }
 // Canonical adapter receipt; NOT a claim that a current provider returns this schema.
-// Raw receipt bytes and artist-bound operation identity must be retained by a future adapter.
+// Raw receipt bytes and artist-bound operation identity are modeled separately in
+// youtube-video-uploader-review.mjs; this legacy synthetic contract is not provider JSON.
 export function resolveSavedUploader(artist, clue, receipt) {
   const bound = binding(artist), op = clue.operation;
   assert.equal(clue.profileId, bound.profileId); assert.equal(clue.cmArtist, bound.cmArtist);

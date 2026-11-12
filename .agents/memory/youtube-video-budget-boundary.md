@@ -16,3 +16,15 @@ Require a fresh exact-scope approval and transactional per-operation allocation
 before activation. Preserve alternatives and disclose any lost capture breadth.
 Snippet handles and uploader identities remain discovery clues, never independent
 artist ownership evidence, even when their names match.
+
+An exact-request saved-case approval must not become a wildcard for live
+discovery or its dependent requests.
+
+**Why:** A new search or uploader result changes the channel identity and the
+later ownership model's request body; approving only a call count cannot bind
+those unknown requests to reviewed evidence.
+
+**How to apply:** Freeze saved evidence and exact requests before asking for
+exact-plan approval. If downstream inputs are not known, stop preparation or
+seek a separately reviewed bounded dynamic-discovery policy rather than
+silently filling approved slots with new identities.
