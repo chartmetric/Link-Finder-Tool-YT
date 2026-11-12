@@ -1652,3 +1652,31 @@ mtime_ms = 1794447028001
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/9b491765-0927-4d72-b447-0c03c6902aa1/6f20930f-55e9-4c79-8e64-73ef6c6a9b64"
 storage_version_token = "1794447034912544"
 content_type = "text/csv"
+
+[[outputs]]
+id = "116z-wzbtqpoXIGxvpy8Z"
+uri = "file://generated-artifacts/musician-tier-refresh-audit-2026-11-12/report.html"
+type = "html"
+title = "Why older artist tiers were not refreshed"
+description = "Read-only findings, successful refresh-write reconciliation, and the evidence needed to distinguish intentional scope from an upstream defect."
+logical_id = "6733f503-2c88-4396-a826-1f6f785bce14"
+content_hash = "sha256:fa913405fe76002e47ceda3bb90e29b85b87e454c5900ce963503e69b17dde13"
+size = 14233
+mtime_ms = 1794444257936
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/6733f503-2c88-4396-a826-1f6f785bce14/469ad4bb-9b3e-4951-b5d7-56d130b209cc"
+storage_version_token = "1794447129321911"
+content_type = "text/html"
+
+[[outputs]]
+id = "Wu7P4uMHY-CU-HMNrIMVg"
+uri = "file://generated-artifacts/musician-tier-refresh-audit-2026-11-12/evidence.zip"
+type = "unspecified"
+title = "Tier refresh investigation evidence"
+description = "Exact SELECT queries, saved responses and errors, offline validation, and SHA-256 integrity manifest. No paid searches or database changes."
+logical_id = "8a221cba-845f-46c2-ae05-28c0c83e7d3d"
+content_hash = "sha256:cdc2b06f67b5dd17a5234c10a70603a5892b7c80332d63d97f6aa30c5d5f5021"
+size = 401295
+mtime_ms = 1794444257987
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/8a221cba-845f-46c2-ae05-28c0c83e7d3d/cba8352b-2474-4275-92fb-c7ba3c6f26c2"
+storage_version_token = "1794447129945852"
+content_type = "application/octet-stream"
