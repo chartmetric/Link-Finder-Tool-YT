@@ -1890,3 +1890,31 @@ mtime_ms = 1794500680739
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/9fb234ab-f306-49b2-ab00-fdfd1285298c/b47bbf1c-1192-4572-970a-38d2d929348f"
 storage_version_token = "1794500712762357"
 content_type = "text/csv"
+
+[[outputs]]
+id = "ROmpU0CLdjxDnm_B0B8Yw"
+uri = "file://generated-artifacts/youtube-video-recovery-reviewed/video-uploader-findings-with-krachpilot-review.csv"
+type = "table"
+title = "YouTube findings with KRACHPILOT review"
+description = "Both KRACHPILOT uploader rows marked for exclusion from artist-owned channel import. Original discovery fields preserved; no catalog changes."
+logical_id = "e6581db6-f318-4572-84f9-a3ef8ca67c35"
+content_hash = "sha256:a645d87f427752b259933c824f9e18b9b3ed03c36908e2dac044392794afdefc"
+size = 12657
+mtime_ms = 1794500983623
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/e6581db6-f318-4572-84f9-a3ef8ca67c35/8c24d8bb-f8a0-40e2-b3fe-8daa88c82a07"
+storage_version_token = "1794500990381295"
+content_type = "text/csv"
+
+[[outputs]]
+id = "Pi9VRduC_6zgKpsJFL56q"
+uri = "file://generated-artifacts/youtube-video-recovery-reviewed/video-uploader-findings-with-reviewed-corrections.csv"
+type = "table"
+title = "YouTube findings with reviewed corrections"
+description = "Both 张碧晨 ZJSTV channels marked as user-rejected false positives. Includes the earlier KRACHPILOT exclusions; original discovery evidence unchanged."
+logical_id = "75a69475-d842-4bfa-a131-912251a609a7"
+content_hash = "sha256:40ffc9a60ee48c3b37f17ccea9a3014ccd0b2ae115a3a2ee1fdc292abf8f72a6"
+size = 12831
+mtime_ms = 1794501026147
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/75a69475-d842-4bfa-a131-912251a609a7/6825e68f-38dc-402d-898f-7e7e701a3593"
+storage_version_token = "1794501034875850"
+content_type = "text/csv"
