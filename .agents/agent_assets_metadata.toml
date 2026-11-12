@@ -1876,3 +1876,17 @@ mtime_ms = 1794500492031
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/1dd5817b-c302-403a-b0bc-e221742a1678/039096d0-0a36-4a56-9a08-2dadd607cd23"
 storage_version_token = "1794500532001704"
 content_type = "text/csv"
+
+[[outputs]]
+id = "u18zYzyiWW1S7bWXtcWuk"
+uri = "file://generated-artifacts/youtube-video-review-20-2026-11-12-c/video-uploader-findings.csv"
+type = "table"
+title = "YouTube uploader findings — partial test results"
+description = "37 mapped video responses across 19 artists, including both recovered responses. Discovery leads only; ownership not checked. Topic leads labeled."
+logical_id = "9fb234ab-f306-49b2-ab00-fdfd1285298c"
+content_hash = "sha256:e00aa6b6796292e419b67a17484d125e4af3a18fd0d55cee5aff676968bd2d39"
+size = 11517
+mtime_ms = 1794500680739
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/9fb234ab-f306-49b2-ab00-fdfd1285298c/b47bbf1c-1192-4572-970a-38d2d929348f"
+storage_version_token = "1794500712762357"
+content_type = "text/csv"

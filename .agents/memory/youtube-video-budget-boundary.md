@@ -66,6 +66,17 @@ only these alternative display-name fields, stopping a sealed continuation.
 matching uploader/owner IDs. Never substitute video titles, recommendations,
 or search snippets; the name still does not establish artist ownership.
 
+Uploader URLs can contain percent-encoded accented handles, such as an encoded
+`ï`. An unsupported URL representation is not evidence of a wrong artist.
+
+**Why:** A live response had consistent video/uploader IDs but its accented
+handle failed the mapper's URL normalizer after most of the stage completed.
+
+**How to apply:** Report this as a parsing limitation, preserve the saved
+response and reservation, and do not retry or count it as an ownership
+rejection. Review Unicode URL normalization offline before changing a sealed
+worker or preparing any separately approved continuation.
+
 Saved video benchmark text relevance must be reported separately from exact
 catalog identity, uploader identity and artist ownership. Missing video-to-channel
 bindings make ownership precision unscorable, not zero. Format words such as
