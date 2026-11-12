@@ -6,6 +6,8 @@ import path from 'node:path';
 import {digest,proposedUploaderRequest} from './youtube-video-discovery-offline.mjs';
 import {videoStagePlan,approveVideoStage,assertVideoStageAdmission,archivedSearchReceiptName} from './youtube-video-stage.mjs';
 import {executeVideoStage} from './youtube-video-stage-execution.mjs';
+import {mapSavedVideoUploader} from './youtube-video-uploader-review.mjs';
+import {validateVideoRecovery} from './youtube-video-stage-recovery.mjs';
 
 const sha=digest('fixture');
 test('saved receipt lookup retains the original JSON-string hash convention',()=>{
@@ -145,4 +147,70 @@ test('no approval or changed frozen inputs prevents all provider calls',async t=
   await assert.rejects(()=>executeVideoStage({...f,approval:{...f.approval,explicitApproval:false}}));
   f.assertFrozen=async()=>{throw Error('runtime changed');};
   await assert.rejects(()=>executeVideoStage(f));assert.equal(calls,0);assert.equal(f.history.length,0);
+});
+function recoveryFixture(previousPlan,previousApproval){
+  const op=previousPlan.operations[0],artist=previousPlan.artists[0];
+  const clue={profileId:op.profileId,cmArtist:op.cmArtist,videoId:op.videoId,url:op.videoUrl,sources:[],
+    operation:{kind:op.kind,key:op.key,request:op.request}};
+  // Observed schema regression: top-level video URL absent, exact ID still present.
+  const rawBody=Buffer.from(JSON.stringify({success:true,credits_charged:1,id:op.videoId,
+    channel:{id:'UC'+''.padStart(22,'1'),url:'https://www.youtube.com/channel/UC'+''.padStart(22,'1'),title:artist.name}}));
+  const receipt={runId:previousPlan.id,planSha256:digest(previousPlan),profileId:op.profileId,cmArtist:op.cmArtist,
+    videoId:op.videoId,operationKey:op.key,kind:op.kind,request:op.request,inputSha256:op.inputSha256,
+    status:200,capturedAt:previousPlan.preparedAt,rawPath:'receipts/'+digest(op.key)+'.raw',rawBodySha256:digest(rawBody)};
+  const artistEvidence={artist,videoPlan:{resolutionQueue:[clue]}};
+  const mapped=mapSavedVideoUploader(artist,clue,{...receipt,rawBody},
+    {runId:previousPlan.id,planSha256:digest(previousPlan)});
+  const evidence={previousPlan,previousApproval,receipt,artistEvidence,mapped,rawBodyBase64:rawBody.toString('base64')};
+  const plan=videoStagePlan({...previousPlan,id:previousPlan.id+'-recovery',
+    operations:previousPlan.operations.slice(1),evidenceFiles:{'evidence/recovery.json':digest(JSON.stringify(evidence))},
+    recovery:{previousRunId:previousPlan.id,previousPlanSha256:digest(previousPlan),
+      previousApprovalSha256:digest(previousApproval),previousOwner:'fixture-owner',
+      completedOperationKey:op.key,previousReservedCents:2,originalMaximumCents:80,
+      rawSha256:digest(rawBody),receiptSha256:digest(receipt),mappedSha256:digest(mapped)}});
+  const approval=approveVideoStage(plan,{expectedPlanSha256:digest(plan),capCents:78,approvedAt:previousApproval.approvedAt});
+  return {plan,approval,evidence};
+}
+test('recovery binds the saved response, excludes its paid request and keeps combined reservations at 80 cents',()=>{
+  const f=fixture(),r=recoveryFixture(f.plan,f.approval);
+  assert.equal(r.plan.maximumCalls,39);assert.equal(r.approval.capCents,78);
+  assert.equal(r.approval.savedResponseRecoveryApproved,true);
+  assert.equal(r.approval.combinedMaximumSpendCents,80);
+  assert.deepEqual(validateVideoRecovery(r.plan,r.evidence),f.plan.operations[0]);
+  for(const change of [
+    e=>e.receipt.profileId='999',
+    e=>e.receipt.rawPath='../elsewhere',
+    e=>e.rawBodyBase64=Buffer.from('{}').toString('base64'),
+    e=>e.mapped.url='https://www.youtube.com/@wrong',
+    e=>e.previousApproval.explicitApproval=false,
+  ]){
+    const copy=structuredClone(r.evidence);change(copy);
+    assert.throws(()=>validateVideoRecovery(r.plan,copy));
+  }
+  assert.throws(()=>videoStagePlan({...r.plan,operations:f.plan.operations}));
+  const changed=structuredClone(r.plan);changed.operations[0]=f.plan.operations[0];
+  assert.throws(()=>validateVideoRecovery(changed,r.evidence));
+});
+test('recovery exports the saved uploader plus 39 new fixture returns without replaying the first URL',async t=>{
+  const f=await executionFixture(t),r=recoveryFixture(f.plan,f.approval),history=[];
+  await fs.writeFile(f.root+'/evidence/recovery.json',JSON.stringify(r.evidence));
+  Object.assign(f.run,{id:r.plan.id,plan_sha256:digest(r.plan),approval_sha256:digest(r.approval),cap_cents:78});
+  const gate={async start(){},async admit(op){
+    assertVideoStageAdmission(r.plan,r.approval,f.run,op,history,'fixture-owner');
+    history.push({...returned(op),status:'admitted'});f.run.reserved_cents+=2;
+  },async returned(op){Object.assign(history.find(h=>h.operation_key===op.key),returned(op));},
+  async finish(status){f.run.status=status;}};
+  const originalFetch=f.fetchImpl,urls=[];
+  const fetchImpl=async(url,options)=>{
+    urls.push(url);
+    // Original fixture transport checks admission ordering.
+    f.events.push('admit');return originalFetch(url,options);
+  };
+  await executeVideoStage({...f,...r,gate,fetchImpl});
+  assert.equal(urls.length,39);assert.ok(!urls.includes(r.evidence.previousPlan.operations[0].request.url));
+  assert.equal(f.run.reserved_cents,78);
+  const summary=JSON.parse(await fs.readFile(f.root+'/summary.json','utf8'));
+  assert.equal(summary.returnedCalls,39);assert.equal(summary.recoveredSavedResponses,1);
+  assert.equal(summary.combinedMaximumSpendCents,80);assert.equal(summary.acceptedOwnershipLinks,0);
+  assert.equal((await fs.readdir(f.root+'/results')).length,40);
 });

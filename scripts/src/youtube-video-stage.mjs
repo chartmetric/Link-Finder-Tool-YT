@@ -48,6 +48,21 @@ export function videoStagePlan(input){
       videoId:o.videoId,videoUrl:o.videoUrl,request:copy(o.request),inputSha256:digest(o.request),reservationCents:2};
   });
   assert.ok(artists.every(a=>counts.has(a.profileId))&&operations.length<=40);
+  let recovery;
+  if(input.recovery){
+    const r=input.recovery;
+    assert.match(r.previousRunId,/^youtube-video-review-[a-z0-9-]{4,80}$/);assert.notEqual(r.previousRunId,input.id);
+    for(const key of ['previousPlanSha256','previousApprovalSha256','rawSha256','receiptSha256','mappedSha256'])
+      assert.match(r[key],sha);
+    assert.ok(typeof r.previousOwner==='string'&&r.previousOwner.length);
+    assert.ok(typeof r.completedOperationKey==='string'&&!keys.has(r.completedOperationKey));
+    assert.equal(r.previousReservedCents,2);assert.equal(r.originalMaximumCents,80);
+    assert.equal(operations.length,39);assert.equal(operations.length*2+r.previousReservedCents,r.originalMaximumCents);
+    recovery={previousRunId:r.previousRunId,previousPlanSha256:r.previousPlanSha256,
+      previousApprovalSha256:r.previousApprovalSha256,previousOwner:r.previousOwner,
+      completedOperationKey:r.completedOperationKey,previousReservedCents:2,originalMaximumCents:80,
+      rawSha256:r.rawSha256,receiptSha256:r.receiptSha256,mappedSha256:r.mappedSha256};
+  }
   return {version:VIDEO_STAGE_POLICY,id:input.id,parentId:VIDEO_PARENT,
     preparedAt:input.preparedAt,sourceRunId:input.sourceRunId,sourcePlanSha256:input.sourcePlanSha256,
     artists,operations,evidenceFiles:files(input.evidenceFiles),runtimeFiles:files(input.runtimeFiles),
@@ -57,7 +72,8 @@ export function videoStagePlan(input){
     unknownDownstreamRequestsApproved:false,topicChannelsIncludedAsDiscoveryClues:true,
     nextStage:'Freeze discovered channels and identity-check requests, then request separate spending approval',
     candidateBreadth:'All resolved uploaders retained; proposed later selection is at most one channel per artist, not the prior two-channel breadth',
-    explicitApproval:false,approvalStatus:'awaiting_exact_saved_video_stage_approval'};
+    explicitApproval:false,approvalStatus:'awaiting_exact_saved_video_stage_approval',
+    ...(recovery?{recovery}:{} )};
 }
 export function validateVideoStagePlan(plan){assert.deepEqual(videoStagePlan(plan),plan);return plan;}
 export function approveVideoStage(plan,{expectedPlanSha256,capCents,approvedAt}){
@@ -66,7 +82,8 @@ export function approveVideoStage(plan,{expectedPlanSha256,capCents,approvedAt})
   assert.equal(capCents,plan.maximumSpendCents,'Exact spending cap required');
   assert.ok(Number.isFinite(Date.parse(approvedAt)));
   return {id:plan.id,policy:VIDEO_STAGE_POLICY,planSha256:digest(plan),capCents,approvedAt,
-    explicitApproval:true,operationScope:'video_uploader_only_exact_saved_requests'};
+    explicitApproval:true,operationScope:'video_uploader_only_exact_saved_requests',
+    ...(plan.recovery?{savedResponseRecoveryApproved:true,combinedMaximumSpendCents:80}:{} )};
 }
 export function assertVideoStageApproval(plan,approval){
   assert.deepEqual(approveVideoStage(plan,{expectedPlanSha256:approval.planSha256,

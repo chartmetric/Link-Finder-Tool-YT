@@ -50,7 +50,10 @@ export function mapSavedVideoUploader(artist, clue, receipt, context) {
   const body = JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(receipt.rawBody));
   assert.equal(body.success, true);
   assert.equal(body.id, clue.videoId, 'Provider returned a different video');
-  assert.equal(normalizeDiscoveryVideo(body.url)?.videoId, clue.videoId);
+  // Live responses may omit top-level url. The frozen request and exact
+  // returned video ID still bind the video; an explicitly returned URL must agree.
+  if (Object.hasOwn(body, 'url'))
+    assert.equal(normalizeDiscoveryVideo(body.url)?.videoId, clue.videoId);
   assert.ok(channelId.test(body.channel?.id ?? ''), 'Missing documented channel.id');
   // Never fall back to related-video channels, collaborators, snippets or titles.
   for (const identity of [body.uploader, body.ownerByline]) {

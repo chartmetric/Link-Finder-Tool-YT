@@ -68,6 +68,15 @@ test('exact artist, run, plan, video, request and raw receipt identities are man
     assert.throws(() => map({...receipt(), rawBody, rawBodySha256: digest(rawBody)}));
   }
 });
+test('missing optional video URL still requires exact returned ID and frozen request', () => {
+  const body=provider();delete body.url;
+  assert.equal(map(receipt(body)).url,'https://www.youtube.com/channel/'+id);
+  assert.throws(()=>map(receipt({...body,id:'abcdefghijk'})));
+  assert.throws(()=>map(receipt({...body,url:null})));
+  assert.throws(()=>map(receipt({...body,url:'https://www.youtube.com/watch?v=abcdefghijk'})));
+  const r=receipt(body);
+  assert.throws(()=>map({...r,request:proposedUploaderRequest('https://www.youtube.com/watch?v=abcdefghijk')}));
+});
 test('schema uncertainty, conflicts and increased billing fail closed rather than inventing an uploader', () => {
   for (const mutation of [{success: false}, {id: 'abcdefghijk'},
     {url: 'https://youtu.be/abcdefghijk'}, {channel: null},

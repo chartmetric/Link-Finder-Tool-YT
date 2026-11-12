@@ -58,6 +58,9 @@ It is rejected in deployment environments and is not imported by the web app.
 - One credit per request; mapping requires `success:true`, the exact video ID,
   a valid `channel.id`, consistent optional uploader/owner IDs, and a known
   `credits_charged` of zero or one.
+- The observed live response omitted top-level `url`. That field is optional;
+  any explicitly returned URL must still agree with the exact video ID. The
+  frozen outgoing request remains mandatory.
 - Public pricing: https://scrapecreators.com/#pricing — $47 / 25,000 credits
   (0.188 cents/credit) and $497 / 500,000 credits.
 - Two cents per request is a conservative reservation, not a billed-cost claim.
@@ -88,3 +91,28 @@ node generated-artifacts/RUN-ID/runtime/run-youtube-video-stage.mjs \
 
 Preparation does not authorize either command. Never edit a sealed runtime or
 pending plan; prepare a new ID if the scope or implementation changes.
+
+## Saved first-response recovery
+
+If the first request returned a valid saved response but a parser-schema
+assumption stopped the stage, do not rerun it or edit its sealed worker.
+
+```sh
+node scripts/src/prepare-youtube-video-recovery.mjs --prepare-only \
+  --previous-id=OLD-RUN-ID --id=NEW-RUN-ID
+```
+
+This narrowly supported recovery requires exactly one stopped, reserved
+operation from the original 40-request stage. It validates the original bytes,
+video/uploader binding, old plan and approval, and owner fence, then prepares
+only the other 39 exact requests. The original 2-cent reservation plus the new
+78-cent maximum still total 80 cents. The saved response is not acknowledged
+during preparation. A new exact approval explicitly covers that acknowledgment
+and the updated runtime; it never refunds the original reservation.
+
+After approval, the recovery transaction can acknowledge only that exact saved
+response. Repeating the acknowledgment is idempotent, not a paid replay. The
+new result export preserves the recovered uploader alongside the 39 new
+responses, without accepting ownership. HTTP failures, incomplete bytes,
+conflicting IDs, changed owners, changed budgets, or altered original requests
+cannot use this recovery path.

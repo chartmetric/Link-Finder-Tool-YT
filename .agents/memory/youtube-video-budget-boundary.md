@@ -42,6 +42,20 @@ Topic leads and shared-channel uncertainty, and disclose the later capture
 breadth/selection policy. Uploader resolution alone is discovery, not an
 accepted artist-owned link or measured ownership recovery.
 
+The live video endpoint can omit its top-level `url` even when the returned
+video ID and uploader identities are valid.
+
+**Why:** An actual paid response omitted that documented field, causing the
+initial strict mapper to stop despite preserving a useful uploader response.
+
+**How to apply:** Bind the exact frozen request and returned video ID; validate
+an explicitly supplied URL against that ID, but do not require the optional
+field. Keep missing or conflicting IDs, contradictory uploader identities,
+unknown billing, and malformed explicit URLs as blocking failures. Never repeat
+the paid request to fix a parser issue: validate its saved bytes offline and
+require exact recovery approval before acknowledging it or dispatching an
+updated sealed continuation. Preserve the original reservation.
+
 Saved video benchmark text relevance must be reported separately from exact
 catalog identity, uploader identity and artist ownership. Missing video-to-channel
 bindings make ownership precision unscorable, not zero. Format words such as

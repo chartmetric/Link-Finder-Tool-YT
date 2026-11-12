@@ -1848,3 +1848,17 @@ mtime_ms = 1794494487412
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/d5583fd6-2c31-4b9c-88d5-bcd8e3e86122/c6d7a0c2-3d6f-4ccc-bfd2-d3bc2b119a92"
 storage_version_token = "1794494627750924"
 content_type = "text/csv"
+
+[[outputs]]
+id = "L1UGk6sJXXXh7RELQkouy"
+uri = "file://generated-artifacts/youtube-video-review-20-2026-11-12-b/remaining-video-requests.csv"
+type = "table"
+title = "39 untouched YouTube uploader requests"
+description = "Exact remaining requests from the approved 20-artist uploader test. New stage maximum $0.78 plus the preserved first $0.02 reservation equals the original $0.80 maximum. First saved response is not repeated; no new approval or paid continuation yet."
+logical_id = "75af5bf6-35ad-4c54-9ca4-6e88199f9ebd"
+content_hash = "sha256:66757428569028b739e7dcb0be7be394b69be00901abf66cc827df56db31bca5"
+size = 5008
+mtime_ms = 1794495516260
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/75af5bf6-35ad-4c54-9ca4-6e88199f9ebd/52ed75f3-8020-4648-98ad-64982ec18d9d"
+storage_version_token = "1794495581060520"
+content_type = "text/csv"

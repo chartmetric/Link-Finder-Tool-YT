@@ -8,6 +8,7 @@ import {digest,planVideoDiscovery} from './youtube-video-discovery-offline.mjs';
 import {videoStagePlan,validateVideoStagePlan,approveVideoStage,assertVideoStageApproval,VIDEO_PARENT,archivedSearchReceiptName} from './youtube-video-stage.mjs';
 import {videoStageGate} from './youtube-video-stage-gate.mjs';
 import {executeVideoStage,durableStageFile} from './youtube-video-stage-execution.mjs';
+import {reconcileSavedVideoResponse} from './youtube-video-stage-recovery.mjs';
 import {freezeLocalModules} from './seal-youtube-campaign-runtime.mjs';
 import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
 import {select} from './instagram-artist-metadata-overlay.mjs';
@@ -27,7 +28,7 @@ function snapshotTime(row){
   const raw=String(row.snapshot_at);
   return new Date(Date.parse(raw.includes('T')?raw:raw.replace(' ','T')+'Z')).toISOString();
 }
-async function currentEligible(artists){
+export async function currentEligible(artists){
   const rows=await select(eligibilitySql(artists.map(a=>a.profileId))),byId=new Map(rows.map(r=>[String(r.profile_id),r]));
   return new Map(artists.flatMap(a=>{
     const r=byId.get(a.profileId);if(!r||String(r.cm_artist)!==a.cmArtist)return [];
@@ -131,6 +132,11 @@ async function main(){
   const pool=await connectSavedBatchPool(),owner=randomUUID();
   const gate=videoStageGate({pool,plan,approval,owner});
   try{
+    if(plan.recovery){
+      await frozen(o,plan);
+      const recovery=await reconcileSavedVideoResponse({pool,plan,approval,root:o.root});
+      console.log(JSON.stringify(recovery));
+    }
     await executeVideoStage({plan,approval,root:o.root,gate,credential:process.env.SCRAPECREATORS_API_KEY,
       assertFrozen:async()=>{
         await frozen(o,plan);
