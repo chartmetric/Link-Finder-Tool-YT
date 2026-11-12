@@ -33,3 +33,5 @@
 - [Asset delivery limits](asset-delivery-limits.md) — Library downloads have a 100 MiB per-file limit; measure CSV bytes and disclose any omitted evidence fields.
 - [ClickHouse read-only queries](clickhouse-readonly-queries.md) — preserve read-only settings; producer logs are replica-local and may need separate authorized read access.
 - [YouTube uploader budget boundary](youtube-video-budget-boundary.md) — resolving video uploaders needs new operation approval and replacement slots, not leftover completed-test funds.
+- [YouTube Topic links](youtube-topic-link-scope.md) — include supported Topic music-presence links, clearly labeled auto-generated and separate from artist-managed channels.
+- [YouTube reviewed corrections](youtube-reviewed-corrections.md) — user identifies MAXAM and Riogeovn channel matches as correct; keep them separate from archived uncertain model judgments.

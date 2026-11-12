@@ -124,7 +124,7 @@ test('all three future entry points bind the policy and keep existing request an
     assert.ok(!source.includes('artist official YouTube channel'));
   }
   const bounded=await fs.readFile(new URL('./run-youtube-bounded-test.mjs',import.meta.url),'utf8');
-  assert.match(bounded,/rankYoutubeSearchCandidates\([^\n]+\{limit:2\}/);
+  assert.match(bounded,/rankYoutubeSearchCandidates\([^\n]+\{limit:2,includeTopicChannels:scope.includeTopicChannels\}/);
   assert.match(bounded,/const size=boundedTestSize\(scope\)/);
   assert.match(bounded,/assert.equal\(scope.userCapCents,size.capCents\)/);
   assert.match(bounded,/\.sort\(\(a,b\)=>a\.tier-b\.tier\|\|a\.ordinal-b\.ordinal\)\.slice\(0,count\)/);

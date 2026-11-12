@@ -12,7 +12,8 @@ import {youtubeTestSchema,youtubeSearchCandidates} from './youtube-discovery-tes
 import {exportYoutubeCatalogEvidence} from './youtube-ownership-catalog-export.mjs';
 import {youtubeArtistFromCatalogPacket,assembleYoutubeOwnershipEvidence} from './youtube-ownership-evidence.mjs';
 import {MODEL_PLAN,campaignTransport,classifyYoutubeResult} from './youtube-campaign-core.mjs';
-import {evidenceDigest as hash,youtubeVerificationInput,evaluateYoutubeOwnership} from './youtube-ownership-policy.mjs';
+import {evidenceDigest as hash,youtubeVerificationInput} from './youtube-ownership-policy.mjs';
+import {evaluateYoutubeLink as evaluateYoutubeOwnership,YOUTUBE_LINK_POLICY} from './youtube-topic-links.mjs';
 import {normalizeYoutubeChannel,youtubeDecisionRequest,parseYoutubeDecision} from './youtube-ownership-transport.mjs';
 import {boundedYoutubeSchema,boundedYoutubeGate} from './youtube-bounded-test-gate.mjs';
 import {freezeLocalModules} from './seal-youtube-campaign-runtime.mjs';
@@ -61,6 +62,7 @@ async function prepare(){
   const scope={id,artists,scopeSha256:hash(artists),discoveryPolicyVersion:1,userCapCents:null,proposedCapCents:capCents,operationalCapCents:capCents,
     candidatesPerArtist:2,maxCalls:count*5,explicitApproval:false,approvalStatus:'awaiting_spending_approval',
     approvedBy:null,candidatePolicy:YOUTUBE_CANDIDATE_POLICY,
+    youtubeLinkPolicy:YOUTUBE_LINK_POLICY,includeTopicChannels:true,
     noCatalogWrites:true,noAutomaticRetries:true,fullCampaignRemainsPaused:true,
     catalogEvidenceSha256:hash(enriched),model:MODEL_PLAN};
   const files=await freezeLocalModules(fileURLToPath(import.meta.url),root+'/runtime');
@@ -77,6 +79,8 @@ async function authorize(){
   assert.equal(path.dirname(fileURLToPath(import.meta.url)),path.resolve(root,'runtime'),'Authorize the frozen runtime only');
   const plan=await read(root+'/plan.json');
   const size=boundedTestSize(plan);
+  assert.equal(plan.youtubeLinkPolicy,YOUTUBE_LINK_POLICY);
+  assert.equal(plan.includeTopicChannels,true);
   assert.ok(process.argv.includes('--approve-usd='+size.capCents/100),'Explicit exact-cap spending approval required');
   const expectedPlanSha256=process.argv.find(a=>a.startsWith('--plan-sha256='))?.slice('--plan-sha256='.length);
   assert.equal(hash(await read(root+'/supplemental-catalog/packets.json')),plan.catalogEvidenceSha256);
@@ -96,6 +100,8 @@ async function run(){
   assert.equal(scope.discoveryPolicyVersion,1,'Legacy approvals cannot authorize changed search wording.');
   assert.equal(scope.candidatePolicy,YOUTUBE_CANDIDATE_POLICY,
     'New candidate policy requires a newly prepared approval; never upgrade an archived run.');
+  assert.equal(scope.youtubeLinkPolicy,YOUTUBE_LINK_POLICY,'Topic inclusion requires a newly prepared approval.');
+  assert.equal(scope.includeTopicChannels,true);
   assert.equal(scope.scopeSha256,hash(scope.artists));assert.equal(hash(packets),scope.catalogEvidenceSha256);
   const size=boundedTestSize(scope);
   assert.equal(scope.userCapCents,size.capCents);
@@ -146,7 +152,7 @@ async function run(){
       const response=await request(a.profile_id,'search','search-'+a.profile_id+'-0',{
         method:'POST',url:'https://google.serper.dev/search',body:searchPlan.request});
       assert.equal(response.status,200);
-      const discovery=rankYoutubeSearchCandidates(youtubeSearchCandidates(response.data),searchPlan,{limit:2});
+      const discovery=rankYoutubeSearchCandidates(youtubeSearchCandidates(response.data),searchPlan,{limit:2,includeTopicChannels:scope.includeTopicChannels});
       const candidates=await captureYoutubeCandidates(artist,discovery.candidates,async candidate=>{
         const response=await request(a.profile_id,'metadata','metadata-'+a.profile_id+'-'+hash(candidate.url),{
           method:'GET',url:'https://api.scrapecreators.com/v1/youtube/channel?'+new URLSearchParams({url:candidate.url})});
@@ -214,6 +220,8 @@ async function run(){
       if(completed.length){
         const rows=completed.flatMap(r=>r.candidates.length?r.candidates.map(c=>({
           artist:r.artist.name,tier:r.tier,profile_id:r.artist.profileId,cm_artist:r.artist.cmArtist,youtube_url:c.url,
+          channel_type:c.decision.channelType,channel_type_label:c.decision.channelType==='topic'?'Topic — auto-generated':c.decision.channelType,
+          topic_identity_status:c.decision.channelType==='topic'?(c.decision.status==='supported_topic'?'Supported artist association':'Needs identity corroboration'):'',
           ...c.decision,search_title:c.title,search_snippet:c.snippet,
           recorded_answer:c.recordedAnswer??null,metadata_actually_used:c.metadataActuallyUsed??null,
           captured_channel:c.capture?.body??null,artist_catalog_metadata:r.artist,

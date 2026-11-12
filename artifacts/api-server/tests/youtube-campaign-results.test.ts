@@ -53,6 +53,24 @@ test("later cross-artist channel reuse overrides historical positives without mu
   assert.equal(youtubeRow({ ...a, reason: "channel_reused_across_catalog_artists", likely: false },
     candidate, 0, [], observed, record).status, "shared_handle");
 });
+test("Topic rows and CSV are labeled without upgrading historical findings or hiding conflicts", () => {
+  const topic = { ...candidate, capture: { ...candidate.capture, body: { channelId: "UC123456", displayName: "日本語 - Topic" } },
+    decision: { ...candidate.decision, status: "related_catalog_channel", channelType: "topic", reviewSuggestion: false } };
+  const before = JSON.stringify(topic);
+  const row = youtubeRow({ ...a, likely: false }, topic, 0, [], observed, record);
+  assert.equal(field(row, "Channel type label"), "Topic — auto-generated");
+  assert.equal(field(row, "YouTube channel type"), "topic");
+  assert.equal(field(row, "Current likely suggestion"), "false");
+  assert.match(field(row, "Topic identity status"), /needs review/);
+  assert.match(resultCsv(document([row])), /Topic — auto-generated/);
+  assert.equal(JSON.stringify(topic), before);
+  const supported = { ...topic, decision: { ...topic.decision, status: "supported_topic", reviewSuggestion: true } };
+  const accepted = youtubeRow(a, supported, 0, [], observed, record);
+  assert.equal(accepted.status, "likely");
+  assert.equal(accepted.verifiedUrl, null);
+  assert.match(field(accepted, "Topic identity status"), /not artist-owned/);
+  assert.equal(youtubeRow(a, supported, 0, ["101", "102"], observed, record).status, "shared_handle");
+});
 test("checked outcomes, pending metadata, size holds and no-channel searches remain distinct", () => {
   const cases = [
     [{ ...candidate, decision: { ...candidate.decision, status: "related_catalog_channel", reviewSuggestion: false } }, "checked_not_accepted"],

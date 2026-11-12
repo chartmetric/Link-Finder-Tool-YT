@@ -80,7 +80,7 @@ export function youtubeSearchPlan(artist){
     request:{q:`${exact} (music OR musician OR songs OR band) YouTube channel site:youtube.com`,num:10},
     ownershipWarning:'Search relevance is not ownership evidence; aliases and translations may remain ambiguous.'};
 }
-export function rankYoutubeSearchCandidates(candidates,plan,{limit=10}={}){
+export function rankYoutubeSearchCandidates(candidates,plan,{limit=10,includeTopicChannels=false}={}){
   if(!Number.isInteger(limit)||limit<0||limit>10)throw Error('Candidate limit must remain within ten search results.');
   const ranked=candidates.map((candidate,index)=>{
     const haystack=`${candidate.title} ${candidate.snippet}`;
@@ -109,7 +109,8 @@ export function rankYoutubeSearchCandidates(candidates,plan,{limit=10}={}){
   const ordinary=ranked.filter(c=>!['topic','off_target'].includes(c.relevance.bucket));
   const topicCandidates=ranked.filter(c=>c.relevance.bucket==='topic');
   const offTargetCandidates=ranked.filter(c=>c.relevance.bucket==='off_target');
-  return {allSearchCandidates:ranked,candidates:ordinary.slice(0,limit),topicCandidates,offTargetCandidates,
+  const selectable=includeTopicChannels?ranked.filter(c=>c.relevance.bucket!=='off_target'):ordinary;
+  return {allSearchCandidates:ranked,candidates:selectable.slice(0,limit),topicCandidates,offTargetCandidates,
     searchStatus:ranked.length?'candidates_found':'no_match',
     channelAbsenceProven:false,
     outcome:ordinary.length?'unverified_candidates':topicCandidates.length?'topic_only':

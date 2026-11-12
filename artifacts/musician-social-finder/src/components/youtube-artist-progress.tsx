@@ -99,6 +99,7 @@ export function YoutubeArtistProgress({className = ''}: {className?: string}) {
         <p>{campaign ? 'This is the frozen Tier 1–5 queue missing catalog YouTube links. It is separate from the Instagram queue.' : `This is the approved ${fmt(p.totalArtists)}-artist test, not all Tier 1–5 artists.`} Search progress is separate from ownership checks.</p>
         <p>{fmt(p.checkedArtists)} of {fmt(p.artistsWithCandidates)} artists with candidates have at least one recorded ownership assessment.
           Multiple candidates count as one artist. An assessment can be uncertain or identify a Topic or organization channel.</p>
+        <p>Topic channels are auto-generated music catalogs, not artist-managed channels. Supported Topic links are labeled separately in findings; historical campaign totals are not reclassified.</p>
         <p>{fmt(p.uncheckedArtists)} artists with candidates have no completed ownership assessment.
           {` ${fmt(p.heldCandidates)} candidate checks were held because their evidence exceeded the approved size limit.`}</p>
         <p>“No channel found” means a completed search returned no candidate; it does not prove an artist has no channel.

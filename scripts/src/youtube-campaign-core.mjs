@@ -66,7 +66,7 @@ export function assertAdmission(campaign,artist,pending,{owner,scopeHash,approva
 export function classifyYoutubeResult(record){
   const decisions=record.candidates.map(c=>c.decision);
   return {searched:record.searchStatus==='candidates_found'||record.searchStatus==='no_match',
-    checked:decisions.some(d=>['likely_artist_owned','related_catalog_channel','not_artist_owned','ownership_conflict'].includes(d.status)
+    checked:decisions.some(d=>['likely_artist_owned','supported_topic','related_catalog_channel','not_artist_owned','ownership_conflict'].includes(d.status)
       ||(d.status==='needs_identity_check'&&d.reason==='recorded_model_uncertain_or_unresolved_channel_type'&&Number.isFinite(d.score))),
     likely:decisions.some(d=>d.reviewSuggestion===true),candidates:decisions.length};
 }

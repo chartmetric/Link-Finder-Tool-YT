@@ -25,7 +25,7 @@ export function buildYoutubeArtistProgress(approval: Approval, outcomes: Outcome
   requireValue(approval.scope.every(a => Number(a.tier) >= 1 && Number(a.tier) <= 5), "Invalid YouTube tiers.");
   const seen = new Set<string>();
   let searched = 0, withCandidates = 0, checked = 0, likely = 0, noChannel = 0, held = 0, pending = 0;
-  const completedStates = new Set(["likely_artist_owned", "not_artist_owned", "related_catalog_channel", "ownership_conflict"]);
+  const completedStates = new Set(["likely_artist_owned", "supported_topic", "not_artist_owned", "related_catalog_channel", "ownership_conflict"]);
   for (const row of outcomes) {
     const id = String(row.artist.profileId), artist = scope.get(id);
     requireValue(artist && String(artist.cm_artist) === String(row.artist.cmArtist) && !seen.has(id),
@@ -54,7 +54,7 @@ export function buildYoutubeArtistProgress(approval: Approval, outcomes: Outcome
           && typeof d.score === "number" && Number.isFinite(d.score));
       artistChecked ||= hasCheck;
       if (d.reviewSuggestion) {
-        requireValue(d.status === "likely_artist_owned" && hasCheck, "Suggestion is not an ownership check.");
+        requireValue(["likely_artist_owned", "supported_topic"].includes(d.status) && hasCheck, "Suggestion is not an ownership or Topic identity check.");
         artistLikely = true;
       }
       if (d.reason === "model_request_exceeds_approved_byte_limit") held++;

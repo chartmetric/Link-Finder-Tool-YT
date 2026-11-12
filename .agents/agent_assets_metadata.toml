@@ -1764,3 +1764,45 @@ mtime_ms = 1794466614953
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/b32e2280-ea01-4c93-a391-1290534ba41c/25dbeace-36f0-48f3-812b-79f1dca7b5f4"
 storage_version_token = "1794466665499208"
 content_type = "text/csv"
+
+[[outputs]]
+id = "lBW65mjm3f22iRMzmhgeY"
+uri = "file://generated-artifacts/youtube-100-topic-labeled-export/youtube-results-with-topic-labels.csv"
+type = "table"
+title = "YouTube results with clearly labeled Topic channels"
+description = "All 100 artists. Channel rows label Topic — auto-generated; search-only Topic leads are explicitly unconfirmed. Historical decisions and scores are preserved; no new paid calls or catalog changes."
+logical_id = "3370d1ec-aea2-454e-a5dd-08a90a42cfbf"
+content_hash = "sha256:0afa008ebb44a6867b6ed6a0659f0a795b71a5e284054dbcd2be050c25f175fc"
+size = 939110
+mtime_ms = 1794467580369
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/3370d1ec-aea2-454e-a5dd-08a90a42cfbf/1b2cf0c9-13af-437d-8bbc-002d1a94185d"
+storage_version_token = "1794467648713514"
+content_type = "text/csv"
+
+[[outputs]]
+id = "wf3igxdU7WtxnbdZvb18o"
+uri = "file://generated-artifacts/youtube-100-reviewed-corrections/youtube-findings-with-reviewed-corrections.csv"
+type = "table"
+title = "YouTube findings with MAXAM review correction"
+description = "Marks MAXAM → @thisismaxam as a separate user-confirmed correct link, while retaining the original uncertain model decision and all other archived results. No catalog writes."
+logical_id = "9b0d2f4e-9c1f-4bd6-a676-16142f3904aa"
+content_hash = "sha256:d9e848398d2c09949034205e5101d5ad0e0706e6be6001a4b327d80746364d68"
+size = 927521
+mtime_ms = 1794467745029
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/9b0d2f4e-9c1f-4bd6-a676-16142f3904aa/7b357972-4352-49be-80fc-7b2a6e753780"
+storage_version_token = "1794467761489228"
+content_type = "text/csv"
+
+[[outputs]]
+id = "QT_A_uw7tgmHt17bEv_Ap"
+uri = "file://generated-artifacts/youtube-100-reviewed-corrections/youtube-findings-with-two-reviewed-corrections.csv"
+type = "table"
+title = "YouTube findings with MAXAM and Riogeovn corrections"
+description = "Retains all 100 artists and 115 candidate rows. Adds separate user-confirmed corrections for MAXAM and Riogeovn; preserves original model decisions. No catalog links changed."
+logical_id = "2c841342-dd5e-414f-b00e-c93dc68f51ab"
+content_hash = "sha256:ba3cc2665302162bfecfc34e0dd1052ffc138048edb83d6118157c57e9b5ce96"
+size = 927785
+mtime_ms = 1794467789617
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2c841342-dd5e-414f-b00e-c93dc68f51ab/63832657-9d41-4f9e-8395-78ac624f8a35"
+storage_version_token = "1794467804621895"
+content_type = "text/csv"

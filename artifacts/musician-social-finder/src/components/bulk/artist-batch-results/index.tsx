@@ -83,7 +83,7 @@ export function ArtistBatchResults({ platform = 'Instagram' }: { platform?: 'Ins
               {(youtube ? YOUTUBE_FILTERS : FILTERS).map(f => <button key={f.key} type="button" aria-pressed={filter === f.key} onClick={() => setFilter(f.key)} data-testid={`button-filter-${f.key}`}>{f.label}</button>)}
             </div>
           </div>
-          {youtube && <p className="abr-hint">Filters and pages select artists. Every candidate for the selected artists remains visible, including other outcomes and missing archive evidence.</p>}
+          {youtube && <p className="abr-hint">Results include artist channels and clearly labeled Topic — auto-generated channels. Topic candidates need artist-identity support; their presence alone is not an accepted match. Filters and pages select artists; every candidate remains visible.</p>}
 
           {!page && rows.isLoading || (!page && rows.isFetching) ? <div className="abr-skel" role="status" aria-label="Loading rows"><i /><i /><i /><i /></div>
             : rows.isError ? <div className="blk-cov-error" role="alert"><span>{apiError(rows.error, 'Could not load rows for this batch.')}</span><button type="button" className="inv-retry" onClick={() => rows.refetch()} data-testid="button-retry-artist-rows">Retry</button></div>

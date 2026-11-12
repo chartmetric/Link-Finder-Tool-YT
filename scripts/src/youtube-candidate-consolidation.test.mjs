@@ -169,7 +169,9 @@ test('The bounded runner opts in only on new approvals and retains conflict cons
   assert.match(source,/candidatePolicy:YOUTUBE_CANDIDATE_POLICY/);
   assert.match(source,/assert\.equal\(scope\.candidatePolicy,YOUTUBE_CANDIDATE_POLICY/);
   assert.match(source,/await captureYoutubeCandidates\(artist,discovery\.candidates/);
-  assert.match(source,/rankYoutubeSearchCandidates\(youtubeSearchCandidates\(response\.data\),searchPlan,\{limit:2\}\)/);
+  assert.match(source,/rankYoutubeSearchCandidates\(youtubeSearchCandidates\(response\.data\),searchPlan,\{limit:2,includeTopicChannels:scope.includeTopicChannels\}\)/);
+  assert.match(source,/assert.equal\(scope.youtubeLinkPolicy,YOUTUBE_LINK_POLICY/);
+  assert.match(source,/assert.equal\(scope.includeTopicChannels,true\)/);
   assert.match(source,/relatedTopicCandidates:discovery\.topicCandidates/);
   assert.match(source,/collectTargetPlatformMetadata\(manifest,\{targetPlatform:'youtube'\}\)/);
   assert.match(source,/assert\.equal\(scope\.discoveryPolicyVersion,1/);
