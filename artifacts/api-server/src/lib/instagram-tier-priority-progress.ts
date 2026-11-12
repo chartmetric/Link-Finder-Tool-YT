@@ -70,7 +70,7 @@ export async function captureTierPrioritySnapshot(workspace: string): Promise<Ca
     const sum = (key: "total" | "processed" | "checked" | "likely") => tiers.reduce((n: number, t: any) => n + t[key], 0);
     assert.equal(sum("total"), queue.length);
     await c.query("COMMIT");
-    const requestAt = p.status === "completed"
+    const request = p.status === "completed"
       ? await continuationRequest(root, new Set(bindings.keys()), new Date(p.updated_at).toISOString())
       : null;
     return validateCampaignSnapshot({
@@ -78,8 +78,8 @@ export async function captureTierPrioritySnapshot(workspace: string): Promise<Ca
       campaignId: CAMPAIGN_ID, queueSha256: CAMPAIGN_QUEUE_SHA256,
       totalArtists: sum("total"), processed: sum("processed"), checked: sum("checked"), likely: sum("likely"),
       reserved: approval.legacyReservedCents + admitted,
-      status: requestAt ? "continuation_requested" : p.status === "prepared" ? "stopped" : p.status,
-      updatedAt: requestAt ?? new Date(p.updated_at).toISOString(), capturedAt: new Date().toISOString(),
+      status: request ? request.status : p.status === "prepared" ? "stopped" : p.status,
+      updatedAt: request?.at ?? new Date(p.updated_at).toISOString(), capturedAt: new Date().toISOString(),
       workerEnvironment: "workspace", tierBreakdown,
     });
   } catch (e) { await c.query("ROLLBACK").catch(() => {}); throw e; }

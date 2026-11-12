@@ -6,13 +6,24 @@ import {randomUUID} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 import {spawn} from 'node:child_process';
 import {patchExceptionRuntime} from './instagram-deferred-tier-exception.mjs';
+import {trackPreparation} from './instagram-continuation-preparation.mjs';
 assert.ok(process.argv.includes('--approved-stale-tier-exception'));
 const root='generated-artifacts/instagram-tier-priority';
 const parent=root+'/parallel-493d5352-9a7f-4d95-a88a-c78c42a8f960';
 const load=async p=>JSON.parse(await fs.readFile(p,'utf8'));
-const prior=await load(parent+'/approval.json');
+const phase=root+'/parallel-'+randomUUID(),runtime=phase+'/runtime';
+await fs.mkdir(runtime,{recursive:true});
+await trackPreparation(phase, async record => {
 const scope=await load('generated-artifacts/instagram-tier-gap-investigation-2026-11-11/history-rows.json');
+assert.ok(Array.isArray(scope));
 assert.equal(scope.length,9404);
+assert.ok(scope.every(a=>typeof a?.profile_id==='string' && /^[1-9]\d*$/.test(a.profile_id)));
+assert.equal(new Set(scope.map(a=>a.profile_id)).size,9404);
+// Bind reporting evidence before approval and sealed-runtime checks can fail.
+// The observer independently checks membership in the approved frozen queue.
+// This file is a request, not an approval or permission to launch work.
+await fs.writeFile(phase+'/tier-exception-scope.json',JSON.stringify(scope),{flag:'wx'});
+const prior=await load(parent+'/approval.json');
 const oldCore=await import(pathToFileURL(path.resolve(parent+'/runtime/campaign-parallel-core.mjs')));
 const {evidenceDigest:hash}=await import(pathToFileURL(path.resolve(parent+'/runtime/youtube-ownership-policy.mjs')));
 const {connectSavedBatchPool}=await import(pathToFileURL(path.resolve(parent+'/runtime/instagram-saved-batch-gate.mjs')));
@@ -20,8 +31,6 @@ const queue=await load(root+'/queue.json'),approval=await load(root+'/approval.j
 assert.equal(approval.maximumSpendCents,null);
 assert.equal(hash(approval),prior.approvalSha256);
 assert.equal(hash(queue),prior.scopeSha256);
-const phase=root+'/parallel-'+randomUUID(),runtime=phase+'/runtime';
-await fs.mkdir(runtime,{recursive:true});
 for(const [name,sha] of Object.entries(prior.runtimeFiles)){
   assert.equal(path.basename(name),name);
   const contents=await fs.readFile(parent+'/runtime/'+name,'utf8');
@@ -37,7 +46,6 @@ const runtimeFiles={};
 for(const name of Object.keys(prior.runtimeFiles))runtimeFiles[name]=hash(await fs.readFile(runtime+'/'+name,'utf8'));
 assert.deepEqual(Object.keys(runtimeFiles).filter(n=>runtimeFiles[n]!==prior.runtimeFiles[n]).sort(),
   ['campaign-parallel-adapters.mjs','campaign-parallel-core.mjs']);
-await fs.writeFile(phase+'/tier-exception-scope.json',JSON.stringify(scope),{flag:'wx'});
 const core=await import(pathToFileURL(path.resolve(runtime+'/campaign-parallel-core.mjs')));
 const cfg=core.CAMPAIGNS.instagram;
 const pool=await connectSavedBatchPool();
@@ -96,9 +104,13 @@ try {
     await c2.query('COMMIT');
   }catch(e){await c2.query('ROLLBACK');throw e;}finally{c2.release();}
   console.log(JSON.stringify({stage:'prepared',phase,requeued:requeue.length,excludedPriorPaid:blocked.size}));
+  record('prepared');
 } finally {await pool.end();}
+record('launching');
 const child=spawn(process.execPath,[runtime+'/campaign-parallel-resume.mjs',
   '--run-approved','--uncapped-approved',phase],{stdio:'inherit'});
 const exit=await new Promise((resolve,reject)=>{child.once('error',reject);
   child.once('exit',(code,signal)=>resolve({code,signal}));});
 if(exit.code!==0)throw Error('Continuation stopped; inspect saved diagnostics. No automatic replay.');
+await fs.stat(phase+'/launched.json');
+});

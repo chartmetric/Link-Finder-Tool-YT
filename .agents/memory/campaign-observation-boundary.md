@@ -33,6 +33,17 @@ removes the total ceiling; bind that approval to the original digest. A legacy
 campaign name containing a dollar amount is an identity, not the current cap.
 Null explicitly means no total spending cap, not zero or an absent setting.
 
+Continuation preparation evidence must yield to a newer coordinator checkpoint,
+not merely to a launch-attempt file. Preparation timestamps are never worker activity.
+
+**Why:** A launch can fail before claiming the coordinator. Returning its older
+completed checkpoint then regresses the snapshot clock, so publication rejects it
+and the previous requested label remains visible indefinitely.
+
+**How to apply:** Keep the newest request's launch or terminal preparation evidence
+until the coordinator advances beyond that request; never infer paid-worker
+liveness from a preparer process, launch attempt, or successful observer upload.
+
 **Why:** The user approved uncapped continuation while the paid worker's
 dependencies remained frozen. Reporting must not rewrite authorization or
 present the retired ceiling as current.

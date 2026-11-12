@@ -8,7 +8,7 @@ import { campaignScopeView, type CampaignScope } from '@/lib/artist-campaign-sco
 const fmt = (n: number) => n.toLocaleString();
 const pct = (n: number) => `${n.toFixed(1)}%`;
 const usd = (n: number) => `$${n.toFixed(2)}`;
-const STATUS: Record<string, string> = { running: 'Running', stop_requested: 'Stopping', stopped: 'Stopped', completed: 'Completed', paused: 'Paused', budget_exhausted: 'Budget reached', continuation_requested: 'Continuation requested' };
+const STATUS: Record<string, string> = { running: 'Running', stop_requested: 'Stopping', stopped: 'Stopped', completed: 'Completed', paused: 'Paused', budget_exhausted: 'Budget reached', continuation_requested: 'Continuation requested', continuation_preparation_failed: 'Continuation preparation failed', continuation_preparation_interrupted: 'Continuation preparation interrupted', continuation_launching: 'Continuation launch requested' };
 const statusLabel = (s: string) => STATUS[s] ?? s.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase());
 
 export function retainCampaignProgress(previous: unknown, current: unknown) {
@@ -103,7 +103,7 @@ function CampaignProgressView({ scope }: { scope: CampaignScope }) {
         {Head}
         <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono text-muted-foreground">
           <span className="rounded border border-border bg-background px-1.5 py-0.5 font-bold uppercase tracking-wider text-foreground" data-testid="status-campaign">Last recorded: {statusLabel(p.status)}</span>
-          <span title={updated.toLocaleString()}>{p.status === 'continuation_requested' ? 'Request recorded' : 'Worker evidence'} {updated.toLocaleString()}</span>
+          <span title={updated.toLocaleString()}>{p.status.startsWith('continuation_') ? 'Preparation evidence' : 'Worker evidence'} {updated.toLocaleString()}</span>
           {q.isFetching && <RefreshCw className="h-3 w-3 animate-spin" aria-label="Refreshing" />}
         </div>
       </div>
@@ -113,6 +113,14 @@ function CampaignProgressView({ scope }: { scope: CampaignScope }) {
         <p className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs" role="status" data-testid="campaign-continuation-requested">
           A run for the deferred artists has been requested. Saved results must pass safety checks before more searches begin.
           The totals below include earlier work and will increase as additional artists finish. This request alone does not confirm the worker is running.
+        </p>
+      )}
+      {['continuation_preparation_failed', 'continuation_preparation_interrupted', 'continuation_launching'].includes(p.status) && (
+        <p className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs" role="status">
+          {p.status === 'continuation_launching'
+            ? 'Preparation reached launch, but no coordinator handoff has been recorded yet.'
+            : 'Continuation preparation stopped before a coordinator handoff was recorded. Inspect the saved diagnostics before any manual recovery.'}
+          {' '}Earlier totals are preserved. This is preparation evidence, not confirmation that a paid worker is running. This page never retries work.
         </p>
       )}
 
@@ -151,8 +159,8 @@ function CampaignProgressView({ scope }: { scope: CampaignScope }) {
       </dl>
 
       <p className="mt-2 text-[11px] text-muted-foreground" data-testid="text-campaign-worker">
-        Worker location: workspace, separate from this website. {p.status === 'continuation_requested'
-          ? 'Continuation requested; no new search progress recorded yet.'
+        Worker location: workspace, separate from this website. {p.status.startsWith('continuation_')
+          ? 'No new worker progress is confirmed by this preparation record.'
           : p.workerStatus === 'recent_activity'
           ? 'Recent checkpoint activity recorded; this is not a live worker connection.'
           : p.workerStatus === 'stale'

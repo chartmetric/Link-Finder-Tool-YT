@@ -92,6 +92,37 @@ test("polls and observer uploads cannot impersonate fresh worker activity", asyn
   assert.equal(snapshotProgress(s).workerStatus, "not_running");
 });
 
+test("continuation preparation outcomes preserve counters without implying worker liveness", async () => {
+  for (const status of ["continuation_requested", "continuation_launching",
+    "continuation_preparation_failed", "continuation_preparation_interrupted"]) {
+    const s = {...snapshot(), status};
+    const p = snapshotProgress(s, Date.parse(s.updatedAt) + 1000);
+    GetArtistCampaignProgressResponse.parse({progress:p});
+    assert.equal(p.status, status);
+    assert.equal(p.workerStatus, "not_running");
+    assert.equal(p.processedArtists, 100);
+    assert.equal(p.checkedArtists, 90);
+    assert.equal(p.likelyMatches, 45);
+    assert.equal(p.reservedUsd, 3.82);
+    assert.equal(p.stale, false);
+  }
+});
+
+test("a launch failure before coordinator claim replaces requested evidence without regressing its clock", async () => {
+  const cloud = fakeObject();
+  const store = createCampaignSnapshotStore(() => cloud.file);
+  const requested = {...snapshot(), status:"continuation_requested"};
+  await store.publish(requested);
+  const failed = {...requested, status:"continuation_preparation_failed",
+    updatedAt:"2026-11-11T00:00:01.000Z"};
+  await store.publish(failed);
+  const saved = (await store.load())!;
+  assert.equal(saved.status, failed.status);
+  assert.equal(snapshotProgress(saved).workerStatus, "not_running");
+  assert.equal(saved.processed, requested.processed);
+  assert.equal(saved.reserved, requested.reserved);
+});
+
 test("missing snapshots are empty; storage failures and corrupt data fail explicitly", async () => {
   const cloud = fakeObject();
   const store = createCampaignSnapshotStore(() => cloud.file);
