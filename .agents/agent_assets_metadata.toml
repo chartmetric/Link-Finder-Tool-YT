@@ -1610,3 +1610,31 @@ mtime_ms = 1794446723437
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/ee4d2e84-faa3-42af-b95e-4d9974e6e3a5/37151b5c-a465-4d46-8b00-5ef8b361bdfd"
 storage_version_token = "1794446730403998"
 content_type = "text/csv"
+
+[[outputs]]
+id = "3URh-WpuR5XZiahttB_oQ"
+uri = "file://generated-artifacts/instagram-likely-export-after-continuation/instagram-likely-matches-corrected.csv"
+type = "table"
+title = "Corrected Instagram likely matches — 48,336 artists"
+description = "Removed Harmonious Nature → @jaccomanuel as requested. One Instagram URL per row. Original campaign decisions remain preserved for audit."
+logical_id = "1ff0bc67-4bf5-44df-a0e3-5147da445485"
+content_hash = "sha256:5688cc9c9da5cbede4a3e1fcf5cd8da533e60d8f4a87b98727f0f56f6b73638d"
+size = 10623737
+mtime_ms = 1794446877745
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/1ff0bc67-4bf5-44df-a0e3-5147da445485/73014c03-1220-4c6f-89ab-ff59927888f4"
+storage_version_token = "1794446885750396"
+content_type = "text/csv"
+
+[[outputs]]
+id = "qh5Hr_kf-x9sQO_BFsvKQ"
+uri = "file://generated-artifacts/instagram-likely-export-after-continuation/instagram-likely-matches-corrected-2.csv"
+type = "table"
+title = "Corrected Instagram matches — 48,335 artists"
+description = "Excludes both disputed matches: Harmonious Nature → @jaccomanuel and 王韵 → @elvahuihui. One Instagram URL per row."
+logical_id = "1c23a7bb-3e73-4b4d-b227-12d2eba5e93a"
+content_hash = "sha256:549d9f7b8cba39029601a33b176c4ea934aef145578496d623345d14bb9c2aa1"
+size = 10623525
+mtime_ms = 1794446908545
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/1c23a7bb-3e73-4b4d-b227-12d2eba5e93a/9f561478-069c-4e13-afa4-b2804c073242"
+storage_version_token = "1794446916209811"
+content_type = "text/csv"
