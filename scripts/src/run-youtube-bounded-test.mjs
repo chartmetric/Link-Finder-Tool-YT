@@ -1,4 +1,4 @@
-// Explicit new 20-artist test. Never resumes the uncapped YouTube campaign.
+// Explicit fresh bounded run. Never resumes the uncapped YouTube campaign.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
@@ -16,7 +16,7 @@ import {evidenceDigest as hash,youtubeVerificationInput,evaluateYoutubeOwnership
 import {normalizeYoutubeChannel,youtubeDecisionRequest,parseYoutubeDecision} from './youtube-ownership-transport.mjs';
 import {boundedYoutubeSchema,boundedYoutubeGate} from './youtube-bounded-test-gate.mjs';
 import {freezeLocalModules} from './seal-youtube-campaign-runtime.mjs';
-import {boundedTestOptions,approveBoundedTestPlan} from './youtube-bounded-test-plan.mjs';
+import {boundedTestOptions,approveBoundedTestPlan,boundedTestSize} from './youtube-bounded-test-plan.mjs';
 import {youtubeSearchPlan,rankYoutubeSearchCandidates} from './youtube-search-plan.mjs';
 import {YOUTUBE_CANDIDATE_POLICY,captureYoutubeCandidates} from './youtube-candidate-consolidation.mjs';
 const {id,root}=boundedTestOptions(process.argv.slice(2));
@@ -25,6 +25,11 @@ const read=async p=>JSON.parse(await fs.readFile(p,'utf8'));
 const save=async(name,value)=>fs.writeFile(root+'/'+name,JSON.stringify(value),{flag:'wx'});
 async function prepare(){
   assert.ok(process.argv.includes('--prepare-only'),'Preparation cannot imply spending approval');
+  const countArgs=process.argv.filter(a=>a.startsWith('--artists='));
+  assert.ok(countArgs.length<=1,'Duplicate artist count');
+  const count=countArgs.length?Number(countArgs[0].slice('--artists='.length)):20;
+  assert.ok(count===20||count===100,'Only reviewed batch sizes are supported');
+  const capCents=count===100?1000:200;
   try{await fs.access(root);throw Error('Test destination already exists; prepare a fresh ID');}
   catch(e){if(e.code!=='ENOENT')throw e;}
   const pool=await connectSavedBatchPool();
@@ -35,14 +40,14 @@ async function prepare(){
       FROM youtube_link_campaign_artists a WHERE campaign_id=$1 AND status='queued'
       AND NOT EXISTS(SELECT 1 FROM youtube_link_campaign_admissions d WHERE d.profile_id=a.profile_id)
       AND NOT EXISTS(SELECT 1 FROM youtube_discovery_test_results d WHERE d.profile_id=a.profile_id)
-      ORDER BY tier,ordinal LIMIT 60`,[parentId])).rows;
+      ORDER BY tier,ordinal LIMIT $2`,[parentId,count*3])).rows;
   }finally{await pool.end();}
   const eligible=await select(eligibilitySql(options.map(a=>a.profile_id)));
   const byId=new Map(eligible.map(a=>[a.profile_id,a]));
   const artists=options.filter(a=>byId.get(a.profile_id)?.cm_artist===a.cm_artist)
-    .slice(0,20).map(a=>({...a,...byId.get(a.profile_id),tier:Number(byId.get(a.profile_id).tier)}))
-    .sort((a,b)=>a.tier-b.tier||a.ordinal-b.ordinal);
-  assert.equal(artists.length,20);
+    .map(a=>({...a,...byId.get(a.profile_id),tier:Number(byId.get(a.profile_id).tier)}))
+    .sort((a,b)=>a.tier-b.tier||a.ordinal-b.ordinal).slice(0,count);
+  assert.equal(artists.length,count);
   assert.ok(artists.every(a=>Date.now()-Date.parse(a.snapshot_at.replace(' ','T')+'Z')<36*3600000));
   const manifest={artists:artists.map(a=>({...a,accounts:[],account_ids:[]}))};
   const {packets}=await collectTargetPlatformMetadata(manifest,{targetPlatform:'youtube'});
@@ -53,8 +58,8 @@ async function prepare(){
   }
   await exportYoutubeCatalogEvidence(root,root+'/supplemental-catalog');
   const enriched=await read(root+'/supplemental-catalog/packets.json');
-  const scope={id,artists,scopeSha256:hash(artists),discoveryPolicyVersion:1,userCapCents:null,proposedCapCents:200,operationalCapCents:200,
-    candidatesPerArtist:2,maxCalls:100,explicitApproval:false,approvalStatus:'awaiting_spending_approval',
+  const scope={id,artists,scopeSha256:hash(artists),discoveryPolicyVersion:1,userCapCents:null,proposedCapCents:capCents,operationalCapCents:capCents,
+    candidatesPerArtist:2,maxCalls:count*5,explicitApproval:false,approvalStatus:'awaiting_spending_approval',
     approvedBy:null,candidatePolicy:YOUTUBE_CANDIDATE_POLICY,
     noCatalogWrites:true,noAutomaticRetries:true,fullCampaignRemainsPaused:true,
     catalogEvidenceSha256:hash(enriched),model:MODEL_PLAN};
@@ -65,21 +70,22 @@ async function prepare(){
     scope.runtimeFiles[name]=hash(await fs.readFile(root+'/runtime/'+name,'utf8'));
   }
   await save('plan.json',scope);
-  console.log(JSON.stringify({status:'prepared',id,artists:20,tiers:artists.map(a=>a.tier),
-    proposedMaximumUsd:2,spendingApproved:false,paidCalls:0}));
+  console.log(JSON.stringify({status:'prepared',id,artists:count,tiers:artists.map(a=>a.tier),
+    proposedMaximumUsd:capCents/100,spendingApproved:false,paidCalls:0}));
 }
 async function authorize(){
-  assert.ok(process.argv.includes('--approve-usd=2'),'Explicit $2 spending approval required');
   assert.equal(path.dirname(fileURLToPath(import.meta.url)),path.resolve(root,'runtime'),'Authorize the frozen runtime only');
   const plan=await read(root+'/plan.json');
+  const size=boundedTestSize(plan);
+  assert.ok(process.argv.includes('--approve-usd='+size.capCents/100),'Explicit exact-cap spending approval required');
   const expectedPlanSha256=process.argv.find(a=>a.startsWith('--plan-sha256='))?.slice('--plan-sha256='.length);
   assert.equal(hash(await read(root+'/supplemental-catalog/packets.json')),plan.catalogEvidenceSha256);
   for(const [name,sha] of Object.entries(plan.runtimeFiles)){
     assert.equal(path.basename(name),name);
     assert.equal(hash(await fs.readFile(root+'/runtime/'+name,'utf8')),sha);
   }
-  await save('approval.json',approveBoundedTestPlan(plan,{id,capCents:200,approvedAt:new Date().toISOString(),expectedPlanSha256}));
-  console.log(JSON.stringify({status:'authorized_not_started',id,maximumUsd:2,paidCalls:0}));
+  await save('approval.json',approveBoundedTestPlan(plan,{id,capCents:size.capCents,approvedAt:new Date().toISOString(),expectedPlanSha256}));
+  console.log(JSON.stringify({status:'authorized_not_started',id,maximumUsd:size.capCents/100,paidCalls:0}));
 }
 async function run(){
   assert.ok(process.argv.includes('--run-approved'));
@@ -91,8 +97,9 @@ async function run(){
   assert.equal(scope.candidatePolicy,YOUTUBE_CANDIDATE_POLICY,
     'New candidate policy requires a newly prepared approval; never upgrade an archived run.');
   assert.equal(scope.scopeSha256,hash(scope.artists));assert.equal(hash(packets),scope.catalogEvidenceSha256);
-  assert.equal(scope.artists.length,20);assert.equal(scope.userCapCents,200);
-  assert.equal(scope.operationalCapCents,200);assert.equal(scope.candidatesPerArtist,2);
+  const size=boundedTestSize(scope);
+  assert.equal(scope.userCapCents,size.capCents);
+  assert.equal(scope.candidatesPerArtist,2);
   const fresh=await select(eligibilitySql(scope.artists.map(a=>a.profile_id)));
   assert.ok(scope.artists.every(a=>fresh.some(f=>f.profile_id===a.profile_id&&f.cm_artist===a.cm_artist&&Number(f.tier)===a.tier)));
   const assertFrozen=async()=>{
@@ -116,8 +123,8 @@ async function run(){
         assert.equal((await c.query(`SELECT count(*)::int n FROM youtube_link_campaign_admissions WHERE profile_id=$1`,[a.profile_id])).rows[0].n,0);
         assert.equal((await c.query(`SELECT count(*)::int n FROM youtube_discovery_test_results WHERE profile_id=$1`,[a.profile_id])).rows[0].n,0);
       }
-      await c.query('INSERT INTO youtube_discovery_test_runs(id,owner,scope_sha256,cap_cents,status) VALUES($1,$2,$3,200,$4)',
-        [id,owner,scope.scopeSha256,'running']);
+      await c.query('INSERT INTO youtube_discovery_test_runs(id,owner,scope_sha256,cap_cents,status) VALUES($1,$2,$3,$4,$5)',
+        [id,owner,scope.scopeSha256,size.capCents,'running']);
       for(const a of scope.artists)await c.query(`INSERT INTO youtube_discovery_test_results
         (run_id,profile_id,cm_artist,artist,tier,status,metadata_json) VALUES($1,$2,$3,$4,$5,'prepared',$6::jsonb)`,
         [id,a.profile_id,a.cm_artist,a.artist,a.tier,JSON.stringify({approvalSha256:hash(scope)})]);
@@ -148,7 +155,7 @@ async function run(){
       const record={artist,tier:a.tier,searchPlan,...discovery,
         relatedTopicCandidates:discovery.topicCandidates,candidates};
       records.push(record);await save('artists/'+a.profile_id+'-captures.json',record);
-      console.log(JSON.stringify({phase:'captures',artists:records.length,total:20,candidates:candidates.length}));
+      console.log(JSON.stringify({phase:'captures',artists:records.length,total:size.count,candidates:candidates.length}));
     }
     const ownership=new Map();
     for(const r of records)for(const candidate of r.candidates){
@@ -201,7 +208,7 @@ async function run(){
         offTargetOnly:completed.filter(r=>r.outcome==='off_target_results_only').length,
         topicOnly:completed.filter(r=>r.outcome==='topic_only').length,channelAbsenceProven:false,
         checkedNotAccepted:checked.filter(r=>!r.classification.likely).length,
-        reservedUsd:Number(budget.reserved_cents)/100,operationalMaximumUsd:2,userMaximumUsd:scope.userCapCents/100,admissions,
+        reservedUsd:Number(budget.reserved_cents)/100,operationalMaximumUsd:size.capCents/100,userMaximumUsd:scope.userCapCents/100,admissions,
         catalogWrites:0,fullYoutubeCampaignResumed:false,instagramChanged:false,recordedAt:new Date().toISOString()};
       await save('summary.json',summary);
       if(completed.length){

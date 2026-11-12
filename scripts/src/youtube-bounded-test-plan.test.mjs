@@ -32,3 +32,17 @@ test('wrong cap, artist substitution, duplicate artists and prior approval fail 
   }
   assert.throws(()=>approveBoundedTestPlan({...plan,artists:artists.slice(1)},options),/changed after review/);
 });
+test('fresh 100-artist approval binds exactly $10 and 500 direct-channel operations',()=>{
+  const cohort=Array.from({length:100},(_,i)=>({profile_id:String(i+1),cm_artist:String(i+1000),tier:2}));
+  const large={...plan,id:'youtube-test-new-100',artists:cohort,scopeSha256:hash(cohort),
+    proposedCapCents:1000,operationalCapCents:1000,maxCalls:500};
+  const approve=p=>approveBoundedTestPlan(p,{id:p.id,capCents:1000,
+    approvedAt:options.approvedAt,expectedPlanSha256:hash(p)});
+  const approved=approve(large);
+  assert.equal(approved.userCapCents,1000);assert.equal(approved.artists.length,100);
+  for(const patch of [{operationalCapCents:2000},{maxCalls:501},{artists:cohort.slice(1)},
+    {artists:cohort.map(()=>cohort[0])},{candidatesPerArtist:3}])
+    assert.throws(()=>approve({...large,...patch}));
+  assert.throws(()=>approveBoundedTestPlan(large,{...options,id:large.id,
+    capCents:200,expectedPlanSha256:hash(large)}));
+});

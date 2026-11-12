@@ -11,7 +11,10 @@ export function assertBoundedYoutubeAdmission(run,scope,operation,pending,owner)
   assert.equal(run.owner,owner);assert.equal(run.status,'running');
   assert.equal(run.scope_sha256,scope.scopeSha256);
   assert.equal(run.cap_cents,scope.operationalCapCents);
-  assert.ok(run.cap_cents<=scope.userCapCents&&run.cap_cents<=200);
+  const ceiling=scope.artists.length===100&&scope.maxCalls===500
+    &&scope.explicitApproval===true&&scope.approvalStatus==='approved'
+    &&scope.proposedCapCents===1000?1000:200;
+  assert.ok(run.cap_cents<=scope.userCapCents&&run.cap_cents<=ceiling);
   assert.ok(Number(run.reserved_cents)+2<=run.cap_cents,'Test spending allowance reached');
   assert.equal(Number(pending),0,'Uncertain prior request blocks spending');
   assert.ok(scope.artists.some(a=>a.profile_id===operation.profileId),'Artist is outside approved test');

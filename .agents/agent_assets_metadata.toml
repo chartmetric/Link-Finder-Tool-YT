@@ -1722,3 +1722,17 @@ mtime_ms = 1794447517217
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/1c4dd484-9672-4af0-a3c0-61741e8f790e/2aff54bd-2d05-4188-8547-f154a1ffcdb8"
 storage_version_token = "1794447539739434"
 content_type = "text/csv"
+
+[[outputs]]
+id = "movKDA4bQgm0fnnsHsBgt"
+uri = "file://generated-artifacts/youtube-test-100-usd10-2026-11-12-tier-order/youtube-test-findings.csv"
+type = "table"
+title = "100-artist YouTube run — full results"
+description = "All 100 artists, candidate channels, saved evidence and decisions. Two tentative likely matches; no catalog writes. Reserved $4.60 under the $10 cap."
+logical_id = "3743db9e-9364-4b5f-b04f-9ce09b7dec68"
+content_hash = "sha256:6e104ec50a3dbe0dc968ac84f2e9be19a12708ea5da06d5c45bd40d5fff84519"
+size = 925673
+mtime_ms = 1794466371566
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/3743db9e-9364-4b5f-b04f-9ce09b7dec68/6b27fce3-37fa-40cf-91c6-3524018021ca"
+storage_version_token = "1794466397198177"
+content_type = "text/csv"

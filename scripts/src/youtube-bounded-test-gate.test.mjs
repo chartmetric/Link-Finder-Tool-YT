@@ -23,3 +23,15 @@ test('exact request hashes and artist/kind-bound operation keys are required',()
   for(const kind of ['search','metadata','model'])
     check(run,scope,{...op,kind,key:kind+'-1-hash'},0,'owner');
 });
+test('100-artist gate enforces the separately approved $10 ceiling and preserves fences',()=>{
+  const large={...scope,artists:Array.from({length:100},(_,i)=>({profile_id:String(i+1)})),
+    operationalCapCents:1000,userCapCents:1000,proposedCapCents:1000,maxCalls:500,
+    explicitApproval:true,approvalStatus:'approved'};
+  const r={...run,cap_cents:1000,reserved_cents:998};
+  check(r,large,op,0,'owner');
+  assert.throws(()=>check({...r,reserved_cents:1000},large,op,0,'owner'),/allowance/);
+  for(const patch of [{explicitApproval:false},{maxCalls:501},{userCapCents:200},{artists:large.artists.slice(1)}])
+    assert.throws(()=>check(r,{...large,...patch},op,0,'owner'));
+  assert.throws(()=>check(r,large,op,1,'owner'),/Uncertain/);
+  assert.throws(()=>check(r,large,{...op,kind:'video'},0,'owner'));
+});

@@ -10,7 +10,8 @@ import {youtubeSearchPlan,rankYoutubeSearchCandidates} from './youtube-search-pl
 export const youtubeTestSchema = `
 CREATE TABLE IF NOT EXISTS youtube_discovery_test_runs (
  id text PRIMARY KEY, owner uuid NOT NULL, scope_sha256 text NOT NULL,
- cap_cents integer NOT NULL CHECK(cap_cents>0 AND cap_cents<=200),
+ cap_cents integer NOT NULL CHECK((cap_cents>0 AND cap_cents<=200)
+   OR (cap_cents=1000 AND id LIKE 'youtube-test-100-%')),
  reserved_cents integer NOT NULL DEFAULT 0 CHECK(reserved_cents>=0 AND reserved_cents<=cap_cents),
  status text NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
 );

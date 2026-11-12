@@ -125,7 +125,9 @@ test('all three future entry points bind the policy and keep existing request an
   }
   const bounded=await fs.readFile(new URL('./run-youtube-bounded-test.mjs',import.meta.url),'utf8');
   assert.match(bounded,/rankYoutubeSearchCandidates\([^\n]+\{limit:2\}/);
-  assert.match(bounded,/assert.equal\(scope.operationalCapCents,200\)/);
+  assert.match(bounded,/const size=boundedTestSize\(scope\)/);
+  assert.match(bounded,/assert.equal\(scope.userCapCents,size.capCents\)/);
+  assert.match(bounded,/\.sort\(\(a,b\)=>a\.tier-b\.tier\|\|a\.ordinal-b\.ordinal\)\.slice\(0,count\)/);
   assert.match(bounded,/assert.equal\(scope.candidatesPerArtist,2\)/);
   const campaign=await fs.readFile(new URL('./run-youtube-campaign.mjs',import.meta.url),'utf8');
   assert.match(campaign,/'scripts\/src\/youtube-search-plan.mjs'/);
