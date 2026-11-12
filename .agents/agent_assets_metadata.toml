@@ -1680,3 +1680,45 @@ mtime_ms = 1794444257987
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/8a221cba-845f-46c2-ae05-28c0c83e7d3d/cba8352b-2474-4275-92fb-c7ba3c6f26c2"
 storage_version_token = "1794447129945852"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "tM5wRnz0HeSH5Jl6vSpB2"
+uri = "file://generated-artifacts/instagram-likely-export-after-continuation/instagram-likely-matches-corrected-4.csv"
+type = "table"
+title = "Corrected Instagram matches — 48,333 artists"
+description = "One Instagram URL per row. All four user-rejected matches removed, including Sintala → @ashleyyjulianne. Other audit flags are not automatically deleted."
+logical_id = "2072b969-3e8f-48cf-bf36-8ea9286f3a70"
+content_hash = "sha256:b1d417726a4749d17553cf6f657ec8687cd389caafe1d79b8d9813cb3eabe260"
+size = 10623090
+mtime_ms = 1794447254973
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2072b969-3e8f-48cf-bf36-8ea9286f3a70/763ceb15-f8e3-48e8-b68b-1ac84602e16c"
+storage_version_token = "1794447537827598"
+content_type = "text/csv"
+
+[[outputs]]
+id = "tzfI5tZuF0CqvrRUriRg-"
+uri = "file://generated-artifacts/instagram-full-saved-evidence-review/final-results/similar-mention-and-title-cases.csv"
+type = "table"
+title = "1,774 similar mention or title risks"
+description = "Different-name accounts where artist wording appears in the supplied bio or saved search text, without recorded exact-link corroboration. Includes evidence and scores. Review flags, not confirmed false positives."
+logical_id = "8ce096b4-b74a-4ead-aef1-d89c01aaf4eb"
+content_hash = "sha256:8a45a0a94d3fa2880d185f0a58dbd606e70183615aea01996217aef4d6ff462e"
+size = 1474932
+mtime_ms = 1794447518321
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/8ce096b4-b74a-4ead-aef1-d89c01aaf4eb/4bef2c7f-3df5-491b-bae9-e8b18cefe098"
+storage_version_token = "1794447538527955"
+content_type = "text/csv"
+
+[[outputs]]
+id = "0l5tCQRdH83Fh0VD7yEBF"
+uri = "file://generated-artifacts/instagram-full-saved-evidence-review/final-results/all-matches-audit.csv"
+type = "table"
+title = "Full saved-evidence review — 48,333 matches"
+description = "Every remaining match with saved identity score, account name, bio, search text, evidence availability, risk reasons and review priority. Automated screening, not individual ownership verification."
+logical_id = "1c4dd484-9672-4af0-a3c0-61741e8f790e"
+content_hash = "sha256:f682b9df9a217e9dee46df8e5689d4cf96378852031ef1eea4357e6f9214fff2"
+size = 37561904
+mtime_ms = 1794447517217
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/1c4dd484-9672-4af0-a3c0-61741e8f790e/2aff54bd-2d05-4188-8547-f154a1ffcdb8"
+storage_version_token = "1794447539739434"
+content_type = "text/csv"
