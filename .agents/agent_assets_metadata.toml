@@ -1834,3 +1834,17 @@ mtime_ms = 1794442873253
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/5af0ad89-7d97-4170-9c88-5c455f2b18f8/c66e4588-b483-4215-a584-8ab784f954ac"
 storage_version_token = "1794493296400883"
 content_type = "text/csv"
+
+[[outputs]]
+id = "rzRFExDr1I3Vqq-0X-KxV"
+uri = "file://generated-artifacts/youtube-video-review-20-2026-11-12-a/proposed-video-test-cohort.csv"
+type = "table"
+title = "Proposed 20-artist YouTube video recovery test"
+description = "20 currently eligible Tier 2 artists from the completed test who had no captured candidate channel. Lists the 40 exact saved video URLs proposed for uploader resolution. No spending approved or performed."
+logical_id = "d5583fd6-2c31-4b9c-88d5-bcd8e3e86122"
+content_hash = "sha256:ddbd1e096b242d6495e8707128cb58f4173dd6c2dabaf65946b4575ab999a678"
+size = 5998
+mtime_ms = 1794494487412
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/d5583fd6-2c31-4b9c-88d5-bcd8e3e86122/c6d7a0c2-3d6f-4ccc-bfd2-d3bc2b119a92"
+storage_version_token = "1794494627750924"
+content_type = "text/csv"

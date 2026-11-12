@@ -29,6 +29,19 @@ exact-plan approval. If downstream inputs are not known, stop preparation or
 seek a separately reviewed bounded dynamic-discovery policy rather than
 silently filling approved slots with new identities.
 
+Use separate approval stages for a saved-video recovery test when the uploader
+is not yet known: approve only the frozen uploader requests first, then prepare
+and approve exact channel/model requests after receiving those identities.
+
+**Why:** This preserves exact-request approval without pretending an unknown
+uploader or model input was already reviewed. The user requested an improved
+test, not an open-ended spending policy.
+
+**How to apply:** Preserve every resolved uploader alternative, clearly label
+Topic leads and shared-channel uncertainty, and disclose the later capture
+breadth/selection policy. Uploader resolution alone is discovery, not an
+accepted artist-owned link or measured ownership recovery.
+
 Saved video benchmark text relevance must be reported separately from exact
 catalog identity, uploader identity and artist ownership. Missing video-to-channel
 bindings make ownership precision unscorable, not zero. Format words such as
