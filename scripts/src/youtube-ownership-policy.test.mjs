@@ -95,3 +95,45 @@ test('An exact first-party link still needs consistent self-identification for t
   assert.equal(evaluateYoutubeOwnership(a,candidate({capture:capture({displayName:'Different Person'})})).reviewSuggestion,false);
   assert.equal(evaluateYoutubeOwnership(artist,candidate({capture:{status:200,bodySha256:'a'.repeat(64),capturedAt:'2026-11-10',requestedUrl:url}})).reviewSuggestion,false);
 });
+test('Exact-host localized Spotify artist paths compare IDs without granting ownership or resolving unknown roles',()=>{
+  for(const prefix of ['intl-pt','intl-en','intl-de','INTL-PT']){
+    const c=candidate({capture:capture({externalUrls:[spotify.replace('/artist/','/'+prefix+'/artist/')+'?si=fixture']})});
+    assert.equal(evaluateYoutubeOwnership(artist,c).status,'needs_identity_check');
+    assert.equal(evaluateYoutubeOwnership(artist,c).reviewSuggestion,false);
+    const result=evaluateYoutubeOwnership(artist,c,{answer:answer(c,{channelType:'unknown'})});
+    assert.equal(result.reason,'recorded_model_uncertain_or_unresolved_channel_type');
+    assert.equal(result.reviewSuggestion,false);
+    const conflicting=candidate({capture:capture({externalUrls:[
+      spotify, 'https://open.spotify.com/'+prefix+'/artist/abcdefghijklmnopqrstuv']})});
+    assert.equal(evaluateYoutubeOwnership(artist,conflicting,{answer:answer(conflicting)}).status,'ownership_conflict');
+    const localizedArtist={...artist,accounts:[{url:spotify.replace('/artist/','/'+prefix+'/artist/')}]};
+    assert.equal(evaluateYoutubeOwnership(localizedArtist,conflicting).status,'ownership_conflict');
+  }
+  // Spotify artist IDs are case-sensitive even when the locale is not.
+  const known={...artist,accounts:[{url:'https://open.spotify.com/artist/'+'A'.repeat(22)}]};
+  const c=candidate({capture:capture({externalUrls:['https://open.spotify.com/intl-pt/artist/'+'a'.repeat(22)]})});
+  assert.equal(evaluateYoutubeOwnership(known,c).status,'ownership_conflict');
+});
+test('Spoofed Spotify hosts, credentials, ports and unsupported paths do not supply music IDs',()=>{
+  const conflictingId='abcdefghijklmnopqrstuv';
+  for(const raw of [
+    'https://open.spotify.com.evil.test/intl-pt/artist/',
+    'https://www.open.spotify.com/intl-pt/artist/',
+    'https://open.spotify.com@evil.test/intl-pt/artist/',
+    'https://evil.test@open.spotify.com/intl-pt/artist/',
+    'https://open.spotify.com:444/intl-pt/artist/',
+    'http://open.spotify.com/intl-pt/artist/',
+    'https://open.spotify.com/arbitrary/artist/',
+    'https://open.spotify.com/intl-pt/album/',
+    'https://open.spotify.com/intl-pt-BR/artist/',
+    'https://open.spotify.com/intl-pt/intl-en/artist/',
+  ]){
+    const c=candidate({capture:capture({externalUrls:[raw+conflictingId]})});
+    const decision=evaluateYoutubeOwnership(artist,c);
+    assert.equal(decision.status,'needs_identity_check',raw);
+    assert.equal(decision.reviewSuggestion,false);
+  }
+  const shared=candidate({capture:capture({externalUrls:[spotify.replace('/artist/','/intl-pt/artist/')]})});
+  assert.equal(evaluateYoutubeOwnership(artist,shared,{sharedChannel:true}).status,'ownership_conflict');
+  assert.equal(evaluateYoutubeOwnership(artist,shared,{contradictoryPair:true}).status,'ownership_conflict');
+});

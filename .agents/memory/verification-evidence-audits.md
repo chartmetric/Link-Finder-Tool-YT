@@ -248,3 +248,16 @@ frozen workers. Measure actual delivered inputs separately from upstream catalog
 availability, which remains unknown until queried. Existing catalog links are
 contextual references, not independently adjudicated ownership or automatic
 acceptance.
+
+YouTube alias consolidation is authorized only for newly prepared work, not
+archived assessments or active sealed workers. Exact localized Spotify artist
+ID agreement is supporting context, never ownership or a resolved channel role.
+
+**Why:** The offline pilot found one channel checked under two addresses with
+likely verdicts but unknown roles. Fixing duplicate work and URL comparison must
+not turn those held observations into newly accepted matches or refund charges.
+
+**How to apply:** Consolidate only provider-bound aliases within the same catalog
+artist and channel ID. Preserve every source capture and existing reservation;
+keep differing observations and shared-channel conflicts on hold. Any paid
+recheck or continuation still needs separate approval.

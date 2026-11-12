@@ -7,7 +7,6 @@ import {fileURLToPath} from 'node:url';
 import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
 import {select} from './instagram-artist-metadata-overlay.mjs';
 import {collectTargetPlatformMetadata} from './target-platform-catalog-metadata.mjs';
-import {createYoutubeChannelCache} from './youtube-channel-dedup.mjs';
 import {eligibilitySql} from './run-youtube-campaign.mjs';
 import {youtubeTestSchema,youtubeSearchCandidates} from './youtube-discovery-test.mjs';
 import {exportYoutubeCatalogEvidence} from './youtube-ownership-catalog-export.mjs';
@@ -19,6 +18,7 @@ import {boundedYoutubeSchema,boundedYoutubeGate} from './youtube-bounded-test-ga
 import {freezeLocalModules} from './seal-youtube-campaign-runtime.mjs';
 import {boundedTestOptions,approveBoundedTestPlan} from './youtube-bounded-test-plan.mjs';
 import {youtubeSearchPlan,rankYoutubeSearchCandidates} from './youtube-search-plan.mjs';
+import {YOUTUBE_CANDIDATE_POLICY,captureYoutubeCandidates} from './youtube-candidate-consolidation.mjs';
 const {id,root}=boundedTestOptions(process.argv.slice(2));
 const parentId='full-tiers-1-5-no-youtube-uncapped';
 const read=async p=>JSON.parse(await fs.readFile(p,'utf8'));
@@ -55,7 +55,7 @@ async function prepare(){
   const enriched=await read(root+'/supplemental-catalog/packets.json');
   const scope={id,artists,scopeSha256:hash(artists),discoveryPolicyVersion:1,userCapCents:null,proposedCapCents:200,operationalCapCents:200,
     candidatesPerArtist:2,maxCalls:100,explicitApproval:false,approvalStatus:'awaiting_spending_approval',
-    approvedBy:null,
+    approvedBy:null,candidatePolicy:YOUTUBE_CANDIDATE_POLICY,
     noCatalogWrites:true,noAutomaticRetries:true,fullCampaignRemainsPaused:true,
     catalogEvidenceSha256:hash(enriched),model:MODEL_PLAN};
   const files=await freezeLocalModules(fileURLToPath(import.meta.url),root+'/runtime');
@@ -88,6 +88,8 @@ async function run(){
   assert.equal(scope.explicitApproval,true);assert.equal(scope.approvalStatus,'approved');
   assert.equal(hash(await read(root+'/plan.json')),scope.planSha256);
   assert.equal(scope.discoveryPolicyVersion,1,'Legacy approvals cannot authorize changed search wording.');
+  assert.equal(scope.candidatePolicy,YOUTUBE_CANDIDATE_POLICY,
+    'New candidate policy requires a newly prepared approval; never upgrade an archived run.');
   assert.equal(scope.scopeSha256,hash(scope.artists));assert.equal(hash(packets),scope.catalogEvidenceSha256);
   assert.equal(scope.artists.length,20);assert.equal(scope.userCapCents,200);
   assert.equal(scope.operationalCapCents,200);assert.equal(scope.candidatesPerArtist,2);
@@ -138,14 +140,11 @@ async function run(){
         method:'POST',url:'https://google.serper.dev/search',body:searchPlan.request});
       assert.equal(response.status,200);
       const discovery=rankYoutubeSearchCandidates(youtubeSearchCandidates(response.data),searchPlan,{limit:2});
-      const candidates=[],channelCache=createYoutubeChannelCache(artist);
-      for(const candidate of discovery.candidates){
-        if(channelCache.reuse(artist,candidate))continue;
+      const candidates=await captureYoutubeCandidates(artist,discovery.candidates,async candidate=>{
         const response=await request(a.profile_id,'metadata','metadata-'+a.profile_id+'-'+hash(candidate.url),{
           method:'GET',url:'https://api.scrapecreators.com/v1/youtube/channel?'+new URLSearchParams({url:candidate.url})});
-        candidate.capture=normalizeYoutubeChannel(response,candidate.url);
-        if(!channelCache.observe(artist,candidate))candidates.push(candidate);
-      }
+        return normalizeYoutubeChannel(response,candidate.url);
+      });
       const record={artist,tier:a.tier,searchPlan,...discovery,
         relatedTopicCandidates:discovery.topicCandidates,candidates};
       records.push(record);await save('artists/'+a.profile_id+'-captures.json',record);
@@ -164,7 +163,8 @@ async function run(){
           [channel,r.artist.profileId])).rows:[];
         const shared=Boolean(prior.length||(channel&&ownership.get(channel).size>1));
         const artist={...r.artist,ownershipEvidence:assembleYoutubeOwnershipEvidence(r.artist,packet,candidate)};
-        let decision=evaluateYoutubeOwnership(artist,candidate,{sharedChannel:shared,contradictoryPair:candidate.contradictoryPair===true});
+        const constraints={sharedChannel:shared,contradictoryPair:candidate.contradictoryPair===true};
+        let decision=evaluateYoutubeOwnership(artist,candidate,constraints);
         if(decision.status==='needs_identity_check'){
           const input=youtubeVerificationInput(artist,candidate),prepared=youtubeDecisionRequest(input,MODEL_PLAN);
           candidate.metadataActuallyUsed=input;
@@ -172,8 +172,7 @@ async function run(){
           else{
             const reply=await request(r.artist.profileId,'model','model-'+r.artist.profileId+'-'+hash(candidate.url),prepared.request);
             candidate.recordedAnswer=parseYoutubeDecision(reply,input,MODEL_PLAN,prepared.inputSha256);
-            decision=evaluateYoutubeOwnership(artist,candidate,{sharedChannel:shared,
-              contradictoryPair:candidate.contradictoryPair===true,answer:candidate.recordedAnswer});
+            decision=evaluateYoutubeOwnership(artist,candidate,{...constraints,answer:candidate.recordedAnswer});
           }
         }
         candidate.decision=decision;
@@ -211,6 +210,7 @@ async function run(){
           ...c.decision,search_title:c.title,search_snippet:c.snippet,
           recorded_answer:c.recordedAnswer??null,metadata_actually_used:c.metadataActuallyUsed??null,
           captured_channel:c.capture?.body??null,artist_catalog_metadata:r.artist,
+          alias_provenance:c.aliasProvenance,provider_aliases:c.providerAliases,consolidation:c.consolidation,
         })):[{artist:r.artist.name,tier:r.tier,profile_id:r.artist.profileId,cm_artist:r.artist.cmArtist,youtube_url:'',status:r.outcome,channelAbsenceProven:false}]);
         const columns=[...new Set(rows.flatMap(Object.keys))],cell=v=>{
           let s=v==null?'':typeof v==='object'?JSON.stringify(v):String(v);

@@ -65,14 +65,15 @@ function legacyResolution(requested,packet){
 }
 function musicKey(raw){
   try{
-    const u=new URL(raw),host=u.hostname.replace(/^www\./,'');
+    const u=new URL(raw),host=u.hostname;
     if(u.protocol!=='https:'||u.username||u.password||u.port)return null;
     const p=u.pathname.split('/').filter(Boolean);
-    if(u.hostname==='open.spotify.com'){
-      if(p.length===3&&/^intl-[a-z]{2}$/.test(p[0]))p.shift();
-      if(p.length===2&&p[0]==='artist'&&/^[a-zA-Z0-9]{22}$/.test(p[1]))return 'spotify:'+p[1];
-    }
-    if(host==='instagram.com'&&p.length===1&&/^[\w.]+$/.test(p[0]))return 'instagram:'+p[0].toLowerCase();
+    // Spotify's observed locale prefix is a path component, not a new host
+    // or ownership claim. Never strip arbitrary prefixes or normalize IDs.
+    if(host==='open.spotify.com'&&p.length===3&&/^intl-[a-z]{2}$/i.test(p[0]))p.shift();
+    if(host==='open.spotify.com'&&p.length===2&&p[0]==='artist'&&/^[a-zA-Z0-9]{22}$/.test(p[1]))
+      return 'spotify:'+p[1];
+    if(['instagram.com','www.instagram.com'].includes(host)&&p.length===1&&/^[\w.]+$/.test(p[0]))return 'instagram:'+p[0].toLowerCase();
     return null;
   }catch{return null;}
 }
