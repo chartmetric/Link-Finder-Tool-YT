@@ -28,3 +28,19 @@ those unknown requests to reviewed evidence.
 exact-plan approval. If downstream inputs are not known, stop preparation or
 seek a separately reviewed bounded dynamic-discovery policy rather than
 silently filling approved slots with new identities.
+
+Saved video benchmark text relevance must be reported separately from exact
+catalog identity, uploader identity and artist ownership. Missing video-to-channel
+bindings make ownership precision unscorable, not zero. Format words such as
+lyrics or cover do not establish the uploader's role.
+
+**Why:** A source-text review can identify recording credits and title collisions
+without proving who uploaded the video. Counting text positives as owned-channel
+recovery, or treating unknown uploaders as negative ownership labels, would
+manufacture accuracy from absent evidence.
+
+**How to apply:** Preserve unknown denominators, keep synthetic role controls out
+of saved-sample metrics, and measure video-ID deferrals separately from direct
+capture-slot losses. Without resolved uploader IDs and a defined selection
+policy, only channel-diversity bounds and optimistic direct-retention ceilings
+are justified.

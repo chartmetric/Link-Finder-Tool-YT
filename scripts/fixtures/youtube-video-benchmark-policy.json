@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "cohort": "completed-20-artist-main-fixes-2026-11-11",
+  "replaySha256": "dcd4d8df9e5914ec77cccbf67c288b0a370f0d5dcc595d95bb1435ab0320a757",
+  "adjudication": {
+    "method": "Single-curator manual source-text adjudication, separate from heuristic predictions and archived model decisions.",
+    "reviewer": "Replit Agent source curator",
+    "reviewedOn": "2026-11-12",
+    "secondReviewer": null,
+    "blinded": false,
+    "independentOf": ["matchedNames", "roleHint", "eligibility", "queue position", "archived model answers", "acceptance decisions"],
+    "notClaimed": ["two-human agreement", "held-out calibration", "population accuracy", "current ownership"],
+    "relevanceDefinition": "Primary video title or primary recording/creative credit explicitly presents the target name as performer or contributor. This is source-text relevance, not proof that a same-named performer is the exact catalog artist.",
+    "unrelatedDefinition": "Visible primary credit identifies a different artist and the target is only a work title or unrelated recommended result.",
+    "unknownDefinition": "Truncated credits, related-item contamination, descriptive phrases or longer same-name performers cannot establish primary target relevance.",
+    "uploaderEvidence": "No saved video metadata receipts bind any of the 90 videos to an exact uploader channel ID. Snippet handles, Go to channel text, channel search results and distributor names are not substitutes.",
+    "ownershipEvidence": "All 90 ownership labels remain unknown. No independently bound uploader means no independently graded artist-owner pair.",
+    "catalogIdentity": "Unknown for all cases in this video benchmark; relevance does not resolve exact catalog identity.",
+    "priorExposure": "Convenience sample already used in development; not held out."
+  },
+  "requiredStrata": {
+    "song_title_collision": "observed_saved_text",
+    "collaborator": "observed_saved_text",
+    "distribution": "observed_saved_text_not_uploader_role",
+    "topic_mention": "observed_saved_text_not_uploader_role",
+    "cover": "observed_saved_text_not_uploader_role",
+    "lyrics": "observed_saved_text_not_uploader_role",
+    "exact_name_mention": "observed_saved_text_not_uploader_identity",
+    "fan_uploader": "synthetic_control_only_no_saved_uploader_evidence",
+    "exact_name_uploader": "synthetic_control_only_no_saved_uploader_evidence"
+  }
+}

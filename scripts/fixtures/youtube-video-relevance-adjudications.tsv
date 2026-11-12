@@ -1,0 +1,91 @@
+profileId	videoId	relevance	tags	rationale
+3934659	JbVXf7N2TrM	relevant	distribution	Primary recording credit names Feliipejk; distributor text does not identify uploader.
+3934659	4bIavF_TfW4	unrelated	recommendation_contamination,distribution	Primary recording is Con Mi Mente by BTC; Feliipejk occurs only after Go to channel in related content.
+3574337	OGkqHU-ue5c	relevant	distribution	Primary Overpass recording credit names Trixie Lover.
+3574337	Qv5_tO9N7IY	relevant	distribution	Primary Overpass recording credit names Trixie Lover.
+3574337	zfiPA26zpgA	unknown	recommendation_contamination,topic_mention	Target appears only in a recommended Topic item; primary title gives no target credit.
+3574337	G4PXU3X6OKs	unknown	recommendation_contamination,topic_mention	Silent Tears has no visible target credit; the target Topic name is in related content.
+286103	uHJucQj1C-Q	unrelated	song_title_collision	Highland Spirit is the work title; Taylor Davis is the named performer, not a target artist credit.
+286103	A3WPj8Hlxh8	unknown	exact_name_mention	Created exclusively for Highland Spirit is a channel claim, not a performer credit or exact catalog identity.
+286103	F1zipMUI34o	unrelated	song_title_collision,distribution	Highland Spirit is the track title and Aaron Dolan is the primary recording artist.
+286103	TWTxh4Wt_Ss	unknown	exact_name_mention	Exclusive Highland Spirit copyright claim could name a same-name channel; target recording identity is unbound.
+286103	-mWpaG6GeeM	unknown	recommendation_contamination	Primary Celtic music item has only a related Highland Spirit channel mention.
+286103	qtwNE0qmN3c	unknown	song_title_collision	Highland Spirit could be a descriptive music title; blueXmystichollow mention is not bound uploader metadata.
+3737598	cP5pMVFjGWA	relevant	exact_name_mention	Primary title and music and lyrics credit explicitly name Delin.
+3737598	rLYZTf0ZWVM	relevant	exact_name_mention	Primary title and music credit name Delin; whether this is the catalog artist is unresolved.
+3737598	K8VSY-_ChCc	unknown	collaborator	Delta Sleep is the primary artist; a truncated Delin and Hank credit does not establish the target artist participated.
+3737598	KRT_sYlDD0E	relevant	distribution	Primary recording credit names Delin; auto-generation does not establish artist ownership.
+257846	CnkvLwLWf_8	relevant	exact_name_mention	Primary artist and Clairaudient title explicitly name The Nightclubs; snippet handle is only text.
+257846	GpE2YKmbi1Y	relevant	exact_name_mention	Primary title names The Nightclubs and CD-R; recommendations do not identify its uploader.
+257846	k-ThVSwaCTk	relevant	collaborator,organization_mention	The description explicitly features The Nightclubs at LIVE FROM EARTH; venue involvement is not artist ownership.
+257846	7FEqgNMF9rw	relevant	exact_name_mention	Primary title names The Nightclubs and Mirror Romance.
+257846	sDT7fi5aJ90	relevant	exact_name_mention	Primary title names The Nightclubs and CD-R.
+257846	8_x3ovuiAxk	relevant	lyrics	Primary title names The Nightclubs and CD-R; lyrics format does not prove a third-party uploader.
+207604	7QlExUa3fak	relevant	exact_name_mention	Primary CLAWS title explicitly names Bee Blackwell.
+207604	Arq18EhTx64	relevant	exact_name_mention	Primary THE KNIFE title names Bee Blackwell; handle text remains unverified.
+207604	MiW2o0zGw7I	relevant	exact_name_mention	Primary title and description credit Bee Blackwell.
+207604	IB3yZPy0lCQ	relevant	lyrics,exact_name_mention	Official lyric video explicitly credits Bee Blackwell; lyric format alone is not a fan-channel label.
+207604	g4dMos2g-7Q	relevant	exact_name_mention	Primary LALALA title credits Bee Blackwell.
+207604	mibckLrREFw	relevant	distribution	Primary VIDEODROME recording credit names Bee Blackwell.
+207604	z-D7efeWKf8	relevant	distribution	Primary The Same recording credit names Bee Blackwell; even the distributor name is not uploader ownership.
+3557491	-2f0IAYI2TY	relevant	collaborator,lyrics,nightcore	Primary description names Blura and KHAERIS; nightcore and lyrics indicate format rather than uploader identity.
+263431	YMP3juxYLqE	relevant	collaborator,topic_mention	Primary recording title explicitly credits mxbeats alongside collaborators; related Topic item is separate.
+263431	Sy6JCKtc-bA	relevant	collaborator	Primary title credits mxbeats alongside DRYFTMODE, Suzi and RXTUAL.
+263431	8CrbpXli_FA	relevant	collaborator	Primary title credits mxbeats; support link in description does not identify the video uploader.
+263431	QCVSFKfl9Jw	relevant	collaborator,topic_mention	Primary recording title names mxbeats; recommended slowed Topic item does not bind uploader.
+263431	u9dpXP63r4A	relevant	collaborator,topic_mention	Primary recording title names mxbeats; Topic recommendations are not this video metadata.
+263431	30dg8NPHkiQ	relevant	collaborator,topic_mention	Primary recording title names mxbeats with collaborators.
+3819433	RhWq2ps9_SY	relevant	exact_name_mention	Primary title explicitly names Suzi; same-name artist and handle remain unbound to catalog.
+3819433	E_zTHkpLUfo	relevant	collaborator	Primary title credits SUZI and Jim Jones; this is text relevance, not catalog artist identity.
+3819433	o4ZxtP3j2pY	relevant	exact_name_mention	Primary title and follow instructions name Suzi; a social URL is not bound ownership evidence.
+3819433	xXk-SDViNtc	unknown	partial_name_collision	Suzi Quatro contains the short target name but no source binds that full performer name to catalog Suzi.
+255795	YMP3juxYLqE	relevant	collaborator,organization_mention	Primary title credits DRYFTMODE with mxbeats and Suzi; actuationmusic mention does not prove uploader identity.
+255795	8CrbpXli_FA	relevant	collaborator,promotion	Primary title credits DRYFTMODE; only for promotion language is not an exact uploader receipt.
+255795	QCVSFKfl9Jw	relevant	collaborator	Primary title credits DRYFTMODE alongside mxbeats and Suzi.
+255795	u9dpXP63r4A	relevant	collaborator	Primary title credits DRYFTMODE alongside mxbeats and Suzi.
+255795	30dg8NPHkiQ	relevant	collaborator,organization_mention	Primary title credits DRYFTMODE; Actuation snippet mention alone is not a captured uploader.
+255795	IxeYc6YS9SE	relevant	collaborator,nightcore	Primary title credits DRYFTMODE; description says this is an edit, without binding uploader channel ID.
+3865120	Sy6JCKtc-bA	relevant	collaborator	Primary title and description explicitly credit RXTUAL in Call Me Baby.
+3865120	cr0sfS8yflo	unknown	recommendation_contamination,remix	Target appears in a trailing recording reference; shorts title credits MusicBySerox and MXBeats only.
+3551864	YgPqSYcWkLk	relevant	collaborator	Primary title and description explicitly credit VAMPXL and Tokyophile.
+3551864	29EziBZjefc	relevant	collaborator	Primary recording description credits VAMPXL as artist and producer beside Phonk King.
+3551864	FxNXVMO_eaw	relevant	distribution	Primary title and recording credit name VAMPXL; Tribal Trap is a distributor claim.
+3551864	3mB9P888yvU	unknown	recommendation_contamination	Only the related Edit Version - Slowed item visibly credits VAMPXL; primary video credit is missing.
+3551864	s8AYMHr0IZ8	relevant	collaborator,promotion	Primary title credits VAMPXL and EILON; Airwave Vibes text does not bind an uploader identity.
+3551864	D__vnh45ayU	relevant	distribution	Primary Montagem De Vento recording credit names VAMPXL and STRADA Music.
+3556331	cpUnVtBKX8w	relevant	organization_mention	Primary title credits Ammar Haikal; XO House presents does not establish who uploaded it.
+3556331	XMCQlJQgChg	relevant	organization_mention	Primary live recording title credits Ammar Haikal.
+3556331	1vNq5qrTVgg	relevant	organization_mention	Primary official audio title credits Ammar Haikal.
+3556331	aE1SHmwtU3M	relevant	collaborator,topic_mention	Primary title credits Ammar Haikal, DJ Kidd and XO House; related Topic text does not bind uploader.
+3556331	WaeNpKbAtb8	relevant	collaborator,organization_mention	Primary live title credits Ammar Haikal in MeleTOP; program involvement is not artist ownership.
+3556331	b3FD3tb1xoA	relevant	lyrics	Primary title credits Ammar Haikal; related official video does not identify lyric-video uploader.
+3556331	nNHPsxrJPiw	unknown	recommendation_contamination,cover	Mashup title has no target artist credit; only a recommended rockestra item names Ammar Haikal.
+3556331	HyTCWnIoFn4	relevant	cover	Primary title explicitly names Ammar Haikal and a Rockestra version; cover format does not resolve its channel.
+186449	6wrhsDOJHbI	relevant	exact_name_mention	Primary performer is Cicero; official channel assertion cannot disambiguate catalog CICERO!.
+186449	JQqVj3_gagg	relevant	exact_name_mention	Primary performer is Cicero; D. Cicero credit does not bind catalog identity.
+186449	r3_t2mIG9U0	relevant	exact_name_mention	Primary title says Cicero and description David Cicero; same-name catalog identity remains unconfirmed.
+186449	SGY6_KZhWko	unknown	partial_name_collision,distribution	Roger Cicero is a longer performer name, with no source binding to catalog CICERO!.
+186449	oOQ0T_-g5IE	unknown	partial_name_collision,distribution	Cicero Euclides is a longer credited name, not an exact catalog identity declaration.
+3565504	211BAFRoQHk	unknown	partial_name_collision	Damon Albarn is a longer performer name; short target Damon. is not independently bound to it.
+3565504	L_EUZHfnaZM	unknown	recommendation_contamination,partial_name_collision	Target substring appears in recommended Damon Albarn content, not a bound primary target credit.
+261863	pMLb9rWIgO0	relevant	collaborator	Primary title explicitly credits Slowsho and Sophia Heart; follow Slowsho does not identify uploader.
+261863	D6jX0WHSeek	relevant	collaborator,lyrics	Primary title and lyric description credit Sophia Heart alongside Shoby.
+261863	5wfW4cS_XCQ	relevant	collaborator,cover	Primary title credits Sophia Heart and SECMOS in a cover; ATLAST text is not captured uploader identity.
+261863	idc2lUEWVgk	relevant	collaborator,cover	Primary title credits Sophia Heart and Deep Chills in a cover; ATLAST mention remains text.
+261863	XKCTnrbqL6Q	relevant	collaborator,lyrics	Primary title credits Sophia Heart with Shoby and Polux.
+261863	_m0R2GZFJtk	relevant	collaborator,organization_mention	Primary title features Sophia Heart; SSL Music channel language is not an exact uploader binding.
+3624400	5wLF9hV0Onk	relevant	collaborator,lyrics	Primary title credits prodbytwelve alongside Moula020 and Fae August; noelle490 text is not captured identity.
+3624400	khPst3bitgs	unknown	recommendation_contamination	Target is in a recommended Waera item; primary beat-critique video does not visibly credit the target.
+3624400	TnJoxkM7mX0	relevant	collaborator,distribution	Primary recording credit includes prodbytwelve; composer credit is relevance, not uploader ownership.
+3624400	TIoPgS7dA5g	relevant	collaborator	Primary description credits prodbytwelve on YUN MUFASA recording; YUNMUFASA mention is not uploader metadata.
+3624400	Pw1qS29P7J8	relevant	collaborator,distribution	Primary description explicitly credits prodbytwelve as artist with other producers.
+3624400	z7fCtD3URl4	relevant	collaborator	Primary freestyle credit names prodbytwelve as producer and composer, not necessarily uploader.
+3624400	FZ6an4AgXx0	unknown	recommendation_contamination	Target appears only in a recommended Waera video; primary rio leyva birthday video has no target credit.
+3571457	FzyRbmPf1AY	unknown	partial_name_collision	John Samuell is a longer performer name; source does not bind it to catalog Samuell.
+3571457	cSWkt6_Fupg	unknown	partial_name_collision	Primary John Samuell performance cannot be bound to the short catalog name.
+3571457	_SZQGkXhzQ4	unknown	partial_name_collision	Primary John Samuell organ performance cannot be bound to the short catalog name.
+3571457	6TM5gARqd7c	unknown	partial_name_collision	John Samuell and Daily Joy wording does not establish catalog performer or uploader identity.
+3926613	FmkwKdCW_OM	relevant	remix	Primary remix title explicitly names ЦУЕФА; NOVERA MUSIC claim is not bound uploader metadata.
+3926613	3_S6MxP2NIc	relevant	exact_name_mention	Primary premiere title credits ЦУЕФА; a social-links fragment is not captured ownership.
+3926613	slyYPuTE_dY	relevant	collaborator	Primary title and description explicitly identify a ЦУЕФА group project.
+3926613	i1dTjgiwsYA	relevant	exact_name_mention	Primary tour title names ЦУЕФА and participants; uploader remains unbound.

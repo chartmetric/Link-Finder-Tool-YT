@@ -179,3 +179,13 @@ Bee Blackwell has seven saved video clues. The two proposed requests retain
 search provenance. The latter snippet mentions `@beeblackwellmusic103`;
 that text remains a mention, not a resolved handle, fetched channel or
 ownership match. All seven uploaders remain unknown in this replay.
+
+### Independent source-text benchmark
+
+See [the saved video relevance and ownership benchmark](youtube-video-owned-channel-benchmark.md)
+for all 90 independently source-labeled artist/video pairs, unknown uploader and
+ownership denominators, synthetic-only role controls, and measured candidate
+breadth losses. The two-video queue defers 53 eligible clues, including 38
+source-text positives. One capture removes 5 of the historical 16 direct
+candidate slots before any video displacement. Neither finding establishes
+artist-owned channel recovery or authorizes activation.

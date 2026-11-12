@@ -1806,3 +1806,31 @@ mtime_ms = 1794467789617
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2c841342-dd5e-414f-b00e-c93dc68f51ab/63832657-9d41-4f9e-8395-78ac624f8a35"
 storage_version_token = "1794467804621895"
 content_type = "text/csv"
+
+[[outputs]]
+id = "lvNb_q_sCx7giDMEeS_OV"
+uri = "file://generated-artifacts/youtube-video-owned-channel-benchmark-2026-11-12/report.html"
+type = "html"
+title = "Saved video clue benchmark"
+description = "All 90 source-reviewed cases, ownership evidence gaps and measured candidate losses. No paid requests."
+logical_id = "7a41c0d5-ca01-4dbb-9387-734da9a90001"
+content_hash = "sha256:207fdb9c0a4315f62d8c85c76d5935fe7c4a88393d26f18d447688784ff6d38b"
+size = 24071
+mtime_ms = 1794442873253
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/7a41c0d5-ca01-4dbb-9387-734da9a90001/e6bac027-0df5-4427-ab95-52b5203aff1e"
+storage_version_token = "1794493295272351"
+content_type = "text/html"
+
+[[outputs]]
+id = "Zq9qV3h9fJ3-QxUdE8Ebp"
+uri = "file://generated-artifacts/youtube-video-owned-channel-benchmark-2026-11-12/cases.csv"
+type = "table"
+title = "All 90 video clue adjudications"
+description = "Independent text labels, explicit unknown uploader and ownership fields, and full saved search provenance."
+logical_id = "5af0ad89-7d97-4170-9c88-5c455f2b18f8"
+content_hash = "sha256:c2ab419eba851eb2cf54a28d6df57d456a2ef8ec3ec1d309b1bc0fd486dbf3b2"
+size = 112606
+mtime_ms = 1794442873253
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/5af0ad89-7d97-4170-9c88-5c455f2b18f8/c66e4588-b483-4215-a584-8ab784f954ac"
+storage_version_token = "1794493296400883"
+content_type = "text/csv"
