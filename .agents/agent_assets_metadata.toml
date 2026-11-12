@@ -1974,3 +1974,17 @@ mtime_ms = 1794518240689
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/d6e1364c-c950-4ba4-8edb-99401b17791d/aa544a33-c728-48b8-a1aa-aa24371df7c5"
 storage_version_token = "1794518262331249"
 content_type = "text/csv"
+
+[[outputs]]
+id = "hN_-E6G8kj08xYtuBOdYD"
+uri = "file://generated-artifacts/youtube-saved-fallback-2026-11-12/fallback-evidence.csv"
+type = "table"
+title = "YouTube fallback — saved video evidence"
+description = "Eight proposed uploader checks across the five artists without direct channel captures, including KAIVA’s distributor lead. Held and deferred evidence retained; no paid calls or accepted links."
+logical_id = "64684432-b85b-46fa-8815-91d9eaac5f4d"
+content_hash = "sha256:52b77ebf31a6b9888d8c098f91246a49490cd5ffa4480d013bcc04a8f3cd61f6"
+size = 13585
+mtime_ms = 1794520275726
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/64684432-b85b-46fa-8815-91d9eaac5f4d/f0036984-b96c-448a-84f0-3f476042bcaa"
+storage_version_token = "1794520315487100"
+content_type = "text/csv"

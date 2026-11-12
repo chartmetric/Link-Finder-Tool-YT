@@ -1,4 +1,4 @@
-// Deliberately not imported by any paid runner. No transport, credentials or database.
+// Pure planning helpers. Paid stages must freeze and separately approve their output.
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {youtubeSearchNames} from './youtube-music-search.mjs';
@@ -68,19 +68,29 @@ export function videoMentionHold(artist,row){
   if(/\bsong by ai\b|\bai generated (?:song|music)\b/i.test(String(row.title)+' '+String(row.snippet)))
     return 'ai_song_identity_unbound';
   const parts=String(row.snippet??'').split(/[·•]/).map(norm);
+  const escape=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  // A distributor snippet can join the artist and recording name in one dot
+  // segment. Accept an explicit bounded Main Artist credit, not any mention.
+  const explicitMainArtist=boundNames.some(({name})=>new RegExp(
+    '\\bmain artist:\\s*'+escape(String(name).normalize('NFKC').trim())+
+    '(?=\\s*(?:[·•;|]|$)|\\s+(?:producer|composer|lyricist|writer|performer|released on):)',
+    'iu').test(String(row.snippet??'').normalize('NFKC')));
+  const distributionCredit=/provided to youtube by/i.test(row.snippet??'')
+    &&(names.some(n=>parts.slice(1).includes(n))||explicitMainArtist);
   if(/provided to youtube by/i.test(row.snippet??'')&&parts.length>=2
-    &&!names.some(n=>parts.slice(1).includes(n)))
+    &&!distributionCredit)
     return 'distribution_credits_do_not_match_catalog_name';
   const rawTitle=String(row.title??'').normalize('NFKC').toLowerCase().replace(/^[^\p{L}\p{N}]+/u,'');
-  const escape=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   const titleCredit=boundNames.some(({name})=>{
     const exact=escape(String(name).normalize('NFKC').toLowerCase().trim());
     return new RegExp('^'+exact+'\\s*(?:[-–—:|·(\\[]|$|\\b(?:official|music|video|lyrics|nightcore|topic)\\b)','u').test(rawTitle)
       ||new RegExp('[-–—|·]\\s*'+exact+'\\s*(?:[-–—|·(\\[]|$)','u').test(rawTitle);
   });
-  const distributionCredit=/provided to youtube by/i.test(row.snippet??'')
-    &&names.some(n=>parts.slice(1).includes(n));
-  if(!titleCredit&&!distributionCredit)return 'artist_mention_without_clear_performer_credit';
+  const performerSide=String(row.title??'').split(/\s+[-–—]\s+/u);
+  const collaborationCredit=performerSide.length>1&&performerSide[0].split(/,\s*/u)
+    .some(performer=>names.includes(norm(performer)));
+  if(!titleCredit&&!distributionCredit&&!collaborationCredit)
+    return 'artist_mention_without_clear_performer_credit';
   return null;
 }
 export function planVideoDiscovery(artist, organic, provenance) {
@@ -119,11 +129,18 @@ export function planVideoDiscovery(artist, organic, provenance) {
     priority: v.sources.some(s => s.roleHint === 'unknown') ? 0 : 1}));
   const eligible = allVideos.filter(v => v.eligible).sort((a, b) => a.priority - b.priority
     || a.sources[0].resultIndex - b.sources[0].resultIndex);
+  // Preserve a distribution/Topic lead within the same two-request ceiling,
+  // rather than letting two ordinary/promotional videos consume both slots.
+  const selected=eligible.slice(0,1);
+  const distribution=eligible.find(v=>v!==selected[0]
+    &&v.sources.some(s=>!s.videoMentionHold&&s.roleHint==='topic_or_distribution'));
+  const second=distribution??eligible.find(v=>v!==selected[0]);
+  if(second)selected.push(second);
   return {...bound, channelClues: [...channels.values()], videoClues: allVideos,
-    resolutionQueue: eligible.slice(0, 2).map(v => ({...v,
+    resolutionQueue: selected.map(v => ({...v,
       operation: {kind: 'video_uploader', key: `video_uploader-${bound.profileId}-${bound.cmArtist}-${v.videoId}`,
         reservationCents: 2, request: proposedUploaderRequest(v.url)}})),
-    deferredVideos: eligible.slice(2), snippetHandles,
+    deferredVideos: eligible.filter(v=>!selected.includes(v)), snippetHandles,
     maximumVideoOperations: 2, verifiedMatches: 0, executable: false};
 }
 

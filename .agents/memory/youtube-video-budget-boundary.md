@@ -105,3 +105,16 @@ user rejections, retain clearly separated Topic leads, and require independent
 ownership evidence after name triage. Keep all held evidence accessible without
 describing it as a likely match or proving that an artist has no channel. A
 stricter shortlist is a precision/recall tradeoff, not demonstrated accuracy.
+
+When allocating bounded video-recovery slots, retain a supported
+distribution/Topic lead instead of allowing ordinary upload videos to consume
+every slot.
+
+**Why:** The user found KAIVA's Topic presence with a simple search while the
+direct-channel test left its link blank. Relevant saved video results existed;
+discarding them and crowding out distributor leads concealed useful discovery.
+
+**How to apply:** Replace an existing uploader slot rather than adding spending.
+Treat the distributor credit as a discovery clue, not a captured Topic identity
+or confirmed catalog association. Preserve deferred alternatives and disclose
+that the slot policy trades ordinary-uploader breadth for Topic coverage.
