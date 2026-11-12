@@ -1638,3 +1638,17 @@ mtime_ms = 1794446908545
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/1c23a7bb-3e73-4b4d-b227-12d2eba5e93a/9f561478-069c-4e13-afa4-b2804c073242"
 storage_version_token = "1794446916209811"
 content_type = "text/csv"
+
+[[outputs]]
+id = "1yW2XGIvC7GazBdLKckpO"
+uri = "file://generated-artifacts/instagram-likely-export-after-continuation/instagram-likely-matches-corrected-3.csv"
+type = "table"
+title = "Corrected Instagram matches — 48,334 artists"
+description = "One Instagram URL per row. Excludes all three disputed matches: Harmonious Nature, 王韵, and 2000х. Historical campaign records unchanged."
+logical_id = "9b491765-0927-4d72-b447-0c03c6902aa1"
+content_hash = "sha256:05872f5e4a704fe314bd8de71c48cca54fe23e366f3a7ccd737d4fd87b2a2bee"
+size = 10623310
+mtime_ms = 1794447028001
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/9b491765-0927-4d72-b447-0c03c6902aa1/6f20930f-55e9-4c79-8e64-73ef6c6a9b64"
+storage_version_token = "1794447034912544"
+content_type = "text/csv"
