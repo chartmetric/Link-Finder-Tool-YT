@@ -1960,3 +1960,17 @@ mtime_ms = 1794514412858
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/e33c5612-4a0d-4b38-8b0e-daf6a6c0510b/160f5639-36af-4d7a-a678-ab3023a75ac5"
 storage_version_token = "1794514441766662"
 content_type = "text/csv"
+
+[[outputs]]
+id = "75ML0BCmXgKeXDOUBJcJD"
+uri = "file://generated-artifacts/youtube-test-20-precision-2026-11-12/youtube-test-findings.csv"
+type = "table"
+title = "YouTube test results — 20 artists"
+description = "All channel findings and evidence. No accepted matches; Topic leads and unresolved identity checks remain separate. No catalog changes."
+logical_id = "d6e1364c-c950-4ba4-8edb-99401b17791d"
+content_hash = "sha256:2dd3240bc64dd85c1b31aad1a855f92e408bedbf5b0e26b53f7fc58934c0c279"
+size = 166922
+mtime_ms = 1794518240689
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/d6e1364c-c950-4ba4-8edb-99401b17791d/aa544a33-c728-48b8-a1aa-aa24371df7c5"
+storage_version_token = "1794518262331249"
+content_type = "text/csv"
