@@ -32,3 +32,4 @@
 - [Offline operations isolation](offline-operations-isolation.md) — test frozen campaign operations externally; fence network calls without blocking harmless transitive imports.
 - [Asset delivery limits](asset-delivery-limits.md) — Library downloads have a 100 MiB per-file limit; measure CSV bytes and disclose any omitted evidence fields.
 - [ClickHouse read-only queries](clickhouse-readonly-queries.md) — read-only mode can reject SELECT-level settings; preserve it and detect missing joins explicitly.
+- [YouTube uploader budget boundary](youtube-video-budget-boundary.md) — resolving video uploaders needs new operation approval and replacement slots, not leftover completed-test funds.
