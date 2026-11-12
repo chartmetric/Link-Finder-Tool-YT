@@ -1988,3 +1988,17 @@ mtime_ms = 1794520275726
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/64684432-b85b-46fa-8815-91d9eaac5f4d/f0036984-b96c-448a-84f0-3f476042bcaa"
 storage_version_token = "1794520315487100"
 content_type = "text/csv"
+
+[[outputs]]
+id = "Yl_pUoO9A9oLFH3znCXyg"
+uri = "file://generated-artifacts/youtube-fallback-uploader-preflight-2026-11-12/proposed-uploader-checks.csv"
+type = "table"
+title = "Proposed YouTube uploader checks"
+description = "Eight exact video requests for five eligible artists. Proposed uploader-only ceiling $0.16. Not executable or approved; blocked by an older unacknowledged request."
+logical_id = "93e88ad6-28c0-4336-bcb9-48853d9ae393"
+content_hash = "sha256:1bf3d72454b12e2a6be6b2dc80b7a914d2c09e4b30eb531df8f6b50a482806e5"
+size = 2538
+mtime_ms = 1794527361197
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/93e88ad6-28c0-4336-bcb9-48853d9ae393/17642c88-5c72-42a0-872d-f05a88688f45"
+storage_version_token = "1794527371677288"
+content_type = "text/csv"
