@@ -103,7 +103,8 @@ node scripts/src/prepare-youtube-video-recovery.mjs --prepare-only \
 ```
 
 This narrowly supported recovery requires exactly one stopped, reserved
-operation from the original 40-request stage. It validates the original bytes,
+operation from either the original 40-request stage or its first continuation.
+It validates the original bytes,
 video/uploader binding, old plan and approval, and owner fence, then prepares
 only the other 39 exact requests. The original 2-cent reservation plus the new
 78-cent maximum still total 80 cents. The saved response is not acknowledged
@@ -116,3 +117,13 @@ new result export preserves the recovered uploader alongside the 39 new
 responses, without accepting ownership. HTTP failures, incomplete bytes,
 conflicting IDs, changed owners, changed budgets, or altered original requests
 cannot use this recovery path.
+
+If the first continuation itself saved one additional valid response before a
+parser stop, a second offline preparation may carry both saved responses into
+the final 38-request plan. The earlier response must already be acknowledged;
+only the newer saved response can be acknowledged by the new approval. Both
+original owners, approvals, requests, raw bytes and reservations are checked.
+The combined reservation is **4 cents already reserved + 76 cents maximum**.
+Neither saved video may be requested again. The exporter retains both derived
+results, with Topic leads labeled separately and ownership still unaccepted.
+Further recovery depth is not supported automatically.

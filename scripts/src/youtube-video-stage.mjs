@@ -47,7 +47,7 @@ export function videoStagePlan(input){
     return {profileId:o.profileId,cmArtist:o.cmArtist,kind:'video_uploader',key:o.key,
       videoId:o.videoId,videoUrl:o.videoUrl,request:copy(o.request),inputSha256:digest(o.request),reservationCents:2};
   });
-  assert.ok(artists.every(a=>counts.has(a.profileId))&&operations.length<=40);
+  assert.ok((input.recovery||artists.every(a=>counts.has(a.profileId)))&&operations.length<=40);
   let recovery;
   if(input.recovery){
     const r=input.recovery;
@@ -56,11 +56,12 @@ export function videoStagePlan(input){
       assert.match(r[key],sha);
     assert.ok(typeof r.previousOwner==='string'&&r.previousOwner.length);
     assert.ok(typeof r.completedOperationKey==='string'&&!keys.has(r.completedOperationKey));
-    assert.equal(r.previousReservedCents,2);assert.equal(r.originalMaximumCents,80);
-    assert.equal(operations.length,39);assert.equal(operations.length*2+r.previousReservedCents,r.originalMaximumCents);
+    assert.ok([2,4].includes(r.previousReservedCents));assert.equal(r.originalMaximumCents,80);
+    assert.equal(operations.length,40-r.previousReservedCents/2);
+    assert.equal(operations.length*2+r.previousReservedCents,r.originalMaximumCents);
     recovery={previousRunId:r.previousRunId,previousPlanSha256:r.previousPlanSha256,
       previousApprovalSha256:r.previousApprovalSha256,previousOwner:r.previousOwner,
-      completedOperationKey:r.completedOperationKey,previousReservedCents:2,originalMaximumCents:80,
+      completedOperationKey:r.completedOperationKey,previousReservedCents:r.previousReservedCents,originalMaximumCents:80,
       rawSha256:r.rawSha256,receiptSha256:r.receiptSha256,mappedSha256:r.mappedSha256};
   }
   return {version:VIDEO_STAGE_POLICY,id:input.id,parentId:VIDEO_PARENT,

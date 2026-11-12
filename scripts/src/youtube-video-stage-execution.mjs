@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {digest} from './youtube-video-discovery-offline.mjs';
 import {mapSavedVideoUploader} from './youtube-video-uploader-review.mjs';
 import {assertVideoStageApproval} from './youtube-video-stage.mjs';
-import {validateVideoRecovery} from './youtube-video-stage-recovery.mjs';
+import {savedVideoRecoveryResults} from './youtube-video-stage-recovery.mjs';
 
 export async function durableStageFile(path,bytes){
   const f=await fs.open(path,'wx');
@@ -16,16 +16,12 @@ export async function executeVideoStage({plan,approval,root,gate,assertFrozen,cr
   const results=[],recovered=[];let started=false,status='stopped';
   if(plan.recovery){
     const evidence=JSON.parse(await fs.readFile(root+'/evidence/recovery.json','utf8'));
-    const op=validateVideoRecovery(plan,evidence),mapped=evidence.mapped;
-    recovered.push({...mapped,profileId:op.profileId,cmArtist:op.cmArtist,
-      artist:evidence.artistEvidence.artist.name,tier:plan.artists.find(a=>a.profileId===op.profileId).tier,
-      videoUrl:op.videoUrl,ownershipAccepted:false,sourceRunId:plan.recovery.previousRunId,recoveredWithoutReplay:true,
-      topicLabel:/\btopic\b/i.test(mapped.uploaderName)?'Topic lead — auto-generated status needs channel capture':'Channel type needs capture'});
+    recovered.push(...savedVideoRecoveryResults(plan,evidence));
   }
   try{
     await gate.start();started=true;
     for(const result of recovered)
-      await durableStageFile(root+'/results/recovered-'+digest(plan.recovery.completedOperationKey)+'.json',JSON.stringify(result));
+      await durableStageFile(root+'/results/recovered-'+digest(result.operationKey)+'.json',JSON.stringify(result));
     for(const op of plan.operations){
       await assertFrozen();
       const evidence=JSON.parse(await fs.readFile(root+`/evidence/${op.profileId}.json`,'utf8'));

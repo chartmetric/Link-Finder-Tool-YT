@@ -112,12 +112,58 @@ try{
   await reconcileSavedVideoResponse(recoveryArgs); // Idempotent acknowledgment, never another paid request.
   const continuation=videoStageGate({pool:isolated,plan:recoveryPlan,approval:recoveryApproval,owner:'continuation-owner'});
   await continuation.start();
-  for(const remaining of recoveryPlan.operations){await continuation.admit(remaining);await continuation.returned(remaining,sha,sha);}
-  await continuation.finish('completed');
-  assert.equal((await c.query('SELECT sum(reserved_cents)::int n FROM pg_temp.youtube_video_stage_runs WHERE id=$1 OR id=$2',
-    [previousPlan.id,recoveryPlan.id])).rows[0].n,80);
+  const secondOp=recoveryPlan.operations[0];
+  await continuation.admit(secondOp);await continuation.finish('stopped');
+  const secondClue={...secondOp,url:secondOp.videoUrl,sources:[],
+    operation:{kind:secondOp.kind,key:secondOp.key,request:secondOp.request}};
+  const secondChannel='UC'+''.padStart(22,'2');
+  const secondRaw=Buffer.from(JSON.stringify({success:true,credits_charged:1,id:secondOp.videoId,
+    channel:{id:secondChannel,url:'https://www.youtube.com/channel/'+secondChannel},
+    uploader:{channelId:secondChannel,author:artist.name+' - Topic'},
+    ownerByline:{channelId:secondChannel,name:artist.name+' - Topic'}}));
+  const secondReceipt={...receipt,runId:recoveryPlan.id,planSha256:digest(recoveryPlan),
+    videoId:secondOp.videoId,operationKey:secondOp.key,request:secondOp.request,inputSha256:secondOp.inputSha256,
+    rawPath:'receipts/'+digest(secondOp.key)+'.raw',rawBodySha256:digest(secondRaw)};
+  const secondMapped=mapSavedVideoUploader(artist,secondClue,{...secondReceipt,rawBody:secondRaw},
+    {runId:recoveryPlan.id,planSha256:digest(recoveryPlan)});
+  const secondEvidence={previousPlan:recoveryPlan,previousApproval:recoveryApproval,receipt:secondReceipt,
+    mapped:secondMapped,rawBodyBase64:secondRaw.toString('base64'),
+    artistEvidence:{artist,videoPlan:{resolutionQueue:[secondClue]}},previousRecovery:recoveryEvidence};
+  const secondBytes=JSON.stringify(secondEvidence);
+  const finalPlan=videoStagePlan({...recoveryPlan,id:recoveryId+'-final',operations:recoveryPlan.operations.slice(1),
+    evidenceFiles:{'evidence/recovery.json':digest(secondBytes)},
+    recovery:{previousRunId:recoveryPlan.id,previousPlanSha256:digest(recoveryPlan),
+      previousApprovalSha256:digest(recoveryApproval),previousOwner:'continuation-owner',
+      completedOperationKey:secondOp.key,previousReservedCents:4,originalMaximumCents:80,
+      rawSha256:digest(secondRaw),receiptSha256:digest(secondReceipt),mappedSha256:digest(secondMapped)}});
+  const finalApproval=approveVideoStage(finalPlan,{expectedPlanSha256:digest(finalPlan),capCents:76,approvedAt:approval.approvedAt});
+  const secondRoot='generated-artifacts/'+recoveryPlan.id,finalRoot=oldRoot+'/final';
+  await fs.mkdir(secondRoot);scratch.push(secondRoot);
+  for(const dir of ['receipts','evidence'])await fs.mkdir(secondRoot+'/'+dir);
+  await fs.mkdir(finalRoot);await fs.mkdir(finalRoot+'/evidence');
+  await fs.writeFile(secondRoot+'/plan.json',JSON.stringify(recoveryPlan),{flag:'wx'});
+  await fs.writeFile(secondRoot+'/approval.json',JSON.stringify(recoveryApproval),{flag:'wx'});
+  await fs.writeFile(secondRoot+'/'+secondReceipt.rawPath,secondRaw,{flag:'wx'});
+  await fs.writeFile(secondRoot+'/receipts/'+digest(secondOp.key)+'.json',JSON.stringify(secondReceipt),{flag:'wx'});
+  await fs.writeFile(secondRoot+'/evidence/recovery.json',bytes,{flag:'wx'});
+  await fs.writeFile(finalRoot+'/evidence/recovery.json',secondBytes,{flag:'wx'});
+  const finalArgs={pool:isolated,plan:finalPlan,approval:finalApproval,root:finalRoot};
+  await c.query('UPDATE pg_temp.youtube_video_stage_runs SET owner=$2 WHERE id=$1',[previousPlan.id,'lost-ancestor']);
+  await assert.rejects(()=>reconcileSavedVideoResponse(finalArgs));
+  await c.query('UPDATE pg_temp.youtube_video_stage_runs SET owner=$2 WHERE id=$1',[previousPlan.id,'recovery-owner']);
+  await c.query("UPDATE pg_temp.youtube_video_stage_admissions SET status='admitted' WHERE run_id=$1",[previousPlan.id]);
+  await assert.rejects(()=>reconcileSavedVideoResponse(finalArgs));
+  await c.query("UPDATE pg_temp.youtube_video_stage_admissions SET status='returned' WHERE run_id=$1",[previousPlan.id]);
+  await reconcileSavedVideoResponse(finalArgs);await reconcileSavedVideoResponse(finalArgs);
+  const finalGate=videoStageGate({pool:isolated,plan:finalPlan,approval:finalApproval,owner:'final-owner'});
+  await finalGate.start();
+  for(const remaining of finalPlan.operations){await finalGate.admit(remaining);await finalGate.returned(remaining,sha,sha);}
+  await finalGate.finish('completed');
+  assert.equal((await c.query('SELECT sum(reserved_cents)::int n FROM pg_temp.youtube_video_stage_runs WHERE id=ANY($1::text[])',
+    [[previousPlan.id,recoveryPlan.id,finalPlan.id]])).rows[0].n,80);
   const persistentAfter=(await c.query("SELECT to_regclass('public.youtube_video_stage_runs')::oid r,to_regclass('public.youtube_video_stage_admissions')::oid a")).rows[0];
   assert.deepEqual(persistentAfter,persistentBefore);
   console.log(JSON.stringify({postgresTemporaryTableChecks:'passed',returnedFixtureAdmissions:40,
-    fixtureReservationCents:80,savedResponseRecoveryChecks:'passed',combinedRecoveryReservationCents:80,paidCalls:0,persistentSchemaChanges:0}));
+    fixtureReservationCents:80,savedResponseRecoveryChecks:'passed',twoResponseRecoveryChecks:'passed',
+    combinedRecoveryReservationCents:80,paidCalls:0,persistentSchemaChanges:0}));
 }finally{for(const dir of scratch)await fs.rm(dir,{recursive:true,force:true});c.release(true);await pool.end();}

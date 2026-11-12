@@ -1862,3 +1862,17 @@ mtime_ms = 1794495516260
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/75af5bf6-35ad-4c54-9ca4-6e88199f9ebd/52ed75f3-8020-4648-98ad-64982ec18d9d"
 storage_version_token = "1794495581060520"
 content_type = "text/csv"
+
+[[outputs]]
+id = "NAcuNJSjLLWKSwOhqYxoe"
+uri = "file://generated-artifacts/youtube-video-review-20-2026-11-12-c/remaining-video-requests.csv"
+type = "table"
+title = "38 remaining YouTube uploader requests"
+description = "Prepared requests only; both saved responses excluded. Maximum new reservation $0.76, combined limit $0.80."
+logical_id = "1dd5817b-c302-403a-b0bc-e221742a1678"
+content_hash = "sha256:e4d503a90e9938bcb08bc34c89b813789bcc0e8640b50472bb7867c2be599f47"
+size = 4880
+mtime_ms = 1794500492031
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/1dd5817b-c302-403a-b0bc-e221742a1678/039096d0-0a36-4a56-9a08-2dadd607cd23"
+storage_version_token = "1794500532001704"
+content_type = "text/csv"

@@ -148,27 +148,32 @@ test('no approval or changed frozen inputs prevents all provider calls',async t=
   f.assertFrozen=async()=>{throw Error('runtime changed');};
   await assert.rejects(()=>executeVideoStage(f));assert.equal(calls,0);assert.equal(f.history.length,0);
 });
-function recoveryFixture(previousPlan,previousApproval){
+function recoveryFixture(previousPlan,previousApproval,previousRecovery){
   const op=previousPlan.operations[0],artist=previousPlan.artists[0];
   const clue={profileId:op.profileId,cmArtist:op.cmArtist,videoId:op.videoId,url:op.videoUrl,sources:[],
     operation:{kind:op.kind,key:op.key,request:op.request}};
   // Observed schema regression: top-level video URL absent, exact ID still present.
+  const channelId='UC'+''.padStart(22,previousRecovery?'2':'1');
   const rawBody=Buffer.from(JSON.stringify({success:true,credits_charged:1,id:op.videoId,
-    channel:{id:'UC'+''.padStart(22,'1'),url:'https://www.youtube.com/channel/UC'+''.padStart(22,'1'),title:artist.name}}));
+    channel:{id:channelId,url:'https://www.youtube.com/channel/'+channelId,
+      ...(previousRecovery?{}:{title:artist.name})},
+    ...(previousRecovery?{uploader:{channelId,author:artist.name+' - Topic'},
+      ownerByline:{channelId,name:artist.name+' - Topic'}}:{})}));
   const receipt={runId:previousPlan.id,planSha256:digest(previousPlan),profileId:op.profileId,cmArtist:op.cmArtist,
     videoId:op.videoId,operationKey:op.key,kind:op.kind,request:op.request,inputSha256:op.inputSha256,
     status:200,capturedAt:previousPlan.preparedAt,rawPath:'receipts/'+digest(op.key)+'.raw',rawBodySha256:digest(rawBody)};
   const artistEvidence={artist,videoPlan:{resolutionQueue:[clue]}};
   const mapped=mapSavedVideoUploader(artist,clue,{...receipt,rawBody},
     {runId:previousPlan.id,planSha256:digest(previousPlan)});
-  const evidence={previousPlan,previousApproval,receipt,artistEvidence,mapped,rawBodyBase64:rawBody.toString('base64')};
+  const evidence={previousPlan,previousApproval,receipt,artistEvidence,mapped,rawBodyBase64:rawBody.toString('base64'),
+    ...(previousRecovery?{previousRecovery}:{})};
   const plan=videoStagePlan({...previousPlan,id:previousPlan.id+'-recovery',
     operations:previousPlan.operations.slice(1),evidenceFiles:{'evidence/recovery.json':digest(JSON.stringify(evidence))},
     recovery:{previousRunId:previousPlan.id,previousPlanSha256:digest(previousPlan),
       previousApprovalSha256:digest(previousApproval),previousOwner:'fixture-owner',
-      completedOperationKey:op.key,previousReservedCents:2,originalMaximumCents:80,
+      completedOperationKey:op.key,previousReservedCents:(previousPlan.recovery?.previousReservedCents??0)+2,originalMaximumCents:80,
       rawSha256:digest(rawBody),receiptSha256:digest(receipt),mappedSha256:digest(mapped)}});
-  const approval=approveVideoStage(plan,{expectedPlanSha256:digest(plan),capCents:78,approvedAt:previousApproval.approvedAt});
+  const approval=approveVideoStage(plan,{expectedPlanSha256:digest(plan),capCents:plan.maximumSpendCents,approvedAt:previousApproval.approvedAt});
   return {plan,approval,evidence};
 }
 test('recovery binds the saved response, excludes its paid request and keeps combined reservations at 80 cents',()=>{
@@ -213,4 +218,41 @@ test('recovery exports the saved uploader plus 39 new fixture returns without re
   assert.equal(summary.returnedCalls,39);assert.equal(summary.recoveredSavedResponses,1);
   assert.equal(summary.combinedMaximumSpendCents,80);assert.equal(summary.acceptedOwnershipLinks,0);
   assert.equal((await fs.readdir(f.root+'/results')).length,40);
+});
+test('second recovery preserves both saved responses and 4 cents without replacing or repeating requests',async t=>{
+  const f=await executionFixture(t),first=recoveryFixture(f.plan,f.approval);
+  const second=recoveryFixture(first.plan,first.approval,first.evidence),history=[];
+  assert.equal(second.plan.maximumCalls,38);assert.equal(second.approval.capCents,76);
+  assert.equal(second.plan.recovery.previousReservedCents,4);
+  assert.deepEqual(validateVideoRecovery(second.plan,second.evidence),f.plan.operations[1]);
+  for(const mutation of [
+    e=>e.previousRecovery.receipt.profileId='999',
+    e=>e.previousRecovery.rawBodyBase64=Buffer.from('{}').toString('base64'),
+    e=>delete e.previousRecovery,
+    e=>e.previousApproval.savedResponseRecoveryApproved=false,
+  ]){
+    const bad=structuredClone(second.evidence);mutation(bad);
+    assert.throws(()=>validateVideoRecovery(second.plan,bad));
+  }
+  assert.throws(()=>videoStagePlan({...second.plan,recovery:{...second.plan.recovery,previousReservedCents:2}}));
+  await fs.writeFile(f.root+'/evidence/recovery.json',JSON.stringify(second.evidence));
+  Object.assign(f.run,{id:second.plan.id,plan_sha256:digest(second.plan),approval_sha256:digest(second.approval),cap_cents:76});
+  const gate={async start(){},async admit(op){
+    assertVideoStageAdmission(second.plan,second.approval,f.run,op,history,'fixture-owner');
+    history.push({...returned(op),status:'admitted'});f.run.reserved_cents+=2;
+  },async returned(op){Object.assign(history.find(h=>h.operation_key===op.key),returned(op));},
+  async finish(status){f.run.status=status;}};
+  const urls=[],originalFetch=f.fetchImpl;
+  await executeVideoStage({...f,...second,gate,fetchImpl:async(url,options)=>{
+    urls.push(url);f.events.push('admit');return originalFetch(url,options);
+  }});
+  assert.equal(urls.length,38);
+  assert.ok(f.plan.operations.slice(0,2).every(op=>!urls.includes(op.request.url)));
+  const summary=JSON.parse(await fs.readFile(f.root+'/summary.json','utf8'));
+  assert.equal(summary.returnedCalls,38);assert.equal(summary.recoveredSavedResponses,2);
+  assert.equal(summary.priorReservedCents,4);assert.equal(summary.combinedMaximumSpendCents,80);
+  assert.equal(summary.acceptedOwnershipLinks,0);
+  assert.equal((await fs.readdir(f.root+'/results')).length,40);
+  const csv=await fs.readFile(f.root+'/video-uploader-findings.csv','utf8');
+  assert.ok(csv.includes('Artist 1 - Topic'));
 });

@@ -1,4 +1,4 @@
-// Offline preparation only: one saved first-response recovery and the 39 untouched requests.
+// Offline preparation only: up to two saved responses and their untouched remainder.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -23,8 +23,12 @@ async function main(){
   const root='generated-artifacts/'+id,oldRoot='generated-artifacts/'+previousId;
   const previousPlan=await read(oldRoot+'/plan.json'),previousApproval=await read(oldRoot+'/approval.json');
   validateVideoStagePlan(previousPlan);assertVideoStageApproval(previousPlan,previousApproval);
-  assert.equal(previousPlan.maximumCalls,40);assert.equal(previousPlan.maximumSpendCents,80);
-  assert.equal(previousPlan.recovery,undefined);assert.equal((await read(oldRoot+'/summary.json')).status,'stopped');
+  const priorCents=previousPlan.recovery?.previousReservedCents??0;
+  assert.ok([0,2].includes(priorCents),'Only one- or two-response recovery is supported');
+  assert.equal(previousPlan.maximumCalls,40-priorCents/2);assert.equal(previousPlan.maximumSpendCents,80-priorCents);
+  assert.equal((await read(oldRoot+'/summary.json')).status,'stopped');
+  const previousRecovery=previousPlan.recovery?await read(oldRoot+'/evidence/recovery.json'):undefined;
+  if(previousRecovery)validateVideoRecovery(previousPlan,previousRecovery);
   const pool=await connectSavedBatchPool();let oldRun,admission;
   try{
     oldRun=(await pool.query('SELECT * FROM youtube_video_stage_runs WHERE id=$1',[previousId])).rows[0];
@@ -37,6 +41,20 @@ async function main(){
     const pending=(await pool.query("SELECT run_id,operation_key FROM youtube_video_stage_admissions WHERE status='admitted'")).rows;
     assert.equal(pending.length,1);assert.equal(pending[0].run_id,previousId);
     assert.equal((await pool.query('SELECT status FROM youtube_link_campaigns WHERE id=$1',[previousPlan.parentId])).rows[0]?.status,'stopped');
+    if(previousRecovery){
+      const ancestorRun=(await pool.query('SELECT * FROM youtube_video_stage_runs WHERE id=$1',
+        [previousPlan.recovery.previousRunId])).rows[0];
+      const ancestorRows=(await pool.query('SELECT * FROM youtube_video_stage_admissions WHERE run_id=$1',
+        [previousPlan.recovery.previousRunId])).rows;
+      assert.ok(ancestorRun&&ancestorRun.status==='stopped'&&ancestorRun.reserved_cents===2
+        &&ancestorRun.owner===previousPlan.recovery.previousOwner
+        &&ancestorRun.plan_sha256===previousPlan.recovery.previousPlanSha256
+        &&ancestorRun.approval_sha256===previousPlan.recovery.previousApprovalSha256);
+      assert.equal(ancestorRows.length,1);
+      const a=ancestorRows[0],r=previousPlan.recovery;
+      assert.ok(a.status==='returned'&&a.operation_key===r.completedOperationKey
+        &&a.receipt_sha256===r.receiptSha256&&a.raw_sha256===r.rawSha256&&a.http_status===200);
+    }
   }finally{await pool.end();}
   const op=previousPlan.operations.find(o=>o.key===admission.operation_key);
   assert.ok(op&&op.profileId===admission.profile_id&&op.cmArtist===admission.cm_artist
@@ -49,7 +67,8 @@ async function main(){
   const mapped=mapSavedVideoUploader(artistEvidence.artist,clue,{...receipt,rawBody},
     {runId:previousId,planSha256:digest(previousPlan)});
   const evidence={previousPlan,previousApproval,receipt,rawBodyBase64:rawBody.toString('base64'),artistEvidence,mapped,
-    reviewStatus:'Offline validated saved response; acknowledgment still requires recovery approval'};
+    reviewStatus:'Offline validated saved response; acknowledgment still requires recovery approval',
+    ...(previousRecovery?{previousRecovery}:{})};
   const eligible=await currentEligible(previousPlan.artists);
   assert.ok(previousPlan.artists.every(a=>eligible.get(a.profileId)?.tier===a.tier),'Catalog eligibility changed');
   // Verify every original sealed byte without ever editing the old runtime.
@@ -59,6 +78,7 @@ async function main(){
   for(const d of ['evidence','receipts','results','inputs'])await fs.mkdir(root+'/'+d);
   const evidenceFiles={};
   for(const [file,hash] of Object.entries(previousPlan.evidenceFiles)){
+    if(file==='evidence/recovery.json')continue;
     const bytes=await fs.readFile(oldRoot+'/'+file);
     await durableStageFile(root+'/'+file,bytes);evidenceFiles[file]=hash;
   }
@@ -72,7 +92,7 @@ async function main(){
     operations:previousPlan.operations.filter(o=>o.key!==op.key),evidenceFiles,runtimeFiles,
     recovery:{previousRunId:previousId,previousPlanSha256:digest(previousPlan),
       previousApprovalSha256:digest(previousApproval),previousOwner:oldRun.owner,completedOperationKey:op.key,
-      previousReservedCents:2,originalMaximumCents:80,rawSha256:digest(rawBody),
+      previousReservedCents:priorCents+2,originalMaximumCents:80,rawSha256:digest(rawBody),
       receiptSha256:digest(receipt),mappedSha256:digest(mapped)}});
   validateVideoRecovery(plan,evidence);
   await durableStageFile(root+'/plan.json',JSON.stringify(plan,null,2));
@@ -83,8 +103,8 @@ async function main(){
   });
   const cell=v=>{let s=String(v);if(/^[=+\-@\t\r\n]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';};
   await durableStageFile(root+'/remaining-video-requests.csv','\ufeff'+[columns,...rows].map(r=>r.map(cell).join(',')).join('\r\n'));
-  console.log(JSON.stringify({preparedOnly:true,id,remainingRequests:39,remainingMaximumUsd:.78,
-    priorReservationUsd:.02,combinedMaximumUsd:.8,planSha256:digest(plan),paidCalls:0,
+  console.log(JSON.stringify({preparedOnly:true,id,remainingRequests:plan.maximumCalls,remainingMaximumUsd:plan.maximumSpendCents/100,
+    priorReservationUsd:(priorCents+2)/100,combinedMaximumUsd:.8,planSha256:digest(plan),paidCalls:0,
     savedResponseUploader:mapped.url,savedResponseAcknowledged:false,catalogWrites:0}));
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))await main();
