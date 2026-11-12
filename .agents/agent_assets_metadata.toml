@@ -1736,3 +1736,31 @@ mtime_ms = 1794466371566
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/3743db9e-9364-4b5f-b04f-9ce09b7dec68/6b27fce3-37fa-40cf-91c6-3524018021ca"
 storage_version_token = "1794466397198177"
 content_type = "text/csv"
+
+[[outputs]]
+id = "29dlitGWIH1hpaNLm0ctL"
+uri = "file://generated-artifacts/youtube-100-saved-results-review/artist-review.csv"
+type = "table"
+title = "YouTube review — all 100 artists"
+description = "Artist-by-artist diagnosis of discovery gaps, unresolved ownership, related channels and tentative matches. Includes saved video leads. No decisions or catalog links changed."
+logical_id = "712e7d3d-2317-4f1b-b7d0-f3040ea6ad2a"
+content_hash = "sha256:09f00231e37557562ec25e44b9dc9ba59e604661eefb85b9ebfc001da9402af8"
+size = 60686
+mtime_ms = 1794466614953
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/712e7d3d-2317-4f1b-b7d0-f3040ea6ad2a/624d6f6d-ccd0-4efe-934f-44462c82e63a"
+storage_version_token = "1794466664837156"
+content_type = "text/csv"
+
+[[outputs]]
+id = "1ZM_XxgJbs48YZV-Wp_Gs"
+uri = "file://generated-artifacts/youtube-100-saved-results-review/channel-review.csv"
+type = "table"
+title = "YouTube review — 82 channel candidates"
+description = "Original channel decisions, saved model scores, and evidence actually delivered in the 48 model requests. Offline audit only."
+logical_id = "b32e2280-ea01-4c93-a391-1290534ba41c"
+content_hash = "sha256:4402b5b1c305d818a0584f69978c8c14969f6a23c5195ad75ab73a49667d1971"
+size = 39690
+mtime_ms = 1794466614953
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/b32e2280-ea01-4c93-a391-1290534ba41c/25dbeace-36f0-48f3-812b-79f1dca7b5f4"
+storage_version_token = "1794466665499208"
+content_type = "text/csv"
