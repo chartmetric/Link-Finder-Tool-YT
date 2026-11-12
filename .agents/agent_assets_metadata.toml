@@ -1946,3 +1946,17 @@ mtime_ms = 1794501601219
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/56414489-5820-448f-94fb-27499f2916ca/8453f324-72c3-4254-b8f6-7714b380f5db"
 storage_version_token = "1794501676622381"
 content_type = "text/csv"
+
+[[outputs]]
+id = "RvmIzfJwyUJMIrtUn10X5"
+uri = "file://generated-artifacts/youtube-test-20-precision-2026-11-12/proposed-cohort.csv"
+type = "table"
+title = "Proposed YouTube test — 20 artists"
+description = "Fresh Tier 2 artists missing catalog YouTube links, selected in tier and campaign order. Prepared only; no paid calls."
+logical_id = "e33c5612-4a0d-4b38-8b0e-daf6a6c0510b"
+content_hash = "sha256:a6729dc8e2c594caeabc65253482620b36d5507d9b1ed64f755c4b00907c81cf"
+size = 637
+mtime_ms = 1794514412858
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/e33c5612-4a0d-4b38-8b0e-daf6a6c0510b/160f5639-36af-4d7a-a678-ab3023a75ac5"
+storage_version_token = "1794514441766662"
+content_type = "text/csv"
