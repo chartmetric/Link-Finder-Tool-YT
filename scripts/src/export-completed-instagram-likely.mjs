@@ -8,7 +8,8 @@ const requireDb = createRequire(path.resolve('lib/db/package.json'));
 const {Pool} = requireDb('pg');
 const campaign = 'full-tiers-1-5-no-ig-usd100';
 const root = 'generated-artifacts/instagram-tier-priority';
-const out = 'generated-artifacts/instagram-final-likely-export';
+const out = process.argv[2] || 'generated-artifacts/instagram-final-likely-export';
+const progressFile = process.argv[3] || root+'/parallel-493d5352-9a7f-4d95-a88a-c78c42a8f960/progress.json';
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const csv = value => {
   let s = value == null ? '' : String(value);
@@ -36,7 +37,8 @@ try {
   } catch(e) {await c.query('ROLLBACK').catch(()=>{});throw e;}
   finally {c.release();}
 } finally {await pool.end();}
-const progress = JSON.parse(await fs.readFile(root+'/parallel-493d5352-9a7f-4d95-a88a-c78c42a8f960/progress.json'));
+const progress = JSON.parse(await fs.readFile(progressFile));
+assert.equal(progress.status,'completed');
 assert.equal(rows.length,progress.likelyMatches);
 assert.equal(new Set(rows.map(r=>r.profile_id)).size,rows.length);
 const baseline = new Map(JSON.parse(await fs.readFile(root+'/baseline.json')).map(r=>[String(r.profileId),r]));

@@ -1596,3 +1596,17 @@ mtime_ms = 1794443451193
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/31377597-6ebe-4a59-a1cb-79c750e8f973/a254056a-2080-4578-b7f8-a00d705bbc9e"
 storage_version_token = "1794443463794326"
 content_type = "text/csv"
+
+[[outputs]]
+id = "OiVpPXYg2JCqv8TNitxgd"
+uri = "file://generated-artifacts/instagram-likely-export-after-continuation/instagram-likely-matches-all.csv"
+type = "table"
+title = "All 48,337 likely Instagram matches"
+description = "Updated after the continuation finished. One Instagram URL per row, with artist name, tier, IDs, score and saved decision details. Review suggestions, not catalog additions."
+logical_id = "ee4d2e84-faa3-42af-b95e-4d9974e6e3a5"
+content_hash = "sha256:e8c5615989d13d6325f22120d903fc496b9fc7f40ba8ed010cab8b8fdf9df9c2"
+size = 10623962
+mtime_ms = 1794446723437
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/ee4d2e84-faa3-42af-b95e-4d9974e6e3a5/37151b5c-a465-4d46-8b00-5ef8b361bdfd"
+storage_version_token = "1794446730403998"
+content_type = "text/csv"
