@@ -1554,3 +1554,17 @@ mtime_ms = 1794442368145
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/b38ebfc7-cf6c-4b4f-8581-50919d371057/f53600a1-a05f-44e0-bb00-1968a6847ef0"
 storage_version_token = "1794442502628034"
 content_type = "text/csv"
+
+[[outputs]]
+id = "CxVap1vK1770qDfKODjus"
+uri = "file://generated-artifacts/instagram-tier-gap-investigation-2026-11-11/tier-history.csv"
+type = "table"
+title = "Tier history for the 9,404 skipped artists"
+description = "Last available tier, update time and deferral time for every investigated artist. All retain older Tier 2–5 assignments; these are not newly confirmed current eligibility."
+logical_id = "f423a34f-10a6-433a-abc6-0dc37ab5e141"
+content_hash = "sha256:8eabeaf57b6321ae27ce743ed342745f6c3a283710de8cb2ca8522f6fe7abbe4"
+size = 2038108
+mtime_ms = 1794442664941
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/f423a34f-10a6-433a-abc6-0dc37ab5e141/48b9e296-afb0-4817-8a31-42c01c3b3b78"
+storage_version_token = "1794442839839807"
+content_type = "text/csv"

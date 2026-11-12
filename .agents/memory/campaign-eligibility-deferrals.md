@@ -30,6 +30,20 @@ can skip untouched artists or replay already paid ones.
 Exclude terminal and deferred identities, then process the remaining identities
 in original frozen order without changing the original denominator or approval.
 
+The newest computation date is not proof of a complete global tier snapshot.
+
+**Why:** A deferred cohort still had older Tier 2–5 assignments while other
+artists had newer computation dates. The catalog retains the latest row per
+artist, so filtering every artist to the single newest date can hide existing
+assignments. Available rows do not explain why the upstream producer did not
+refresh a particular artist.
+
+**How to apply:** In audits, inspect each artist's latest available global tier
+and its age, distinguishing stale assignments from demotion or deletion. Older
+assignments are not automatic proof of current eligibility. Preserve frozen
+policies and obtain approval before changing date/freshness rules or restarting
+deferred paid work.
+
 The user wants artist sourcing prioritized strictly Tier 1, then 2, 3, 4, 5,
 not saved candidates across all tiers before fresh discovery.
 
