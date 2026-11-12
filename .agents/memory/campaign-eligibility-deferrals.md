@@ -44,6 +44,18 @@ assignments are not automatic proof of current eligibility. Preserve frozen
 policies and obtain approval before changing date/freshness rules or restarting
 deferred paid work.
 
+The user explicitly authorized searching the previously deferred Instagram
+cohort using its last-known Tier 2–5 assignments despite the older update date.
+This is a cohort-specific exception, not a general removal of freshness checks.
+
+**Why:** After the stale-tier explanation, the user instructed “still run them.”
+The existing uncapped Instagram spending authorization remains applicable.
+
+**How to apply:** Bind the exception to the investigated identities; preserve
+prior paid and uncertain-attempt exclusions, recheck active catalog identity and
+catalog Instagram absence, and keep the normal freshness policy for future runs.
+Do not use the exception to authorize YouTube work or replay completed searches.
+
 The user wants artist sourcing prioritized strictly Tier 1, then 2, 3, 4, 5,
 not saved candidates across all tiers before fresh discovery.
 

@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import {pool} from "@workspace/db";
 import {CAMPAIGN_ID, CAMPAIGN_QUEUE_SHA256, CAMPAIGN_DIRECTORY, artistTotals} from "./artist-campaign-model";
 import {validateCampaignSnapshot, type CampaignSnapshot} from "./artist-campaign-snapshot";
+import {continuationRequest} from "./instagram-continuation-status";
 
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const json = async (file: string) => JSON.parse(await readFile(file, "utf8"));
@@ -69,13 +70,16 @@ export async function captureTierPrioritySnapshot(workspace: string): Promise<Ca
     const sum = (key: "total" | "processed" | "checked" | "likely") => tiers.reduce((n: number, t: any) => n + t[key], 0);
     assert.equal(sum("total"), queue.length);
     await c.query("COMMIT");
+    const requestAt = p.status === "completed"
+      ? await continuationRequest(root, new Set(bindings.keys()), new Date(p.updated_at).toISOString())
+      : null;
     return validateCampaignSnapshot({
       version: 2, maximumSpendCents: null, authorizationSha256: hash(spending),
       campaignId: CAMPAIGN_ID, queueSha256: CAMPAIGN_QUEUE_SHA256,
       totalArtists: sum("total"), processed: sum("processed"), checked: sum("checked"), likely: sum("likely"),
       reserved: approval.legacyReservedCents + admitted,
-      status: p.status === "prepared" ? "stopped" : p.status,
-      updatedAt: new Date(p.updated_at).toISOString(), capturedAt: new Date().toISOString(),
+      status: requestAt ? "continuation_requested" : p.status === "prepared" ? "stopped" : p.status,
+      updatedAt: requestAt ?? new Date(p.updated_at).toISOString(), capturedAt: new Date().toISOString(),
       workerEnvironment: "workspace", tierBreakdown,
     });
   } catch (e) { await c.query("ROLLBACK").catch(() => {}); throw e; }
