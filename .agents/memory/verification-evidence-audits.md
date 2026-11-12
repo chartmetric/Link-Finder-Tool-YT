@@ -25,6 +25,19 @@ confirmed wrong identities or confirmed missed matches. Any future change
 must be separately approved, retain explicit ownership conflicts, and keep
 assessments bound to each exact artist/channel pair.
 
+A model-readable channel capture is not a replayable provider packet. Rebuild
+pre-model comparison inputs with the frozen assembler and original capture,
+then require the archived decision hash to match; label held inputs as
+reconstructions, not outgoing requests.
+
+**Why:** Normalized captures omit transport status and may omit the raw receipt
+required to bind legacy channel aliases. Feeding them back through capture
+validation can silently remove otherwise bound channel evidence.
+
+**How to apply:** Preserve the original packet alongside the model-readable
+state in offline comparisons. Keep outgoing-request hashes separate from
+evidence-state hashes, including transport-added instructions.
+
 Treat lossless source reconstruction and model-readable equivalence as separate
 claims. Measure a compact format against the same complete evidence, not only
 against historical requests containing bounded summaries.

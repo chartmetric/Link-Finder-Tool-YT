@@ -1568,3 +1568,17 @@ mtime_ms = 1794442664941
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/f423a34f-10a6-433a-abc6-0dc37ab5e141/48b9e296-afb0-4817-8a31-42c01c3b3b78"
 storage_version_token = "1794442839839807"
 content_type = "text/csv"
+
+[[outputs]]
+id = "zGiPt0HOdzXGeWolucoYb"
+uri = "file://generated-artifacts/youtube-shared-candidate-comparison-2026-11-12/review.md"
+type = "text"
+title = "Shared YouTube candidate comparison"
+description = "Offline-only comparison: three separate reviews, unknown ownership, no accepted links or paid checks."
+logical_id = "38df2e3c-342b-4dc0-8618-e81852764e1b"
+content_hash = "sha256:2e7ee4a8ab78625bc6152beca5989a89a56fd538cb2d1af52c9ad7a55487cb32"
+size = 1749
+mtime_ms = 1794441758270
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/38df2e3c-342b-4dc0-8618-e81852764e1b/7b521893-2da3-4221-8aab-fbf550aae984"
+storage_version_token = "1794442899884700"
+content_type = "text/markdown"
