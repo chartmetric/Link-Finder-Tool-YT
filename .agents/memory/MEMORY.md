@@ -31,3 +31,4 @@
 - [Campaign eligibility deferrals](campaign-eligibility-deferrals.md) — defer unconfirmed current eligibility without counting a search or changing the frozen queue denominator.
 - [Offline operations isolation](offline-operations-isolation.md) — test frozen campaign operations externally; fence network calls without blocking harmless transitive imports.
 - [Asset delivery limits](asset-delivery-limits.md) — Library downloads have a 100 MiB per-file limit; measure CSV bytes and disclose any omitted evidence fields.
+- [ClickHouse read-only queries](clickhouse-readonly-queries.md) — read-only mode can reject SELECT-level settings; preserve it and detect missing joins explicitly.

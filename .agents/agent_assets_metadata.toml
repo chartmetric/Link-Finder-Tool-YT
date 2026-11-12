@@ -1540,3 +1540,17 @@ mtime_ms = 1794441336101
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/a4ea92af-eeff-4f34-9eb1-4f276f2dc2ae/ec827a18-6880-4014-bbc3-8146236782e6"
 storage_version_token = "1794441523792820"
 content_type = "text/csv"
+
+[[outputs]]
+id = "l4pLuOkqER0yHnAOKUCCQ"
+uri = "file://generated-artifacts/instagram-deferred-review-2026-11-11/deferred-artists.csv"
+type = "table"
+title = "Instagram — all 9,410 deferred artists"
+description = "Starting tiers, saved deferral reasons and a fresh read-only eligibility check. Current observations are distinguished from historical reasons; no searches or restarts."
+logical_id = "b38ebfc7-cf6c-4b4f-8581-50919d371057"
+content_hash = "sha256:e3140e5908ac81550fac1bfbdfc417d4ece5de7d4b64f3410a05fcc12aa1d537"
+size = 3074483
+mtime_ms = 1794442368145
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/b38ebfc7-cf6c-4b4f-8581-50919d371057/f53600a1-a05f-44e0-bb00-1968a6847ef0"
+storage_version_token = "1794442502628034"
+content_type = "text/csv"
