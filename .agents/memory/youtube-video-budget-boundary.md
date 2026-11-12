@@ -56,6 +56,16 @@ the paid request to fix a parser issue: validate its saved bytes offline and
 require exact recovery approval before acknowledging it or dispatching an
 updated sealed continuation. Preserve the original reservation.
 
+The same endpoint can omit `channel.title` and put the display name in
+`uploader.author` or `ownerByline.name`.
+
+**Why:** A live Topic uploader response supplied consistent channel IDs but
+only these alternative display-name fields, stopping a sealed continuation.
+
+**How to apply:** Use only nonempty names attached to the already validated,
+matching uploader/owner IDs. Never substitute video titles, recommendations,
+or search snippets; the name still does not establish artist ownership.
+
 Saved video benchmark text relevance must be reported separately from exact
 catalog identity, uploader identity and artist ownership. Missing video-to-channel
 bindings make ownership precision unscorable, not zero. Format words such as

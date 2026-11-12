@@ -60,7 +60,11 @@ export function mapSavedVideoUploader(artist, clue, receipt, context) {
     if (identity != null) assert.equal(identity.channelId, body.channel.id,
       'Conflicting or incomplete provider uploader identity');
   }
-  assert.ok(typeof body.channel.title === 'string');
+  // Some video responses put the display name only on the ID-bound uploader
+  // or owner byline. Never use unrelated titles or recommendation metadata.
+  const displayName = [body.channel.title, body.uploader?.author, body.ownerByline?.name]
+    .find(value => typeof value === 'string' && value.trim().length > 0);
+  assert.ok(displayName, 'Missing ID-bound uploader display name');
   // Keep provider handle/legacy/HTTP URLs as observations, never as ID aliases.
   const aliases = [];
   for (const [field, raw] of [['channel.url', body.channel.url],
@@ -79,7 +83,7 @@ export function mapSavedVideoUploader(artist, clue, receipt, context) {
   assert.ok(Number.isInteger(body.credits_charged) && body.credits_charged >= 0
     && body.credits_charged <= 1, 'Unknown or increased provider price blocks mapping');
   const canonical = {videoId: body.id, uploader: {
-    channelId: body.channel.id, displayName: body.channel.title}};
+    channelId: body.channel.id, displayName}};
   const mapped = resolveSavedUploader(artist, clue, {...bound, operationKey: op.key,
     inputSha256: digest(op.request), status: 200, body: canonical, bodySha256: digest(canonical)});
   return {...mapped, executable: false, providerAliases: aliases,

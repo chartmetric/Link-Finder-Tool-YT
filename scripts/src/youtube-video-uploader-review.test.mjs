@@ -77,6 +77,21 @@ test('missing optional video URL still requires exact returned ID and frozen req
   const r=receipt(body);
   assert.throws(()=>map({...r,request:proposedUploaderRequest('https://www.youtube.com/watch?v=abcdefghijk')}));
 });
+test('display names may come from the same ID-bound uploader or owner only', () => {
+  const body=provider();delete body.channel.title;
+  body.uploader.author='Fixture Artist - Topic';
+  body.ownerByline.name='Fixture Artist - Topic';
+  const result=map(receipt(body));
+  assert.equal(result.uploaderName,'Fixture Artist - Topic');
+  assert.equal(result.ownershipEvidence,false);
+  delete body.uploader.author;
+  assert.equal(map(receipt(body)).uploaderName,'Fixture Artist - Topic');
+  delete body.ownerByline.name;
+  assert.throws(()=>map(receipt(body)));
+  body.uploader.author='Fixture Artist';
+  body.uploader.channelId=otherId;
+  assert.throws(()=>map(receipt(body)));
+});
 test('schema uncertainty, conflicts and increased billing fail closed rather than inventing an uploader', () => {
   for (const mutation of [{success: false}, {id: 'abcdefghijk'},
     {url: 'https://youtu.be/abcdefghijk'}, {channel: null},
