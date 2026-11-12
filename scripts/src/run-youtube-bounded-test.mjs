@@ -5,8 +5,8 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
-import {select,buildMetadataOverlay} from './instagram-artist-metadata-overlay.mjs';
-import {youtubeMetadataQueries,bindYoutubeCatalogAccounts} from './youtube-catalog-metadata.mjs';
+import {select} from './instagram-artist-metadata-overlay.mjs';
+import {collectTargetPlatformMetadata} from './target-platform-catalog-metadata.mjs';
 import {createYoutubeChannelCache} from './youtube-channel-dedup.mjs';
 import {eligibilitySql} from './run-youtube-campaign.mjs';
 import {youtubeTestSchema,youtubeSearchCandidates} from './youtube-discovery-test.mjs';
@@ -44,14 +44,8 @@ async function prepare(){
     .sort((a,b)=>a.tier-b.tier||a.ordinal-b.ordinal);
   assert.equal(artists.length,20);
   assert.ok(artists.every(a=>Date.now()-Date.parse(a.snapshot_at.replace(' ','T')+'Z')<36*3600000));
-  let manifest={artists:artists.map(a=>({...a,accounts:[],account_ids:[]}))};
-  const accounts=await select(youtubeMetadataQueries(manifest).accounts);
-  manifest=bindYoutubeCatalogAccounts(manifest,accounts);
-  const data={accounts:manifest.artists.flatMap(a=>a.accounts)};
-  for(const [name,sql] of Object.entries(youtubeMetadataQueries(manifest)))
-    if(name!=='accounts')data[name]=await select(sql);
-  const packets=buildMetadataOverlay(manifest,data,{queryCount:Object.keys(data).length,modelCalls:0,
-    newSearches:0,scrapeCalls:0,startedAt:new Date().toISOString()}).packets;
+  const manifest={artists:artists.map(a=>({...a,accounts:[],account_ids:[]}))};
+  const {packets}=await collectTargetPlatformMetadata(manifest,{targetPlatform:'youtube'});
   await fs.mkdir(root);
   for(const dir of ['receipts','metadata','artists','inputs'])await fs.mkdir(root+'/'+dir);
   for(const p of packets){

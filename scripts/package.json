@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:youtube-ownership-evidence": "node --test src/youtube-ownership-evidence.test.mjs src/youtube-ownership-policy.test.mjs src/youtube-ownership-legacy.test.mjs",
+    "test:youtube-ownership-evidence": "node --test src/youtube-ownership-evidence.test.mjs src/youtube-ownership-policy.test.mjs src/youtube-ownership-legacy.test.mjs src/target-platform-catalog-metadata.test.mjs",
     "hello": "tsx ./src/hello.ts",
     "check:reference-links": "node ./src/instagram-reference-label-audit.mjs --check-reference-links",
     "test:reference-links": "node --test ./src/instagram-reference-links.test.mjs",

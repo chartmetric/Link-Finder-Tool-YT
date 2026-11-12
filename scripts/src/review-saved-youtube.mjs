@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import {fileURLToPath} from 'node:url';
-import {select,metadataQueries,buildMetadataOverlay} from './instagram-artist-metadata-overlay.mjs';
+import {collectTargetPlatformMetadata} from './target-platform-catalog-metadata.mjs';
 import {evidenceDigest,reviewYoutubeBatch,youtubeVerificationInput} from './youtube-ownership-policy.mjs';
 
 const root='generated-artifacts/youtube-no-link-20-usd2';
@@ -25,16 +25,7 @@ export async function reviewSavedYoutube(){
     const manifest={artists:approval.scope.map(t=>({...t,account_ids:[],accounts:[]}))};
     // Read-only catalog enrichment only. No provider fetches, claims, paid gates,
     // database changes, source-result replacements, or Instagram runner edits.
-    const accounts=await select(metadataQueries(manifest).accounts.replaceAll("platform!='instagram'","platform!='youtube'"));
-    for(const artist of manifest.artists){
-      artist.accounts=accounts.filter(a=>a.profile_id===artist.profile_id);
-      artist.account_ids=artist.accounts.map(a=>a.account_id);
-    }
-    const queries=metadataQueries(manifest),data={accounts};
-    // Limit concurrent catalog reads while the real Instagram campaign continues.
-    for(const key of Object.keys(queries).filter(k=>k!=='accounts'))
-      data[key]=await select(queries[key].replaceAll("platform!='instagram'","platform!='youtube'"));
-    overlay=buildMetadataOverlay(manifest,data,new Date().toISOString());
+    overlay=await collectTargetPlatformMetadata(manifest,{targetPlatform:'youtube'});
     await save('catalog-evidence.json',overlay);
   }
   assert.equal(overlay.packets.length,approval.scope.length);
