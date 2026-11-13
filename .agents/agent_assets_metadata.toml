@@ -2268,3 +2268,17 @@ mtime_ms = 1794612993401
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/fefa3633-8e81-4582-80a9-5f62281cd8b1/fe31e90c-9280-4042-8947-1c41863088e2"
 storage_version_token = "1794613000107824"
 content_type = "text/csv"
+
+[[outputs]]
+id = "MtQFdYpRoPHplTzY2-JZQ"
+uri = "file://generated-artifacts/youtube-channel-exports-reviewed-brown-beavers-2026-11-13/youtube-channels-all.csv"
+type = "table"
+title = "Updated YouTube review — BROWN BEAVERS corrections"
+description = "Both DANCE MONKEY and Silus - Topic marked rejected for BROWN BEAVERS. Earlier corrections retained. Review list includes rejected and unverified channels, not approved import links."
+logical_id = "154960dd-50ea-41b7-bd20-0dfa5d631801"
+content_hash = "sha256:9d2c3ccf7a745e97aa10f4b8dad6bd20fc73d618fe3d9550a2dc5afc7661e458"
+size = 8483
+mtime_ms = 1794613074486
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/154960dd-50ea-41b7-bd20-0dfa5d631801/7c0581cc-186d-42c2-a2e9-97b97cf983ef"
+storage_version_token = "1794613081275005"
+content_type = "text/csv"

@@ -121,3 +121,14 @@ without being Merryattack's own channel.
 
 **How to apply:** Exclude this exact pair from artist-channel selections;
 preserve the video evidence and do not claim the channel has no music association.
+
+The user disputes **BROWN BEAVERS → DANCE MONKEY** and
+**BROWN BEAVERS → Silus - Topic**. The saved evidence contains a video-title
+credit in the first case and a collaboration credit in the second.
+
+**Why:** A track credit does not identify the uploader as the credited artist;
+a collaborator's Topic channel is not automatically the other artist's channel.
+
+**How to apply:** Reject these exact artist/channel pairs while retaining
+their evidence. Keep supported Topic links, but require the correct artist
+association rather than accepting every co-credited artist.

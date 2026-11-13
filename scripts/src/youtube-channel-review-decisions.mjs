@@ -16,6 +16,8 @@ export const youtubeChannelReviews = [
   ['3779209','10912450','UCZg2-TZBGrwRbuettVf10uw','User identifies this as BrunuhVille’s channel; Lumina is the title of his instrumental track, not the catalog artist identity'],
   ['3550422','15815816','UCEe3t_MV_Jf8nwvki8H5kOA','User identifies Come To Brasil! as a Brazilian funk music and lyrics channel uploading a lyric video for Gypsy woman in Brazil (Speed) by Médio grave and KEVYANGYUE, not KEVYANGYUE’s own channel'],
   ['290069','10278251','UC6OKD507rK9sKspKnJOpCeA','User disputes Merryattack ownership; saved uploader is Soul Of Hardstyle and the video credits Merryattack as an artist, not as the channel owner. Reject as an artist-channel match; do not infer no music association'],
+  ['3568519','16153374','UCoh7-Yh-mgKVDM_8HbjKPUQ','User disputes this match for BROWN BEAVERS; saved uploader is DANCE MONKEY, with BROWN BEAVERS only credited in a video title and no independent artist-channel identity evidence'],
+  ['3568519','16153374','UCnp4azQi4Nkjm117BcdIBIg','User disputes this match for BROWN BEAVERS; saved channel is Silus - Topic and BROWN BEAVERS is a co-credited artist on Banjo Beaver, not the channel’s named artist'],
 ].map(([profileId,cmArtist,channelId,reason])=>Object.freeze({
   profileId,cmArtist,url:'https://www.youtube.com/channel/'+channelId,
   status:'rejected',source:'user_review',reason,
