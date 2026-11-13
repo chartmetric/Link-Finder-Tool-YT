@@ -9,8 +9,9 @@ import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
 import {digest} from './youtube-video-discovery-offline.mjs';
 import {archivedSearchReceiptName,VIDEO_PARENT} from './youtube-video-stage.mjs';
 
-export async function inspectFallback({sourceRoot,eligibleFor=currentEligible,connect=connectSavedBatchPool}){
-  const proposal=await buildSavedFallback(sourceRoot);
+export async function inspectFallback({sourceRoot,eligibleFor=currentEligible,connect=connectSavedBatchPool,
+  includeDirectChannelCases=false}){
+  const proposal=await buildSavedFallback(sourceRoot,{includeDirectChannelCases});
   const cases=proposal.cases.filter(c=>c.resolutionQueue.length);
   const artists=cases.map(c=>({profileId:c.profileId,cmArtist:c.cmArtist,name:c.artist}));
   const eligible=await eligibleFor(artists),pool=await connect();
@@ -32,6 +33,13 @@ export async function inspectFallback({sourceRoot,eligibleFor=currentEligible,co
       sourceReceipts:await rows(`SELECT operation_key,profile_id,input_sha256,receipt_sha256,status,http_status
         FROM youtube_bounded_test_admissions WHERE run_id=$1 AND kind='search'`,[proposal.sourceRunId]),
     };
+    if(includeDirectChannelCases){
+      coordinator.pendingCampaign=await rows("SELECT operation_key FROM youtube_link_campaign_admissions WHERE status='admitted'");
+      const sourceRun=await rows('SELECT status,reserved_cents FROM youtube_discovery_test_runs WHERE id=$1',[proposal.sourceRunId]);
+      assert.equal(sourceRun.length,1);assert.equal(sourceRun[0].status,'completed');
+      assert.equal(sourceRun[0].reserved_cents,40);assert.equal(coordinator.sourceReceipts.length,20);
+      assert.ok(coordinator.sourceReceipts.every(r=>r.status==='returned'&&r.http_status===200));
+    }
     for(const c of cases){
       const receipt=JSON.parse(await fs.readFile(path.join(sourceRoot,'receipts',archivedSearchReceiptName(c.profileId))));
       const admitted=coordinator.sourceReceipts.filter(r=>r.operation_key===receipt.operationKey&&r.profile_id===c.profileId);
@@ -52,6 +60,7 @@ export async function inspectFallback({sourceRoot,eligibleFor=currentEligible,co
   if(coordinator.campaign.length!==1||coordinator.campaign[0].status!=='stopped')blockers.push('full_campaign_not_paused');
   for(const key of ['activeTests','pendingTests','activeStages','pendingStages','duplicates'])
     if(coordinator[key].length)blockers.push(key);
+  if(coordinator.pendingCampaign?.length)blockers.push('pendingCampaign');
   return {
     version:'saved-video-uploader-preflight-v1',checkedAt:new Date().toISOString(),
     status:blockers.length?'blocked_before_execution_preparation':'requires_sealed_execution_plan',

@@ -53,3 +53,31 @@ The runner rechecks current eligibility and all existing attempt histories
 before launching, claims the cohort transactionally, and binds each admission
 to a frozen exact search request. Full campaigns remain paused. Source catalog
 context and raw search receipts are retained for later exact-plan preparation.
+
+## Uploader-only continuation
+
+The completed search has 26 selected video leads across 15 artists. Direct
+channel leads for all 20 artists remain saved; the video requests supplement
+them rather than silently replacing them. No searches are repeated.
+
+Prepare the separately bounded stage with:
+
+```sh
+node scripts/src/run-youtube-staged-uploader.mjs --prepare-only \
+  --id=youtube-video-review-staged-twenty-2026-11-13
+```
+
+The new plan reserves exactly 52 cents for 26 exact video-uploader requests.
+It verifies the completed source's approval, frozen runtime/catalog bytes,
+artist bindings and original paid search receipts, then reconstructs the
+video selection. Preparation performs only read-only readiness queries.
+Activation rechecks eligibility, pending work and previous uploader admissions.
+The existing non-replay uploader gate and mapper handle execution.
+
+This approval does not cover channel captures or identity models. All direct
+leads and resolved uploaders are retained. The shared uploader policy currently
+describes a later one-channel-per-artist proposal; a later capture plan must
+explicitly disclose its actual selection and any deferred alternatives before
+approval. The earlier proposed two-channel ceiling is not a guarantee that
+both alternatives will be captured, and uploader approval does not authorize
+changing the downstream selection policy.

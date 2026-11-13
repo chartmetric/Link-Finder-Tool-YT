@@ -1685,14 +1685,14 @@ content_type = "application/octet-stream"
 id = "tM5wRnz0HeSH5Jl6vSpB2"
 uri = "file://generated-artifacts/instagram-likely-export-after-continuation/instagram-likely-matches-corrected-4.csv"
 type = "table"
-title = "Corrected Instagram matches — 48,333 artists"
-description = "One Instagram URL per row. All four user-rejected matches removed, including Sintala → @ashleyyjulianne. Other audit flags are not automatically deleted."
+title = "Instagram likely matches — corrected export"
+description = "48,333 artist profiles, exactly one Instagram URL per profile. Excludes four explicitly removed matches. These remain review suggestions, not verified or approved catalog links."
 logical_id = "2072b969-3e8f-48cf-bf36-8ea9286f3a70"
 content_hash = "sha256:b1d417726a4749d17553cf6f657ec8687cd389caafe1d79b8d9813cb3eabe260"
 size = 10623090
 mtime_ms = 1794447254973
-storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2072b969-3e8f-48cf-bf36-8ea9286f3a70/763ceb15-f8e3-48e8-b68b-1ac84602e16c"
-storage_version_token = "1794447537827598"
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2072b969-3e8f-48cf-bf36-8ea9286f3a70/bef88dc1-26f4-4964-9bfa-9d1e7ea2ecbd"
+storage_version_token = "1794608603898497"
 content_type = "text/csv"
 
 [[outputs]]
@@ -2085,4 +2085,18 @@ size = 9885
 mtime_ms = 1794608202041
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/e3c5576f-2268-4f39-b56e-92c03cbd4ba2/2e2cbcaa-2f97-4bf0-82e9-c58f035201be"
 storage_version_token = "1794608222590954"
+content_type = "text/csv"
+
+[[outputs]]
+id = "Vxi398YFzNySwAb2ZbyG5"
+uri = "file://generated-artifacts/youtube-video-review-staged-twenty-2026-11-13/proposed-uploader-test.csv"
+type = "table"
+title = "Next YouTube stage — 26 proposed uploader checks"
+description = "Exact saved-video checks for 15 artists, up to two videos per artist, with a maximum reservation of $0.52. Preparation made no paid requests. Channel ownership and Topic association remain unverified."
+logical_id = "beb2f5ec-c2ca-44a8-bdbc-33c8dabdabc1"
+content_hash = "sha256:f0a2a68aa335ed195dce38f454b72e810ccd7b29c6004c02e17c2566b893394d"
+size = 5612
+mtime_ms = 1794608411009
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/beb2f5ec-c2ca-44a8-bdbc-33c8dabdabc1/d80fa3d9-260b-4758-bd8b-85cc0c3771b9"
+storage_version_token = "1794608450910714"
 content_type = "text/csv"

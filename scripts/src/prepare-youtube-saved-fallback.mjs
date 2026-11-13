@@ -4,8 +4,10 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import {fileURLToPath} from 'node:url';
 import {digest,planVideoDiscovery} from './youtube-video-discovery-offline.mjs';
+import {validateStagedSearchPlan,assertStagedSearchApproval} from './youtube-staged-search-plan.mjs';
+import {youtubeArtistFromCatalogPacket} from './youtube-ownership-evidence.mjs';
 
-export async function buildSavedFallback(sourceRoot){
+export async function buildSavedFallback(sourceRoot,{includeDirectChannelCases=false}={}){
   const bytes=new Map();
   async function read(relative){
     const b=await fs.readFile(path.join(sourceRoot,relative));
@@ -18,13 +20,29 @@ export async function buildSavedFallback(sourceRoot){
   assert.equal(summary.status,'completed');
   assert.equal(summary.id,source.id);
   assert.equal(digest(source.artists),source.scopeSha256);
+  if(includeDirectChannelCases){
+    validateStagedSearchPlan(source);assertStagedSearchApproval(source,approval);
+    assert.equal(summary.artistsSearched,20);assert.equal(summary.reservedCents,40);
+    assert.equal(summary.searchOnly,true);assert.equal(summary.catalogWrites,0);
+    for(const [file,sha] of Object.entries({...source.evidenceFiles,...source.runtimeFiles})){
+      const b=await fs.readFile(path.join(sourceRoot,file));
+      assert.equal(digest(b),sha,'Changed sealed search evidence/runtime');
+      bytes.set(file,sha);
+    }
+  }
   const cases=[];
   for(const a of source.artists){
     const record=await read('artists/'+a.profile_id+'.json');
     assert.equal(record.artist.profileId,a.profile_id);
     assert.equal(record.artist.cmArtist,a.cm_artist);
+    if(includeDirectChannelCases){
+      const packet=source.packets.find(p=>p.profileId===a.profile_id&&p.cmArtist===a.cm_artist);
+      assert.deepEqual(record.artist,JSON.parse(JSON.stringify(youtubeArtistFromCatalogPacket(packet))),
+        'Changed catalog identity');
+      assert.equal(record.artist.name,a.artist);
+    }
     // Missing direct captures trigger fallback, never "artist has no channel."
-    if(record.candidates.length)continue;
+    if(record.candidates.length&&!includeDirectChannelCases)continue;
     const files=(await fs.readdir(path.join(sourceRoot,'receipts'))).filter(f=>f.endsWith('.json'));
     let saved;
     for(const file of files){
@@ -45,6 +63,11 @@ export async function buildSavedFallback(sourceRoot){
     assert.equal(record.searchPlan.cmArtist,a.cm_artist);
     const plan=planVideoDiscovery(record.artist,r.data.organic,{
       archivePath:path.join(sourceRoot,relative),receiptSha256:bytes.get(relative)});
+    if(includeDirectChannelCases){
+      const op=source.operations.find(o=>o.profileId===a.profile_id);
+      assert.deepEqual(r.request,op.request);assert.equal(r.inputSha256,op.inputSha256);
+      assert.deepEqual(record.videoPlan,plan,'Changed saved video selection');
+    }
     cases.push({artist:record.artist.name,tier:a.tier,profileId:a.profile_id,
       cmArtist:a.cm_artist,sourceOrdinal:a.ordinal,...plan});
   }
@@ -56,9 +79,10 @@ export async function buildSavedFallback(sourceRoot){
   // Fingerprint the files actually consumed; never alter sealed source archives.
   for(const [file,sha] of bytes)
     assert.equal(digest(await fs.readFile(path.join(sourceRoot,file))),sha);
-  return {version:'saved-search-video-fallback-v1',sourceRunId:source.id,
+  return {version:includeDirectChannelCases?'staged-search-video-uploaders-v1':'saved-search-video-fallback-v1',sourceRunId:source.id,
     sourcePlanSha256:digest(source),sourceFiles,cases,operations,
-    artistsWithoutDirectCaptures:cases.length,
+    ...(includeDirectChannelCases?{includesDirectChannelCases:true,sourceArtists:source.artists.length}:{}),
+    artistsWithoutDirectCaptures:includeDirectChannelCases?undefined:cases.length,
     artistsWithEligibleVideos:cases.filter(c=>c.resolutionQueue.length).length,
     maximumUploaderRequests:operations.length,
     proposedUploaderReservationCents:operations.length*2,
