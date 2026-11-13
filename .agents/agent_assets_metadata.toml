@@ -2100,3 +2100,17 @@ mtime_ms = 1794608411009
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/beb2f5ec-c2ca-44a8-bdbc-33c8dabdabc1/d80fa3d9-260b-4758-bd8b-85cc0c3771b9"
 storage_version_token = "1794608450910714"
 content_type = "text/csv"
+
+[[outputs]]
+id = "CbGRz7xFT-Mi-pJYl7d6l"
+uri = "file://generated-artifacts/instagram-likely-export-after-continuation/instagram-selected-links-for-unverified-import.csv"
+type = "table"
+title = "Selected Instagram links for unverified import — 48,333 artists"
+description = "One selected likely-match Instagram URL per artist, with artist name, tier, profile_id, cm_artist, model score/verdict, decision reason and source snapshot. Excludes four explicitly removed matches. Not verified ownership; apply existing verified-link exclusions before importing."
+logical_id = "81a6f408-4675-4da3-86f6-15880cbb890e"
+content_hash = "sha256:b1d417726a4749d17553cf6f657ec8687cd389caafe1d79b8d9813cb3eabe260"
+size = 10623090
+mtime_ms = 1794609731621
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/81a6f408-4675-4da3-86f6-15880cbb890e/320054f0-291d-43f1-97e6-95cd1824fe92"
+storage_version_token = "1794609739708852"
+content_type = "text/csv"
