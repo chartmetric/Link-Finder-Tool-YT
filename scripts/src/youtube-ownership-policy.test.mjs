@@ -28,6 +28,49 @@ test('A bound likely verdict has no arbitrary .9 threshold; audience gaps and la
   assert.equal(result.score,.37);assert.equal(result.warnings.length,1);
   assert.equal(result.liveLinkAccepted,false);
 });
+test('captured group membership cannot promote a group channel as an individual artist match',()=>{
+  const c=candidate({capture:capture({displayName:'Example Band',
+    description:'Artist is a member of Example Band',isOfficialArtistChannel:true})});
+  const decision=evaluateYoutubeOwnership(artist,c,{answer:answer(c,{sameIdentityProbability:.99})});
+  assert.equal(decision.status,'ownership_conflict');
+  assert.equal(decision.reason,'individual_member_is_not_group_channel_identity');
+  assert.equal(decision.reviewSuggestion,false);
+  assert.match(youtubeVerificationInput(artist,c).rules,/group or band and its individual members are separate identities/i);
+  const solo=candidate({capture:capture({description:'Artist is a member of Example Band'})});
+  assert.equal(evaluateYoutubeOwnership(artist,solo,{answer:answer(solo)}).reviewSuggestion,true,
+    'A member may still have their own channel');
+});
+test('bound solo context holds explicit group channels but neither loose words nor unbound context veto a channel',()=>{
+  const a={...artist,context:{chartmetric:{cm_artist:'2',band:0}}};
+  const c=candidate({capture:capture({displayName:'Example Band',description:'We are a pop group'})});
+  const input=youtubeVerificationInput(a,c);
+  assert.equal(evaluateYoutubeOwnership(a,c,{answer:{...answer(c),inputSha256:input.inputSha256}}).reviewSuggestion,false);
+  const unbound={...a,context:{chartmetric:{cm_artist:'999',band:0}}};
+  assert.equal(evaluateYoutubeOwnership(unbound,c).status,'needs_identity_check');
+  const ordinary=candidate({capture:capture({displayName:'Stage Alias',
+    description:'My latest group performance is available now'})});
+  assert.equal(evaluateYoutubeOwnership(a,ordinary).status,'needs_identity_check');
+  const group={...a,name:'Example Band',context:{chartmetric:{cm_artist:'2',band:1}}};
+  const groupInput=youtubeVerificationInput(group,c);
+  assert.equal(evaluateYoutubeOwnership(group,c,{answer:{...answer(c),inputSha256:groupInput.inputSha256}}).reviewSuggestion,true,
+    'A group remains eligible for its own channel');
+});
+test('William’s user-rejected LYKN pair stays rejected even with a positive model answer or a bound alias',()=>{
+  const william={...artist,profileId:'257398',cmArtist:'11498692',name:'William Jakrapatr',
+    catalogProfile:{profile_id:'257398',cm_artist:'11498692'}};
+  const lykn='https://www.youtube.com/channel/UCso2wzxEVKV-f4iC3MJrRzA';
+  const c={url:lykn,title:'LYKN',capture:null};
+  assert.equal(evaluateYoutubeOwnership(william,c).reason,'user_rejected_artist_channel_pair');
+  const alias='https://www.youtube.com/@lykn';
+  const body={channelId:'UCso2wzxEVKV-f4iC3MJrRzA',handle:'lykn',url:alias,displayName:'LYKN',
+    description:'Official channel',externalUrls:[]};
+  const bound={url:alias,capture:{requestedUrl:alias,status:200,capturedAt:'2026-11-13T23:00:00Z',
+    body,bodySha256:evidenceDigest(body)}};
+  const input=youtubeVerificationInput(william,bound);
+  const answerForWilliam={inputSha256:input.inputSha256,
+    answer:{verdict:'likely',sameIdentityProbability:.99,channelType:'artist_owned'}};
+  assert.equal(evaluateYoutubeOwnership(william,bound,{answer:answerForWilliam}).reviewSuggestion,false);
+});
 test('Confirmed Topic, fan and organizational channels do not pass despite matching music IDs or high scores',()=>{
   for(const [patch,type] of [
     [{displayName:'Artist - Topic'},'topic'],

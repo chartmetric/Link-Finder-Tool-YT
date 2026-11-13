@@ -59,3 +59,25 @@ artists; the presence of a Jun S video does not establish channel ownership.
 **How to apply:** Hold this exact pair out of review shortlists as user-rejected,
 while retaining the original uploader evidence. Do not reject other Jun S
 channels or infer that Jun S has no YouTube presence.
+
+Keep a group or band's channel separate from the individual profiles of its
+members. The user rejects **William Jakrapatr → LYKN** on this basis.
+
+**Why:** The user's goal is a channel for the exact catalog artist. Membership
+in a group does not make the group's account the member's individual channel.
+
+**How to apply:** Require independent individual-channel identity evidence;
+membership, group releases and group performances alone are not sufficient.
+Preserve legitimate group channels for group profiles and individual channels
+for members. Apply new safeguards to future preparations, not sealed workers
+or historical model answers.
+
+The user identifies **Zime Media (@ZimemediaAb)** as an independent label
+distributing **Ryan Reed**, not Ryan Reed's individual channel.
+
+**Why:** A distributor publishing an artist's recordings does not establish
+that the artist owns the distributor's channel.
+
+**How to apply:** Reject this exact artist/channel pair separately from its
+saved discovery evidence. Do not treat label distribution as artist identity,
+or reject other Ryan Reed channels without their own evidence.

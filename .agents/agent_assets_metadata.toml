@@ -2198,3 +2198,31 @@ mtime_ms = 1794611840061
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/f823d61e-3599-4180-9ea2-77d097ad9ebb/e0c48b4f-9938-4a71-a3bf-cd37bc4da666"
 storage_version_token = "1794611847614968"
 content_type = "text/csv"
+
+[[outputs]]
+id = "XIjIEANtVqOrjXbyA4AW8"
+uri = "file://generated-artifacts/youtube-channel-exports-reviewed-william-2026-11-13/youtube-channels-all.csv"
+type = "table"
+title = "Updated YouTube review — William / LYKN rejected"
+description = "LYKN is marked rejected for William Jakrapatr’s individual profile. Earlier Idol House and Jun S corrections are retained. One row per artist/channel; no catalog changes or new paid checks."
+logical_id = "dfb3404d-8f53-4117-8b95-1e47f4f8e2d3"
+content_hash = "sha256:b7a8014eb424aaf1ccf07ef5e0be6e5e959810e79b4556739485f94b31002274"
+size = 8310
+mtime_ms = 1794612223117
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/dfb3404d-8f53-4117-8b95-1e47f4f8e2d3/3fdbfd44-5f68-4e3e-9e63-86e849542f52"
+storage_version_token = "1794612251516077"
+content_type = "text/csv"
+
+[[outputs]]
+id = "WN7MPHXwvyt9iMhxhf5sY"
+uri = "file://generated-artifacts/youtube-channel-exports-reviewed-ryan-2026-11-13/youtube-channels-all.csv"
+type = "table"
+title = "Updated YouTube review — Ryan Reed / Zime Media rejected"
+description = "Marks Zime Media rejected for Ryan Reed and retains all earlier corrections. One row per artist/channel. These reviewed discovery results are not approved catalog links."
+logical_id = "2e4f8f92-06b0-42dc-b36b-f77abf23bb65"
+content_hash = "sha256:44333a77624a73a8111612a06737b13403b5d4955d3f6c8d5593f1bdb8ff078e"
+size = 8308
+mtime_ms = 1794612297653
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2e4f8f92-06b0-42dc-b36b-f77abf23bb65/b6dfef25-fec4-46b6-b307-13040216cf4b"
+storage_version_token = "1794612304724482"
+content_type = "text/csv"
