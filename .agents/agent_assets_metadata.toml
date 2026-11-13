@@ -2072,3 +2072,17 @@ mtime_ms = 1794595950613
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/9bf3ec19-3ea0-4c1a-8581-6de4e24043bb/fc6af1ac-cecc-4f4a-9dcb-0f06f173264d"
 storage_version_token = "1794596025825642"
 content_type = "text/csv"
+
+[[outputs]]
+id = "XQ4EdXCW1hIOyPOh2jVKR"
+uri = "file://generated-artifacts/youtube-test-20-staged-2026-11-13/search-discovery-results.csv"
+type = "table"
+title = "20-artist YouTube test — search results"
+description = "Discovery-only results: channel leads for 16 artists and channel or video leads for 18. One URL per row. Topic leads are explicitly labeled; none of these links is ownership-approved."
+logical_id = "e3c5576f-2268-4f39-b56e-92c03cbd4ba2"
+content_hash = "sha256:ed288612ec686fd9db244be043eb8d215dfce3750c8973d6d2c2598965ad9b48"
+size = 9885
+mtime_ms = 1794608202041
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/e3c5576f-2268-4f39-b56e-92c03cbd4ba2/2e2cbcaa-2f97-4bf0-82e9-c58f035201be"
+storage_version_token = "1794608222590954"
+content_type = "text/csv"
