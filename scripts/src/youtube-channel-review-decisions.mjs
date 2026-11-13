@@ -13,6 +13,7 @@ export const youtubeChannelReviews = [
   ['230803','13873440','UC7yV3NPRjUY3ASN6QHZJfJA','User flagged Blueberry Bridge as a false positive for CHOIJUNSEONG (Jun S); supplied screenshot shows a multi-artist lyrics uploader, not a supported artist channel'],
   ['257398','11498692','UCso2wzxEVKV-f4iC3MJrRzA','User identifies this as LYKN’s group channel; William Jakrapatr is a member, not the channel’s individual artist identity'],
   ['3547423','15907724','UCBmSVAoY-ZSl2Qzz8VMrAWQ','User identifies Zime Media (@ZimemediaAb) as an independent record label distributing Ryan Reed’s music, not Ryan Reed’s own channel'],
+  ['3779209','10912450','UCZg2-TZBGrwRbuettVf10uw','User identifies this as BrunuhVille’s channel; Lumina is the title of his instrumental track, not the catalog artist identity'],
 ].map(([profileId,cmArtist,channelId,reason])=>Object.freeze({
   profileId,cmArtist,url:'https://www.youtube.com/channel/'+channelId,
   status:'rejected',source:'user_review',reason,

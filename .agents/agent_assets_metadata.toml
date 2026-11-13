@@ -2226,3 +2226,17 @@ mtime_ms = 1794612297653
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2e4f8f92-06b0-42dc-b36b-f77abf23bb65/b6dfef25-fec4-46b6-b307-13040216cf4b"
 storage_version_token = "1794612304724482"
 content_type = "text/csv"
+
+[[outputs]]
+id = "yV124oYkvLHJuGS87P97R"
+uri = "file://generated-artifacts/youtube-channel-exports-reviewed-lumina-2026-11-13/youtube-channels-all.csv"
+type = "table"
+title = "Updated YouTube review — Lumina correction included"
+description = "BrunuhVille is rejected for Lumina because the name matched a track title, not the artist. Retains all earlier corrections, with one row per artist/channel."
+logical_id = "e0583dff-53de-4bda-832e-d38e8c410d3f"
+content_hash = "sha256:829c55bd9f24bc49a0c08356d0a68cafdb8e8742e46748fca9af314ff151583b"
+size = 8297
+mtime_ms = 1794612347189
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/e0583dff-53de-4bda-832e-d38e8c410d3f/aad0b3b0-3cbd-4d7a-a81d-95b4f4e97b27"
+storage_version_token = "1794612354648831"
+content_type = "text/csv"

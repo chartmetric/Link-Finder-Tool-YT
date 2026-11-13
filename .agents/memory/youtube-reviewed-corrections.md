@@ -81,3 +81,13 @@ that the artist owns the distributor's channel.
 **How to apply:** Reject this exact artist/channel pair separately from its
 saved discovery evidence. Do not treat label distribution as artist identity,
 or reject other Ryan Reed channels without their own evidence.
+
+The user identifies **Lumina → BrunuhVille** as a track-title collision:
+"Fantasy Music - Lumina" is BrunuhVille's instrumental, not an artist identity.
+
+**Why:** Matching a catalog artist's name to a recording title does not make
+that recording's composer or uploader the same artist.
+
+**How to apply:** Reject the exact pair while preserving the saved discovery.
+Do not promote recording-title matches to artist channels without independent
+identity evidence, or reject other Lumina channels without reviewing them.
