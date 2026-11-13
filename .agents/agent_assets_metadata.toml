@@ -2058,3 +2058,17 @@ mtime_ms = 1794595448085
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/22dc0dbc-63c8-4919-a744-2ff75270b427/19a857ed-8183-4d44-aff2-6382bd3b7f4b"
 storage_version_token = "1794595483792241"
 content_type = "text/csv"
+
+[[outputs]]
+id = "6_rcGVVDolnqQCAKdxaty"
+uri = "file://generated-artifacts/youtube-test-20-staged-2026-11-13/proposed-test.csv"
+type = "table"
+title = "Fresh 20-artist YouTube test — proposed cohort"
+description = "Twenty currently eligible Tier 2 artists without catalog YouTube links, with exact planned search queries. First stage maximum $0.40; later uploader and identity stages require separate approval."
+logical_id = "9bf3ec19-3ea0-4c1a-8581-6de4e24043bb"
+content_hash = "sha256:d71a3b0fa1bfcac6411612466d983b99b08868d9835cc01664023a84734b94f7"
+size = 3868
+mtime_ms = 1794595950613
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/9bf3ec19-3ea0-4c1a-8581-6de4e24043bb/fc6af1ac-cecc-4f4a-9dcb-0f06f173264d"
+storage_version_token = "1794596025825642"
+content_type = "text/csv"
