@@ -112,3 +112,12 @@ confirmed the saved channel match.
 **How to apply:** Preserve this user-confirmed match and its Topic label.
 Keep user confirmation distinct from historical automated verification;
 it does not authorize a catalog write or paid checks.
+
+The user disputes **Merryattack → Soul Of Hardstyle** as an artist-channel
+match. Saved video credits establish a music association, not channel ownership.
+
+**Why:** A third-party uploader can publish a track credited to Merryattack
+without being Merryattack's own channel.
+
+**How to apply:** Exclude this exact pair from artist-channel selections;
+preserve the video evidence and do not claim the channel has no music association.

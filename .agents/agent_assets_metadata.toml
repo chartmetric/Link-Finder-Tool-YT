@@ -2254,3 +2254,17 @@ mtime_ms = 1794612856469
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/70e36e21-c5f0-41f6-b7b6-4094b557d9b5/e376b885-791f-4cb7-b1fb-b84dec932754"
 storage_version_token = "1794612864935472"
 content_type = "text/csv"
+
+[[outputs]]
+id = "0MByTKsVvcOGySr9tq0v3"
+uri = "file://generated-artifacts/youtube-channel-exports-reviewed-merryattack-2026-11-13/youtube-channels-all.csv"
+type = "table"
+title = "Updated YouTube review — Merryattack correction"
+description = "Soul Of Hardstyle rejected as Merryattack’s artist channel. Earlier corrections retained, with one row per artist/channel. This review list includes rejected and unverified channels, not approved import links."
+logical_id = "fefa3633-8e81-4582-80a9-5f62281cd8b1"
+content_hash = "sha256:4a9a48b27fe73522a3b7025261cfe1b7fba8d15f4283b36d00dde5c274babf5c"
+size = 8433
+mtime_ms = 1794612993401
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/fefa3633-8e81-4582-80a9-5f62281cd8b1/fe31e90c-9280-4042-8947-1c41863088e2"
+storage_version_token = "1794613000107824"
+content_type = "text/csv"
