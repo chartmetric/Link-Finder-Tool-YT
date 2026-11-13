@@ -2030,3 +2030,31 @@ mtime_ms = 1794594602017
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/5d1db17c-ea4b-490f-8aec-d244ac01b046/3248b590-1d37-41fe-a30f-37898f8a1df5"
 storage_version_token = "1794594663983025"
 content_type = "text/csv"
+
+[[outputs]]
+id = "Dw143vWLMpwFue_7l1jeV"
+uri = "file://generated-artifacts/youtube-video-review-kaiva-fallback-2026-11-13/video-uploader-findings.csv"
+type = "table"
+title = "YouTube test — channels needing identity review"
+description = "Two review candidates: KAIVA’s Topic lead and Jean & Alex. Neither is accepted or eligible for catalog import."
+logical_id = "b55b53c6-6f6a-4273-9ea4-a47dd11c08f4"
+content_hash = "sha256:50cfe0a2a747d5bbd05727477a625e92a9f48e3ffef8aa757907f8723a6b57a7"
+size = 1112
+mtime_ms = 1794595448093
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/b55b53c6-6f6a-4273-9ea4-a47dd11c08f4/166d7b78-1adc-475b-9d64-9cc28c0010e1"
+storage_version_token = "1794595483112176"
+content_type = "text/csv"
+
+[[outputs]]
+id = "uqFPDexk4vKXgTskKf2bu"
+uri = "file://generated-artifacts/youtube-video-review-kaiva-fallback-2026-11-13/video-uploader-discovery-evidence.csv"
+type = "table"
+title = "YouTube test — all uploader findings"
+description = "All eight video observations, including uploaders held out of the review shortlist. Discovery evidence only, not confirmed artist links."
+logical_id = "22dc0dbc-63c8-4919-a744-2ff75270b427"
+content_hash = "sha256:a96bbb982deac91b20c112c42c6890599f624d6686f19d379e07ad8ee20ede8a"
+size = 3719
+mtime_ms = 1794595448085
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/22dc0dbc-63c8-4919-a744-2ff75270b427/19a857ed-8183-4d44-aff2-6382bd3b7f4b"
+storage_version_token = "1794595483792241"
+content_type = "text/csv"
