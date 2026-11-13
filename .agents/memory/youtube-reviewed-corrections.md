@@ -39,3 +39,23 @@ or AI-song title, and uploader resolution did not establish artist ownership.
 
 **How to apply:** Preserve the original discovery evidence while excluding these
 exact artist/channel pairs from artist-owned imports and review shortlists.
+
+The user distinguishes **Idol House** from **Idol House Türkiye** and rejects
+both the unrelated uploader and Türkiye channel proposed for Idol House.
+
+**Why:** Similar project names do not establish that a regional channel belongs
+to the exact catalog artist; this was an explicit user identity correction.
+
+**How to apply:** Preserve the original evidence and record the exact pair
+rejections separately. Do not reinterpret Türkiye as an approved alias or
+reject its channel for a different artist. This review authorizes no catalog
+writes, new searches or campaign resumes.
+
+The user flags **CHOIJUNSEONG (Jun S) → Blueberry Bridge** as a false positive.
+
+**Why:** Their screenshot shows a lyrics uploader posting multiple unrelated
+artists; the presence of a Jun S video does not establish channel ownership.
+
+**How to apply:** Hold this exact pair out of review shortlists as user-rejected,
+while retaining the original uploader evidence. Do not reject other Jun S
+channels or infer that Jun S has no YouTube presence.

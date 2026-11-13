@@ -96,3 +96,21 @@ test('canonical duplicate channels merge without mutating input or discarding To
   assert.match(report.evidenceCsv,/Topic — auto-generated lead, association unverified/);
   assert.match(report.evidenceCsv,/"false","false","2"/);
 });
+test('Idol House user rejections exclude both uploaders without rejecting other catalog artists',()=>{
+  const idol={profileId:'3841420',cmArtist:'16170857',name:'Idol House'};
+  const other={profileId:'99999999',cmArtist:'88888888',name:'Idol House Türkiye'};
+  const urls=['UClq3l26d0Q18d9nOb61RC1w','UCW8pHCd6SofXNQeEsQWINbg']
+    .map(id=>'https://www.youtube.com/channel/'+id);
+  const rows=urls.map(url=>({...result,profileId:idol.profileId,cmArtist:idol.cmArtist,
+    artist:idol.name,uploaderName:idol.name,url}));
+  const report=buildVideoUploaderReport([idol],rows);
+  assert.equal(report.summary.reviewCandidateChannels,0);
+  assert.equal(report.summary.categories.user_rejected,2);
+  assert.equal(report.summary.artistChannelRows,2);
+  assert.match(report.evidenceCsv,/Idol House Türkiye, not the catalog artist Idol House/);
+  assert.match(report.evidenceCsv,/Rejected — user review/);
+  for(const url of urls){
+    assert.equal(triageVideoUploader(other,{...result,...other,url,
+      uploaderName:other.name}).category,'identity_check_candidate');
+  }
+});

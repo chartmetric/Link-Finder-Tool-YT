@@ -33,7 +33,9 @@ export function buildVideoUploaderReport(artists,results){
     const distinct=fn=>[...new Set(group.records.map(fn))].join('; ');
     return [r.artist,r.tier,r.profileId,r.cmArtist,r.url,distinct(x=>x.result.uploaderName),
       distinct(x=>x.triage.channelLabel),distinct(x=>x.triage.category),distinct(x=>x.triage.reason),
-      'Not accepted — uploader discovery only',false,false,group.videos.size,JSON.stringify([...group.videos])];
+      group.records.some(x=>x.triage.category==='user_rejected')
+        ?'Rejected — user review':'Not accepted — uploader discovery only',
+      false,false,group.videos.size,JSON.stringify([...group.videos])];
   };
   const categories={};
   for(const {triage:t} of records)categories[t.category]=(categories[t.category]??0)+1;

@@ -2170,3 +2170,31 @@ mtime_ms = 1794611636573
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/b224590f-72fc-4eb7-b34c-d8016b83fac1/bc56c00b-ad43-4da5-8959-ce8c784331bd"
 storage_version_token = "1794611653548965"
 content_type = "text/csv"
+
+[[outputs]]
+id = "aEHjmcXJ8Fz7CSj2PbwKc"
+uri = "file://generated-artifacts/youtube-channel-exports-reviewed-staged-twenty-2026-11-13/youtube-channels-all.csv"
+type = "table"
+title = "Updated YouTube channels — Idol House corrections"
+description = "Both Idol House channel pairs are explicitly marked rejected, including Idol House Türkiye. One row per artist/channel. The six-channel shortlist is unchanged; no catalog links were modified."
+logical_id = "2fea4f76-ad6c-46fe-9b01-1003b5d969ce"
+content_hash = "sha256:5a852a5c951cbb09552d9f9ccfc972e2dcc8b78ac2a844048fd716b8acf05d26"
+size = 8297
+mtime_ms = 1794611785102
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2fea4f76-ad6c-46fe-9b01-1003b5d969ce/7653cf8a-7d84-49f3-b6fe-67f495bc520d"
+storage_version_token = "1794611796814615"
+content_type = "text/csv"
+
+[[outputs]]
+id = "dEK5WiW-tPSEQsBFqRtiz"
+uri = "file://generated-artifacts/youtube-channel-exports-reviewed-jun-s-2026-11-13/youtube-channels-all.csv"
+type = "table"
+title = "Updated YouTube channels — Jun S correction included"
+description = "Blueberry Bridge is now explicitly rejected for CHOIJUNSEONG (Jun S), alongside the two Idol House corrections. One row per artist/channel; no catalog changes."
+logical_id = "f823d61e-3599-4180-9ea2-77d097ad9ebb"
+content_hash = "sha256:b79ff17e0ba25e42de3e1ac6a42b2df906539b2b9212bd0039cd93078d66a66d"
+size = 8323
+mtime_ms = 1794611840061
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/f823d61e-3599-4180-9ea2-77d097ad9ebb/e0c48b4f-9938-4a71-a3bf-cd37bc4da666"
+storage_version_token = "1794611847614968"
+content_type = "text/csv"
