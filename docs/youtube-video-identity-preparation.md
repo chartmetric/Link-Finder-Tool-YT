@@ -5,6 +5,11 @@ saved files and creates a new local review archive. It does not call providers,
 read or write databases, change catalog links, rewrite prior findings, authorize
 retries, or resume either full campaign. Do not modify any existing sealed worker.
 
+The separately implemented workspace executor is documented in
+[`youtube-video-identity-execution.md`](youtube-video-identity-execution.md).
+It requires a new execution supplement and fresh explicit exact-plan approval;
+the preparer's commands and local approval records remain non-executable.
+
 ## Prerequisite and approval boundaries
 
 The separately approved uploader stage must have completed, with all exact

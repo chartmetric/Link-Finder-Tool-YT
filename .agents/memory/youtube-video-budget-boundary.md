@@ -42,6 +42,30 @@ Topic leads and shared-channel uncertainty, and disclose the later capture
 breadth/selection policy. Uploader resolution alone is discovery, not an
 accepted artist-owned link or measured ownership recovery.
 
+Keep execution permission as a separate approval supplement; do not enable or
+replace an already reviewed offline preparation approval.
+
+**Why:** Later stages bind the original approval object and exact receipt bytes.
+Changing that object to enable dispatch would invalidate the evidence chain and
+could make an old preparation approval appear to authorize new spending.
+
+**How to apply:** Bind the unchanged preparation plan/approval and a separately
+sealed executor to fresh explicit execution approval. Preserve the original
+approval in downstream returns, and use the supplement only for transactional
+execution admission.
+
+Exact-request hashes are not sufficient for identity-stage non-replay: keep
+independent kind-scoped exclusions for profile, Chartmetric artist and channel.
+
+**Why:** A changed channel/request or a different profile can evade a combined
+identity tuple even though one of the already reserved identities is reused.
+The boundary protects each identity, not merely identical outgoing bytes.
+
+**How to apply:** Check each exclusion transactionally across run IDs and back
+it with independent uniqueness constraints. Preserve failed/uncertain
+reservations. Repeated selected-channel allocations must stop before spending,
+not silently substitute another channel or inherit fresh permission.
+
 The live video endpoint can omit its top-level `url` even when the returned
 video ID and uploader identities are valid.
 
