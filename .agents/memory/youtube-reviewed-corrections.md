@@ -91,3 +91,12 @@ that recording's composer or uploader the same artist.
 **How to apply:** Reject the exact pair while preserving the saved discovery.
 Do not promote recording-title matches to artist channels without independent
 identity evidence, or reject other Lumina channels without reviewing them.
+
+The user identifies **KEVYANGYUE → Come To Brasil!** as a false positive:
+the channel uploaded a lyric video crediting KEVYANGYUE and Médio grave.
+
+**Why:** An artist credit on a third-party lyric video establishes a music
+association, not ownership of the uploader's channel.
+
+**How to apply:** Reject this exact pair separately from saved discovery;
+do not accept third-party lyrics uploaders based on artist credits alone.

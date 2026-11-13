@@ -2240,3 +2240,17 @@ mtime_ms = 1794612347189
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/e0583dff-53de-4bda-832e-d38e8c410d3f/aad0b3b0-3cbd-4d7a-a81d-95b4f4e97b27"
 storage_version_token = "1794612354648831"
 content_type = "text/csv"
+
+[[outputs]]
+id = "2oTbYDG9wySy5EnTKiRwg"
+uri = "file://generated-artifacts/youtube-channel-exports-reviewed-kevyangyue-2026-11-13/youtube-channels-all.csv"
+type = "table"
+title = "Updated YouTube review — KEVYANGYUE correction"
+description = "Come To Brasil! marked rejected for KEVYANGYUE. Includes all earlier corrections, with one row per artist/channel. Not an approved-links import file."
+logical_id = "70e36e21-c5f0-41f6-b7b6-4094b557d9b5"
+content_hash = "sha256:b1f143260eada3fc7d453495c3207d46fab953659a433b2dcca8c8857bbe1556"
+size = 8356
+mtime_ms = 1794612856469
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/70e36e21-c5f0-41f6-b7b6-4094b557d9b5/e376b885-791f-4cb7-b1fb-b84dec932754"
+storage_version_token = "1794612864935472"
+content_type = "text/csv"
