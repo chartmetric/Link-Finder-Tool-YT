@@ -4,7 +4,15 @@ import assert from 'node:assert/strict';
 import {digest} from './youtube-video-discovery-offline.mjs';
 import {stagedSearchPlan,approveStagedSearch,assertStagedSearchApproval,validateStagedSearchPlan}
   from './youtube-staged-search-plan.mjs';
-import {searchReadiness} from './run-youtube-staged-search.mjs';
+import {searchReadiness,stagedCatalogRoot} from './run-youtube-staged-search.mjs';
+
+test('new cohorts use explicit catalog preparations without changing historical sources',()=>{
+  assert.equal(stagedCatalogRoot('youtube-test-20-review-catalog-2026-11-13'),
+    'generated-artifacts/youtube-test-20-review-catalog-2026-11-13');
+  assert.equal(stagedCatalogRoot(),'generated-artifacts/youtube-test-20-staged-catalog-2026-11-13');
+  for(const invalid of ['../old','/tmp/catalog','youtube-test-../../escape','not-a-test'])
+    assert.throws(()=>stagedCatalogRoot(invalid));
+});
 
 function fixture(){
   const artists=Array.from({length:20},(_,i)=>({

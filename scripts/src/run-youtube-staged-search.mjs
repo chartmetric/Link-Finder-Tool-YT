@@ -16,7 +16,10 @@ import {currentEligible} from './run-youtube-video-stage.mjs';
 import {freezeLocalModules} from './seal-youtube-campaign-runtime.mjs';
 import {durableStageFile} from './youtube-video-stage-execution.mjs';
 import {archivedSearchReceiptName} from './youtube-video-stage.mjs';
-const catalogRoot='generated-artifacts/youtube-test-20-staged-catalog-2026-11-13';
+export function stagedCatalogRoot(catalogId='youtube-test-20-staged-catalog-2026-11-13'){
+  assert.match(catalogId,/^youtube-test-[a-z0-9-]{4,100}$/);
+  return 'generated-artifacts/'+catalogId;
+}
 const read=async file=>JSON.parse(await fs.readFile(file));
 
 export async function searchReadiness(client,artists,parentId){
@@ -38,7 +41,8 @@ async function assertEligibility(artists){
   const eligible=await currentEligible(artists.map(a=>({profileId:a.profile_id,cmArtist:a.cm_artist,name:a.artist})));
   assert.ok(artists.every(a=>eligible.get(a.profile_id)?.tier===a.tier),'Current tier/catalog eligibility changed');
 }
-export async function prepareStagedSearch(id){
+export async function prepareStagedSearch(id,catalogId){
+  const catalogRoot=stagedCatalogRoot(catalogId);
   const root='generated-artifacts/'+id,parent=await read(catalogRoot+'/plan.json');
   const packets=await read(catalogRoot+'/supplemental-catalog/packets.json');
   assert.equal(parent.explicitApproval,false);assert.equal(digest(packets),parent.catalogEvidenceSha256);
@@ -160,7 +164,7 @@ async function main(){
   const args=process.argv.slice(2);
   assert.equal(new Set(args.map(a=>a.split('=')[0])).size,args.length);
   assert.ok(args.every(a=>/^--(?:prepare-only|authorize-prepared|run-approved)$/.test(a)
-    ||/^--(?:id|plan-sha256|approve-cents)=[a-z0-9-]+$/.test(a)));
+    ||/^--(?:id|catalog-id|plan-sha256|approve-cents)=[a-z0-9-]+$/.test(a)));
   const modes=args.filter(a=>['--prepare-only','--authorize-prepared','--run-approved'].includes(a));
   assert.equal(modes.length,1);
   const value=k=>args.find(a=>a.startsWith('--'+k+'='))?.slice(k.length+3);
@@ -168,8 +172,9 @@ async function main(){
   const root='generated-artifacts/'+id;
   if(modes[0]==='--prepare-only'){
     assert.equal(value('approve-cents'),undefined);assert.equal(value('plan-sha256'),undefined);
-    console.log(JSON.stringify(await prepareStagedSearch(id)));return;
+    console.log(JSON.stringify(await prepareStagedSearch(id,value('catalog-id'))));return;
   }
+  assert.equal(value('catalog-id'),undefined,'Catalog selection is preparation-only');
   const plan=await read(root+'/plan.json');assert.equal(plan.id,id);
   await assertStagedSearchFrozen(root,plan);
   if(modes[0]==='--authorize-prepared'){
