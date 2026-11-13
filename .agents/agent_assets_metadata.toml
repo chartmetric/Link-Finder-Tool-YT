@@ -2282,3 +2282,31 @@ mtime_ms = 1794613074486
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/154960dd-50ea-41b7-bd20-0dfa5d631801/7c0581cc-186d-42c2-a2e9-97b97cf983ef"
 storage_version_token = "1794613081275005"
 content_type = "text/csv"
+
+[[outputs]]
+id = "MgxBS6PzQNV7I5HMPIIyk"
+uri = "file://generated-artifacts/youtube-channel-exports-review-complete-2026-11-13/youtube-channel-shortlist.csv"
+type = "table"
+title = "YouTube shortlist — 6 possible artist channels"
+description = "Candidate-only list across five artists. Topic channels clearly labeled; Summertimeflow retained following your confirmation. These are not automatically approved catalog links."
+logical_id = "18e3219c-320a-46d4-bba0-e8ff6dd0b00d"
+content_hash = "sha256:9d2b793acea8a65caabdc34ca5793483db5a060b8a0c56364cb1e033215fb828"
+size = 2896
+mtime_ms = 1794613299345
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/18e3219c-320a-46d4-bba0-e8ff6dd0b00d/c2343b24-e7a6-4ab1-8951-5003645860a6"
+storage_version_token = "1794613335528099"
+content_type = "text/csv"
+
+[[outputs]]
+id = "D8ZhSuHry56PHXTUqPInc"
+uri = "file://generated-artifacts/youtube-channel-exports-review-complete-2026-11-13/youtube-channels-excluded.csv"
+type = "table"
+title = "Excluded channels — 10 rejected, 4 unresolved"
+description = "Separate review record with reasons. Not a list of artist-channel matches and not eligible for import."
+logical_id = "5ec32afe-4144-4f10-950c-c4d517f0d561"
+content_hash = "sha256:58f91bad1bf1b89bed62caf32dce81945f773cb97142735b5c56b328efb6091e"
+size = 6145
+mtime_ms = 1794613299345
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/5ec32afe-4144-4f10-950c-c4d517f0d561/9166f2e6-1d84-4d37-a9b0-dc42d8dea3de"
+storage_version_token = "1794613336204218"
+content_type = "text/csv"

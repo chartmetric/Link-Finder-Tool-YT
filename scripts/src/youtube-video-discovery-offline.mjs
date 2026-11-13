@@ -98,6 +98,12 @@ export function videoMentionHold(artist,row){
     &&!distributionCredit)
     return 'distribution_credits_do_not_match_catalog_name';
   const rawTitle=String(row.title??'').normalize('NFKC').toLowerCase().replace(/^[^\p{L}\p{N}]+/u,'');
+  // "Fantasy Music - <name>" describes a recording, not its performer.
+  // Keep it as evidence, but do not spend an uploader slot on title overlap.
+  if(boundNames.some(({name})=>new RegExp(
+    '^(?:fantasy|epic|cinematic|relaxing|ambient|instrumental)\\s+music\\s*[-–—:]\\s*'+
+    escape(String(name).normalize('NFKC').toLowerCase().trim())+'(?:\\s*[(\\[]|\\s*$)',
+    'u').test(rawTitle)))return 'artist_phrase_is_instrumental_recording_title';
   const titleCredit=boundNames.some(({name})=>{
     const exact=escape(String(name).normalize('NFKC').toLowerCase().trim());
     return new RegExp('^'+exact+'\\s*(?:[-–—:|·(\\[]|$|\\b(?:official|music|video|lyrics|nightcore|topic)\\b)','u').test(rawTitle)

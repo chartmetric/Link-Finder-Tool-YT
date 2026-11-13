@@ -46,3 +46,17 @@ specific videos," after duplicate video rows repeated the same artist/channel.
 canonical channel URL. Keep supporting videos together as secondary evidence,
 retain Topic labels and unresolved status, and never merge different artists
 just because they share a channel. Preserve historical raw receipts unchanged.
+
+For YouTube reviews, present possible artist channels separately from excluded
+uploaders. A full uploader evidence list must not be presented as found artist
+links, even when it includes names and track credits.
+
+**Why:** During review, the user repeatedly identified label, lyrics, group,
+collaborator and song-title matches in the full evidence export as false
+artist-channel matches. A music association is not channel identity.
+
+**How to apply:** Lead with the candidate-only export, explicitly unverified;
+keep held and rejected pairs separately accessible with reasons. Require all
+observations in an artist/channel group to clear triage before shortlisting it.
+Conflicting uploader names or held evidence must not be hidden by one positive
+observation. Keep Topic labels and user reviews distinct from automated checks.

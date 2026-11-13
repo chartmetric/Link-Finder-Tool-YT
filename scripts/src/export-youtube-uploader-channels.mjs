@@ -28,9 +28,10 @@ export async function exportUploaderChannels(sourceRoot,output){
   const report=buildVideoUploaderReport(artists,results);
   await fs.mkdir(output);
   await fs.writeFile(path.join(output,'youtube-channel-shortlist.csv'),report.candidatesCsv,{flag:'wx'});
+  await fs.writeFile(path.join(output,'youtube-channels-excluded.csv'),report.excludedCsv,{flag:'wx'});
   await fs.writeFile(path.join(output,'youtube-channels-all.csv'),report.evidenceCsv,{flag:'wx'});
   const exported={sourceRunId:plan.id,...report.summary,paidCalls:0,catalogWrites:0,
-    note:'One row per catalog artist and canonical channel URL. Videos are supporting evidence only. Historical source files unchanged.'};
+    note:'Use youtube-channel-shortlist.csv for possible artist channels only; these still require identity verification. youtube-channels-excluded.csv is not a matches list. youtube-channels-all.csv is the audit trail. One row per artist/channel. Historical sources unchanged.'};
   await fs.writeFile(path.join(output,'summary.json'),JSON.stringify(exported,null,2),{flag:'wx'});
   return exported;
 }

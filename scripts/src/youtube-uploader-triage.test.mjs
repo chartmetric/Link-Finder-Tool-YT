@@ -114,3 +114,66 @@ test('Idol House user rejections exclude both uploaders without rejecting other 
       uploaderName:other.name}).category,'identity_check_candidate');
   }
 });
+test('recording credits never substitute for the uploader artist identity',()=>{
+  for(const uploaderName of ['Independent Label','Lyrics Uploads','Example Band','Collaborator - Topic']){
+    const observed={...result,uploaderName,sources:[{
+      title:'Example Artist - A New Song',
+      snippet:'Provided to YouTube by Distributor Song · Example Artist · Collaborator',
+    }]};
+    const triage=triageVideoUploader(artist,observed);
+    assert.equal(triage.candidate,false,uploaderName);
+    assert.equal(triage.importEligible,false);
+  }
+  const topic=triageVideoUploader(artist,{...result,uploaderName:'Example Artist - Topic'});
+  assert.equal(topic.category,'topic_identity_check_candidate');
+  assert.equal(topic.ownershipAccepted,false);
+});
+test('instrumental track titles are held generically without artist-specific exceptions',()=>{
+  for(const name of ['Lumina','Another Recording']){
+    const a={...artist,name};
+    const row={title:'Fantasy Music - '+name,snippet:'Instrumental music by a different composer'};
+    assert.equal(videoMentionHold(a,row),'artist_phrase_is_instrumental_recording_title');
+    assert.equal(planVideoDiscovery(a,[{...row,link:result.videoUrl}],
+      {archivePath:'saved/search.json',receiptSha256:'a'.repeat(64)}).resolutionQueue.length,0);
+    assert.equal(triageVideoUploader(a,{...result,uploaderName:name,sources:[row]}).category,'recording_credit_hold');
+  }
+  assert.equal(videoMentionHold(artist,{title:'Example Artist - Fantasy Music',snippet:''}),null);
+  const mixed={...result,sources:[
+    {title:'Fantasy Music - Example Artist',snippet:''},
+    {title:'Example Artist - New Release',snippet:'Official music video'},
+  ]};
+  assert.equal(triageVideoUploader(artist,mixed).candidate,true);
+});
+test('a good observation cannot hide a held observation in the same channel row',()=>{
+  const held={...result,uploaderName:'Third-party Uploader',
+    videoUrl:'https://www.youtube.com/watch?v=12345678901'};
+  const report=buildVideoUploaderReport([artist],[result,held]);
+  assert.equal(report.summary.reviewCandidateChannels,0);
+  assert.equal(report.summary.heldArtistChannelRows,1);
+  assert.equal(report.excludedCsv.split('\r\n').length,2);
+  assert.match(report.excludedCsv,/conflicting_channel_observations_hold/);
+  assert.match(report.excludedCsv,/Excluded — artist-channel match not established/);
+  assert.match(report.excludedCsv,/"held"/);
+  assert.ok(!report.candidatesCsv.includes('abcdefghijk'));
+  const creditHeld={...result,videoUrl:held.videoUrl,
+    sources:[{title:'Fantasy Music - Example Artist',snippet:''}]};
+  const creditReport=buildVideoUploaderReport([artist],[result,creditHeld]);
+  assert.equal(creditReport.summary.reviewCandidateChannels,0);
+  assert.equal(creditReport.summary.heldArtistChannelRows,1);
+});
+test('exports separate rejected and held channels from candidates without losing any rows',()=>{
+  const review=youtubeChannelReviews[0];
+  const reviewedArtist={profileId:review.profileId,cmArtist:review.cmArtist,name:'Reviewed Artist'};
+  const rejected={...result,...reviewedArtist,artist:reviewedArtist.name,url:review.url};
+  const held={...result,url:'https://www.youtube.com/channel/UC'+'x'.repeat(22),uploaderName:'Other Uploader'};
+  const report=buildVideoUploaderReport([artist,reviewedArtist],[result,rejected,held]);
+  assert.equal(report.summary.artistChannelRows,3);
+  assert.equal(report.summary.reviewCandidateChannels,1);
+  assert.equal(report.summary.rejectedArtistChannelRows,1);
+  assert.equal(report.summary.heldArtistChannelRows,1);
+  assert.equal(report.candidatesCsv.split('\r\n').length,2);
+  assert.equal(report.excludedCsv.split('\r\n').length,3);
+  assert.match(report.candidatesCsv,/Candidate only — identity verification needed/);
+  assert.match(report.candidatesCsv,/"candidate"/);
+  assert.ok(!report.excludedCsv.includes('"candidate"'));
+});

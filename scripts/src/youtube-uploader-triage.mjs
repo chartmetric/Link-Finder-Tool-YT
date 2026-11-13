@@ -1,6 +1,6 @@
 // Pure discovery triage. No network, spending, acceptance or catalog writes.
 import assert from 'node:assert/strict';
-import {normalizeDiscoveryChannel} from './youtube-video-discovery-offline.mjs';
+import {normalizeDiscoveryChannel,videoMentionHold} from './youtube-video-discovery-offline.mjs';
 import {youtubeSearchNames} from './youtube-music-search.mjs';
 import {youtubeChannelReviews} from './youtube-channel-review-decisions.mjs';
 
@@ -25,6 +25,11 @@ export function triageVideoUploader(artist,result,{reviews=youtubeChannelReviews
     reason:'Same uploader observed for multiple catalog artists; ownership unresolved',channelLabel};
   if(!matched)return {...base,category:topic?'unbound_topic_hold':'unbound_uploader_hold',candidate:false,
     reason:'Uploader name has no exact catalog-bound artist or alias match; retain evidence, do not infer ownership',channelLabel};
+  // Re-evaluate saved discovery using current safeguards. A matching uploader
+  // name must not rehabilitate a pool containing only recording-title mentions.
+  if(result.sources?.length&&result.sources.every(s=>s.videoMentionHold||videoMentionHold(artist,s)))
+    return {...base,category:'recording_credit_hold',candidate:false,
+      reason:'All saved search references are held as ambiguous recording or artist mentions; uploader name alone cannot resolve artist identity',channelLabel};
   return {...base,category:topic?'topic_identity_check_candidate':'identity_check_candidate',candidate:true,
     reason:topic?'Topic name matches; artist association still needs independent evidence'
       :'Catalog-bound name matches only; artist ownership still needs independent evidence',
