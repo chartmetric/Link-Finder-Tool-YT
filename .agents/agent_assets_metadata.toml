@@ -2114,3 +2114,31 @@ mtime_ms = 1794609731621
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/81a6f408-4675-4da3-86f6-15880cbb890e/3e691463-8ad5-423d-bde4-5f02bf4b5067"
 storage_version_token = "1794609935480946"
 content_type = "text/csv"
+
+[[outputs]]
+id = "OWNarhH9Zgv7Cv_MCCc3m"
+uri = "file://generated-artifacts/youtube-video-review-staged-twenty-2026-11-13/video-uploader-findings.csv"
+type = "table"
+title = "YouTube uploader test — six channels for identity review"
+description = "Six candidate channels across five artists, including three clearly labeled Topic leads. None is ownership-verified or approved for import. Existing direct-search leads remain separate and preserved."
+logical_id = "ce05d926-fea4-467d-b139-8955640f1015"
+content_hash = "sha256:0ca2b3b4ce875966ff282978d65cd25a8937d75487048a90aab29dc66612b902"
+size = 3004
+mtime_ms = 1794611020409
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/ce05d926-fea4-467d-b139-8955640f1015/5cedd2ca-afb3-4276-bba7-0080a4219ab3"
+storage_version_token = "1794611051995299"
+content_type = "text/csv"
+
+[[outputs]]
+id = "WPJmwBB0LHtYwhEutHW8M"
+uri = "file://generated-artifacts/youtube-video-review-staged-twenty-2026-11-13/video-uploader-discovery-evidence.csv"
+type = "table"
+title = "YouTube uploader test — all 26 observations"
+description = "Full uploader evidence, including held channels. These are discovery observations, not accepted artist links."
+logical_id = "751cb4eb-b7d6-4ae7-87d4-89fe4f02d3a0"
+content_hash = "sha256:7d203262f3073ce6e928f2d370d82596837898058f687829c9a807743af03856"
+size = 11597
+mtime_ms = 1794611020405
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/751cb4eb-b7d6-4ae7-87d4-89fe4f02d3a0/7705c9f2-50dd-4a9e-96be-738bcf6062c4"
+storage_version_token = "1794611052742288"
+content_type = "text/csv"
