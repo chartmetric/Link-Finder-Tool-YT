@@ -72,3 +72,19 @@ untouched requests, spend the remaining allowance, or approve the new fallback.
 No admission, reservation, historical result, approval or sealed runtime is
 changed during preparation. Applying it needs separate recovery approval and a
 fresh locked revalidation; a proposal alone is never authority to write.
+
+After explicit approval of that exact recovery proposal,
+`apply-youtube-ledger-recovery.mjs --apply-approved <recovery-directory>
+--proposal-sha256=<approved-hash>` acknowledges only the one saved response.
+It checks the original evidence and mapper hashes, locks the parent and
+coordinator tables, and requires the complete ledger to match the approved
+snapshot. It persists the exact unaccepted mapped result, changes only the
+admission's receipt-status fields, and verifies every other row and reservation
+is unchanged before committing. It writes a separate approval and application
+record without replacing the original run approval, summary or exports.
+
+Retries accept only the exact already-applied acknowledgment and identical
+local result bytes; they never repeat provider work. Any unrelated ledger
+change, modified source evidence or conflicting result blocks recovery.
+The stopped run, two untouched requests and new fallback stage remain separate
+and unapproved for execution.
