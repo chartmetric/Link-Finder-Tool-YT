@@ -100,3 +100,15 @@ association, not ownership of the uploader's channel.
 
 **How to apply:** Reject this exact pair separately from saved discovery;
 do not accept third-party lyrics uploaders based on artist credits alone.
+
+The user confirms **Summertimeflow → Summertimeflow - Topic**
+(`https://www.youtube.com/channel/UCpncUSsfp9V-0w01OTRV0ng`) is correct after
+clarifying that the supplied "Release - Topic" screenshot showed a different
+channel.
+
+**Why:** The user withdrew the suspected false-positive report and explicitly
+confirmed the saved channel match.
+
+**How to apply:** Preserve this user-confirmed match and its Topic label.
+Keep user confirmation distinct from historical automated verification;
+it does not authorize a catalog write or paid checks.
