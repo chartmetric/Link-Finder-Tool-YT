@@ -2016,3 +2016,17 @@ mtime_ms = 1794593680733
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/5578e59a-adbf-4095-92ec-60aa3bae48be/9db3daee-d84e-4301-b0ea-d9c9c6ad53fa"
 storage_version_token = "1794593734723890"
 content_type = "text/html"
+
+[[outputs]]
+id = "3pJbslJBMoeKJYowM8PMV"
+uri = "file://generated-artifacts/youtube-video-review-kaiva-fallback-2026-11-13/proposed-uploader-test.csv"
+type = "table"
+title = "Next YouTube test — 8 uploader checks"
+description = "Exact saved-video requests for KAIVA, Harry Georgiou, Miles Phillips, Jean & Alex and Shristi Bharti. Maximum $0.16. Discovery only; no ownership acceptance or catalog changes."
+logical_id = "5d1db17c-ea4b-490f-8aec-d244ac01b046"
+content_hash = "sha256:43dbad070853e8d3d6be6159d36ff4009dba53ca4a324e4558a540b419c65cfd"
+size = 1647
+mtime_ms = 1794594602017
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/5d1db17c-ea4b-490f-8aec-d244ac01b046/3248b590-1d37-41fe-a30f-37898f8a1df5"
+storage_version_token = "1794594663983025"
+content_type = "text/csv"

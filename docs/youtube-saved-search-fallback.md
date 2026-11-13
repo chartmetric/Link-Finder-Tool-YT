@@ -88,3 +88,24 @@ local result bytes; they never repeat provider work. Any unrelated ledger
 change, modified source evidence or conflicting result blocks recovery.
 The stopped run, two untouched requests and new fallback stage remain separate
 and unapproved for execution.
+
+## Fresh eight-request execution plan
+
+`run-youtube-saved-fallback-stage.mjs --prepare-only
+--id=youtube-video-review-kaiva-fallback-2026-11-13` prepares the original eight
+saved requests for the five direct-channel misses. It refuses changes to that
+saved request set, rechecks current Tier 1–5 eligibility and coordinator history,
+preserves the original search receipts/catalog packets for later identity
+preparation, and seals a separate runtime before asking for approval.
+
+Small fresh stages use `exact-saved-video-uploaders-small-v1`; the historical
+twenty-artist policy and its recovery constraints are unchanged. Both enforce
+two uploader requests per artist, exact request hashes, two-cent reservations,
+no retries, paused full campaign, and separately approved downstream identity
+checks. Small stages cannot inherit recovery approvals.
+
+Only after exact approval, use the new archive's sealed
+`runtime/run-youtube-saved-fallback-stage.mjs` to authorize its exact plan hash
+and 16-cent cap, then execute that same archive. Preparation performs no paid
+requests and never writes an approval. Execution rechecks eligibility and uses
+the existing transactional non-replay gate; viewing results cannot start it.

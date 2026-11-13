@@ -4,6 +4,7 @@ import {digest,proposedUploaderRequest,normalizeDiscoveryVideo} from './youtube-
 import {evidenceDigest} from './youtube-ownership-policy.mjs';
 const sha=/^[a-f0-9]{64}$/;
 export const VIDEO_STAGE_POLICY='exact-saved-video-uploaders-v1';
+export const SMALL_VIDEO_STAGE_POLICY='exact-saved-video-uploaders-small-v1';
 export const VIDEO_PARENT='full-tiers-1-5-no-youtube-uncapped';
 // Old campaign filenames hash the JSON representation of a key string, not its raw bytes.
 export const archivedSearchReceiptName=profileId=>evidenceDigest('search-'+profileId+'-0')+'.json';
@@ -18,11 +19,17 @@ function files(value){
   return copy(value);
 }
 export function videoStagePlan(input){
+  const version=input.version??VIDEO_STAGE_POLICY;
+  assert.ok([VIDEO_STAGE_POLICY,SMALL_VIDEO_STAGE_POLICY].includes(version));
+  const small=version===SMALL_VIDEO_STAGE_POLICY;
   assert.match(input.id,/^youtube-video-review-[a-z0-9-]{4,80}$/);
   assert.match(input.sourcePlanSha256,sha);
   assert.ok(typeof input.sourceRunId==='string'&&input.sourceRunId.length);
   assert.ok(Number.isFinite(Date.parse(input.preparedAt)));
-  assert.equal(input.artists.length,20,'This reviewed stage is exactly 20 artists');
+  if(small){
+    assert.ok(input.artists.length>=1&&input.artists.length<=20);
+    assert.equal(input.recovery,undefined,'Small fresh stages cannot inherit recovery spending');
+  }else assert.equal(input.artists.length,20,'This reviewed stage is exactly 20 artists');
   const artists=input.artists.map(a=>{
     assert.match(a.profileId,/^\d+$/);assert.match(a.cmArtist,/^\d+$/);
     assert.ok(typeof a.name==='string'&&a.name.trim());
@@ -30,8 +37,8 @@ export function videoStagePlan(input){
     assert.ok(typeof a.snapshotAt==='string'&&Number.isFinite(Date.parse(a.snapshotAt)));
     return {profileId:a.profileId,cmArtist:a.cmArtist,name:a.name,tier:a.tier,snapshotAt:a.snapshotAt};
   });
-  assert.equal(new Set(artists.map(a=>a.profileId)).size,20);
-  assert.equal(new Set(artists.map(a=>a.cmArtist)).size,20);
+  assert.equal(new Set(artists.map(a=>a.profileId)).size,artists.length);
+  assert.equal(new Set(artists.map(a=>a.cmArtist)).size,artists.length);
   assert.ok(artists.every((a,i)=>!i||artists[i-1].tier<=a.tier),'Strict tier order');
   const keys=new Set(),counts=new Map();
   const operations=input.operations.map(o=>{
@@ -47,7 +54,8 @@ export function videoStagePlan(input){
     return {profileId:o.profileId,cmArtist:o.cmArtist,kind:'video_uploader',key:o.key,
       videoId:o.videoId,videoUrl:o.videoUrl,request:copy(o.request),inputSha256:digest(o.request),reservationCents:2};
   });
-  assert.ok((input.recovery||artists.every(a=>counts.has(a.profileId)))&&operations.length<=40);
+  assert.ok(operations.length>0
+    &&(input.recovery||artists.every(a=>counts.has(a.profileId)))&&operations.length<=40);
   let recovery;
   if(input.recovery){
     const r=input.recovery;
@@ -64,7 +72,7 @@ export function videoStagePlan(input){
       completedOperationKey:r.completedOperationKey,previousReservedCents:r.previousReservedCents,originalMaximumCents:80,
       rawSha256:r.rawSha256,receiptSha256:r.receiptSha256,mappedSha256:r.mappedSha256};
   }
-  return {version:VIDEO_STAGE_POLICY,id:input.id,parentId:VIDEO_PARENT,
+  return {version,id:input.id,parentId:VIDEO_PARENT,
     preparedAt:input.preparedAt,sourceRunId:input.sourceRunId,sourcePlanSha256:input.sourcePlanSha256,
     artists,operations,evidenceFiles:files(input.evidenceFiles),runtimeFiles:files(input.runtimeFiles),
     maximumCalls:operations.length,maximumSpendCents:operations.length*2,
@@ -82,7 +90,7 @@ export function approveVideoStage(plan,{expectedPlanSha256,capCents,approvedAt})
   assert.equal(digest(plan),expectedPlanSha256,'Exact pending plan hash required');
   assert.equal(capCents,plan.maximumSpendCents,'Exact spending cap required');
   assert.ok(Number.isFinite(Date.parse(approvedAt)));
-  return {id:plan.id,policy:VIDEO_STAGE_POLICY,planSha256:digest(plan),capCents,approvedAt,
+  return {id:plan.id,policy:plan.version,planSha256:digest(plan),capCents,approvedAt,
     explicitApproval:true,operationScope:'video_uploader_only_exact_saved_requests',
     ...(plan.recovery?{savedResponseRecoveryApproved:true,combinedMaximumSpendCents:80}:{} )};
 }

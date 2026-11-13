@@ -4,7 +4,8 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {digest,proposedUploaderRequest} from './youtube-video-discovery-offline.mjs';
-import {videoStagePlan,approveVideoStage,assertVideoStageAdmission,archivedSearchReceiptName} from './youtube-video-stage.mjs';
+import {videoStagePlan,approveVideoStage,assertVideoStageAdmission,archivedSearchReceiptName,
+  SMALL_VIDEO_STAGE_POLICY} from './youtube-video-stage.mjs';
 import {executeVideoStage} from './youtube-video-stage-execution.mjs';
 import {mapSavedVideoUploader} from './youtube-video-uploader-review.mjs';
 import {validateVideoRecovery} from './youtube-video-stage-recovery.mjs';
@@ -13,20 +14,21 @@ const sha=digest('fixture');
 test('saved receipt lookup retains the original JSON-string hash convention',()=>{
   assert.equal(archivedSearchReceiptName('4152653'),'663436bc18291bb5f50a9e2401b900f1633e88010cd332fc6aa9bc672feb94ff.json');
 });
-function fixture(){
-  const artists=Array.from({length:20},(_,i)=>({profileId:String(i+1),cmArtist:String(i+101),
+function fixture(small=false){
+  const artists=Array.from({length:small?5:20},(_,i)=>({profileId:String(i+1),cmArtist:String(i+101),
     name:'Artist '+(i+1),tier:2,snapshotAt:'2026-11-12T01:30:00Z'}));
-  const operations=artists.flatMap((a,i)=>[0,1].map(j=>{
+  const operations=artists.flatMap((a,i)=>(small&&[1,4].includes(i)?[0]:[0,1]).map(j=>{
     const videoId=String(i*2+j+1).padStart(11,'0'),videoUrl='https://www.youtube.com/watch?v='+videoId;
     return {...a,kind:'video_uploader',key:`video_uploader-${a.profileId}-${a.cmArtist}-${videoId}`,
       videoId,videoUrl,request:proposedUploaderRequest(videoUrl)};
   }));
-  const plan=videoStagePlan({id:'youtube-video-review-fixture-20',sourceRunId:'saved-fixture',
+  const plan=videoStagePlan({...(small?{version:SMALL_VIDEO_STAGE_POLICY}:{}),
+    id:'youtube-video-review-fixture-20',sourceRunId:'saved-fixture',
     sourcePlanSha256:sha,preparedAt:'2026-11-12T06:00:00Z',artists,operations,
     evidenceFiles:{'evidence/source-plan.json':sha},runtimeFiles:{'runtime/test.mjs':sha}});
-  const approval=approveVideoStage(plan,{expectedPlanSha256:digest(plan),capCents:80,approvedAt:'2026-11-12T06:01:00Z'});
+  const approval=approveVideoStage(plan,{expectedPlanSha256:digest(plan),capCents:small?16:80,approvedAt:'2026-11-12T06:01:00Z'});
   const run={id:plan.id,owner:'fixture-owner',status:'running',plan_sha256:digest(plan),
-    approval_sha256:digest(approval),cap_cents:80,reserved_cents:0};
+    approval_sha256:digest(approval),cap_cents:small?16:80,reserved_cents:0};
   return {plan,approval,run};
 }
 const returned=op=>({operation_key:op.key,profile_id:op.profileId,cm_artist:op.cmArtist,
@@ -74,8 +76,8 @@ test('admission fences exact owner, approval, request, non-replay, receipts and 
       f.plan.operations[1],[bad],'fixture-owner'));
   assert.throws(()=>assertVideoStageAdmission(f.plan,f.approval,f.run,{...op,kind:'search'},[],'fixture-owner'));
 });
-async function executionFixture(t){
-  const f=fixture(),root=await fs.mkdtemp(path.join(os.tmpdir(),'yt-video-stage-'));
+async function executionFixture(t,small=false){
+  const f=fixture(small),root=await fs.mkdtemp(path.join(os.tmpdir(),'yt-video-stage-'));
   t.after(()=>fs.rm(root,{recursive:true,force:true}));
   for(const dir of ['evidence','inputs','receipts','results'])await fs.mkdir(root+'/'+dir);
   for(const artist of f.plan.artists){
@@ -114,6 +116,31 @@ async function executionFixture(t){
   };
   return {...f,root,history,events,gate,fetchImpl,assertFrozen:async()=>{},credential:'fixture-not-a-secret'};
 }
+test('small fresh policy freezes eight requests for five artists without weakening legacy scope',()=>{
+  const {plan,approval}=fixture(true);
+  assert.equal(plan.maximumCalls,8);assert.equal(plan.maximumSpendCents,16);
+  assert.equal(approval.policy,SMALL_VIDEO_STAGE_POLICY);
+  assert.equal(plan.unknownDownstreamRequestsApproved,false);
+  const legacy={...plan};delete legacy.version;
+  assert.throws(()=>videoStagePlan(legacy),/exactly 20/);
+  assert.throws(()=>videoStagePlan({...plan,version:'unknown-policy'}));
+  assert.throws(()=>videoStagePlan({...plan,recovery:{}}),/cannot inherit/);
+  assert.throws(()=>videoStagePlan({...plan,operations:[]}));
+  assert.throws(()=>videoStagePlan({...plan,operations:plan.operations.filter(o=>o.profileId!=='5')}));
+  assert.throws(()=>approveVideoStage(plan,{expectedPlanSha256:digest(plan),capCents:80,
+    approvedAt:approval.approvedAt}));
+});
+test('eight-request small stage completes with bounded reservations and zero accepted ownership',async t=>{
+  const f=await executionFixture(t,true);
+  const results=await executeVideoStage(f);
+  assert.equal(results.length,8);assert.equal(f.run.reserved_cents,16);
+  assert.equal(f.run.status,'completed');
+  const summary=JSON.parse(await fs.readFile(f.root+'/summary.json'));
+  assert.equal(summary.artistsWithResolvedUploaders,5);assert.equal(summary.maximumCalls,8);
+  assert.equal(summary.acceptedOwnershipLinks,0);assert.equal(summary.modelCalls,0);
+  assert.equal(summary.channelMetadataCalls,0);assert.equal(summary.fullCampaignResumed,false);
+  assert.ok(results.every(r=>r.ownershipAccepted===false));
+});
 test('40 fixture requests persist raw evidence before acknowledgment and never accept ownership',async t=>{
   const f=await executionFixture(t),results=await executeVideoStage(f);
   assert.equal(results.length,40);assert.equal(f.run.reserved_cents,80);assert.equal(f.run.status,'completed');

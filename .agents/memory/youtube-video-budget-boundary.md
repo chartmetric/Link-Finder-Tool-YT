@@ -90,6 +90,16 @@ Require separate recovery approval and fresh locked revalidation. Keep the
 source run stopped and exclude all new provider requests; later stages need
 their own scope and spending approval.
 
+Use a distinct fresh-stage policy when changing cohort size; keep historical
+twenty-artist plans and recovery approvals valid under their original rules.
+
+**Why:** A smaller saved-video fallback should not weaken an earlier exact
+twenty-artist authorization or accidentally inherit its remaining allowance.
+
+**How to apply:** Freeze the smaller cohort, requests and runtime under a new
+plan fingerprint and approval, retaining the existing per-artist limits,
+non-replay coordinator and independent downstream-identity boundary.
+
 Saved video benchmark text relevance must be reported separately from exact
 catalog identity, uploader identity and artist ownership. Missing video-to-channel
 bindings make ownership precision unscorable, not zero. Format words such as
