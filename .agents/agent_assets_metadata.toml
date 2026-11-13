@@ -2002,3 +2002,17 @@ mtime_ms = 1794527361197
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/93e88ad6-28c0-4336-bcb9-48853d9ae393/17642c88-5c72-42a0-872d-f05a88688f45"
 storage_version_token = "1794527371677288"
 content_type = "text/csv"
+
+[[outputs]]
+id = "Wre9ZgRC_bU_Y4Z6GBTyn"
+uri = "file://generated-artifacts/youtube-saved-response-recovery-2026-11-13/review.html"
+type = "html"
+title = "YouTube saved-response recovery plan"
+description = "Recovery of one saved response without repeating the paid request. Keeps the run stopped, reservations unchanged and uploader unaccepted. Preparation only; no record changes."
+logical_id = "5578e59a-adbf-4095-92ec-60aa3bae48be"
+content_hash = "sha256:f39c3e6f2657fca1a7dcdf2605522959e9de8c5c7de83a626a23a67ec773e4e5"
+size = 1599
+mtime_ms = 1794593680733
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/5578e59a-adbf-4095-92ec-60aa3bae48be/9db3daee-d84e-4301-b0ea-d9c9c6ad53fa"
+storage_version_token = "1794593734723890"
+content_type = "text/html"

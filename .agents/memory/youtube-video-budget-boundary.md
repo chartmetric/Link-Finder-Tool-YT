@@ -77,6 +77,19 @@ response and reservation, and do not retry or count it as an ownership
 rejection. Review Unicode URL normalization offline before changing a sealed
 worker or preparing any separately approved continuation.
 
+Keep acknowledgment of a saved paid response separate from permission to
+dispatch the old run's untouched remainder or a new recovery cohort.
+
+**Why:** A stopped uploader stage can contain many acknowledged returns, one
+saved-but-unacknowledged response and untouched requests. Treating all of these
+as a single restart would turn a bookkeeping repair into new paid work.
+
+**How to apply:** Prepare a recovery-only proposal that binds the complete
+admission history, original owner, raw receipt and unchanged reservations.
+Require separate recovery approval and fresh locked revalidation. Keep the
+source run stopped and exclude all new provider requests; later stages need
+their own scope and spending approval.
+
 Saved video benchmark text relevance must be reported separately from exact
 catalog identity, uploader identity and artist ownership. Missing video-to-channel
 bindings make ownership precision unscorable, not zero. Format words such as

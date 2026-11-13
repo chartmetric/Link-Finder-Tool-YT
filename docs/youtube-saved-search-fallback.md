@@ -40,3 +40,35 @@ After resolution, use shared uploader triage to exclude exact user-rejected
 pairs, hold shared or unbound uploaders, label Topic leads, and keep every result
 unaccepted until independent identity evidence supports the association.
 No existing sealed runtime or archived result is edited by these source changes.
+
+## Saved-response blocker and recovery-only preparation
+
+The shared channel normalizer now accepts valid UTF-8 percent-encoded handles
+containing non-ASCII letters or numbers. Decoding is restricted to the handle on
+an allowlisted HTTPS YouTube authority. Encoded separators, controls, whitespace,
+double escapes, legacy IDs and encoded query strings remain rejected. The
+uploader mapper preserves every original URL and raw response byte; a normalized
+handle is never promoted to a proven channel-ID alias or artist ownership.
+
+For a stopped stage with multiple already-returned calls and exactly one saved
+unacknowledged response:
+
+```sh
+node scripts/src/prepare-youtube-ledger-recovery.mjs --prepare-only \
+  generated-artifacts/youtube-video-review-20-2026-11-12-c \
+  generated-artifacts/youtube-saved-response-recovery-2026-11-13
+```
+
+This reads the coordinator in one read-only snapshot, binds the original owner,
+plan, approval, reservations, admissions and saved receipts, and validates the
+new mapper against the original raw bytes. It also verifies all original
+evidence/runtime fingerprints, all earlier returned receipts/results and the
+absence of attempt evidence for untouched requests. Output is a non-executable
+proposal and a human-readable report.
+
+The proposed action is only an exact acknowledgment of that saved response,
+with its unaccepted local result. It does not resume the old run, approve its
+untouched requests, spend the remaining allowance, or approve the new fallback.
+No admission, reservation, historical result, approval or sealed runtime is
+changed during preparation. Applying it needs separate recovery approval and a
+fresh locked revalidation; a proposal alone is never authority to write.

@@ -23,9 +23,26 @@ function safeUrl(raw) {
   } catch { return null; }
 }
 export function normalizeDiscoveryChannel(raw) {
+  // Decode only a handle on an already allowlisted HTTPS authority. Never
+  // decode hosts, separators, legacy IDs, query strings or double escapes.
+  if (typeof raw === 'string' && raw.includes('%')) {
+    const match = /^https:\/\/(?:www\.|m\.|music\.)?youtube\.com\/@([^/?#]+)/.exec(raw);
+    if (!match) return null;
+    try {
+      const handle = decodeURIComponent(match[1]);
+      if (!/^[\p{L}\p{N}_.-]{1,100}$/u.test(handle)
+        || !/[^\x00-\x7f]/u.test(handle)) return null;
+      raw = raw.slice(0, match[0].length - match[1].length)
+        + handle + raw.slice(match[0].length);
+    } catch { return null; }
+  }
   const u = safeUrl(raw);
   if (!u || !hosts.has(u.hostname)) return null;
   const parts = u.pathname.replace(/\/$/, '').slice(1).split('/');
+  // URL.pathname serializes literal non-ASCII characters as percent escapes.
+  if (parts[0]?.startsWith('@')) {
+    try { parts[0] = decodeURIComponent(parts[0]); } catch { return null; }
+  }
   const count = parts[0]?.startsWith('@') ? 1 : 2;
   if (parts.length !== count && !(parts.length === count + 1 && tabs.has(parts[count]))) return null;
   if (count === 1 ? !/^@[\p{L}\p{N}_.-]{1,100}$/u.test(parts[0])

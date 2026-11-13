@@ -106,6 +106,36 @@ test('schema uncertainty, conflicts and increased billing fail closed rather tha
   const body = provider(); delete body.uploader; delete body.ownerByline;
   assert.equal(map(receipt(body)).url, 'https://www.youtube.com/channel/' + id);
 });
+test('encoded Unicode uploader handles preserve exact receipt bytes and do not establish ownership', () => {
+  const body=provider();
+  body.channel.url='https://www.youtube.com/@Lo%C3%AFcHobi';
+  body.uploader.url='http://www.youtube.com/@Lo%C3%AFcHobi';
+  body.ownerByline.url='https://www.youtube.com/@LoïcHobi';
+  const r=receipt(body),result=map(r);
+  assert.equal(result.url,'https://www.youtube.com/channel/'+id);
+  assert.deepEqual(Buffer.from(result.rawReceipt.rawBodyBase64,'base64'),r.rawBody);
+  assert.equal(result.providerAliases[0].raw,body.channel.url);
+  assert.ok(result.providerAliases.every(a=>!a.dispatchable&&!a.equivalenceEstablished));
+  assert.equal(result.ownershipEvidence,false);
+  for(const value of [
+    'https://evil.test/@Lo%C3%AFcHobi',
+    'https://www.youtube.com.evil.test/@Lo%C3%AFcHobi',
+    'https://www.youtube.com/@Lo%C3%AFc%2FHobi',
+    'https://www.youtube.com/@Lo%C3%AFc%5CHobi',
+    'https://www.youtube.com/@Lo%C3%AFc%00Hobi',
+    'https://www.youtube.com/@Lo%C3%AFc%20Hobi',
+    'https://www.youtube.com/@Lo%25C3%25AFcHobi',
+    'https://www.youtube.com/@Lo%C3',
+    'https://www.youtube.com/@Lo%C3%AFcHobi/%2e%2e/channel/'+otherId,
+    'https://www.youtube.com/@Lo%C3%AFcHobi?escape=%2f',
+    'https://www.youtube.com/channel/%55Cabcdefghijklmnopqrstuv',
+  ]){
+    const changed=provider();changed.channel.url=value;
+    assert.throws(()=>map(receipt(changed)),value);
+  }
+  body.uploader.channelId=otherId;
+  assert.throws(()=>map(receipt(body)),/Conflicting/);
+});
 test('fresh immutable saved-case proposal cannot inherit an approval or exceed per-kind replacement slots', () => {
   const bundle = proposal(), plan = bundle.plan;
   assert.deepEqual(prepareOfflineVideoEvaluation(plan), bundle);
