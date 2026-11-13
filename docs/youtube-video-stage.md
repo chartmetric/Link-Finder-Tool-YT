@@ -30,6 +30,13 @@ one-channel capture allowance has less breadth than the previous two-channel
 test; disclose the exact selection policy and deferred alternatives before
 approving that later stage.
 
+The offline next-stage preparer and its exact selection/approval boundaries are
+documented in [video channel identity preparation](youtube-video-identity-preparation.md).
+It refuses to prepare until this uploader stage has actually completed. Channel
+capture and model inputs have separate exact-plan approvals because model bodies
+cannot be frozen before channel evidence returns. The preparer performs no paid
+calls and provides no execution/resume mode.
+
 ## Safety checks
 
 - The full YouTube campaign must remain stopped, and no other bounded test or
