@@ -61,19 +61,38 @@ test('song-title and AI-song collisions are retained but do not consume future u
   assert.equal(videoMentionHold(a,{title:'Midnight Plus - New Release',snippet:'Official music video'}),null);
   assert.equal(videoMentionHold(a,{title:'Midnight Plus - Topic',snippet:'Provided to YouTube by Distributor · Midnight Plus · Album'}),null);
 });
-test('report separates raw evidence from deduplicated candidates and never upgrades matches',()=>{
+test('both exports use one row per artist and channel while preserving video evidence',()=>{
   const rows=[result,{...result,videoUrl:'https://www.youtube.com/watch?v=12345678901'},
     {...result,url:'https://www.youtube.com/channel/UC'+'x'.repeat(22),uploaderName:'ZJSTV Music Channel'}];
   const report=buildVideoUploaderReport([artist],rows);
   assert.equal(report.records.length,3);assert.equal(report.summary.reviewCandidateChannels,1);
+  assert.equal(report.summary.artistChannelRows,2);
   assert.equal(report.summary.categories.unbound_uploader_hold,1);
   assert.equal(report.summary.acceptedArtistOwnedLinks,0);assert.equal(report.summary.importEligibleLinks,0);
   assert.ok(!report.candidatesCsv.includes('ZJSTV'));
   assert.ok(report.evidenceCsv.includes('ZJSTV'));
   assert.ok(report.candidatesCsv.includes('abcdefghijk')&&report.candidatesCsv.includes('12345678901'));
   assert.equal(report.candidatesCsv.split('\r\n').length,2);
+  assert.equal(report.evidenceCsv.split('\r\n').length,3);
+  assert.ok(!report.evidenceCsv.split('\r\n')[0].includes('"video_url"'));
+  assert.ok(report.evidenceCsv.includes('abcdefghijk')&&report.evidenceCsv.includes('12345678901'));
   const other={...artist,profileId:'3',cmArtist:'4'};
   const shared=buildVideoUploaderReport([artist,other],[result,{...result,profileId:'3',cmArtist:'4'}]);
   assert.equal(shared.summary.reviewCandidateChannels,0);
+  assert.equal(shared.summary.artistChannelRows,2,'Different artists retain separate rows for the same channel');
+  assert.equal(shared.evidenceCsv.split('\r\n').length,3);
   assert.equal(shared.summary.categories.shared_channel_hold,2);
+});
+test('canonical duplicate channels merge without mutating input or discarding Topic uncertainty',()=>{
+  const rows=[{...result,uploaderName:'Example Artist - Topic'},
+    {...result,url:channel+'/',uploaderName:'Example Artist - Topic',
+      videoUrl:'https://www.youtube.com/watch?v=12345678901'}];
+  const original=structuredClone(rows);
+  const report=buildVideoUploaderReport([artist],rows);
+  assert.deepEqual(rows,original);
+  assert.equal(report.summary.artistChannelRows,1);
+  assert.equal(report.evidenceCsv.split('\r\n').length,2);
+  assert.equal(report.candidatesCsv.split('\r\n').length,2);
+  assert.match(report.evidenceCsv,/Topic — auto-generated lead, association unverified/);
+  assert.match(report.evidenceCsv,/"false","false","2"/);
 });

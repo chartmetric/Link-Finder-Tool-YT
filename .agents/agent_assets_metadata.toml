@@ -2142,3 +2142,31 @@ mtime_ms = 1794611020405
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/751cb4eb-b7d6-4ae7-87d4-89fe4f02d3a0/7705c9f2-50dd-4a9e-96be-738bcf6062c4"
 storage_version_token = "1794611052742288"
 content_type = "text/csv"
+
+[[outputs]]
+id = "4JUhhEBSuCLnD_7Zc8f5_"
+uri = "file://generated-artifacts/youtube-channel-exports-staged-twenty-2026-11-13/youtube-channel-shortlist.csv"
+type = "table"
+title = "YouTube shortlist — one row per artist and channel"
+description = "Six candidate channels across five artists. Neonelle appears once; supporting videos are grouped in the same row. Topic labels and unverified status are preserved."
+logical_id = "6223f87c-dc57-473c-aafd-ec86440ca4f3"
+content_hash = "sha256:6b07e5adafc55e1d90247bf114ad4aeab9befc5852f10487c5878f2fc55afb18"
+size = 2761
+mtime_ms = 1794611636573
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/6223f87c-dc57-473c-aafd-ec86440ca4f3/5e43185d-8f2f-4dd1-b0c4-43d6e4fe4013"
+storage_version_token = "1794611652917421"
+content_type = "text/csv"
+
+[[outputs]]
+id = "0ADE2l3nnGc0-cwtOGnit"
+uri = "file://generated-artifacts/youtube-channel-exports-staged-twenty-2026-11-13/youtube-channels-all.csv"
+type = "table"
+title = "All discovered YouTube channels — duplicates combined"
+description = "Twenty artist/channel rows, including held channels. One channel URL per row, with supporting videos grouped as evidence. No new paid checks or catalog changes."
+logical_id = "b224590f-72fc-4eb7-b34c-d8016b83fac1"
+content_hash = "sha256:1bd41c974c4c9979e9fbc1d734fe72f753ef57017ccd530e8acc21a837da8688"
+size = 8433
+mtime_ms = 1794611636573
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/b224590f-72fc-4eb7-b34c-d8016b83fac1/bc56c00b-ad43-4da5-8959-ce8c784331bd"
+storage_version_token = "1794611653548965"
+content_type = "text/csv"

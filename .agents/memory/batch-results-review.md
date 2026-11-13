@@ -35,3 +35,14 @@ Treat saved-run grouping as display-only identity, not a spending ledger or perm
 **Why:** Checkpoints repeat cumulative parent spending, and a final saved summary can describe a stopped run. Adding snapshots together or equating finality with successful completion would misrepresent the evidence.
 
 **How to apply:** Keep older archives immutable, preserve each observation's amounts and ordering, and use legacy identity inference only when structured metadata is absent—not to override malformed explicit metadata.
+
+YouTube deliverable CSVs must have one row per artist/channel pair, not one row
+per source video. Keep different channels for the same artist as separate rows.
+
+**Why:** The user stated, "we're collecting URLs ... for the channel, not any
+specific videos," after duplicate video rows repeated the same artist/channel.
+
+**How to apply:** Deduplicate within the exact profile/Chartmetric identity and
+canonical channel URL. Keep supporting videos together as secondary evidence,
+retain Topic labels and unresolved status, and never merge different artists
+just because they share a channel. Preserve historical raw receipts unchanged.
