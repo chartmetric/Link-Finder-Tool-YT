@@ -165,6 +165,20 @@ and raw bytes. Do not infer alias equivalence, pick one ID by majority vote,
 or retry the video request. Any recovery acknowledgment and continuation need
 separate exact approval; a co-credit does not establish channel ownership.
 
+Acknowledging a conflicting saved response records transport receipt only,
+not a resolved uploader or a successful artist match.
+
+**Why:** A stopped stage can contain a fully saved, billed HTTP success that
+cannot safely map to one channel. Requiring a fabricated channel to reconcile
+that receipt would undermine the false-positive safeguards.
+
+**How to apply:** Bind the original owner, every completed receipt, the one
+conflict and the exact untouched suffix to a separately approved continuation.
+Preserve prior charges; leave the conflict with no selected channel and no
+import eligibility. Validate the full prefix/suffix partition and combined
+original cap. Never weaken legacy recovery validators to accommodate a new
+cohort or treat receipt acknowledgment as permission to repeat that request.
+
 When allocating bounded video-recovery slots, retain a supported
 distribution/Topic lead instead of allowing ordinary upload videos to consume
 every slot.

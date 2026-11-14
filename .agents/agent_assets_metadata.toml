@@ -2352,3 +2352,17 @@ mtime_ms = 1794614930878
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2e4b5b5b-e0a8-450e-9ce7-32497e3513f2/99e3280f-cfb8-4aaa-a145-c5462843e8f0"
 storage_version_token = "1794614989192966"
 content_type = "text/csv"
+
+[[outputs]]
+id = "91t2V0b9b60FsCwo8O9u8"
+uri = "file://generated-artifacts/youtube-video-review-fresh-eight-continuation-2026-11-13/remaining-requests.csv"
+type = "table"
+title = "YouTube continuation — 8 untouched checks"
+description = "Only the eight requests that have not been attempted. Maximum additional cost $0.16; previous results and reservations stay unchanged. No paid calls or spending-record changes made during preparation."
+logical_id = "dbe4394d-c0dc-4461-a6c8-cb113e812a5c"
+content_hash = "sha256:8dd1e3885800cc67e79a6be624980b32a139405edd4d88dfb88bd28251994f71"
+size = 1139
+mtime_ms = 1794615221282
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/dbe4394d-c0dc-4461-a6c8-cb113e812a5c/6071c6dd-6e13-4567-a4b0-78baae532e02"
+storage_version_token = "1794615265251764"
+content_type = "text/csv"
