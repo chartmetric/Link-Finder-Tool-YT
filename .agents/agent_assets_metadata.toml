@@ -2394,3 +2394,31 @@ mtime_ms = 1794615988253
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/ddeacf6c-3e54-4778-b096-45523e3a1309/88e2db76-6b06-4a69-b490-f0ea4a8d7b01"
 storage_version_token = "1794616044000390"
 content_type = "text/csv"
+
+[[outputs]]
+id = "_gNd4UOAzDw7DcoP3clHu"
+uri = "file://generated-artifacts/youtube-fresh-twenty-completed-uploader-review-2026-11-13/youtube-channel-shortlist.csv"
+type = "table"
+title = "YouTube shortlist — 6 possible artist channels"
+description = "Combined results after all 24 uploader requests were accounted for. One row per artist/channel; three Topic channels labeled. These still need artist identity verification and are not approved catalog links."
+logical_id = "24f93511-e339-4555-9062-71a4d55d211f"
+content_hash = "sha256:c3b0cd04887b70ab240153a9e9c63742110235d357465d392b9cfb61aa329c36"
+size = 2853
+mtime_ms = 1794616125130
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/24f93511-e339-4555-9062-71a4d55d211f/11884830-d77e-44ba-ade5-53718079365c"
+storage_version_token = "1794616146552711"
+content_type = "text/csv"
+
+[[outputs]]
+id = "2iT7H2zDTK_ENtJU79bOS"
+uri = "file://generated-artifacts/youtube-fresh-twenty-completed-uploader-review-2026-11-13/youtube-channels-excluded.csv"
+type = "table"
+title = "Excluded uploaders — 12 unresolved channel pairings"
+description = "Separate evidence list, not artist matches. Two additional responses with contradictory channel IDs remain held without selecting a channel."
+logical_id = "a4a97b13-eb49-46e2-8638-337e8fb5c0da"
+content_hash = "sha256:dff28064d2ea235d23b8654539fbde04aadf1bf1c750a1749728300a9f3f7f96"
+size = 5294
+mtime_ms = 1794616125130
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/a4a97b13-eb49-46e2-8638-337e8fb5c0da/8ed4e461-d821-4fad-8416-9db18633c035"
+storage_version_token = "1794616147201424"
+content_type = "text/csv"
