@@ -2520,3 +2520,31 @@ mtime_ms = 1794620390017
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/6c6c0581-553d-44b9-b66d-20e6cac8a09d/dfb77fcb-1ee7-4225-96c0-8b39b9013df6"
 storage_version_token = "1794620507714591"
 content_type = "text/csv"
+
+[[outputs]]
+id = "uemHXmOuRoUZMJBeoN3ZV"
+uri = "file://generated-artifacts/youtube-direct-channel-check-partial-results-2026-11-13/youtube-channels-captured.csv"
+type = "table"
+title = "Captured channel pages — 10 artists"
+description = "One canonical channel URL per artist, with channel details and starting/current tiers. Includes one clearly labeled Topic channel. Artist ownership remains unverified; no catalog links were changed."
+logical_id = "ebad359f-cfd8-4313-b93d-1f803de386f8"
+content_hash = "sha256:087566071364eeb6d4aee185a62218f59217595b024ba5757dd90bbec6507d27"
+size = 29555
+mtime_ms = 1794621736206
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/ebad359f-cfd8-4313-b93d-1f803de386f8/49213e3d-8e6c-40e4-93b9-bbdb6534cd95"
+storage_version_token = "1794621788214865"
+content_type = "text/csv"
+
+[[outputs]]
+id = "9HwhDjO8ikAbE58WJyPRv"
+uri = "file://generated-artifacts/youtube-direct-channel-check-partial-results-2026-11-13/youtube-channel-conflicts-held.csv"
+type = "table"
+title = "Held for catalog-profile conflict — 1 channel"
+description = "Christian Liguori’s saved channel response also matches a handle linked under another catalog profile. Preserved for review, not treated as a confirmed false match or accepted link. The paid request was not repeated."
+logical_id = "fcd99750-38f1-45a3-afae-8602b02b3ac7"
+content_hash = "sha256:caf2fc8bc18e709e2002546a58e784b8d5c853b8380038c5714658b6d2758e1a"
+size = 2585
+mtime_ms = 1794621736210
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/fcd99750-38f1-45a3-afae-8602b02b3ac7/1042b922-386c-44dc-92cf-3981a1c990a4"
+storage_version_token = "1794621788907699"
+content_type = "text/csv"
