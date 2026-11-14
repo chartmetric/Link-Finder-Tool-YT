@@ -3,6 +3,17 @@ name: YouTube reviewed corrections
 description: User-confirmed YouTube link corrections that must stay distinct from historical model judgments.
 ---
 
+On 2026-11-13 the user reviewed the thirteen mixed-source channel captures and
+said they “all look pretty correct,” then asked about a larger batch.
+
+**Why:** This is positive human feedback on the stricter channel-level approach,
+not a measured accuracy score or a per-link artist-ownership adjudication.
+
+**How to apply:** Preserve the stricter matching and clearly labeled Topic
+channels when preparing larger bounded batches. Do not turn this sample review
+into catalog-import permission, automatic ownership acceptance, or new spending
+approval.
+
 The user identifies **MAXAM → @thisismaxam** and **Riogeovn → the channel at @riogeovn** as correct YouTube links, despite the archived ownership model leaving both pairs uncertain.
 
 **Why:** MAXAM's saved capture had a matching artist name and linked same-named socials; Riogeovn's captured channel name and handle matched the catalog name and the verifier received catalog-bound Spotify releases. Both lacked attributed video evidence and an official source capture, and their archived model answers remained uncertain. Additional public music context observed for MAXAM was not sent to its archived model.
