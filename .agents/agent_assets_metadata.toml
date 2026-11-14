@@ -2366,3 +2366,17 @@ mtime_ms = 1794615221282
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/dbe4394d-c0dc-4461-a6c8-cb113e812a5c/6071c6dd-6e13-4567-a4b0-78baae532e02"
 storage_version_token = "1794615265251764"
 content_type = "text/csv"
+
+[[outputs]]
+id = "5eJdIPr2BCTUXCCcEaXLW"
+uri = "file://generated-artifacts/youtube-fresh-twenty-partial-review-2026-11-13/youtube-channel-shortlist.csv"
+type = "table"
+title = "Updated partial YouTube shortlist — 5 possible channels"
+description = "Combined shortlist from 16 completed checks across the original run and continuation. Three Topic channels labeled. Two conflicting responses excluded; six checks remain untouched. None verified or approved for catalog import."
+logical_id = "e849a87f-9470-4be5-a763-41586fc158e7"
+content_hash = "sha256:b454a3e13fea2b421728983aec0d2843956c13c6e160b525181679f9a7bbcd62"
+size = 2471
+mtime_ms = 1794615385921
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/e849a87f-9470-4be5-a763-41586fc158e7/6f60b6c2-1935-47b0-a02a-1b49808548cb"
+storage_version_token = "1794615397851672"
+content_type = "text/csv"
