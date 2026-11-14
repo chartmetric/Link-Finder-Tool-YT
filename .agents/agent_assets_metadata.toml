@@ -2548,3 +2548,17 @@ mtime_ms = 1794621736210
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/fcd99750-38f1-45a3-afae-8602b02b3ac7/1042b922-386c-44dc-92cf-3981a1c990a4"
 storage_version_token = "1794621788907699"
 content_type = "text/csv"
+
+[[outputs]]
+id = "TjntZynTDvp4BZNpa-8Lc"
+uri = "file://generated-artifacts/youtube-direct-channel-recovery-preparation-2026-11-14/remaining-channel-checks.csv"
+type = "table"
+title = "41 remaining YouTube channel checks"
+description = "Exact untouched requests for review. No paid calls or link approvals were made during preparation."
+logical_id = "4ee70299-f211-43b2-919e-b0d981a0c7ce"
+content_hash = "sha256:6a7123f6e110817ad0a426a79a0d858c1a8c8310b33e9fe338a9becd82b7ca68"
+size = 5976
+mtime_ms = 1794678125091
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/4ee70299-f211-43b2-919e-b0d981a0c7ce/343674c3-7f2c-4ab3-92ce-412642391d00"
+storage_version_token = "1794678293043020"
+content_type = "text/csv"
