@@ -1,4 +1,8 @@
-// Opt-in, connection-local TEMP tables only. No provider or catalog access.
+// Opt-in isolated PostgreSQL checks. No provider or catalog access.
+// node scripts/src/check-youtube-video-identity-postgres.mjs --temporary-tables-only
+// node scripts/src/check-youtube-video-identity-postgres.mjs --disposable-schema-races
+// Race mode needs CREATE SCHEMA permission in the development PostgreSQL database.
+// It creates a UUID-named test schema, uses only its tables, and drops it in finally.
 import assert from 'node:assert/strict';
 import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
 import {videoStageSchema} from './youtube-video-stage-gate.mjs';
@@ -9,8 +13,14 @@ import {approveIdentityExecution,identityClaims} from './youtube-video-identity-
 import {digest} from './youtube-video-discovery-offline.mjs';
 import {sourceFile,identityJson} from './youtube-video-identity-source.mjs';
 
-assert.deepEqual(process.argv.slice(2),['--temporary-tables-only']);
+const args=process.argv.slice(2);
+assert.ok(args.length===1&&['--temporary-tables-only','--disposable-schema-races'].includes(args[0]),
+  'Use --temporary-tables-only or --disposable-schema-races (creates and removes a test-only schema)');
 assert.notEqual(process.env.REPLIT_DEPLOYMENT,'1');
+if(args[0]==='--disposable-schema-races'){
+  const {checkIdentityPostgresRaces}=await import('./youtube-video-identity-postgres-races.mjs');
+  await checkIdentityPostgresRaces();
+}else{
 const pool=await connectSavedBatchPool(),c=await pool.connect();
 try{
   await c.query('SET search_path=pg_temp');
@@ -176,3 +186,4 @@ try{
     independentChangedInputReplayChecks:variants.length,uncertainModelReservationCents:2,
     paidCalls:0,catalogWrites:0,persistentSchemaChanges:0}));
 }finally{c.release(true);await pool.end();}
+}
