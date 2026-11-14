@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import {digest} from './youtube-video-discovery-offline.mjs';
-import {mixedCapturePlan,approveMixedCaptures,validateMixedCapturePlan} from './youtube-mixed-channel-captures.mjs';
+import {mixedCapturePlan,approveMixedCaptures,validateMixedCapturePlan,DIRECT_CAPTURE_POLICY} from './youtube-mixed-channel-captures.mjs';
+import {channelCheckBundle,approveChannelCheckBundle} from './youtube-channel-check-bundle.mjs';
 import {executeMixedCaptures} from './run-youtube-mixed-captures.mjs';
 const channel=n=>'UC'+String(n).padStart(22,'a');
 const url=n=>'https://www.youtube.com/channel/'+channel(n);
@@ -20,6 +21,52 @@ function input(){
 }
 const approval=plan=>approveMixedCaptures(plan,{planSha256:digest(plan),capCents:plan.maximumSpendCents,
   approvedAt:'2026-11-13T21:00:00.000Z'});
+function directInput(){
+  const f=input();
+  return {...f,version:DIRECT_CAPTURE_POLICY,sourceUploaderIds:[],cohortClaims:f.directLeads.flatMap(r=>
+    r.candidates.map(c=>({url:c.url,profileId:r.profileId,cmArtist:r.cmArtist})))};
+}
+test('direct-search captures require a new policy and cannot inherit mixed-source approval or invent uploaders',()=>{
+  const p=mixedCapturePlan(directInput());validateMixedCapturePlan(p);
+  assert.equal(p.version,DIRECT_CAPTURE_POLICY);assert.deepEqual(p.sourceUploaderIds,[]);
+  assert.deepEqual(p.uploaderResults,[]);assert.equal(p.modelCalls,0);
+  assert.equal(approval(p).policy,DIRECT_CAPTURE_POLICY);
+  const legacy=approval(mixedCapturePlan(input()));
+  assert.throws(()=>approveMixedCaptures(p,legacy));
+  for(const patch of [{sourceUploaderIds:['youtube-video-review-invented-source']},
+    {uploaderResults:[{not:'a saved uploader'}]},{cohortClaims:undefined}]){
+    assert.throws(()=>mixedCapturePlan({...directInput(),...patch}));
+  }
+});
+test('claims from another cohort or historical profile hold a direct candidate without proving a mismatch',()=>{
+  const f=directInput();
+  f.cohortClaims.push({url:url(1),profileId:'999',cmArtist:'1999',source:'another_source_cohort'});
+  const p=mixedCapturePlan(f);
+  assert.equal(p.maximumCalls,1);assert.equal(p.selections[0].profileId,'2');
+  const held=p.alternatives.find(a=>a.profileId==='1');
+  assert.equal(held.sharedChannelConflict,true);assert.equal(held.disposition,'held_not_established');
+  assert.equal(held.ownershipAccepted,false);assert.equal(held.importEligible,false);
+});
+test('aggregate channel approval binds every child, exact URLs, summed cap and metadata-only authority',()=>{
+  const child=mixedCapturePlan(directInput());
+  const p=channelCheckBundle({id:'youtube-batch-channel-checks-synthetic',preparedAt:'2026-11-13T20:01:00Z',
+    sourceBundleId:'youtube-batch-100-synthetic',sourceBundleSha256:digest('source'),
+    children:[{id:child.id,plan:child}],runtimeFiles:{'runtime/run.mjs':digest('wrapper')}});
+  assert.equal(p.maximumCalls,2);assert.equal(p.maximumSpendCents,4);
+  assert.deepEqual(p.allowedKinds,['metadata']);assert.equal(p.uploaderCalls,0);assert.equal(p.modelCalls,0);
+  const opts={planSha256:digest(p),capCents:4,approvedAt:'2026-11-13T21:00:00Z'};
+  const a=approveChannelCheckBundle(p,opts);
+  assert.throws(()=>approveChannelCheckBundle(p,{...opts,capCents:26}));
+  for(const change of [
+    x=>x.children[0].plan.operations[0].targetUrl=url(9),
+    x=>x.maximumSpendCents++,x=>x.allowedKinds.push('model'),
+    x=>x.runtimeFiles['runtime/run.mjs']=digest('changed'),x=>x.sourceBundleSha256=digest('changed'),
+  ]){
+    const q=structuredClone(p);change(q);assert.throws(()=>approveChannelCheckBundle(q,a));
+  }
+  const duplicate=mixedCapturePlan({...directInput(),id:'youtube-mixed-captures-another-cohort'});
+  assert.throws(()=>channelCheckBundle({...p,children:[...p.children,{id:duplicate.id,plan:duplicate}]}));
+});
 test('plan deduplicates channel URLs, retains Topic labels and defers alternatives without alias guesses',()=>{
   const f=input(),a=f.directLeads[0];
   a.candidates.push({...a.candidates[0]}, {url:url(3),title:'Artist One - Topic',sourceUrl:url(3)});
@@ -153,6 +200,13 @@ test('a handle capture resolves only from saved metadata and stays unapproved as
   assert.equal(out.returns[0].capture.body.channelId,channel(1));
   assert.equal(out.returns[0].ownershipAccepted,false);
   assert.equal(f.state.run.reserved_cents,4);
+});
+test('new direct-search policy uses the bounded capture executor without any uploader or model calls',async t=>{
+  const f=await executionFixture(t);f.plan=mixedCapturePlan(directInput());f.approval=approval(f.plan);
+  await executeMixedCaptures(f);
+  assert.equal(f.state.requests.length,2);assert.equal(f.state.run.reserved_cents,4);
+  assert.equal(f.state.run.status,'completed');
+  assert.ok(f.state.requests.every(r=>r.startsWith('https://api.scrapecreators.com/v1/youtube/channel?')));
 });
 test('new catalog conflicts and lost acknowledgment preserve the paid receipt and stop dispatch',async t=>{
   for(const fault of ['catalog_after_return','database_acknowledgment']){

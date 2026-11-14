@@ -2,7 +2,7 @@
 import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import {digest} from './youtube-video-discovery-offline.mjs';
-import {approveMixedCaptures} from './youtube-mixed-channel-captures.mjs';
+import {approveMixedCaptures,DIRECT_CAPTURE_POLICY} from './youtube-mixed-channel-captures.mjs';
 import {archivedSearchReceiptName} from './youtube-video-stage.mjs';
 import {assertNoNewIdentityClaims} from './youtube-video-identity-execution.mjs';
 import {returnedYoutubeUrl} from './youtube-ownership-policy.mjs';
@@ -102,10 +102,15 @@ export async function mixedCaptureReadiness(c,plan,{ownRun=false,preparationOnly
       assert.equal(row.raw_sha256,receipt.rawBodySha256);
     }
   }
-  assert.equal(uploaderKeys.size,24);
-  const original=JSON.parse(await fs.readFile('generated-artifacts/'+plan.sourceUploaderIds[0]+'/plan.json'));
-  assert.equal(original.operations.length,24);
-  assert.ok(original.operations.every(o=>uploaderKeys.has(o.key)));
+  if(plan.version===DIRECT_CAPTURE_POLICY){
+    assert.deepEqual(plan.sourceUploaderIds,[]);assert.deepEqual(plan.uploaderResults,[]);
+    assert.equal(uploaderKeys.size,0);
+  }else{
+    assert.equal(uploaderKeys.size,24);
+    const original=JSON.parse(await fs.readFile('generated-artifacts/'+plan.sourceUploaderIds[0]+'/plan.json'));
+    assert.equal(original.operations.length,24);
+    assert.ok(original.operations.every(o=>uploaderKeys.has(o.key)));
+  }
   await mixedHistoricalClaims(c,plan.selections.map(s=>({
     alias:s.url,channelId:s.channelId,profileId:s.profileId,cmArtist:s.cmArtist})),{identityInstalled:installed});
   return {identityCoordinatorInstalled:installed,requiresCoordinatorSetup:!installed};

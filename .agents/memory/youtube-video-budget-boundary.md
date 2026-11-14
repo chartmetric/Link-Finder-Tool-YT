@@ -214,6 +214,21 @@ Check those returned aliases against current and historical artist claims.
 Preparation must stay read-only even if the identity coordinator was never
 installed; install missing coordination only inside separately approved execution.
 
+Prioritize capturing a usable direct channel lead before paying to resolve all
+associated video uploaders. Keep video fallbacks for artists without a usable
+direct lead; never count those deferred artists as completed no-matches.
+
+**Why:** Video results often identify collaborators, distributors or promotional
+uploaders, while the stricter direct-channel sample received positive user
+review. Direct-first routing reduces unnecessary paid discovery without
+pretending that name agreement proves artist ownership.
+
+**How to apply:** Direct-only captures need a distinct exact source policy bound
+to saved search receipts and catalog identities. Do not fabricate uploader
+observations or relax an older mixed-source recovery contract. Screen shared
+claims across the entire cohort and historical sources, retain Topic labels and
+deferred alternatives, and separately approve any later uploader fallback.
+
 When allocating bounded video-recovery slots, retain a supported
 distribution/Topic lead instead of allowing ordinary upload videos to consume
 every slot.

@@ -7,13 +7,20 @@ import {youtubeOwnershipUrl} from './youtube-ownership-policy.mjs';
 import {youtubeChannelReviews} from './youtube-channel-review-decisions.mjs';
 import {buildVideoUploaderReport} from './youtube-uploader-report.mjs';
 export const MIXED_CAPTURE_POLICY='exact-mixed-source-youtube-captures-v1';
+export const DIRECT_CAPTURE_POLICY='exact-saved-search-channel-captures-v1';
 const norm=s=>String(s??'').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 const clone=v=>JSON.parse(JSON.stringify(v));
 export function mixedCapturePlan(input){
+  const version=input.version??MIXED_CAPTURE_POLICY;
+  assert.ok([MIXED_CAPTURE_POLICY,DIRECT_CAPTURE_POLICY].includes(version));
+  const directOnly=version===DIRECT_CAPTURE_POLICY;
   assert.match(input.id,/^youtube-mixed-captures-[a-z0-9-]{4,80}$/);
   assert.ok(Number.isFinite(Date.parse(input.preparedAt)));
   assert.match(input.sourceSearchId,/^youtube-test-[a-z0-9-]{4,100}$/);
-  assert.ok(input.sourceUploaderIds.length);
+  if(directOnly){
+    assert.deepEqual(input.sourceUploaderIds,[]);assert.deepEqual(input.uploaderResults,[]);
+    assert.ok(Array.isArray(input.cohortClaims));
+  }else assert.ok(input.sourceUploaderIds.length);
   for(const id of input.sourceUploaderIds)assert.match(id,/^youtube-video-review-[a-z0-9-]{4,80}$/);
   assert.ok(input.artists.length&&input.artists.length<=20);
   assert.equal(new Set(input.artists.map(a=>a.profileId)).size,input.artists.length);
@@ -68,11 +75,18 @@ export function mixedCapturePlan(input){
     const key=p.url.toLowerCase(),claims=owners.get(key)??new Set();
     claims.add(p.profileId+':'+p.cmArtist);owners.set(key,claims);
   }
+  if(directOnly)for(const claim of input.cohortClaims){
+    assert.match(claim.profileId,/^\d+$/);assert.equal(typeof claim.cmArtist,'string');
+    const alias=youtubeOwnershipUrl(claim.url);assert.ok(alias);
+    const key=alias.toLowerCase(),claims=owners.get(key);
+    if(claims)claims.add(claim.profileId+':'+claim.cmArtist);
+  }
   for(const p of alternatives){
     const rejected=youtubeChannelReviews.some(r=>r.profileId===p.profileId&&r.cmArtist===p.cmArtist
       &&r.url===p.url&&r.status==='rejected');
     p.eligible=!rejected&&owners.get(p.url.toLowerCase()).size===1&&p.observations.some(o=>o.eligible)
       &&!p.observations.some(o=>o.source==='saved_video_uploaders'&&!o.eligible);
+    if(directOnly)p.sharedChannelConflict=owners.get(p.url.toLowerCase()).size>1;
     p.disposition=rejected?'user_rejected':p.eligible?'eligible_unverified':'held_not_established';
     p.ownershipAccepted=false;p.importEligible=false;
   }
@@ -114,11 +128,12 @@ export function mixedCapturePlan(input){
   }
   assert.ok(Object.keys(input.sourceFiles).every(file=>file.startsWith('generated-artifacts/')));
   assert.ok(Object.keys(input.runtimeFiles).every(file=>file.startsWith('runtime/')));
-  return {version:MIXED_CAPTURE_POLICY,id:input.id,preparedAt:input.preparedAt,
+  return {version,id:input.id,preparedAt:input.preparedAt,
     artists:clone(input.artists),directLeads:clone(input.directLeads),uploaderResults:clone(input.uploaderResults),
     sourceFiles:clone(input.sourceFiles),runtimeFiles:clone(input.runtimeFiles),alternatives,selections,operations,
     maximumCalls:operations.length,maximumSpendCents:operations.length*2,
     sourceSearchId:input.sourceSearchId,sourceUploaderIds:clone(input.sourceUploaderIds),
+    ...(directOnly?{cohortClaims:clone(input.cohortClaims)}:{}),
     explicitApproval:false,executionEnabled:false,noRetries:true,noCatalogWrites:true,
     fullCampaignRemainsPaused:true,modelCalls:0,unknownModelRequestsApproved:false,
     note:'One channel capture per selected artist. Unproven handle/ID aliases stay separate; other eligible channels are deferred, not rejected. Channel capture is not artist identity verification.'};
@@ -128,6 +143,6 @@ export function approveMixedCaptures(plan,{planSha256,capCents,approvedAt}){
   validateMixedCapturePlan(plan);assert.equal(planSha256,digest(plan));
   assert.equal(capCents,plan.maximumSpendCents);assert.ok(Number.isFinite(Date.parse(approvedAt)));
   assert.ok(Date.parse(approvedAt)>=Date.parse(plan.preparedAt),'Approval predates this exact preparation');
-  return {id:plan.id,policy:MIXED_CAPTURE_POLICY,planSha256,capCents,approvedAt,explicitApproval:true,executionEnabled:true,
+  return {id:plan.id,policy:plan.version,planSha256,capCents,approvedAt,explicitApproval:true,executionEnabled:true,
     scope:'exact_channel_captures_only_no_models_no_retries_no_substitution'};
 }
