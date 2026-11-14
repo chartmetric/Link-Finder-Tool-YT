@@ -123,6 +123,11 @@ twenty-artist authorization or accidentally inherit its remaining allowance.
 **How to apply:** Freeze the smaller cohort, requests and runtime under a new
 plan fingerprint and approval, retaining the existing per-artist limits,
 non-replay coordinator and independent downstream-identity boundary.
+For larger batches, prefer a separately approved aggregate of unchanged
+fixed-size stages over making legacy plan sizes or allowances variable.
+Bind every child fingerprint and the summed ceiling in the aggregate approval.
+This preserves historical recovery validation and prevents a larger batch from
+quietly widening each child's operation authority.
 
 Saved video benchmark text relevance must be reported separately from exact
 catalog identity, uploader identity and artist ownership. Missing video-to-channel

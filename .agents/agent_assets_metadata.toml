@@ -2450,3 +2450,17 @@ mtime_ms = 1794617245829
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/11451cc6-7c21-4471-98f6-e8d79b61f6ee/003436a0-8fcc-4a36-b218-4528741c7244"
 storage_version_token = "1794617268881378"
 content_type = "text/csv"
+
+[[outputs]]
+id = "dZNzXIxbLTnZwsH97t2Mi"
+uri = "file://generated-artifacts/youtube-batch-100-staged-2026-11-13/proposed-100-artists.csv"
+type = "table"
+title = "Proposed YouTube batch — 100 fresh artists"
+description = "Twenty-five artists from each of tiers 2–5; no fresh eligible Tier 1 artists remain. Includes artist name, tier, profile_id, cm_artist and exact search query. Search stage capped at $2; later verification requires separate approval. No paid calls have run."
+logical_id = "67a9a74a-1f27-49ae-98e7-9c6d2ad3b20a"
+content_hash = "sha256:f121ae10719e1e9f19a66f25aa1083496949e5f132586b34238b50483eb1cbdc"
+size = 17240
+mtime_ms = 1794618624137
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/67a9a74a-1f27-49ae-98e7-9c6d2ad3b20a/22dda937-13f9-41cd-82a3-6190f97fed9f"
+storage_version_token = "1794618690662089"
+content_type = "text/csv"

@@ -36,6 +36,27 @@ export async function searchReadiness(client,artists,parentId){
     'youtube_bounded_test_admissions','youtube_video_stage_admissions'])
     assert.equal((await client.query(`SELECT count(*)::int n FROM ${table} WHERE profile_id=ANY($1::text[])`,[ids])).rows[0].n,0,
       'A selected artist has previous YouTube attempt history');
+  const cms=artists.map(a=>a.cm_artist);
+  for(const table of ['youtube_discovery_test_results','youtube_video_stage_admissions'])
+    assert.equal((await client.query(`SELECT count(*)::int n FROM ${table}
+      WHERE cm_artist=ANY($1::text[])`,[cms])).rows[0].n,0,'Previous Chartmetric artist attempt');
+  assert.equal((await client.query(`SELECT count(*)::int n FROM youtube_link_campaign_admissions d
+    INNER JOIN youtube_link_campaign_artists a ON a.campaign_id=d.campaign_id AND a.profile_id=d.profile_id
+    WHERE a.cm_artist=ANY($1::text[])`,[cms])).rows[0].n,0,'Previous campaign artist attempt');
+  const tables=(await client.query(`SELECT to_regclass('youtube_video_identity_runs') runs,
+    to_regclass('youtube_video_identity_admissions') admissions`)).rows[0];
+  if(tables.runs||tables.admissions){
+    assert.ok(tables.runs&&tables.admissions,'Partly installed identity coordinator');
+    for(const sql of [
+      "SELECT count(*)::int n FROM youtube_video_identity_runs WHERE status='running'",
+      "SELECT count(*)::int n FROM youtube_video_identity_admissions WHERE status='admitted'",
+    ])assert.equal((await client.query(sql)).rows[0].n,0,'Other active or uncertain identity work');
+    assert.equal((await client.query(`SELECT count(*)::int n FROM youtube_video_identity_admissions
+      WHERE profile_id=ANY($1::text[]) OR cm_artist=ANY($2::text[])`,[ids,cms])).rows[0].n,0,
+    'A selected profile or artist has previous identity-stage history');
+  }else{
+    assert.equal(tables.runs,null);assert.equal(tables.admissions,null);
+  }
 }
 async function assertEligibility(artists){
   const eligible=await currentEligible(artists.map(a=>({profileId:a.profile_id,cmArtist:a.cm_artist,name:a.artist})));

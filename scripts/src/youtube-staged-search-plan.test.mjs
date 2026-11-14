@@ -68,8 +68,9 @@ test('cohort substitutions, missing catalog bindings and unsafe archives fail cl
 test('readiness excludes all previous admissions and any other active/uncertain YouTube work',async()=>{
   const artists=fixture().artists,parentId='paused-parent';
   const base={async query(sql,params){
+    if(sql.includes('to_regclass'))return {rows:[{runs:null,admissions:null}]};
     if(sql.includes('SELECT status')){assert.deepEqual(params,[parentId]);return {rows:[{status:'stopped'}]};}
-    if(sql.includes('ANY'))assert.deepEqual(params,[artists.map(a=>a.profile_id)]);
+    if(sql.includes('ANY'))assert.deepEqual(params,[artists.map(a=>sql.includes('cm_artist')?a.cm_artist:a.profile_id)]);
     return {rows:[{n:0}]};
   }};
   await searchReadiness(base,artists,parentId);
@@ -83,4 +84,20 @@ test('readiness excludes all previous admissions and any other active/uncertain 
     }},artists,parentId));
   }
   await assert.rejects(()=>searchReadiness({async query(){return {rows:[{status:'running'}]};}},artists,parentId));
+});
+test('readiness also fences active identity runs and previously checked identities',async()=>{
+  const artists=fixture().artists,parentId='paused-parent';
+  const client={async query(sql){
+    if(sql.includes('to_regclass'))return {rows:[{runs:'runs',admissions:'admissions'}]};
+    if(sql.includes('SELECT status'))return {rows:[{status:'stopped'}]};
+    return {rows:[{n:0}]};
+  }};
+  await searchReadiness(client,artists,parentId);
+  for(const target of ['youtube_video_identity_runs WHERE','youtube_video_identity_admissions WHERE',
+    'WHERE cm_artist=ANY','WHERE a.cm_artist=ANY']){
+    await assert.rejects(()=>searchReadiness({async query(sql,params){
+      if(sql.includes(target))return {rows:[{n:1}]};
+      return client.query(sql,params);
+    }},artists,parentId));
+  }
 });
