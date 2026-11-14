@@ -5,6 +5,7 @@ import os from 'node:os';
 import {digest} from './youtube-video-discovery-offline.mjs';
 import {mixedCapturePlan,approveMixedCaptures,validateMixedCapturePlan,DIRECT_CAPTURE_POLICY} from './youtube-mixed-channel-captures.mjs';
 import {channelCheckBundle,approveChannelCheckBundle} from './youtube-channel-check-bundle.mjs';
+import {refreshedDirectCaptureInput} from './youtube-direct-capture-refresh.mjs';
 import {executeMixedCaptures} from './run-youtube-mixed-captures.mjs';
 const channel=n=>'UC'+String(n).padStart(22,'a');
 const url=n=>'https://www.youtube.com/channel/'+channel(n);
@@ -26,6 +27,25 @@ function directInput(){
   return {...f,version:DIRECT_CAPTURE_POLICY,sourceUploaderIds:[],cohortClaims:f.directLeads.flatMap(r=>
     r.candidates.map(c=>({url:c.url,profileId:r.profileId,cmArtist:r.cmArtist})))};
 }
+test('an unexecuted direct proposal can be narrowed after a daily tier refresh without transferring approval',()=>{
+  const previous=mixedCapturePlan(directInput());
+  const rows=previous.selections.map(s=>({profile_id:s.profileId,cm_artist:s.cmArtist,artist:s.artist,tier:3}));
+  const options={id:'youtube-mixed-captures-refreshed-synthetic',preparedAt:'2026-11-14T01:35:00Z',
+    sourceFiles:previous.sourceFiles,runtimeFiles:previous.runtimeFiles};
+  const result=refreshedDirectCaptureInput(previous,rows,options),plan=mixedCapturePlan(result.input);
+  assert.deepEqual(plan.operations,previous.operations);assert.ok(plan.selections.every(s=>s.tier===3));
+  assert.ok(plan.artists.every(a=>a.startingTier===previous.artists.find(p=>p.profileId===a.profileId).tier));
+  assert.deepEqual(result.deferred,[]);
+  assert.throws(()=>approveMixedCaptures(plan,approval(previous)));
+  const partial=refreshedDirectCaptureInput(previous,rows.slice(1),options);
+  assert.equal(mixedCapturePlan(partial.input).maximumCalls,1);
+  assert.equal(partial.deferred.length,1);assert.equal(partial.deferred[0].noMatch,false);
+  assert.equal(partial.deferred[0].processed,false);assert.equal(partial.deferred[0].paidCalls,0);
+  const held=refreshedDirectCaptureInput(previous,rows.map(r=>({...r,cm_artist:'99999'})),options);
+  assert.equal(held.input,null);assert.equal(held.deferred.length,2);
+  assert.throws(()=>refreshedDirectCaptureInput(previous,[...rows,rows[0]],options));
+  assert.throws(()=>refreshedDirectCaptureInput(previous,rows,{...options,id:previous.id}));
+});
 test('direct-search captures require a new policy and cannot inherit mixed-source approval or invent uploaders',()=>{
   const p=mixedCapturePlan(directInput());validateMixedCapturePlan(p);
   assert.equal(p.version,DIRECT_CAPTURE_POLICY);assert.deepEqual(p.sourceUploaderIds,[]);

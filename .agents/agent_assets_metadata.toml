@@ -2506,3 +2506,17 @@ mtime_ms = 1794619751209
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/e26a901e-6004-4157-b0ff-180cd4b2cec2/2728ba85-2194-43bc-b143-e4165444069c"
 storage_version_token = "1794619915643663"
 content_type = "text/csv"
+
+[[outputs]]
+id = "m4-1sLgCrKJVnmhRWePz7"
+uri = "file://generated-artifacts/youtube-batch-channel-checks-direct-100-refreshed-2026-11-13/proposed-channel-checks.csv"
+type = "table"
+title = "Refreshed proposal — 52 pending channel checks"
+description = "The same original channel URLs for artists whose current eligibility was confirmed. Includes starting and current tiers. Prepared only, not executed; revised cap $1.04."
+logical_id = "6c6c0581-553d-44b9-b66d-20e6cac8a09d"
+content_hash = "sha256:5df82d0d6f1742a95250ac876668ce937a92ad731d225844739cec6b991ba8c7"
+size = 7982
+mtime_ms = 1794620390017
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/6c6c0581-553d-44b9-b66d-20e6cac8a09d/dfb77fcb-1ee7-4225-96c0-8b39b9013df6"
+storage_version_token = "1794620507714591"
+content_type = "text/csv"

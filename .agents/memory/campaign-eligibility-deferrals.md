@@ -18,6 +18,17 @@ requests to the fresh eligible subset, and preserve unfinished preparation
 directories. Recovery preparation stays read-only; only an explicitly approved
 restart may take ownership and admit new paid work under the unchanged shared cap.
 
+A daily refresh can move an artist between Tiers 1–5 without changing the artist's
+identity. Keep the starting tier and current tier separate when refreshing proof.
+
+**Why:** An exact frozen tier check can fail after an ordinary daily update even
+when the artist remains within the approved tier range.
+
+**How to apply:** Preserve the original queue and saved searches, bind current
+eligibility in a new proposal, and defer missing current rows without calling them
+no-matches. Do not patch sealed workers or transfer an old exact-plan approval to
+a changed proposal, even when its remaining request count and cap are lower.
+
 After an interrupted chunk, reconstruct remaining work by identity, not by
 subtracting a count from the frozen queue. Keep never-inspected artists pending;
 preserve deferrals even when they occur after the last paid artist.
