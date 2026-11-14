@@ -2436,3 +2436,17 @@ mtime_ms = 1794616949789
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/f36bab8a-689b-469f-8ee9-94f7e3ba20d0/86a0a164-440d-424a-8a05-c7ea04dfdfcd"
 storage_version_token = "1794617027608398"
 content_type = "text/csv"
+
+[[outputs]]
+id = "ctrsksI62RSWBDcXrYjzl"
+uri = "file://generated-artifacts/youtube-fresh-twenty-channel-captures-review-2026-11-13/youtube-channels-captured.csv"
+type = "table"
+title = "Captured YouTube channels — 13 artists"
+description = "All 13 channel checks completed. Four Topic channels are clearly labeled. One row per artist/channel, with canonical channel URLs. Artist ownership remains unverified; no catalog links were approved or changed."
+logical_id = "11451cc6-7c21-4471-98f6-e8d79b61f6ee"
+content_hash = "sha256:b05d08de44201a9b6a17260f239ce7c1ea4a96d911642ef9aa1de11ddabab79c"
+size = 5792
+mtime_ms = 1794617245829
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/11451cc6-7c21-4471-98f6-e8d79b61f6ee/003436a0-8fcc-4a36-b218-4528741c7244"
+storage_version_token = "1794617268881378"
+content_type = "text/csv"
