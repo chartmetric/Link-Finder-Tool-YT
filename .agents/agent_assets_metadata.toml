@@ -2464,3 +2464,17 @@ mtime_ms = 1794618624137
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/67a9a74a-1f27-49ae-98e7-9c6d2ad3b20a/22dda937-13f9-41cd-82a3-6190f97fed9f"
 storage_version_token = "1794618690662089"
 content_type = "text/csv"
+
+[[outputs]]
+id = "800y9PcBhciPidOOQP6od"
+uri = "file://generated-artifacts/youtube-batch-100-search-results-2026-11-13/youtube-search-overview-100-artists.csv"
+type = "table"
+title = "YouTube search results — 100 artists"
+description = "All 100 searches completed within the $2 cap. Includes artist names, tiers, profile_id, cm_artist and counts of unverified channel/video leads. No channel ownership is confirmed and no catalog links changed."
+logical_id = "e3ecd984-889f-40cd-8c8d-23f19a0f3dc0"
+content_hash = "sha256:8bedbe071464de51c26e7f807d2872a64e30462e4cd9d0a95331875331ebd806"
+size = 14673
+mtime_ms = 1794619265649
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/e3ecd984-889f-40cd-8c8d-23f19a0f3dc0/bc82da71-2ffa-4a64-a4ef-3a0ce7aca49f"
+storage_version_token = "1794619302567056"
+content_type = "text/csv"
