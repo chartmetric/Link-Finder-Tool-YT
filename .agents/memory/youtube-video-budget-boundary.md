@@ -194,6 +194,21 @@ count held responses separately, and never retry them. Missing IDs, bad video
 bindings, provider failures, malformed responses and unknown billing still stop
 dispatch. Preserve original receipts and cumulative reservations.
 
+Mixed direct-search and uploader verification must bind both original sources,
+including acknowledged recovery receipts, rather than inventing a single
+completed uploader archive or treating a handle as a known channel ID.
+
+**Why:** Useful direct channel leads can exist without video-uploader observations;
+a fully accounted split test can also retain honestly stopped historical stages.
+The old single-completed-stage preparation contract does not describe that case.
+
+**How to apply:** Preserve the old archives and their states, independently
+reconcile all saved charges, and require a fresh exact capture scope. Unknown
+handles remain URL targets until captured metadata proves the canonical ID.
+Check those returned aliases against current and historical artist claims.
+Preparation must stay read-only even if the identity coordinator was never
+installed; install missing coordination only inside separately approved execution.
+
 When allocating bounded video-recovery slots, retain a supported
 distribution/Topic lead instead of allowing ordinary upload videos to consume
 every slot.

@@ -2422,3 +2422,17 @@ mtime_ms = 1794616125130
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/a4a97b13-eb49-46e2-8638-337e8fb5c0da/8ed4e461-d821-4fad-8416-9db18633c035"
 storage_version_token = "1794616147201424"
 content_type = "text/csv"
+
+[[outputs]]
+id = "vju5A7PyjGkCZ5MOj5U46"
+uri = "file://generated-artifacts/youtube-mixed-captures-fresh-twenty-ready-2026-11-13/proposed-channel-checks.csv"
+type = "table"
+title = "Proposed channel checks — 13 artists"
+description = "One channel per artist, combining saved direct-search leads and video results. Topic leads labeled. Maximum new cost $0.26; no requests have run and none of these links is approved."
+logical_id = "f36bab8a-689b-469f-8ee9-94f7e3ba20d0"
+content_hash = "sha256:934c4a0702947b896ab01b11bf12f6d3aa49e86dc8aff1c29969135c20c5ba4b"
+size = 3797
+mtime_ms = 1794616949789
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/f36bab8a-689b-469f-8ee9-94f7e3ba20d0/86a0a164-440d-424a-8a05-c7ea04dfdfcd"
+storage_version_token = "1794617027608398"
+content_type = "text/csv"
