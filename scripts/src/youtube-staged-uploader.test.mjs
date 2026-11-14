@@ -11,7 +11,15 @@ import {youtubeArtistFromCatalogPacket} from './youtube-ownership-evidence.mjs';
 import {youtubeSearchPlan} from './youtube-search-plan.mjs';
 import {archivedSearchReceiptName,videoStagePlan,SMALL_VIDEO_STAGE_POLICY,
   approveVideoStage,assertVideoStageApproval} from './youtube-video-stage.mjs';
-import {catalogVideoPlan} from './run-youtube-staged-uploader.mjs';
+import {catalogVideoPlan,stagedUploaderSource} from './run-youtube-staged-uploader.mjs';
+
+test('fresh uploader stages select a new exact source without changing historical defaults',()=>{
+  assert.equal(stagedUploaderSource('youtube-test-20-review-search-2026-11-13'),
+    'generated-artifacts/youtube-test-20-review-search-2026-11-13');
+  assert.equal(stagedUploaderSource(),'generated-artifacts/youtube-test-20-staged-2026-11-13');
+  for(const id of ['../escape','/tmp/source','youtube-test-../source','not-a-test'])
+    assert.throws(()=>stagedUploaderSource(id));
+});
 
 async function fixture(){
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'youtube-staged-uploaders-'));

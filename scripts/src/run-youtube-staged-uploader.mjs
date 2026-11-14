@@ -16,19 +16,28 @@ import {durableStageFile,executeVideoStage} from './youtube-video-stage-executio
 import {videoStageGate} from './youtube-video-stage-gate.mjs';
 import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
 
-const sourceRoot='generated-artifacts/youtube-test-20-staged-2026-11-13';
 const stageId='youtube-video-review-staged-twenty-2026-11-13';
+export function stagedUploaderSource(sourceId='youtube-test-20-staged-2026-11-13'){
+  assert.match(sourceId,/^youtube-test-[a-z0-9-]{4,100}$/);
+  return 'generated-artifacts/'+sourceId;
+}
 const read=async p=>JSON.parse(await fs.readFile(p));
 const cell=v=>{let s=String(v??'');if(/^[=+\-@\t\r\n]/u.test(s))s="'"+s;
   return '"'+s.replaceAll('"','""')+'"';};
 
-export async function prepareStagedUploaders(id,{inspect=inspectFallback}={}){
-  assert.equal(id,stageId);
+export async function prepareStagedUploaders(id,{inspect=inspectFallback,sourceId}={}){
+  assert.match(id,/^youtube-video-review-[a-z0-9-]{4,80}$/);
+  const sourceRoot=stagedUploaderSource(sourceId);
   const proposal=await buildSavedFallback(sourceRoot,{includeDirectChannelCases:true});
   const preflight=await inspect({sourceRoot,includeDirectChannelCases:true});
   assert.deepEqual(preflight.blockers,[]);
   assert.deepEqual(preflight.operations,proposal.operations);
-  assert.equal(preflight.artists.length,15);assert.equal(proposal.operations.length,26);
+  assert.ok(preflight.artists.length>=1&&preflight.artists.length<=20);
+  assert.ok(proposal.operations.length>=1&&proposal.operations.length<=40);
+  if(id===stageId){
+    assert.equal(sourceRoot,stagedUploaderSource());
+    assert.equal(preflight.artists.length,15);assert.equal(proposal.operations.length,26);
+  }
   const sourcePlan=await read(sourceRoot+'/plan.json');
   const root='generated-artifacts/'+id;
   await fs.mkdir(root);
@@ -76,7 +85,8 @@ export async function prepareStagedUploaders(id,{inspect=inspectFallback}={}){
   await durableStageFile(root+'/proposed-uploader-test.csv','\ufeff'+[
     ['artist','tier','profile_id','cm_artist','video_url','saved_title','role_hint','reservation_cents','status'],
     ...rows].map(r=>r.map(cell).join(',')).join('\r\n'));
-  return {status:'prepared_not_approved',id,artists:15,requests:26,maximumUsd:.52,
+  return {status:'prepared_not_approved',id,artists:plan.artists.length,
+    requests:plan.maximumCalls,maximumUsd:plan.maximumSpendCents/100,
     planSha256:digest(plan),paidCalls:0,laterIdentityApprovalRequired:true};
 }
 // Strip proposal-only fields so the exact original video plan can be verified
@@ -87,28 +97,38 @@ export function catalogVideoPlan(c){
 }
 export async function assertStagedUploaderFrozen(root,plan){
   assert.equal(path.dirname(fileURLToPath(import.meta.url)),path.resolve(root,'runtime'),'Use sealed runtime');
-  validateVideoStagePlan(plan);assert.equal(plan.id,stageId);
+  validateVideoStagePlan(plan);
+  stagedUploaderSource(plan.sourceRunId);
   assert.equal(plan.version,SMALL_VIDEO_STAGE_POLICY);
-  assert.equal(plan.artists.length,15);assert.equal(plan.maximumCalls,26);
+  if(plan.id===stageId){
+    assert.equal(plan.sourceRunId,'youtube-test-20-staged-2026-11-13');
+    assert.equal(plan.artists.length,15);assert.equal(plan.maximumCalls,26);
+  }
   assert.equal(digest(await read(root+'/plan.json')),digest(plan));
   for(const [name,sha] of Object.entries({...plan.evidenceFiles,...plan.runtimeFiles}))
     assert.equal(digest(await fs.readFile(root+'/'+name)),sha,'Frozen evidence/runtime changed');
-  assert.equal(digest(await read(root+'/evidence/source-plan.json')),plan.sourcePlanSha256);
+  const sourcePlan=await read(root+'/evidence/source-plan.json');
+  assert.equal(sourcePlan.id,plan.sourceRunId);
+  assert.equal(digest(sourcePlan),plan.sourcePlanSha256);
+  const proposal=await read(root+'/evidence/fallback-proposal.json');
+  assert.equal(proposal.sourceRunId,plan.sourceRunId);
+  assert.deepEqual(proposal.operations.map(o=>({...o,inputSha256:digest(o.request)})),plan.operations);
 }
 async function main(){
   assert.notEqual(process.env.REPLIT_DEPLOYMENT,'1');
   const args=process.argv.slice(2);
   assert.equal(new Set(args.map(a=>a.split('=')[0])).size,args.length);
   assert.ok(args.every(a=>/^--(?:prepare-only|authorize-prepared|run-approved)$/.test(a)
-    ||/^--(?:id|plan-sha256|approve-cents)=[a-z0-9-]+$/.test(a)));
+    ||/^--(?:id|source-id|plan-sha256|approve-cents)=[a-z0-9-]+$/.test(a)));
   const modes=args.filter(a=>['--prepare-only','--authorize-prepared','--run-approved'].includes(a));
   assert.equal(modes.length,1);
   const value=k=>args.find(a=>a.startsWith('--'+k+'='))?.slice(k.length+3);
-  const id=value('id');assert.equal(id,stageId);
+  const id=value('id');assert.match(id??'',/^youtube-video-review-[a-z0-9-]{4,80}$/);
   if(modes[0]==='--prepare-only'){
     assert.equal(value('plan-sha256'),undefined);assert.equal(value('approve-cents'),undefined);
-    console.log(JSON.stringify(await prepareStagedUploaders(id)));return;
+    console.log(JSON.stringify(await prepareStagedUploaders(id,{sourceId:value('source-id')})));return;
   }
+  assert.equal(value('source-id'),undefined,'Source selection is preparation-only');
   const root='generated-artifacts/'+id,plan=await read(root+'/plan.json');
   await assertStagedUploaderFrozen(root,plan);
   if(modes[0]==='--authorize-prepared'){
@@ -122,7 +142,7 @@ async function main(){
   const eligible=await currentEligible(plan.artists);
   assert.ok(plan.artists.every(a=>eligible.get(a.profileId)?.tier===a.tier),'Eligibility changed');
   // Fresh read-only checks before the gate performs locked launch/admissions.
-  const preflight=await inspectFallback({sourceRoot,includeDirectChannelCases:true});
+  const preflight=await inspectFallback({sourceRoot:stagedUploaderSource(plan.sourceRunId),includeDirectChannelCases:true});
   assert.deepEqual(preflight.blockers,[]);
   assert.deepEqual(preflight.operations.map(o=>({...o,inputSha256:digest(o.request)})),plan.operations);
   const pool=await connectSavedBatchPool();

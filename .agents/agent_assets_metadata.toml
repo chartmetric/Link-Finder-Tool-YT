@@ -2324,3 +2324,17 @@ mtime_ms = 1794613661590
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/67b25852-c58d-4a1d-b417-552521789c1d/a9c1b7a3-e295-4808-8cc2-e81f4a5beb67"
 storage_version_token = "1794613715252701"
 content_type = "text/csv"
+
+[[outputs]]
+id = "-xneXlvdPgSDTxqZR7Jin"
+uri = "file://generated-artifacts/youtube-video-review-fresh-twenty-2026-11-13/proposed-uploader-test.csv"
+type = "table"
+title = "Next YouTube checks — 24 videos across 14 artists"
+description = "Proposed requests to identify the channels behind saved video results. Maximum additional cost $0.48; no requests have started. This is a check list, not verified artist links."
+logical_id = "360012ea-1930-4312-98b2-184634d22f1c"
+content_hash = "sha256:82d1726d7a89af70e3cd9c8b8bafa8887bcebd7128310146c5e27ff918418099"
+size = 5189
+mtime_ms = 1794614780810
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/360012ea-1930-4312-98b2-184634d22f1c/323e3ee9-7832-4bf6-87dc-04b9580e5f62"
+storage_version_token = "1794614803666163"
+content_type = "text/csv"
