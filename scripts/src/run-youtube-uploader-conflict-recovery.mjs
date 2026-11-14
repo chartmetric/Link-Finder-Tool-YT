@@ -12,6 +12,7 @@ import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
 import {currentEligible} from './run-youtube-video-stage.mjs';
 import {durableStageFile,executeVideoStage} from './youtube-video-stage-execution.mjs';
 import {videoStageGate} from './youtube-video-stage-gate.mjs';
+import {CONFLICT_HANDLING_FILE,uploaderConflictHandlingApproval} from './youtube-uploader-conflict-handling.mjs';
 const read=async p=>JSON.parse(await fs.readFile(p));
 
 export async function assertConflictFrozen(root,plan){
@@ -31,7 +32,10 @@ export function conflictExecutionApproval(plan,approval){
   return {policy:CONFLICT_RECOVERY_POLICY,planSha256:digest(plan),
     stageApprovalSha256:digest(approval),explicitApproval:true,
     acknowledgeSavedConflictOnly:true,allowAmbiguousChannelSelection:false,
-    allowRetry:false,continuationCapCents:plan.maximumSpendCents};
+    allowRetry:false,continuationCapCents:plan.maximumSpendCents,
+    ...(plan.evidenceFiles[CONFLICT_HANDLING_FILE]?{
+      holdNewChannelConflicts:true,conflictHandlingApproval:uploaderConflictHandlingApproval(plan,approval),
+    }:{})};
 }
 export async function acknowledgeConflictReceipt({pool,plan,evidence,approval,supplement}){
   assert.deepEqual(supplement,conflictExecutionApproval(plan,approval));
@@ -102,6 +106,7 @@ async function main(){
       conflictReview:evidence.conflictReview,providerRequests:0,reservationsChanged:false}));
     const gate=videoStageGate({pool,plan,approval,owner:randomUUID()});
     await executeVideoStage({root,plan,approval,gate,credential:process.env.SCRAPECREATORS_API_KEY,
+      ...(supplement.holdNewChannelConflicts?{conflictHandlingApproval:supplement.conflictHandlingApproval}:{}),
       assertFrozen:async()=>{
         await assertConflictFrozen(root,plan);
         assert.equal(digest(await read(root+'/approval.json')),digest(approval));

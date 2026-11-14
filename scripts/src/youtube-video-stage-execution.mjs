@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import {digest} from './youtube-video-discovery-offline.mjs';
-import {mapSavedVideoUploader} from './youtube-video-uploader-review.mjs';
+import {mapOrHoldSavedUploader,uploaderConflictHandlingApproval} from './youtube-uploader-conflict-handling.mjs';
 import {assertVideoStageApproval} from './youtube-video-stage.mjs';
 import {savedVideoRecoveryResults} from './youtube-video-stage-recovery.mjs';
 import {buildVideoUploaderReport} from './youtube-uploader-report.mjs';
@@ -10,11 +10,14 @@ export async function durableStageFile(path,bytes){
   const f=await fs.open(path,'wx');
   try{await f.writeFile(bytes);await f.sync();}finally{await f.close();}
 }
-export async function executeVideoStage({plan,approval,root,gate,assertFrozen,credential,fetchImpl=fetch}){
+export async function executeVideoStage({plan,approval,root,gate,assertFrozen,credential,fetchImpl=fetch,
+  conflictHandlingApproval}){
   assertVideoStageApproval(plan,approval);
+  const holdConflicts=conflictHandlingApproval!==undefined;
+  if(holdConflicts)assert.deepEqual(conflictHandlingApproval,uploaderConflictHandlingApproval(plan,approval));
   assert.ok(typeof credential==='string'&&credential.length,'Provider credential required');
   await assertFrozen();
-  const results=[],recovered=[];let started=false,status='stopped';
+  const results=[],recovered=[],heldConflicts=[];let started=false,status='stopped';
   if(plan.recovery){
     const evidence=JSON.parse(await fs.readFile(root+'/evidence/recovery.json','utf8'));
     recovered.push(...savedVideoRecoveryResults(plan,evidence));
@@ -46,8 +49,19 @@ export async function executeVideoStage({plan,approval,root,gate,assertFrozen,cr
         videoId:op.videoId,operationKey:op.key,kind:op.kind,request:op.request,inputSha256:op.inputSha256,
         status:response.status,capturedAt:new Date().toISOString(),rawPath,rawBodySha256:digest(rawBody)};
       await durableStageFile(root+'/receipts/'+digest(op.key)+'.json',JSON.stringify(receipt));
-      const mapped=mapSavedVideoUploader(evidence.artist,clue,{...receipt,rawBody},
-        {runId:plan.id,planSha256:digest(plan)});
+      const reviewed=mapOrHoldSavedUploader(evidence.artist,clue,{...receipt,rawBody},
+        {runId:plan.id,planSha256:digest(plan)},{holdConflicts});
+      if(reviewed.kind==='held_conflict'){
+        const held={...reviewed.result,artist:evidence.artist.name,
+          tier:plan.artists.find(a=>a.profileId===op.profileId).tier};
+        await durableStageFile(root+'/results/'+digest(op.key)+'.json',JSON.stringify(held));
+        await gate.returned(op,digest(receipt),digest(rawBody));
+        heldConflicts.push(held);
+        console.log(JSON.stringify({phase:'video_uploaders',returned:results.length+heldConflicts.length,
+          total:plan.maximumCalls,profileId:op.profileId,status:'held_conflict',selectedChannel:null}));
+        continue;
+      }
+      const mapped=reviewed.result;
       const result={profileId:op.profileId,cmArtist:op.cmArtist,artist:evidence.artist.name,
         tier:plan.artists.find(a=>a.profileId===op.profileId).tier,videoUrl:op.videoUrl,...mapped,
         ownershipAccepted:false,topicLabel:/\btopic\b/i.test(mapped.uploaderName)
@@ -55,7 +69,7 @@ export async function executeVideoStage({plan,approval,root,gate,assertFrozen,cr
       await durableStageFile(root+'/results/'+digest(op.key)+'.json',JSON.stringify(result));
       await gate.returned(op,digest(receipt),digest(rawBody));
       results.push(result);
-      console.log(JSON.stringify({phase:'video_uploaders',returned:results.length,total:plan.maximumCalls,
+      console.log(JSON.stringify({phase:'video_uploaders',returned:results.length+heldConflicts.length,total:plan.maximumCalls,
         profileId:op.profileId,requiresIdentityCheck:true}));
     }
     await gate.finish('completed');
@@ -75,8 +89,9 @@ export async function executeVideoStage({plan,approval,root,gate,assertFrozen,cr
       const artistEvidence=await Promise.all(plan.artists.map(async a=>
         JSON.parse(await fs.readFile(root+'/evidence/'+a.profileId+'.json','utf8'))));
       const report=buildVideoUploaderReport(artistEvidence.map(e=>e.artist),allResults);
-      const summary={id:plan.id,status,returnedCalls:results.length,maximumCalls:plan.maximumCalls,
-        acknowledgedReservationCents:results.length*2,maximumSpendCents:plan.maximumSpendCents,
+      const summary={id:plan.id,status,returnedCalls:results.length+heldConflicts.length,
+        resolvedUploaderCalls:results.length,heldConflictCalls:heldConflicts.length,maximumCalls:plan.maximumCalls,
+        acknowledgedReservationCents:(results.length+heldConflicts.length)*2,maximumSpendCents:plan.maximumSpendCents,
         recoveredSavedResponses:recovered.length,priorReservedCents:plan.recovery?.previousReservedCents??0,
         combinedMaximumSpendCents:plan.maximumSpendCents+(plan.recovery?.previousReservedCents??0),
         reservationWarning:'A stopped stage may have an additional unacknowledged paid admission; the database ledger is authoritative.',
@@ -87,6 +102,9 @@ export async function executeVideoStage({plan,approval,root,gate,assertFrozen,cr
       await durableStageFile(root+'/summary.json',JSON.stringify(summary,null,2));
       await durableStageFile(root+'/video-uploader-discovery-evidence.csv',report.evidenceCsv);
       await durableStageFile(root+'/video-uploader-findings.csv',report.candidatesCsv);
+      if(holdConflicts)await durableStageFile(root+'/held-uploader-conflicts.json',JSON.stringify({
+        note:'Unresolved provider identities, not artist-channel matches. No channel selected or ownership approved.',
+        heldConflicts},null,2));
     }
   }
 }

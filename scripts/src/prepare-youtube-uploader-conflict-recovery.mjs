@@ -12,8 +12,9 @@ import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
 import {currentEligible} from './run-youtube-video-stage.mjs';
 import {freezeLocalModules} from './seal-youtube-campaign-runtime.mjs';
 import {durableStageFile} from './youtube-video-stage-execution.mjs';
+import {CONFLICT_HANDLING_FILE,CONFLICT_HANDLING_SCOPE} from './youtube-uploader-conflict-handling.mjs';
 
-export async function prepareConflictRecovery(previousId,id){
+export async function prepareConflictRecovery(previousId,id,{holdChannelConflicts=false}={}){
   for(const value of [previousId,id])assert.match(value,/^youtube-video-review-[a-z0-9-]{4,80}$/);
   assert.notEqual(previousId,id);
   const source='generated-artifacts/'+previousId,root='generated-artifacts/'+id,sourceFiles={};
@@ -74,12 +75,20 @@ export async function prepareConflictRecovery(previousId,id){
   for(const dir of ['evidence','inputs','receipts','results'])await fs.mkdir(root+'/'+dir);
   const evidenceFiles={};
   for(const [name,sha] of Object.entries(previousPlan.evidenceFiles)){
+    // Preserve the old manifest in sourceFiles, not as this run's recovery.
+    // A new conflict policy must be explicitly requested, never inherited.
+    if(name==='evidence/conflict-recovery.json'||name===CONFLICT_HANDLING_FILE)continue;
     const b=await fs.readFile(source+'/'+name);assert.equal(digest(b),sha);
     await durableStageFile(root+'/'+name,b);evidenceFiles[name]=sha;
   }
   const recoveryBytes=JSON.stringify(evidence);
   await durableStageFile(root+'/evidence/conflict-recovery.json',recoveryBytes);
   evidenceFiles['evidence/conflict-recovery.json']=digest(recoveryBytes);
+  if(holdChannelConflicts){
+    const policyBytes=JSON.stringify(CONFLICT_HANDLING_SCOPE);
+    await durableStageFile(root+'/'+CONFLICT_HANDLING_FILE,policyBytes);
+    evidenceFiles[CONFLICT_HANDLING_FILE]=digest(policyBytes);
+  }
   const entry=path.join(path.dirname(fileURLToPath(import.meta.url)),'run-youtube-uploader-conflict-recovery.mjs');
   const modules=await freezeLocalModules(entry,root+'/runtime'),runtimeFiles={};
   for(const file of modules){const name='runtime/'+path.basename(file);runtimeFiles[name]=digest(await fs.readFile(root+'/'+name));}
@@ -95,13 +104,16 @@ export async function prepareConflictRecovery(previousId,id){
     ['artist','profile_id','cm_artist','video_url','reservation_cents','status'],...rows
   ].map(r=>r.map(cell).join(',')).join('\r\n'));
   return {status:'prepared_not_approved',id,...checked,maximumAdditionalUsd:plan.maximumSpendCents/100,
-    planSha256:digest(plan),paidCalls:0,ledgerWrites:0,catalogWrites:0};
+    planSha256:digest(plan),holdNewChannelConflicts:holdChannelConflicts,
+    paidCalls:0,ledgerWrites:0,catalogWrites:0};
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   const args=process.argv.slice(2);
-  assert.equal(args.length,3);assert.ok(args.includes('--prepare-only'));
-  assert.equal(new Set(args.map(a=>a.split('=')[0])).size,3);
-  assert.ok(args.every(a=>a==='--prepare-only'||/^--(?:id|previous-id)=youtube-video-review-[a-z0-9-]{4,80}$/.test(a)));
+  assert.ok(args.length===3||args.length===4);assert.ok(args.includes('--prepare-only'));
+  assert.equal(new Set(args.map(a=>a.split('=')[0])).size,args.length);
+  assert.ok(args.every(a=>['--prepare-only','--hold-channel-conflicts'].includes(a)
+    ||/^--(?:id|previous-id)=youtube-video-review-[a-z0-9-]{4,80}$/.test(a)));
   const value=k=>args.find(a=>a.startsWith('--'+k+'='))?.slice(k.length+3);
-  console.log(JSON.stringify(await prepareConflictRecovery(value('previous-id'),value('id'))));
+  console.log(JSON.stringify(await prepareConflictRecovery(value('previous-id'),value('id'),
+    {holdChannelConflicts:args.includes('--hold-channel-conflicts')})));
 }

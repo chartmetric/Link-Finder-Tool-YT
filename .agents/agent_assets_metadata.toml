@@ -2380,3 +2380,17 @@ mtime_ms = 1794615385921
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/e849a87f-9470-4be5-a763-41586fc158e7/6f60b6c2-1935-47b0-a02a-1b49808548cb"
 storage_version_token = "1794615397851672"
 content_type = "text/csv"
+
+[[outputs]]
+id = "0bzEgkxRWn5jlqJTh-rou"
+uri = "file://generated-artifacts/youtube-video-review-fresh-six-hold-2026-11-13/remaining-requests.csv"
+type = "table"
+title = "YouTube continuation — 6 untouched checks"
+description = "Prepared with the new hold-and-continue safeguard. Maximum additional cost $0.12; no paid calls, retries, approvals or spending-record changes made during preparation."
+logical_id = "ddeacf6c-3e54-4778-b096-45523e3a1309"
+content_hash = "sha256:04ef550e2dbdcb74b273144b236d47ff02125112b095e8bc8ddc18fce77a1737"
+size = 867
+mtime_ms = 1794615988253
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/ddeacf6c-3e54-4778-b096-45523e3a1309/88e2db76-6b06-4a69-b490-f0ea4a8d7b01"
+storage_version_token = "1794616044000390"
+content_type = "text/csv"

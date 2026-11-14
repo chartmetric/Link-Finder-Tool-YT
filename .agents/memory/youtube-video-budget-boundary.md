@@ -179,6 +179,21 @@ import eligibility. Validate the full prefix/suffix partition and combined
 original cap. Never weaken legacy recovery validators to accommodate a new
 cohort or treat receipt acknowledgment as permission to repeat that request.
 
+New exact execution plans can explicitly opt into holding known uploader-ID
+conflicts and continuing untouched requests, instead of stopping the whole test.
+
+**Why:** Topic and Official Artist Channel identities can be mixed in provider
+responses. Requiring a separate stop/recovery for each known ambiguity repeatedly
+interrupts the test without adding identity certainty.
+
+**How to apply:** Bind this policy to fresh plan and runtime hashes and separate
+execution approval; never enable it inside an already sealed worker. Save and
+acknowledge only fully validated responses with known billing and exact video
+bindings. Keep conflicting channel IDs unselected and out of every channel CSV,
+count held responses separately, and never retry them. Missing IDs, bad video
+bindings, provider failures, malformed responses and unknown billing still stop
+dispatch. Preserve original receipts and cumulative reservations.
+
 When allocating bounded video-recovery slots, retain a supported
 distribution/Topic lead instead of allowing ordinary upload videos to consume
 every slot.

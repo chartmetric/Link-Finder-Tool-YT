@@ -9,6 +9,9 @@ import {videoStagePlan,approveVideoStage,assertVideoStageAdmission,archivedSearc
 import {executeVideoStage} from './youtube-video-stage-execution.mjs';
 import {mapSavedVideoUploader} from './youtube-video-uploader-review.mjs';
 import {validateVideoRecovery} from './youtube-video-stage-recovery.mjs';
+import {CONFLICT_HANDLING_FILE,CONFLICT_HANDLING_SCOPE,uploaderConflictHandlingApproval}
+  from './youtube-uploader-conflict-handling.mjs';
+import {exportUploaderChannels} from './export-youtube-uploader-channels.mjs';
 
 const sha=digest('fixture');
 test('saved receipt lookup retains the original JSON-string hash convention',()=>{
@@ -140,6 +143,85 @@ test('eight-request small stage completes with bounded reservations and zero acc
   assert.equal(summary.acceptedOwnershipLinks,0);assert.equal(summary.modelCalls,0);
   assert.equal(summary.channelMetadataCalls,0);assert.equal(summary.fullCampaignResumed,false);
   assert.ok(results.every(r=>r.ownershipAccepted===false));
+});
+async function enableConflictHandling(f){
+  const updated=videoStagePlan({...f.plan,evidenceFiles:{...f.plan.evidenceFiles,
+    [CONFLICT_HANDLING_FILE]:digest(JSON.stringify(CONFLICT_HANDLING_SCOPE))}});
+  Object.assign(f.plan,updated);
+  Object.assign(f.approval,approveVideoStage(f.plan,{expectedPlanSha256:digest(f.plan),
+    capCents:f.plan.maximumSpendCents,approvedAt:f.approval.approvedAt}));
+  Object.assign(f.run,{plan_sha256:digest(f.plan),approval_sha256:digest(f.approval)});
+  await fs.writeFile(f.root+'/'+CONFLICT_HANDLING_FILE,JSON.stringify(CONFLICT_HANDLING_SCOPE));
+  f.conflictHandlingApproval=uploaderConflictHandlingApproval(f.plan,f.approval);
+}
+function conflictingBody(body){
+  body.uploader={channelId:'UC'+'z'.repeat(22),author:'Another Artist - Topic',
+    url:'https://www.youtube.com/channel/UC'+'z'.repeat(22)};
+  body.ownerByline={channelId:body.channel.id,name:body.channel.title};
+  return body;
+}
+test('newly approved policy holds a conflicting response and continues without selecting or retrying',async t=>{
+  const f=await executionFixture(t,true);await enableConflictHandling(f);
+  const normal=f.fetchImpl;let calls=0;
+  f.fetchImpl=async(url,options)=>{
+    const response=await normal(url,options);calls++;
+    return calls===1?Response.json(conflictingBody(await response.json())):response;
+  };
+  const results=await executeVideoStage(f);
+  assert.equal(calls,8);assert.equal(results.length,7);
+  assert.equal(f.run.reserved_cents,16);assert.equal(f.run.status,'completed');
+  assert.ok(f.history.every(r=>r.status==='returned'));
+  const summary=JSON.parse(await fs.readFile(f.root+'/summary.json'));
+  assert.equal(summary.returnedCalls,8);assert.equal(summary.resolvedUploaderCalls,7);
+  assert.equal(summary.heldConflictCalls,1);assert.equal(summary.acknowledgedReservationCents,16);
+  assert.equal(summary.acceptedOwnershipLinks,0);
+  const held=JSON.parse(await fs.readFile(f.root+'/results/'+digest(f.plan.operations[0].key)+'.json'));
+  assert.equal(held.resultKind,'held_conflict');assert.equal(held.selectedChannel,null);
+  assert.equal(held.importEligible,false);assert.equal(held.ownershipAccepted,false);
+  assert.equal(held.url,undefined);
+  const shortlist=await fs.readFile(f.root+'/video-uploader-findings.csv','utf8');
+  assert.ok(!shortlist.includes(f.plan.operations[0].videoUrl));
+  assert.equal(JSON.parse(await fs.readFile(f.root+'/held-uploader-conflicts.json')).heldConflicts.length,1);
+  // A normal channel export must also keep ambiguous responses out of all
+  // channel rows, while preserving the separate unresolved evidence.
+  await fs.writeFile(f.root+'/plan.json',JSON.stringify(f.plan));
+  await fs.writeFile(f.root+'/approval.json',JSON.stringify(f.approval));
+  const output=f.root+'-export';t.after(()=>fs.rm(output,{recursive:true,force:true}));
+  const exported=await exportUploaderChannels(f.root,output);
+  assert.equal(exported.heldSavedResponses,1);
+  assert.ok(!(await fs.readFile(output+'/youtube-channels-all.csv','utf8')).includes(f.plan.operations[0].videoUrl));
+});
+test('legacy approval cannot silently enable hold-and-continue',async t=>{
+  const f=await executionFixture(t,true);
+  assert.throws(()=>uploaderConflictHandlingApproval(f.plan,f.approval));
+  let calls=0;f.fetchImpl=async()=>{calls++;throw Error('must not fetch');};
+  f.conflictHandlingApproval={holdConflicts:true};
+  await assert.rejects(()=>executeVideoStage(f));
+  assert.equal(calls,0);assert.equal(f.history.length,0);assert.equal(f.events.length,0);
+});
+test('conflict handling still stops on bad identity bindings, billing and HTTP failures',async t=>{
+  for(const problem of ['wrong_video','missing_id','unknown_price','unsuccessful','http_error','malformed_json']){
+    await t.test(problem,async t=>{
+      const f=await executionFixture(t,true);await enableConflictHandling(f);
+      const normal=f.fetchImpl;let calls=0;
+      f.fetchImpl=async(url,options)=>{
+        const response=await normal(url,options);calls++;
+        const body=conflictingBody(await response.json());
+        if(problem==='wrong_video')body.id='other-video';
+        if(problem==='missing_id')delete body.uploader.channelId;
+        if(problem==='unknown_price')body.credits_charged=2;
+        if(problem==='unsuccessful')body.success=false;
+        if(problem==='malformed_json')return new Response('{broken');
+        return Response.json(body,{status:problem==='http_error'?503:200});
+      };
+      await assert.rejects(()=>executeVideoStage(f));
+      assert.equal(calls,1);assert.equal(f.history.length,1);
+      assert.equal(f.history[0].status,'admitted');
+      assert.equal(f.run.reserved_cents,2);assert.equal(f.run.status,'stopped');
+      const summary=JSON.parse(await fs.readFile(f.root+'/summary.json'));
+      assert.equal(summary.returnedCalls,0);assert.equal(summary.heldConflictCalls,0);
+    });
+  }
 });
 test('40 fixture requests persist raw evidence before acknowledgment and never accept ownership',async t=>{
   const f=await executionFixture(t),results=await executeVideoStage(f);
