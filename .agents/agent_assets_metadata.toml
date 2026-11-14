@@ -2338,3 +2338,17 @@ mtime_ms = 1794614780810
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/360012ea-1930-4312-98b2-184634d22f1c/323e3ee9-7832-4bf6-87dc-04b9580e5f62"
 storage_version_token = "1794614803666163"
 content_type = "text/csv"
+
+[[outputs]]
+id = "56blZWPQa-0Ht8kUetZeE"
+uri = "file://generated-artifacts/youtube-video-review-fresh-twenty-2026-11-13/video-uploader-findings.csv"
+type = "table"
+title = "Partial YouTube shortlist — 4 possible channels"
+description = "Four unverified channel candidates from the first 15 completed uploader checks. Three are clearly labeled Topic. The run stopped on a conflicting response; no ownership approvals or catalog writes occurred."
+logical_id = "2e4b5b5b-e0a8-450e-9ce7-32497e3513f2"
+content_hash = "sha256:a022b8478f098f60e7e5c9a6151d6ea5ee58cac1fafece0d4e619d4e547b6f0e"
+size = 2078
+mtime_ms = 1794614930878
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2e4b5b5b-e0a8-450e-9ce7-32497e3513f2/99e3280f-cfb8-4aaa-a145-c5462843e8f0"
+storage_version_token = "1794614989192966"
+content_type = "text/csv"

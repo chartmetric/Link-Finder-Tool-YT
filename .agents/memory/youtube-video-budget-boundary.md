@@ -153,6 +153,18 @@ ownership evidence after name triage. Keep all held evidence accessible without
 describing it as a likely match or proving that an artist has no channel. A
 stricter shortlist is a precision/recall tradeoff, not demonstrated accuracy.
 
+A single video response can mix a Topic uploader's channel ID and URL with
+a different Official Artist Channel ID in the owner byline and channel object.
+
+**Why:** A live response credited the requested artist on a collaboration
+while the uploader and owner byline named another artist, with contradictory
+channel IDs. Majority agreement among fields would conceal the conflict.
+
+**How to apply:** Keep such a response unresolved and preserve its reservation
+and raw bytes. Do not infer alias equivalence, pick one ID by majority vote,
+or retry the video request. Any recovery acknowledgment and continuation need
+separate exact approval; a co-credit does not establish channel ownership.
+
 When allocating bounded video-recovery slots, retain a supported
 distribution/Topic lead instead of allowing ordinary upload videos to consume
 every slot.
