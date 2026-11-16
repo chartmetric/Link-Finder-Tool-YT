@@ -11,21 +11,22 @@ import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
 import {select} from './instagram-artist-metadata-overlay.mjs';
 const originalId='youtube-batch-channel-checks-direct-100-refreshed-2026-11-13';
 const continuationId='youtube-batch-channel-checks-continuation-100-2026-11-14';
+const finalContinuationId='youtube-batch-channel-checks-continuation-40-ready-2026-11-16';
 const recoveryRoot='generated-artifacts/youtube-direct-receipt-recovery-100-2026-11-14';
-const output='generated-artifacts/youtube-channel-results-100-after-continuation-2026-11-16';
+const output='generated-artifacts/youtube-channel-results-100-completed-2026-11-16';
 const read=async file=>JSON.parse(await fs.readFile(file));
 const cell=v=>{let s=String(v??'');if(/^[=+\-@\t\r\n]/u.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"';};
 const csv=rows=>'\ufeff'+rows.map(r=>r.map(cell).join(',')).join('\r\n');
 assert.deepEqual(process.argv.slice(2),['--read-only-export']);
 const bundles=[];
-for(const id of [originalId,continuationId]){
+for(const id of [originalId,continuationId,finalContinuationId]){
   const root='generated-artifacts/'+id,plan=await read(root+'/plan.json'),approval=await read(root+'/approval.json');
   assert.deepEqual(approveChannelCheckBundle(plan,approval),approval);
   bundles.push({root,plan,approval});
 }
-const original=bundles[0].plan,continuation=bundles[1].plan;
+const original=bundles[0].plan;
 const originals=new Map(original.children.flatMap(c=>c.plan.operations.map(o=>[o.key,o])));
-for(const o of continuation.children.flatMap(c=>c.plan.operations))
+for(const o of bundles.slice(1).flatMap(b=>b.plan.children.flatMap(c=>c.plan.operations)))
   assert.deepEqual(o,originals.get(o.key),'Continuation must contain only unchanged original requests');
 const recoveryPlan=await read(recoveryRoot+'/plan.json'),recovered=await read(recoveryRoot+'/recovery-result.json');
 const recoveryContract=await read(recoveryPlan.contractPath);
