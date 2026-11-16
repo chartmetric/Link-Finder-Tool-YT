@@ -79,7 +79,14 @@ export function parseYoutubeDecision(packet,input,plan,requestHash){
     rawAnswers:d.answers,providerReportedUsd:d.usage.cost,receiptSha256:evidenceDigest(packet)};
 }
 export function providerStopReason(packet){
-  const serialized=JSON.stringify(packet.data??{});
+  // Search snippets, channel descriptions and model answers are content, not
+  // provider diagnostics. A track named "Unauthorized" must not stop a run.
+  const data=packet.data;
+  const diagnostics=typeof data==='string'?data:
+    data&&typeof data==='object'?Object.fromEntries(
+      ['error','errors','message','detail','status'].filter(k=>Object.hasOwn(data,k)).map(k=>[k,data[k]])
+    ):{};
+  const serialized=JSON.stringify(diagnostics);
   if(/insufficient.{0,30}(?:credit|balance)|not enough credits|payment required|credit.{0,15}exhaust|billing limit/i.test(serialized)
     ||packet.status===402)return 'provider_funding_failure';
   if([401,403].includes(packet.status)||/invalid.{0,10}api.?key|unauthorized|authentication failed/i.test(serialized))

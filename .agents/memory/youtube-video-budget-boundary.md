@@ -254,3 +254,16 @@ discard an untouched artist or encourage replay of a previously charged call.
 remainder. Keep uncertain catalog readiness explicitly blocked, not an empty
 claim set or a no-match. Read-only retry permission never permits repeating a
 provider request or changing an already sealed worker.
+
+Classify provider access and funding failures from HTTP status and explicit
+provider diagnostic fields, never from the entire returned content.
+
+**Why:** A successful search included "Unauthorized" in a song title. Scanning
+all search snippets misclassified the saved HTTP success as an access failure
+and stopped the batch after the transport receipt had already been acknowledged.
+
+**How to apply:** Keep search results, channel descriptions and model answers
+out of error-message detection. Preserve real HTTP and structured-error stops.
+Validate the saved receipt and finish any missing local processing offline;
+never repeat the paid request. Changed error handling belongs in a freshly
+sealed, separately approved continuation, not in the historical worker.
