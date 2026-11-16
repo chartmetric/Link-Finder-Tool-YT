@@ -19,7 +19,7 @@ import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
 import {freezeLocalModules} from './seal-youtube-campaign-runtime.mjs';
 const ids=['youtube-batch-channel-checks-direct-100-refreshed-2026-11-13',
   'youtube-batch-channel-checks-continuation-100-2026-11-14'];
-const id='youtube-batch-channel-checks-continuation-40-checked-2026-11-16',root='generated-artifacts/'+id;
+const id='youtube-batch-channel-checks-continuation-40-ready-2026-11-16',root='generated-artifacts/'+id;
 const sourceFiles={};
 const bytes=async file=>{const b=await fs.readFile(file);sourceFiles[file]=digest(b);return b;};
 const read=async file=>JSON.parse(await bytes(file));
@@ -132,7 +132,7 @@ try{
     const keys=scope.pending.filter(p=>p.sourceRunId===child.id).map(p=>p.operation);
     if(!keys.length)continue;
     const rows=currentRows.filter(r=>keys.some(o=>o.profileId===String(r.profile_id)));
-    const childId='youtube-mixed-captures-continuation-40-checked-2026-11-16-part-'+(i+1);
+    const childId='youtube-mixed-captures-continuation-40-ready-2026-11-16-part-'+(i+1);
     const result=refreshedDirectCaptureInput(child.plan,rows,{id:childId,preparedAt:new Date().toISOString(),
       sourceFiles,runtimeFiles:{'runtime/preflight.mjs':digest('preflight')}});
     assert.ok(result.input,'Latest eligibility requires a revised subset');

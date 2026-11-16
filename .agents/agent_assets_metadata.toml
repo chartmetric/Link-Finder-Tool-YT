@@ -2590,3 +2590,17 @@ mtime_ms = 1794850797598
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/ed761d36-86a1-4c52-989f-2ce36142db6f/c2a04463-49e4-4590-bcf5-f1ccde43f9c5"
 storage_version_token = "1794850847311914"
 content_type = "text/csv"
+
+[[outputs]]
+id = "gY_pS6femn834Z0FLSakg"
+uri = "file://generated-artifacts/youtube-batch-channel-checks-continuation-40-ready-2026-11-16/remaining-channel-checks.csv"
+type = "table"
+title = "40 YouTube channel checks ready for approval"
+description = "Exact remaining requests, one channel per artist. Maximum additional cost $0.80. These are candidate checks, not approved artist links."
+logical_id = "1a756fb3-24de-4038-bea7-4f6e71b8d928"
+content_hash = "sha256:b55b64a16b7f2781d6fa4611f91a653c173f7202619ccb0cc6d4675ca0131856"
+size = 6000
+mtime_ms = 1794852805470
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/1a756fb3-24de-4038-bea7-4f6e71b8d928/170ffae3-c12e-440d-bb79-1cf5daf1ba40"
+storage_version_token = "1794852838150012"
+content_type = "text/csv"
