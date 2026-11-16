@@ -165,8 +165,11 @@ test('all alternatives and aliases participate in outside-cohort claims and curr
   let n=0;
   await assert.rejects(identityCatalogCheck(plan,{now:()=>now,query:async sql=>{
     if(++n===1){assert.match(sql,/grain='global'/);assert.ok(!sql.includes('LIMIT 4 BY'));return rows;}
-    return [{account_url:alias,profile_id:'999',cm_artist:'999'}];
-  }})(claims));
+    if(sql.includes('FROM new_vertical.account FINAL'))return [{account_id:'77',account_url:alias}];
+    if(sql.includes('FROM new_vertical.l_profile_account FINAL'))return [{account_id:'77',profile_id:'999'}];
+    if(sql.includes('FROM new_vertical.profile FINAL'))return [{profile_id:'999',cm_artist:'999'}];
+    assert.fail('Unexpected catalog read');
+  }})(claims),/New catalog or historical shared-channel claim/);
   await assert.rejects(identityCatalogCheck(plan,{query:async()=>{throw Error('catalog unavailable');}})(claims));
 });
 test('CLI refuses unsafe options and symlink archive inputs',async t=>{

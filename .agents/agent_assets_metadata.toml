@@ -2576,3 +2576,17 @@ mtime_ms = 1794849582138
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/f691c2bc-dbd9-4ca1-94ef-72b1fff8454e/d74edf7c-ea4e-432d-a349-df4722a0c2bb"
 storage_version_token = "1794849598533505"
 content_type = "text/csv"
+
+[[outputs]]
+id = "dZx7G5N_ZyCMEMXx7MJj2"
+uri = "file://generated-artifacts/youtube-batch-channel-checks-continuation-40-checked-2026-11-16/remaining-channel-checks.csv"
+type = "table"
+title = "40 untouched YouTube channel checks"
+description = "Draft continuation list only. Excludes every paid request. Restart remains blocked until fresh catalog checks pass."
+logical_id = "ed761d36-86a1-4c52-989f-2ce36142db6f"
+content_hash = "sha256:ad19a6a74fcafaa146083e4429ef38d07de6fc6c914da1a30f1a1f990a4d383d"
+size = 6597
+mtime_ms = 1794850797598
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/ed761d36-86a1-4c52-989f-2ce36142db6f/c2a04463-49e4-4590-bcf5-f1ccde43f9c5"
+storage_version_token = "1794850847311914"
+content_type = "text/csv"

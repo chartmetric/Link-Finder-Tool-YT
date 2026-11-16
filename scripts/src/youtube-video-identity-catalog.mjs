@@ -4,6 +4,8 @@ import {select} from './instagram-artist-metadata-overlay.mjs';
 import {youtubeEligibilitySql} from './youtube-discovery-test.mjs';
 import {returnedYoutubeUrl} from './youtube-ownership-policy.mjs';
 import {assertNoNewIdentityClaims} from './youtube-video-identity-execution.mjs';
+import {catalogReadWithOneTimeoutRetry} from './youtube-catalog-read-retry.mjs';
+import {catalogLinkedYoutubeClaims} from './youtube-catalog-linked-claims.mjs';
 
 export function identityEligibilitySql(selections){
   assert.ok(selections.length&&selections.every(s=>/^\d+$/.test(s.profileId)&&/^\d+$/.test(s.cmArtist)));
@@ -24,15 +26,12 @@ export function assertCurrentIdentityEligibility(selections,rows,now=Date.now())
 }
 export function identityCatalogCheck(plan,{query=select,now=Date.now}={}){
   return async claims=>{
-    assertCurrentIdentityEligibility(plan.selections,await query(identityEligibilitySql(plan.selections)),now());
-    // Read all linked channel claims, including inactive/disconnected historical
-    // links and profiles outside this cohort. Never treat absent current links
-    // or a catalog query failure as an ownership clearance.
-    const rows=await query(`SELECT toString(l.profile_id) profile_id,toString(p.cm_source_id) cm_artist,
-      a.account_url FROM new_vertical.l_profile_account l FINAL
-      INNER JOIN new_vertical.account a FINAL ON a.id=l.account_id
-      LEFT JOIN new_vertical.profile p FINAL ON p.id=l.profile_id
-      WHERE lower(a.platform)='youtube' AND notEmpty(trim(ifNull(a.account_url,'')))`);
+    const read=sql=>catalogReadWithOneTimeoutRetry(query,sql);
+    assertCurrentIdentityEligibility(plan.selections,await read(identityEligibilitySql(plan.selections)),now());
+    // Read every matching linked claim, including inactive/disconnected links
+    // and profiles outside this cohort. Avoid joining the entire catalog for
+    // each channel. Query errors are blocking, never an empty fallback.
+    const rows=await catalogLinkedYoutubeClaims(claims,query);
     const observed=rows.flatMap(r=>{
       const alias=returnedYoutubeUrl(r.account_url);
       return alias?[{alias,profileId:String(r.profile_id),cmArtist:String(r.cm_artist),

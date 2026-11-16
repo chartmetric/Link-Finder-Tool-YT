@@ -241,3 +241,16 @@ discarding them and crowding out distributor leads concealed useful discovery.
 Treat the distributor credit as a discovery clue, not a captured Topic identity
 or confirmed catalog association. Preserve deferred alternatives and disclose
 that the slot policy trades ordinary-uploader breadth for Topic coverage.
+
+Distinguish an interrupted read-only catalog check from a failed paid YouTube
+request. A fresh sealed runtime may retry an explicitly identified catalog
+HTTP 408 once, but must still stop if that read cannot be confirmed.
+
+**Why:** A catalog read between paid operations stopped a continuation without
+making the next paid request. Treating that as a paid failure would either
+discard an untouched artist or encourage replay of a previously charged call.
+
+**How to apply:** Reconcile admissions by identity before preparing any
+remainder. Keep uncertain catalog readiness explicitly blocked, not an empty
+claim set or a no-match. Read-only retry permission never permits repeating a
+provider request or changing an already sealed worker.
