@@ -3,6 +3,18 @@ name: YouTube reviewed corrections
 description: User-confirmed YouTube link corrections that must stay distinct from historical model judgments.
 ---
 
+On 2026-11-16 the user said Christian Liguori's channel and the other channels
+in the 51 captured-channel document look good.
+
+**Why:** This is positive human review of all 52 channel associations, including
+the separately held Christian Liguori association. It does not resolve the
+duplicate catalog identity that caused the hold or authorize production writes.
+
+**How to apply:** Preserve this feedback separately from original automated
+decisions and conflict evidence. Retain Topic labels, and do not repeat paid
+checks merely to reproduce these captures. Seek explicit import permission
+and resolve catalog identity conflicts before changing live links.
+
 On 2026-11-13 the user reviewed the thirteen mixed-source channel captures and
 said they “all look pretty correct,” then asked about a larger batch.
 

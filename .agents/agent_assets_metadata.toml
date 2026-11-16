@@ -2632,3 +2632,17 @@ mtime_ms = 1794853578026
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/622b70e6-631b-4413-9c2b-9764ac868616/12a0f642-7e0b-4035-ad83-869f592f7f92"
 storage_version_token = "1794853594051497"
 content_type = "text/csv"
+
+[[outputs]]
+id = "frVip47Fb7n24HdH9YclC"
+uri = "file://generated-artifacts/youtube-channel-results-100-user-reviewed-2026-11-16/youtube-channels-user-reviewed.csv"
+type = "table"
+title = "52 YouTube channels reviewed by you"
+description = "Includes Christian Liguori and the other 51 channels. Topic labels and original evidence are preserved. Your positive review is recorded separately; no live links changed."
+logical_id = "37f0f1cc-bd9e-4e6e-9f14-765c44630ccc"
+content_hash = "sha256:63f910952428c67ab0d6b4bac40dab659acd800971f6a43a3a9151c2c546840e"
+size = 134672
+mtime_ms = 1794854430098
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/37f0f1cc-bd9e-4e6e-9f14-765c44630ccc/824be63d-c1cc-41ac-82f0-3eebc85dc2e6"
+storage_version_token = "1794854440194796"
+content_type = "text/csv"
