@@ -267,3 +267,17 @@ out of error-message detection. Preserve real HTTP and structured-error stops.
 Validate the saved receipt and finish any missing local processing offline;
 never repeat the paid request. Changed error handling belongs in a freshly
 sealed, separately approved continuation, not in the historical worker.
+
+An unspent search can retain a `search_prepared` placeholder in a stopped
+batch. Do not mistake that placeholder alone for a charged request or erase it
+to make a new cohort pass freshness checks.
+
+**Why:** Search batches prepare all result rows before dispatch, so stopping
+partway leaves both paid and untouched artists with prepared bookkeeping.
+The paid admission ledger, exact request and receipt distinguish them.
+
+**How to apply:** Preserve original rows and stopped states. A new continuation
+may allow only the exact original unspent placeholders after validating the
+complete paid prefix; unrelated attempt history still blocks. Finish saved
+responses in a separate local recovery artifact when database changes were not
+approved, and bind later spending to a fresh exact scope and cumulative cap.

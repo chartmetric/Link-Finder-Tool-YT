@@ -2660,3 +2660,17 @@ mtime_ms = 1794856086866
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2f196c98-a21d-4cb2-954c-6a8d25b0b272/49e00d0c-118b-43fa-9746-94209c0c70be"
 storage_version_token = "1794856110870821"
 content_type = "text/csv"
+
+[[outputs]]
+id = "3PTePk5_rQo0GBFK_gYvZ"
+uri = "file://generated-artifacts/youtube-search-continuation-410-ready-2026-11-16/remaining-410-artists.csv"
+type = "table"
+title = "410 remaining YouTube artist searches"
+description = "Only untouched searches from the original 500-artist batch. Maximum additional cost $8.20; $10 combined cap preserved. Prepared only, not approved or started."
+logical_id = "5ed24a5d-a01f-421b-a46b-d5de78f0d704"
+content_hash = "sha256:dd73b57f7a071962f61fc9fc05af212a9c83c23370ff1ac7f6421647f03c5640"
+size = 70494
+mtime_ms = 1794857936982
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/5ed24a5d-a01f-421b-a46b-d5de78f0d704/a2d8884d-273c-45b0-b859-eb94280e5808"
+storage_version_token = "1794857983973756"
+content_type = "text/csv"
