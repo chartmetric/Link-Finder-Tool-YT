@@ -24,8 +24,8 @@ export async function assertMixedFrozen(root,plan){
   for(const [file,sha] of Object.entries(plan.sourceFiles))assert.equal(digest(await fs.readFile(file)),sha);
 }
 export async function executeMixedCaptures({root,plan,approval,pool,assertFrozen,checkCatalog,credential,
-  fetchImpl=fetch,readinessCheck=mixedCaptureReadiness}){
-  assertMixedApproval(plan,approval);assert.ok(typeof credential==='string'&&credential.length);
+  fetchImpl=fetch,readinessCheck=mixedCaptureReadiness,approvalCheck=assertMixedApproval}){
+  approvalCheck(plan,approval);assert.ok(typeof credential==='string'&&credential.length);
   await assertFrozen();await checkCatalog(mixedClaims(plan));
   const owner=randomUUID(),returns=[];let started=false;
   const transaction=async fn=>{

@@ -2688,3 +2688,17 @@ mtime_ms = 1794860420514
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/f73a0566-c778-43c8-9cf3-361bf53e86ee/b9a263c5-52fa-4aff-9c2c-3dc02af541be"
 storage_version_token = "1794860434687731"
 content_type = "text/csv"
+
+[[outputs]]
+id = "EZBQwPuZ10gIvfeya40Fg"
+uri = "file://generated-artifacts/youtube-accounted-channel-checks-500-2026-11-16/proposed-channel-checks.csv"
+type = "table"
+title = "265 proposed YouTube channel checks"
+description = "One channel target per artist, with artist names, tiers and catalog IDs. Topic leads are labeled. These are not verified or approved live links."
+logical_id = "5ef745a7-a230-4a10-968c-2a16488063f8"
+content_hash = "sha256:e62a83eb7c3201f8f21120aadcdd1d47de10dbe5511b6195a9f09389a729073c"
+size = 70921
+mtime_ms = 1794865317598
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/5ef745a7-a230-4a10-968c-2a16488063f8/5c825d41-587d-453d-ae85-75eac3c0e6f4"
+storage_version_token = "1794865373730184"
+content_type = "text/csv"
