@@ -2562,3 +2562,17 @@ mtime_ms = 1794678125091
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/4ee70299-f211-43b2-919e-b0d981a0c7ce/343674c3-7f2c-4ab3-92ce-412642391d00"
 storage_version_token = "1794678293043020"
 content_type = "text/csv"
+
+[[outputs]]
+id = "gjMnAHImoqlVgmBEEca5a"
+uri = "file://generated-artifacts/youtube-channel-results-100-after-continuation-2026-11-16/youtube-channels-captured.csv"
+type = "table"
+title = "11 captured YouTube channel pages"
+description = "Updated combined results. One channel per artist; Topic channels labeled. Artist ownership is still unverified."
+logical_id = "f691c2bc-dbd9-4ca1-94ef-72b1fff8454e"
+content_hash = "sha256:dd210c0589e4a4bb4b5bb6589792ed4c6f7d37e966cab19c20e19af71a37e4d4"
+size = 30901
+mtime_ms = 1794849582138
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/f691c2bc-dbd9-4ca1-94ef-72b1fff8454e/d74edf7c-ea4e-432d-a349-df4722a0c2bb"
+storage_version_token = "1794849598533505"
+content_type = "text/csv"
