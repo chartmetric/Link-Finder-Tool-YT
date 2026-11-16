@@ -296,3 +296,16 @@ may allow only the exact original unspent placeholders after validating the
 complete paid prefix; unrelated attempt history still blocks. Finish saved
 responses in a separate local recovery artifact when database changes were not
 approved, and bind later spending to a fresh exact scope and cumulative cap.
+
+Check the live coordinator's per-run constraints during read-only preparation,
+not just the logical aggregate budget and current artist eligibility.
+
+**Why:** A valid larger exact request plan was approved but its launch failed
+before any paid allocation because it exceeded the coordinator's smaller
+per-run limit. Plan validation alone had incorrectly suggested execution readiness.
+
+**How to apply:** Use bounded child runs under an exact aggregate and prove
+their summed scope and cap. Preserve the original failed launch and approval,
+confirm zero admissions before repackaging untouched work, and obtain fresh
+approval for the changed sealed executor. Never widen the database constraint
+or replay a one-shot runner to make the aggregate fit.

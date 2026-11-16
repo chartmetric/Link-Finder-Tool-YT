@@ -26,6 +26,8 @@ export async function assertMixedFrozen(root,plan){
 export async function executeMixedCaptures({root,plan,approval,pool,assertFrozen,checkCatalog,credential,
   fetchImpl=fetch,readinessCheck=mixedCaptureReadiness,approvalCheck=assertMixedApproval}){
   approvalCheck(plan,approval);assert.ok(typeof credential==='string'&&credential.length);
+  assert.ok(plan.maximumCalls>0&&plan.maximumCalls<=20&&plan.maximumSpendCents<=40,
+    'A single coordinator run supports at most twenty checks; use separately approved bounded groups');
   await assertFrozen();await checkCatalog(mixedClaims(plan));
   const owner=randomUUID(),returns=[];let started=false;
   const transaction=async fn=>{
