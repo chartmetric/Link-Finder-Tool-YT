@@ -214,6 +214,21 @@ Check those returned aliases against current and historical artist claims.
 Preparation must stay read-only even if the identity coordinator was never
 installed; install missing coordination only inside separately approved execution.
 
+Keep full-body model preparation separate from legacy transport allowances.
+A new proposal may measure a larger exact byte ceiling without truncating
+catalog evidence, but neither the old allowance nor a two-cent reservation
+confirms its cost or authorizes dispatch.
+
+**Why:** Rich catalog packets can exceed the old byte ceiling substantially.
+Holding every request indefinitely or deleting evidence to fit it defeats
+identity preparation; silently widening a sealed transport would instead
+change previously approved spending assumptions.
+
+**How to apply:** Freeze unchanged complete request bodies under a distinct
+preparation policy, disclose the smallest covering byte ceiling, and require
+separate pricing confirmation, exact cost/byte approval and a compatible sealed
+executor. Preserve historical approvals, reservations and non-replay exclusions.
+
 Prioritize capturing a usable direct channel lead before paying to resolve all
 associated video uploaders. Keep video fallbacks for artists without a usable
 direct lead; never count those deferred artists as completed no-matches.

@@ -2702,3 +2702,31 @@ mtime_ms = 1794865317598
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/5ef745a7-a230-4a10-968c-2a16488063f8/5c825d41-587d-453d-ae85-75eac3c0e6f4"
 storage_version_token = "1794865373730184"
 content_type = "text/csv"
+
+[[outputs]]
+id = "JP0UESWP_No1f_9Pmewxv"
+uri = "file://generated-artifacts/youtube-mixed-identity-fresh-twenty-2026-11-14.zip"
+type = "unspecified"
+title = "Frozen channel identity preparation package"
+description = "Exact model requests, immutable source evidence, sealed preparation runtime, CSV review and unapproved cost proposal. Nine proposed model calls; no paid work executed."
+logical_id = "2f22eacd-df34-4da9-afa9-eaed8f65501c"
+content_hash = "sha256:24d3760ab73feb37cfcf174913d84b1313a5b23f0b312cbba9615488c0e261e8"
+size = 3306936
+mtime_ms = 1794678622771
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2f22eacd-df34-4da9-afa9-eaed8f65501c/c374d3ee-7e02-4692-a5a6-6d21ec5da171"
+storage_version_token = "1794865464710330"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "XpUyFdw8kVj6BgKICMP2g"
+uri = "file://generated-artifacts/youtube-mixed-identity-fresh-twenty-2026-11-14/identity-review.csv"
+type = "table"
+title = "Channel identity review — 13 captured channels"
+description = "Nine requests awaiting separate cost and byte-limit approval; four unverified Topic associations. Every link remains unapproved."
+logical_id = "7eacc6dc-4dfe-4406-b5ad-93777d032c93"
+content_hash = "sha256:ada6d66a695083db52ef0c306ad38ba154c868b10a8148050d429c1d4c91116f"
+size = 8046
+mtime_ms = 1794678556715
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/7eacc6dc-4dfe-4406-b5ad-93777d032c93/6a96dd06-eba1-4f59-b910-67f69ac0e5ae"
+storage_version_token = "1794865465718491"
+content_type = "text/csv"
