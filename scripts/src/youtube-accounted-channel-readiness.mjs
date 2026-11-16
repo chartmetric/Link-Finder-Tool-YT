@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
+import {inspectIdentityConflict,HOLD_CHANNEL_CONFLICTS} from './youtube-identity-conflict-hold.mjs';
 import {assertAccountedLedger} from './youtube-accounted-search-source.mjs';
 import {mixedHistoricalClaims,MIXED_PARENT} from './youtube-mixed-capture-readiness.mjs';
-export async function accountedChannelReadiness(c,plan,{ownRun=false,preparationOnly=false}={}){
+export async function accountedChannelReadiness(c,plan,{ownRun=false,preparationOnly=false,holdIdentityConflicts=false}={}){
+  if(holdIdentityConflicts)assert.equal(plan.identityConflictPolicy,HOLD_CHANNEL_CONFLICTS);
   await assertAccountedLedger(c,plan.sourceRoot);
   const tables=(await c.query(`SELECT to_regclass('youtube_video_identity_runs') runs,
     to_regclass('youtube_video_identity_admissions') admissions,to_regclass('youtube_video_identity_claims') claims`)).rows[0];
@@ -30,6 +32,6 @@ export async function accountedChannelReadiness(c,plan,{ownRun=false,preparation
   assert.equal((await c.query(`SELECT count(*)::int n FROM youtube_link_campaign_admissions d
     INNER JOIN youtube_link_campaign_artists a ON a.campaign_id=d.campaign_id AND a.profile_id=d.profile_id
     WHERE d.kind='metadata' AND a.cm_artist=ANY($1::text[])`,[artists])).rows[0].n,0);
-  await mixedHistoricalClaims(c,plan.selections.map(s=>({
-    alias:s.url,channelId:s.channelId,profileId:s.profileId,cmArtist:s.cmArtist})),{identityInstalled:installed});
+  await inspectIdentityConflict(()=>mixedHistoricalClaims(c,plan.selections.map(s=>({
+    alias:s.url,channelId:s.channelId,profileId:s.profileId,cmArtist:s.cmArtist})),{identityInstalled:installed}),holdIdentityConflicts);
 }

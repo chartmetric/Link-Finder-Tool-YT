@@ -2,6 +2,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
+import {inspectIdentityConflict,identityConflict,HOLD_CHANNEL_CONFLICTS} from './youtube-identity-conflict-hold.mjs';
 import {fileURLToPath} from 'node:url';
 import {randomUUID} from 'node:crypto';
 import {digest} from './youtube-video-discovery-offline.mjs';
@@ -25,11 +26,12 @@ export async function assertMixedFrozen(root,plan){
 }
 export async function executeMixedCaptures({root,plan,approval,pool,assertFrozen,checkCatalog,credential,
   fetchImpl=fetch,readinessCheck=mixedCaptureReadiness,approvalCheck=assertMixedApproval,
-  targetCatalogChecks=false}){
+  targetCatalogChecks=false,holdIdentityConflicts=false}){
+  if(holdIdentityConflicts)assert.equal(plan.identityConflictPolicy,HOLD_CHANNEL_CONFLICTS);
   approvalCheck(plan,approval);assert.ok(typeof credential==='string'&&credential.length);
   assert.ok(plan.maximumCalls>0&&plan.maximumCalls<=20&&plan.maximumSpendCents<=40,
     'A single coordinator run supports at most twenty checks; use separately approved bounded groups');
-  await assertFrozen();await checkCatalog(mixedClaims(plan));
+  await assertFrozen();await inspectIdentityConflict(()=>checkCatalog(mixedClaims(plan)),holdIdentityConflicts);
   const owner=randomUUID(),returns=[];let started=false;
   const transaction=async fn=>{
     const c=await pool.connect();try{await c.query('BEGIN');
@@ -57,8 +59,15 @@ export async function executeMixedCaptures({root,plan,approval,pool,assertFrozen
       const requestClaims=targetCatalogChecks?mixedClaims(plan).filter(c=>
         c.profileId===op.profileId&&c.cmArtist===op.cmArtist):mixedClaims(plan);
       assert.ok(requestClaims.length);
-      await assertFrozen();await checkCatalog(requestClaims);
-      await transaction(async c=>{
+      await assertFrozen();
+      const holdFile='receipts/'+digest(op.key)+'.held.json';
+      const saveHold=async(conflicts,capture,paid)=>{
+        await durableStageFile(root+'/'+holdFile,JSON.stringify({operationKey:op.key,profileId:op.profileId,
+          cmArtist:op.cmArtist,conflicts,capture,paid,ownershipAccepted:false,importEligible:false,
+          transportReceivedOnly:paid},null,2));
+      };
+      let conflicts=await inspectIdentityConflict(()=>checkCatalog(requestClaims),holdIdentityConflicts);
+      if(!conflicts.length)conflicts=await inspectIdentityConflict(()=>transaction(async c=>{
         const run=await locked(c);await readinessCheck(c,plan,{ownRun:true});
         const history=(await c.query('SELECT * FROM youtube_video_identity_admissions WHERE run_id=$1',[plan.id])).rows;
         assert.ok(history.every(h=>h.status==='returned'&&h.http_status===200));
@@ -72,14 +81,22 @@ export async function executeMixedCaptures({root,plan,approval,pool,assertFrozen
         assert.equal(run.reserved_cents,history.length*2);assert.ok(run.reserved_cents+2<=plan.maximumSpendCents);
         const claims=(await c.query(`SELECT profile_id,cm_artist FROM youtube_video_identity_claims
           WHERE lower(alias)=lower($1) OR channel_id=$2`,[op.targetUrl,op.expectedChannelId])).rows;
-        assert.ok(claims.every(a=>a.profile_id===op.profileId&&a.cm_artist===op.cmArtist));
+        const other=claims.filter(a=>a.profile_id!==op.profileId||a.cm_artist!==op.cmArtist);
+        if(other.length)throw identityConflict(other);
+        await mixedHistoricalClaims(c,requestClaims);
         await c.query(`INSERT INTO youtube_video_identity_admissions
           (run_id,operation_key,profile_id,cm_artist,channel_id,kind,input_sha256,reserved_cents)
           VALUES($1,$2,$3,$4,$5,'metadata',$6,2)`,
         [plan.id,op.key,op.profileId,op.cmArtist,op.allocationChannelKey,op.inputSha256]);
         assert.equal((await c.query(`UPDATE youtube_video_identity_runs SET reserved_cents=reserved_cents+2
           WHERE id=$1 AND reserved_cents+2<=cap_cents`,[plan.id])).rowCount,1);
-      });
+      }),holdIdentityConflicts);
+      if(conflicts.length){
+        await saveHold(conflicts,null,false);
+        returns.push({operationKey:op.key,held:true,paid:false,heldEvidencePath:holdFile,
+          capture:null,ownershipAccepted:false,importEligible:false});
+        continue;
+      }
       const response=await fetchImpl(op.request.url,{method:'GET',redirect:'error',
         headers:{'x-api-key':credential},signal:AbortSignal.timeout(120000)});
       const chunks=[];let length=0;
@@ -99,21 +116,28 @@ export async function executeMixedCaptures({root,plan,approval,pool,assertFrozen
       const bound=boundYoutubeCapture(op.targetUrl,capture);assert.ok(bound);
       if(op.expectedChannelId)assert.equal(bound.body.channelId,op.expectedChannelId);
       const observed=bound.aliases.map(alias=>({alias,channelId:bound.body.channelId,profileId:op.profileId,cmArtist:op.cmArtist}));
-      await checkCatalog([...requestClaims,...observed]);
+      conflicts=await inspectIdentityConflict(()=>checkCatalog([...requestClaims,...observed]),holdIdentityConflicts);
       await transaction(async c=>{
         await locked(c);
-        await mixedHistoricalClaims(c,[...requestClaims,...observed]);
+        if(!conflicts.length)conflicts=await inspectIdentityConflict(()=>
+          mixedHistoricalClaims(c,[...requestClaims,...observed]),holdIdentityConflicts);
         const known=(await c.query(`SELECT profile_id,cm_artist FROM youtube_video_identity_claims
           WHERE channel_id=$1 OR lower(alias)=ANY($2::text[])`,
         [bound.body.channelId,bound.aliases.map(s=>s.toLowerCase())])).rows;
-        assert.ok(known.every(r=>r.profile_id===op.profileId&&r.cm_artist===op.cmArtist));
-        for(const claim of observed)await c.query(`INSERT INTO youtube_video_identity_claims(alias,channel_id,profile_id,cm_artist)
+        const other=known.filter(r=>r.profile_id!==op.profileId||r.cm_artist!==op.cmArtist);
+        if(other.length){
+          if(!holdIdentityConflicts)throw identityConflict(other);
+          conflicts.push(...other);
+        }
+        if(conflicts.length)await saveHold(conflicts,capture,true);
+        if(!conflicts.length)for(const claim of observed)await c.query(`INSERT INTO youtube_video_identity_claims(alias,channel_id,profile_id,cm_artist)
           VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING`,[claim.alias,claim.channelId,claim.profileId,claim.cmArtist]);
         assert.equal((await c.query(`UPDATE youtube_video_identity_admissions SET status='returned',
           receipt_sha256=$3,raw_sha256=$4,http_status=200 WHERE run_id=$1 AND operation_key=$2 AND status='admitted'`,
         [plan.id,op.key,digest(receipt),digest(raw)])).rowCount,1);
       });
-      returns.push({receipt,capture,ownershipAccepted:false,importEligible:false});
+      returns.push({operationKey:op.key,receipt,capture:conflicts.length?null:capture,paid:true,
+        ...(conflicts.length?{held:true,heldEvidencePath:holdFile}:{}),ownershipAccepted:false,importEligible:false});
       console.log(JSON.stringify({phase:'channel_captures',completed:returns.length,total:plan.maximumCalls}));
     }
     await durableStageFile(root+'/returns.json',JSON.stringify({planSha256:digest(plan),returns},null,2));

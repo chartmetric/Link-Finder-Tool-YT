@@ -2,6 +2,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
+import {identityConflict} from './youtube-identity-conflict-hold.mjs';
 import {digest} from './youtube-video-discovery-offline.mjs';
 import {identityArchivePath,identityJson} from './youtube-video-identity-source.mjs';
 import {validateVideoIdentityPlan,assertVideoIdentityApproval} from './youtube-video-identity-plan.mjs';
@@ -83,9 +84,8 @@ export function assertNoNewIdentityClaims(expected,observed){
     const relevant=expected.filter(e=>e.alias.toLowerCase()===claim.alias.toLowerCase()
       ||(claim.channelId&&e.channelId===claim.channelId));
     if(!relevant.length)continue;
-    assert.ok(relevant.some(e=>e.profileId===String(claim.profileId)
-      &&e.cmArtist===String(claim.cmArtist)),
-    'New catalog or historical shared-channel claim; prepare a new plan');
+    if(!relevant.some(e=>e.profileId===String(claim.profileId)
+      &&e.cmArtist===String(claim.cmArtist)))throw identityConflict([claim]);
   }
 }
 export function validateIdentityResponse(plan,op,receipt,raw){

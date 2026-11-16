@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {HOLD_CHANNEL_CONFLICTS,identityConflict} from './youtube-identity-conflict-hold.mjs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import {digest} from './youtube-video-discovery-offline.mjs';
@@ -246,6 +247,86 @@ test('targeted capture mode still saves and holds a charged response when its re
   assert.equal(f.state.run.status,'stopped');
   const receipt=JSON.parse(await fs.readFile(f.root+'/receipts/'+digest(f.plan.operations[0].key)+'.json'));
   assert.equal(digest(await fs.readFile(f.root+'/'+receipt.rawPath)),receipt.rawBodySha256);
+});
+function enableHeldConflicts(f){
+  f.plan={...f.plan,identityConflictPolicy:HOLD_CHANNEL_CONFLICTS};
+  f.holdIdentityConflicts=true;f.approvalCheck=()=>{};
+}
+test('explicit conflict-hold policy acknowledges a saved return without creating a channel claim and continues',async t=>{
+  const f=await executionFixture(t);enableHeldConflicts(f);
+  let checks=0;const inserts=[];const query=f.client.query.bind(f.client);
+  f.client.query=async(sql,args)=>{
+    if(sql.startsWith('INSERT INTO youtube_video_identity_claims'))inserts.push(args);
+    return query(sql,args);
+  };
+  f.checkCatalog=async()=>{if(++checks===3)throw identityConflict([{profileId:'999',cmArtist:'9999'}]);};
+  await executeMixedCaptures(f);
+  assert.equal(f.state.requests.length,2);assert.equal(f.state.run.status,'completed');
+  assert.ok(f.state.admissions.every(a=>a.status==='returned'));
+  const out=JSON.parse(await fs.readFile(f.root+'/returns.json'));
+  assert.equal(out.returns[0].held,true);assert.equal(out.returns[0].capture,null);
+  assert.equal(out.returns[1].held,undefined);
+  assert.ok(inserts.length>0);assert.ok(inserts.every(args=>args[2]==='2'));
+  const held=JSON.parse(await fs.readFile(f.root+'/'+out.returns[0].heldEvidencePath));
+  assert.equal(held.paid,true);assert.equal(held.importEligible,false);
+});
+test('a pre-request identity conflict is held without spending and unrelated channels continue',async t=>{
+  const f=await executionFixture(t);enableHeldConflicts(f);let checks=0;
+  f.checkCatalog=async()=>{if(++checks===2)throw identityConflict([{profileId:'999'}]);};
+  f.fetchImpl=async request=>{
+    f.state.requests.push(request);const op=f.plan.operations[1];assert.equal(request,op.request.url);
+    return Response.json({success:true,credits_charged:1,channelId:op.expectedChannelId,
+      channel:op.targetUrl,name:'Artist Two',description:'Musician'});
+  };
+  await executeMixedCaptures(f);
+  assert.equal(f.state.requests.length,1);assert.equal(f.state.run.reserved_cents,2);
+  const out=JSON.parse(await fs.readFile(f.root+'/returns.json'));
+  assert.equal(out.returns[0].held,true);assert.equal(out.returns[0].paid,false);
+  assert.equal(f.state.run.status,'completed');
+});
+test('hold mode does not swallow provider, eligibility, or unknown billing errors',async t=>{
+  for(const fault of ['catalog','billing','provider']){
+    await t.test(fault,async t=>{
+      const f=await executionFixture(t);enableHeldConflicts(f);
+      if(fault==='catalog')f.checkCatalog=async()=>{throw Error('eligibility unavailable');};
+      else f.fetchImpl=async request=>{
+        f.state.requests.push(request);const op=f.plan.operations[0];
+        return Response.json({success:true,credits_charged:fault==='billing'?2:1,
+          channelId:op.expectedChannelId,channel:op.targetUrl,name:'Artist One'},
+        {status:fault==='provider'?500:200});
+      };
+      await assert.rejects(()=>executeMixedCaptures(f));
+      assert.ok(f.state.requests.length<=1);
+      if(f.state.run)assert.equal(f.state.run.status,'stopped');
+    });
+  }
+});
+test('a historical conflict found after capture is held with no identity claim inserted',async t=>{
+  const f=await executionFixture(t);enableHeldConflicts(f);
+  const normal=f.fetchImpl,inserts=[],query=f.client.query.bind(f.client);
+  f.client.query=async(sql,args)=>{
+    if(sql.startsWith('INSERT INTO youtube_video_identity_claims'))inserts.push(args);
+    if(sql.startsWith('SELECT * FROM youtube_video_identity_claims')&&f.state.requests.length===1){
+      const result=await query(sql,args);f.state.claims=[];return result;
+    }
+    if(sql.startsWith('SELECT profile_id,cm_artist FROM youtube_video_identity_claims')){
+      const aliases=Array.isArray(args[1])?args[1]:[args[0]];
+      return {rows:f.state.claims.filter(r=>aliases.includes(r.alias.toLowerCase())||
+        r.channel_id===args[0]||r.channel_id===args[1])};
+    }
+    return query(sql,args);
+  };
+  f.fetchImpl=async request=>{
+    const response=await normal(request);
+    f.state.claims=[{alias:f.plan.operations[0].targetUrl,channel_id:f.plan.operations[0].expectedChannelId,
+      profile_id:'999',cm_artist:'9999'}];
+    return response;
+  };
+  await executeMixedCaptures(f);
+  const out=JSON.parse(await fs.readFile(f.root+'/returns.json'));
+  assert.equal(out.returns[0].held,true);assert.equal(out.returns[0].capture,null);
+  assert.equal(f.state.run.status,'completed');assert.equal(f.state.requests.length,2);
+  assert.ok(inserts.every(args=>args[2]==='2'));
 });
 test('new catalog conflicts and lost acknowledgment preserve the paid receipt and stop dispatch',async t=>{
   for(const fault of ['catalog_after_return','database_acknowledgment']){

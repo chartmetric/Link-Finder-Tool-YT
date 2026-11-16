@@ -324,3 +324,19 @@ lock, require zero in-flight requests, validate every charged receipt and the
 contiguous paid prefix, and owner-fence the old worker before starting the
 untouched suffix. Preserve the original sealed artifacts and all reservations.
 An ambiguous receipt or non-prefix allocation blocks the handover.
+
+A freshly approved channel-metadata continuation may hold structured catalog or
+historical artist-claim conflicts and continue unrelated exact requests.
+Pre-dispatch holds are unspent deferrals; post-response holds acknowledge only
+the saved transport receipt and must not insert a channel ownership claim.
+
+**Why:** Repeated alias conflicts stopped otherwise useful metadata batches.
+The user approved preparing conflict holds without new paid calls, not weakening
+identity checks or accepting the disputed artist links.
+
+**How to apply:** Bind the hold policy, untouched requests, saved-response
+recovery and combined historical spending cap into a new sealed approval.
+Keep conflicting captures out of usable-channel rows, preserve their evidence,
+and count them separately from successful captures and completed no-matches.
+Only explicitly structured identity conflicts may be held; eligibility changes,
+provider failures, unknown billing and lost acknowledgments still stop dispatch.
