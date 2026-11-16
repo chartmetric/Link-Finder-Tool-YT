@@ -13,7 +13,6 @@ import {exportYoutubeCatalogEvidence} from './youtube-ownership-catalog-export.m
 import {searchReadiness,prepareStagedSearch} from './run-youtube-staged-search.mjs';
 import {freezeLocalModules} from './seal-youtube-campaign-runtime.mjs';
 const parentId='full-tiers-1-5-no-youtube-uncapped';
-const id='youtube-batch-100-staged-2026-11-13',root='generated-artifacts/'+id;
 const save=async(file,value)=>fs.writeFile(file,typeof value==='string'?value:JSON.stringify(value,null,2),{flag:'wx'});
 async function attemptedArtists(){
   const pool=await connectSavedBatchPool();let client;
@@ -31,9 +30,13 @@ async function attemptedArtists(){
   }catch(error){if(client)await client.query('ROLLBACK');throw error;}
   finally{client?.release();await pool.end();}
 }
-export async function prepareHundredSearch(){
+export async function prepareHundredSearch({
+  id='youtube-batch-100-staged-2026-11-13',additionalHistory=[],
+}={}){
+  assert.match(id,/^youtube-batch-100-[a-z0-9-]{4,70}$/);
+  const root='generated-artifacts/'+id;
   try{await fs.lstat(root);assert.fail('Fresh batch destination required');}catch(e){if(e.code!=='ENOENT')throw e;}
-  const history=await attemptedArtists();
+  const history=[...await attemptedArtists(),...additionalHistory];
   const sql=youtubeEligibilitySql.replace('LIMIT 4 BY t.tier','LIMIT 1000 BY t.tier');
   const rows=await select(sql),artists=freshHundredArtists(rows,history);
   const pool=await connectSavedBatchPool();let c;
@@ -57,8 +60,9 @@ export async function prepareHundredSearch(){
   const children=[];
   for(let i=0;i<5;i++){
     const subset=artists.slice(i*20,(i+1)*20);
-    const catalogId='youtube-test-100-catalog-2026-11-13-part-'+(i+1);
-    const childId='youtube-test-100-staged-2026-11-13-part-'+(i+1);
+    const stem=id.replace('youtube-batch-100-','youtube-test-100-');
+    const catalogId=stem+'-catalog-part-'+(i+1);
+    const childId=stem+'-part-'+(i+1);
     const catalogRoot='generated-artifacts/'+catalogId;
     await fs.mkdir(catalogRoot);await fs.mkdir(catalogRoot+'/supplemental-catalog');
     const childPackets=subset.map(a=>enriched.find(p=>p.profileId===a.profile_id&&p.cmArtist===a.cm_artist));

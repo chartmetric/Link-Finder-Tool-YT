@@ -2646,3 +2646,17 @@ mtime_ms = 1794854430098
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/37f0f1cc-bd9e-4e6e-9f14-765c44630ccc/824be63d-c1cc-41ac-82f0-3eebc85dc2e6"
 storage_version_token = "1794854440194796"
 content_type = "text/csv"
+
+[[outputs]]
+id = "u2CrnCz-MmC6ceNGWI_qz"
+uri = "file://generated-artifacts/youtube-batch-500-staged-2026-11-16/proposed-500-artists.csv"
+type = "table"
+title = "Next 500 artists for YouTube searches"
+description = "Artist names, tiers, identifiers and exact planned searches. Prepared only; $10 maximum for searches. Channel checks require separate approval."
+logical_id = "2f196c98-a21d-4cb2-954c-6a8d25b0b272"
+content_hash = "sha256:95c3716bf570189868163b230b777a89a32de54c0e1d75907e613831367718d9"
+size = 109298
+mtime_ms = 1794856086866
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/2f196c98-a21d-4cb2-954c-6a8d25b0b272/49e00d0c-118b-43fa-9746-94209c0c70be"
+storage_version_token = "1794856110870821"
+content_type = "text/csv"
