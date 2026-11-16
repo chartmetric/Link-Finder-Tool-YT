@@ -2674,3 +2674,17 @@ mtime_ms = 1794857936982
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/5ed24a5d-a01f-421b-a46b-d5de78f0d704/a2d8884d-273c-45b0-b859-eb94280e5808"
 storage_version_token = "1794857983973756"
 content_type = "text/csv"
+
+[[outputs]]
+id = "qxIejsZOr94KjWUB6hI4B"
+uri = "file://generated-artifacts/youtube-search-results-500-completed-2026-11-16/artist-search-summary.csv"
+type = "table"
+title = "500-artist YouTube search summary"
+description = "All 500 artists, with search outcomes and counts of channel or video leads. Search leads are not verified artist-channel matches."
+logical_id = "f73a0566-c778-43c8-9cf3-361bf53e86ee"
+content_hash = "sha256:ba93aee69609e0429b959aa4e28c12735188f0025c49eea80bb10d09c66a7ebf"
+size = 47616
+mtime_ms = 1794860420514
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/f73a0566-c778-43c8-9cf3-361bf53e86ee/b9a263c5-52fa-4aff-9c2c-3dc02af541be"
+storage_version_token = "1794860434687731"
+content_type = "text/csv"
