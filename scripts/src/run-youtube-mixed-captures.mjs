@@ -24,7 +24,8 @@ export async function assertMixedFrozen(root,plan){
   for(const [file,sha] of Object.entries(plan.sourceFiles))assert.equal(digest(await fs.readFile(file)),sha);
 }
 export async function executeMixedCaptures({root,plan,approval,pool,assertFrozen,checkCatalog,credential,
-  fetchImpl=fetch,readinessCheck=mixedCaptureReadiness,approvalCheck=assertMixedApproval}){
+  fetchImpl=fetch,readinessCheck=mixedCaptureReadiness,approvalCheck=assertMixedApproval,
+  targetCatalogChecks=false}){
   approvalCheck(plan,approval);assert.ok(typeof credential==='string'&&credential.length);
   assert.ok(plan.maximumCalls>0&&plan.maximumCalls<=20&&plan.maximumSpendCents<=40,
     'A single coordinator run supports at most twenty checks; use separately approved bounded groups');
@@ -53,7 +54,10 @@ export async function executeMixedCaptures({root,plan,approval,pool,assertFrozen
     });started=true;
     await fs.mkdir(root+'/receipts');
     for(const op of plan.operations){
-      await assertFrozen();await checkCatalog(mixedClaims(plan));
+      const requestClaims=targetCatalogChecks?mixedClaims(plan).filter(c=>
+        c.profileId===op.profileId&&c.cmArtist===op.cmArtist):mixedClaims(plan);
+      assert.ok(requestClaims.length);
+      await assertFrozen();await checkCatalog(requestClaims);
       await transaction(async c=>{
         const run=await locked(c);await readinessCheck(c,plan,{ownRun:true});
         const history=(await c.query('SELECT * FROM youtube_video_identity_admissions WHERE run_id=$1',[plan.id])).rows;
@@ -95,10 +99,10 @@ export async function executeMixedCaptures({root,plan,approval,pool,assertFrozen
       const bound=boundYoutubeCapture(op.targetUrl,capture);assert.ok(bound);
       if(op.expectedChannelId)assert.equal(bound.body.channelId,op.expectedChannelId);
       const observed=bound.aliases.map(alias=>({alias,channelId:bound.body.channelId,profileId:op.profileId,cmArtist:op.cmArtist}));
-      await checkCatalog([...mixedClaims(plan),...observed]);
+      await checkCatalog([...requestClaims,...observed]);
       await transaction(async c=>{
         await locked(c);
-        await mixedHistoricalClaims(c,[...mixedClaims(plan),...observed]);
+        await mixedHistoricalClaims(c,[...requestClaims,...observed]);
         const known=(await c.query(`SELECT profile_id,cm_artist FROM youtube_video_identity_claims
           WHERE channel_id=$1 OR lower(alias)=ANY($2::text[])`,
         [bound.body.channelId,bound.aliases.map(s=>s.toLowerCase())])).rows;

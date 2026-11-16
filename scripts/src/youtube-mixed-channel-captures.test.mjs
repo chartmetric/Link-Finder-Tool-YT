@@ -228,6 +228,25 @@ test('new direct-search policy uses the bounded capture executor without any upl
   assert.equal(f.state.run.status,'completed');
   assert.ok(f.state.requests.every(r=>r.startsWith('https://api.scrapecreators.com/v1/youtube/channel?')));
 });
+test('targeted capture mode checks the cohort once, then each requested and returned artist without dropping conflict stops',async t=>{
+  const f=await executionFixture(t),checks=[];
+  f.targetCatalogChecks=true;
+  f.checkCatalog=async claims=>checks.push(claims.map(c=>c.profileId));
+  await executeMixedCaptures(f);
+  assert.deepEqual(checks[0],['1','2']);
+  assert.ok(checks[1].every(id=>id==='1'));assert.ok(checks[2].every(id=>id==='1'));
+  assert.ok(checks[3].every(id=>id==='2'));assert.ok(checks[4].every(id=>id==='2'));
+  assert.equal(f.state.run.reserved_cents,4);assert.equal(f.state.requests.length,2);
+});
+test('targeted capture mode still saves and holds a charged response when its returned aliases conflict',async t=>{
+  const f=await executionFixture(t);f.targetCatalogChecks=true;let checks=0;
+  f.checkCatalog=async()=>{if(++checks===3)throw Error('returned alias belongs to another artist');};
+  await assert.rejects(()=>executeMixedCaptures(f),/another artist/);
+  assert.equal(f.state.requests.length,1);assert.equal(f.state.admissions[0].status,'admitted');
+  assert.equal(f.state.run.status,'stopped');
+  const receipt=JSON.parse(await fs.readFile(f.root+'/receipts/'+digest(f.plan.operations[0].key)+'.json'));
+  assert.equal(digest(await fs.readFile(f.root+'/'+receipt.rawPath)),receipt.rawBodySha256);
+});
 test('new catalog conflicts and lost acknowledgment preserve the paid receipt and stop dispatch',async t=>{
   for(const fault of ['catalog_after_return','database_acknowledgment']){
     await t.test(fault,async t=>{

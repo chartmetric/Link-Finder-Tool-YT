@@ -309,3 +309,18 @@ their summed scope and cap. Preserve the original failed launch and approval,
 confirm zero admissions before repackaging untouched work, and obtain fresh
 approval for the changed sealed executor. Never widen the database constraint
 or replay a one-shot runner to make the aggregate fit.
+
+A speed-only handover can use a freshly approved deterministic suffix policy
+when every potential request identity and byte sequence is already frozen.
+It may subtract completed work, never discover or substitute new requests.
+
+**Why:** The active worker keeps progressing while its faster replacement is
+prepared, so freezing a stale remaining count would either duplicate charges
+or require stopping useful work throughout preparation.
+
+**How to apply:** Bind the original exact request list, new runtime and combined
+old-plus-new cap to fresh approval. At the switch, take the shared spending
+lock, require zero in-flight requests, validate every charged receipt and the
+contiguous paid prefix, and owner-fence the old worker before starting the
+untouched suffix. Preserve the original sealed artifacts and all reservations.
+An ambiguous receipt or non-prefix allocation blocks the handover.
