@@ -57,7 +57,7 @@ export function savedModelClaims(op){
   const capture=op.request.body.state.candidate.channelCapture;
   return capture.aliases.map(alias=>({alias,channelId:op.channelId,profileId:op.profileId,cmArtist:op.cmArtist}));
 }
-export function savedModelGate({pool,plan,source,approval,owner,checkCatalog}){
+export function savedModelGate({pool,plan,source,approval,owner,checkCatalog,rejectReplay=rejectSavedModelReplay}){
   const boundary=async c=>{
     assert.equal((await c.query('SELECT status FROM youtube_link_campaigns WHERE id=$1 FOR UPDATE',
       [MIXED_PARENT])).rows[0]?.status,'stopped');
@@ -76,7 +76,7 @@ export function savedModelGate({pool,plan,source,approval,owner,checkCatalog}){
   return {
     async start(g){await transaction(pool,async c=>{
       await boundary(c);await savedModelReadiness(c,plan,source,{group:g,approval});
-      await rejectSavedModelReplay(c,g.operations);await claims(c,g.operations);
+      await rejectReplay(c,g.operations);await claims(c,g.operations);
       await c.query(`INSERT INTO youtube_video_identity_runs
         (id,owner,plan_sha256,approval_sha256,execution_sha256,cap_cents,status)
         VALUES($1,$2,$3,$4,$5,$6,'running')`,
@@ -88,7 +88,7 @@ export function savedModelGate({pool,plan,source,approval,owner,checkCatalog}){
         const r=await locked(c,g),snapshot=await savedModelReadiness(c,plan,source,{ownRun:true,group:g,approval});
         const rows=snapshot.admissions.filter(a=>a.run_id===g.id);
         assert.equal(rows.length,g.operations.findIndex(o=>o.key===op.key));
-        await rejectSavedModelReplay(c,[op]);
+        await rejectReplay(c,[op]);
         await claims(c,[op]);assert.ok(r.reserved_cents+2<=g.maximumSpendCents);
         await c.query(`INSERT INTO youtube_video_identity_admissions
           (run_id,operation_key,profile_id,cm_artist,channel_id,kind,input_sha256,reserved_cents)

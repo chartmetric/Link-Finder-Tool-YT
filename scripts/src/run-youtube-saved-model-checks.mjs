@@ -60,8 +60,9 @@ export function verifySavedModelSource(plan,source){
   for(const op of plan.operations)assert.deepEqual(source.operations.find(o=>o.key===op.key),op);
 }
 export async function executeSavedModels({root,plan,approval,gate,credential,assertFrozen,fetchImpl=fetch,
-  checkPrice=async()=>checkModelQuote(await modelQuote(),plan.pricing)}){
-  assert.notEqual(process.env.REPLIT_DEPLOYMENT,'1');assert.deepEqual(approveSavedModels(plan,approval),approval);
+  checkPrice=async()=>checkModelQuote(await modelQuote(),plan.pricing),
+  validateApproval=approveSavedModels,parseResult=savedModelResult}){
+  assert.notEqual(process.env.REPLIT_DEPLOYMENT,'1');assert.deepEqual(validateApproval(plan,approval),approval);
   assert.ok(typeof credential==='string'&&credential.length);
   await assertFrozen();await checkPrice();
   // One shot, including pre-admission failures. Never rerun an existing launch.
@@ -88,7 +89,7 @@ export async function executeSavedModels({root,plan,approval,gate,credential,ass
           request:op.request,inputSha256:op.inputSha256,status:response.status,capturedAt:new Date().toISOString(),
           rawPath,rawBodySha256:digest(raw)};
         await durableIdentityFile(folder+'/receipts/'+digest(op.key)+'.json',JSON.stringify(receipt));
-        const result=savedModelResult(plan,op,receipt,raw);
+        const result=parseResult(plan,op,receipt,raw);
         await assertFrozen();await gate.returned(group,op,receipt,raw);
         results.push(result);
         console.log(JSON.stringify({phase:'artist_verification',completed:results.length,total:plan.operations.length}));

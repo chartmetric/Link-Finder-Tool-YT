@@ -52,20 +52,26 @@ export function youtubeDecisionRequest(input,plan){
   return {request,bytes,ready:bytes<=plan.model.maxRequestBytes,inputSha256:evidenceDigest(request)};
 }
 export function parseYoutubeDecision(packet,input,plan,requestHash){
-  const d=packet.data;
   // A receipt hash alone does not bind an answer to the supplied artist/evidence.
   // Verify the complete policy input, regenerate the exact typed request, and
   // compare the saved outgoing bytes before allowing the answer to be attached.
   assert.equal(input.inputSha256,evidenceDigest({policy:input.policy,rules:input.rules,state:input.state}));
   assert.equal(youtubeDecisionRequest(input,plan).inputSha256,requestHash);
+  return parseBoundYoutubeDecision(packet,{requestHash,inputSha256:input.inputSha256,
+    expectedModel:plan.model.expectedModel});
+}
+// The caller must first validate its versioned full request-construction policy.
+export function parseBoundYoutubeDecision(packet,{requestHash,inputSha256,expectedModel}){
+  const d=packet.data;
+  assert.match(requestHash,/^[a-f0-9]{64}$/);assert.match(inputSha256,/^[a-f0-9]{64}$/);
   assert.equal(evidenceDigest(packet.request),requestHash);
   assert.equal(packet.inputSha256,requestHash);
   assert.equal(packet.status,200);
   assert.ok(!d?.error);
   // The requested alias legitimately resolves to this observed dated release.
   // Keep an exact allowlist, not a permissive prefix or arbitrary model fallback.
-  assert.ok([plan.model.expectedModel,
-    ...(plan.model.expectedModel==='typesafe/jev-1.13'?['typesafe/jev-1.13-20260917']:[])].includes(d.model),
+  assert.ok([expectedModel,
+    ...(expectedModel==='typesafe/jev-1.13'?['typesafe/jev-1.13-20260917']:[])].includes(d.model),
   'Unexpected resolved model; preserve the paid receipt and stop without replay.');
   assert.ok(Number.isFinite(d.usage?.cost)&&d.usage.cost>=0&&d.usage.cost<=.02,
     'Missing or out-of-bounds model billing evidence; stop without retry.');
@@ -74,8 +80,8 @@ export function parseYoutubeDecision(packet,input,plan,requestHash){
   assert.ok(Number.isFinite(a.sameIdentityProbability)&&a.sameIdentityProbability>=0&&a.sameIdentityProbability<=1);
   assert.ok(['likely','uncertain','mismatch'].includes(a.verdict));
   assert.ok(['artist_owned','topic','fan','organization','unrelated','unknown'].includes(a.channelType));
-  return {inputSha256:input.inputSha256,requestSha256:requestHash,answer:a,
-    requestedModel:plan.model.expectedModel,resolvedModel:d.model,
+  return {inputSha256,requestSha256:requestHash,answer:a,
+    requestedModel:expectedModel,resolvedModel:d.model,
     rawAnswers:d.answers,providerReportedUsd:d.usage.cost,receiptSha256:evidenceDigest(packet)};
 }
 export function providerStopReason(packet){

@@ -3,6 +3,22 @@ name: YouTube video discovery budget boundary
 description: Why uploader resolution needs replacement slots rather than extra calls or reused test approval.
 ---
 
+A saved-evidence ownership comparison needs its own explicit approval naming
+the previous artist/channel checks and the changed question set. It may permit
+exactly the specified, fully returned historical baseline allocation; it must
+not relax normal replay exclusions or repeat the original question bytes.
+
+**Why:** Comparing a clearer verifier with a completed run necessarily revisits
+the same artist/channel identities. Clearing their old admissions or treating
+unused prior allowances as permission would discard spending history and turn
+an experiment into an uncontrolled replay.
+
+**How to apply:** Reconstruct each baseline from its original paid receipt,
+freeze both question sets and source evidence, reject any additional or
+uncertain model allocations, and bind a fresh one-shot allowance and executor.
+Keep new answer hashes distinct from historical policy inputs. Comparison
+support is experimental, not an accepted or importable artist link.
+
 Video-to-uploader resolution is a new paid operation, not an extra channel
 metadata call covered by a completed test's approval. Plan replacement slots
 inside the existing call/spending caps before proposing execution.
