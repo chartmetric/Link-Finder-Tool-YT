@@ -3,6 +3,36 @@ name: YouTube reviewed corrections
 description: User-confirmed YouTube link corrections that must stay distinct from historical model judgments.
 ---
 
+On 2026-11-17 the user said “i manually checked all; they all seemed good”
+about the 17 held artist/channel pairs supplied for independent review:
+
+- Zohar & Adam → UC3w2fqSzM9toQnhVPftiIfw
+- Hazzo → UCWTf-eukwslLp5fj0rqXqYw
+- Silly Silky → UCylZ2Jb1tTgB66LuGtmEBKg
+- HAMO ELGALAD → UC9ym3iJDkLx5XU70KN_NPoQ
+- AbrahamH Music → UC6-ISma8yqXYPf5I-xGSOZg
+- vers1zee → UCTgcsJa46eTnAXBcoxoUVJQ
+- Deejay Rifox → UCGtcAzYF85Ai5GpVBchjLHA
+- YFGTae → UC2hswG1Ssc3sxCP91-CVX5Q
+- hbkjemmiel → UChAZEddYl9X2o06FXorqhtQ
+- Biggy & Chokoss → UCfM6JJeDSyN9UfT_N8urYJw
+- Emory Thorne → UCybeKkTCpi6at053NGnpdvg
+- The Lofi Christian → UCwckSFwCQbw_BiCzNab44Ng
+- BiG LAMAR → UCZq5HQqCUjMdU130T2ZSzJw
+- Forever Mortal → UC0b9e8RB_xXFxJGjBA4NBdA
+- Irina Kalnoy → UCWGeJe9fW07WlyViR-J0zPQ
+- Shahrid Belal → UCnw681_AQJdqy-LuO7VG6Pw
+- Celestial Voices → UC2lwmOqxm8jWKA0FoxYgvPA
+
+**Why:** These are positive user-reported manual reviews despite the automated
+holds. “Seemed good” is not an independently documented ownership adjudication,
+and the checker’s lack of evidence does not establish that a match is wrong.
+
+**How to apply:** Keep the user's review separate from historical model results.
+Apply it only to these exact pairs, not other candidates for the same names.
+Use them as exposed diagnostic examples, not held-out accuracy measurements.
+This feedback alone authorizes no catalog writes, policy relaxation or paid runs.
+
 On 2026-11-16 the user said Christian Liguori's channel and the other channels
 in the 51 captured-channel document look good.
 
