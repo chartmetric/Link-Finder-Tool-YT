@@ -44,6 +44,19 @@ request protections, but never register those pairs as artist/channel ownership
 claims. Missing current eligibility is a deferral, not a reason to weaken
 campaign checks; shrink both sides when necessary to retain a balanced sample.
 
+Explicit model-only diagnostics of known-wrong pairs need the same separation
+from ownership-claim registration.
+
+**Why:** Requiring those pairs to pass ordinary ownership-conflict admission
+would exclude the mistakes the diagnostic is intended to reveal, or seed false
+claims just to obtain a model answer.
+
+**How to apply:** Use only the explicitly scoped experiment ledger, retaining
+current catalog identity, exact source captures, global spending locks and
+non-replay checks. Keep normal production claim guards unchanged and report their
+vetoes separately from raw model judgments. No diagnostic answer creates a
+catalog link, source-trust declaration or ownership claim.
+
 Cross-artist synthetic challenges are not independently source-reviewed negative
 ownership labels, even when catalog IDs differ or saved model answers disagree.
 
