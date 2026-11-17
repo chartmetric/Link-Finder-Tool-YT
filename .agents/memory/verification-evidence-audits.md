@@ -32,11 +32,12 @@ hold. Distinguish wording effects, added decision conditions and verified
 ownership. Do not drop the reason safeguard after seeing results or describe
 an old-policy counterfactual as a newly accepted link.
 
-The combined-decision alternative is approved for offline preparation only,
-not activation in paid or historical workflows.
+The combined-decision alternative remains experimental, not the default
+verification policy or a reason to revise historical results.
 
-**Why:** After the inconsistent verdict/role/reason comparison, the user chose
-“Prepare offline fix.” The chosen approach expresses identity, channel role,
+**Why:** After the inconsistent verdict/role/reason comparison, the user approved
+offline preparation followed by a separately bounded comparison, not general
+adoption or reinterpretation of past results. The approach expresses identity, channel role,
 ownership support and the reason as one mutually consistent assessment rather
 than discarding the explanation when it disagrees with favorable answers.
 
