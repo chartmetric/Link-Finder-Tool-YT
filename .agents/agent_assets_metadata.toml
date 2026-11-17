@@ -2772,3 +2772,17 @@ mtime_ms = 1794944547911
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/49c4dea0-1d7f-418f-b787-34c6d01c7563/7c5c92d2-f196-4909-b3bc-50a58e32fc6c"
 storage_version_token = "1794944651081038"
 content_type = "text/csv"
+
+[[outputs]]
+id = "QEFy-rDfuX7AUxcfk_w8r"
+uri = "file://generated-artifacts/youtube-test-100-review-parallel-2026-11-17/youtube-review.csv"
+type = "table"
+title = "YouTube results — 100 artists"
+description = "One row per artist/channel pair. Includes names, tiers, profile_id, cm_artist, channel URLs, Topic labels, review status and reasons. Suggestions are not verified or approved for import."
+logical_id = "384df76b-c4d2-4e73-ab3b-914c6aaeb5b1"
+content_hash = "sha256:b2b6cd092db6a42e326ba3a765196cb658c36f8a3b789cdcfddad15e9db947f8"
+size = 34157
+mtime_ms = 1794952326987
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/384df76b-c4d2-4e73-ab3b-914c6aaeb5b1/17df9a35-35c3-4dc9-b740-823dd2f42a1a"
+storage_version_token = "1794952374947659"
+content_type = "text/csv"

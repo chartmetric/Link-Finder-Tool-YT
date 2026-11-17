@@ -309,3 +309,33 @@ campaign budget or permission to split large work into small approvals. Ask
 before materially larger spending, bulk sourcing, or live-link changes. Standing
 permission does not waive uncertain-charge recovery safeguards or permit paid
 retries.
+
+The bounded YouTube coordinator's $10 allowance is restricted to its supported
+hundred-artist run namespace; ordinary experiment IDs allow at most $2.
+
+**Why:** A new end-to-end runner passed its local budget tests but registration
+was rejected by an existing, name-dependent database check before any paid
+admission. The legacy admission helper alone did not describe that constraint.
+
+**How to apply:** Inspect and validate the actual coordinator constraints before
+sealing a new budget policy. Use the existing supported hundred-artist format
+for an approved hundred-artist $10 run; never widen or remove the database
+constraint. Round-trip the exact saved approval through its validator before
+launch. A failed setup is zero-spend only when both coordinator admissions and
+saved dispatch evidence prove it; preserve the failed generation.
+
+A speed-only continuation shares its ancestor's allowance; a fresh coordinator
+row does not authorize another copy of that allowance.
+
+**Why:** The user requested more parallel workers for an already approved
+hundred-artist YouTube run, not more artists, retries or spending. The database
+requires a supported run's nominal cap to remain $10 even when some of the
+original allowance has already been reserved.
+
+**How to apply:** Seal the stopped source ledger and receipts, retain completed
+results and acknowledged failures, and atomically enforce ancestor reservations
+plus new reservations against the original total. Reuse exact acknowledged
+request/response pairs without dispatching them again. Parallel admissions may
+overlap only when every outstanding request belongs to the current process's
+known-live registry; unknown requests still close dispatch. Let existing
+responses drain after closing dispatch rather than cancelling or replaying them.

@@ -22,7 +22,7 @@ export function assertBoundedYoutubeAdmission(run,scope,operation,pending,owner)
   assert.match(operation.inputSha256,/^[a-f0-9]{64}$/);
   assert.ok(operation.key.startsWith(operation.kind+'-'+operation.profileId+'-'));
 }
-export function boundedYoutubeGate({pool,id,owner,scope,parentId}){
+export function boundedYoutubeGate({pool,id,owner,scope,parentId,beforeAdmission=null}){
   return {
     async admit(op){
       const c=await pool.connect();
@@ -31,6 +31,7 @@ export function boundedYoutubeGate({pool,id,owner,scope,parentId}){
         const parent=(await c.query('SELECT status FROM youtube_link_campaigns WHERE id=$1 FOR UPDATE',[parentId])).rows[0];
         assert.equal(parent?.status,'stopped','Full YouTube campaign must remain paused');
         const run=(await c.query('SELECT * FROM youtube_discovery_test_runs WHERE id=$1 FOR UPDATE',[id])).rows[0];
+        if(beforeAdmission)await beforeAdmission(c,op);
         const pending=(await c.query("SELECT count(*)::int n FROM youtube_bounded_test_admissions WHERE run_id=$1 AND status='admitted'",[id])).rows[0].n;
         assertBoundedYoutubeAdmission(run,scope,op,pending,owner);
         await c.query(`INSERT INTO youtube_bounded_test_admissions
