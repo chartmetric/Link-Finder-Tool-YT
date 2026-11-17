@@ -56,6 +56,7 @@ test('every allowed choice has a single coherent interpretation, including unkno
       assert.equal(result.channelTypeLabel,'Topic — auto-generated');
     }
     assert.equal(result.modelAnswer.derivedFromSingleChoice,true);
+    assert.equal(result.channelId,proposal.originalOperation.channelId);
     assert.ok(!('sameIdentityProbability' in result.modelAnswer));
     assert.equal(result.ownershipAccepted,false);assert.equal(result.importEligible,false);
     assert.equal(result.catalogWritten,false);assert.equal(result.decision.reviewSuggestion,false);
@@ -98,6 +99,10 @@ test('a positive combined choice cannot bypass captured fan, label, Topic, Spoti
   const {proposal}=fixture();
   assert.equal(parseCombinedOwnership(proposal,packet(proposal,'artist_managed_supported'),
     {sharedChannel:true}).decision.status,'experimental_safety_hold');
+  const topic=fixture({body:{name:'Artist - Topic'}}).proposal;
+  const heldTopic=parseCombinedOwnership(topic,packet(topic,'artist_managed_supported'));
+  assert.equal(heldTopic.channelTypeLabel,'Topic — auto-generated');
+  assert.equal(heldTopic.decision.status,'experimental_safety_hold');
 });
 test('user-rejected group/member pairs remain blocked and new answers are never attached to old inputs',()=>{
   const {proposal,original}=fixture({profileId:'257398',cmArtist:'11498692',name:'William Jakrapatr',

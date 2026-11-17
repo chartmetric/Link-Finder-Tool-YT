@@ -97,6 +97,7 @@ export function parseCombinedOwnership(proposal,packet,safetyOptions={}){
     assessment.category==='topic_identity_supported'?'experimental_topic_support':'experimental_hold';
   return {version:COMBINED_OWNERSHIP_VERSION,
     profileId:s.artist.profileId,cmArtist:s.artist.cmArtist,artist:s.artist.name,
+    channelId:proposal.originalOperation.channelId,
     youtubeUrl:'https://www.youtube.com/channel/'+proposal.originalOperation.channelId,
     modelAssessment:assessment,
     modelAnswer:{requestSha256:proposal.requestSha256,inputSha256:proposal.stateSha256,
@@ -104,6 +105,8 @@ export function parseCombinedOwnership(proposal,packet,safetyOptions={}){
       receiptSha256:digest(packet),derivedFromSingleChoice:true},
     decision:{status,reason:blocked?safety.reason:assessment.category,reviewSuggestion:false,
       verified:false,liveLinkAccepted:false},
-    channelTypeLabel:assessment.channelType==='topic'?'Topic — auto-generated':assessment.channelType,
+    channelTypeLabel:safety.channelType==='topic'?'Topic — auto-generated':
+      !artistSafe&&!topicSafe?'Held — source checks':
+      assessment.channelType==='topic'?'Topic — auto-generated':assessment.channelType,
     safety,experimental:true,ownershipAccepted:false,importEligible:false,catalogWritten:false};
 }

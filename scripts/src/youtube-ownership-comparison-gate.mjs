@@ -73,7 +73,8 @@ export async function comparisonReadiness(c,plan,{group,approval,own=false,retur
   }
   assert.equal(pending,returningOp?1:0);return rows;
 }
-export function boundedComparisonGate({pool,plan,approval,owner,checkCatalog}){
+export function boundedComparisonGate({pool,plan,approval,owner,checkCatalog,
+  readiness=comparisonReadiness,rejectReplay=rejectComparisonReplay}){
   const transaction=async fn=>{
     const c=await pool.connect();
     try{
@@ -94,16 +95,16 @@ export function boundedComparisonGate({pool,plan,approval,owner,checkCatalog}){
   };
   return {
     async start(g){await transaction(async c=>{
-      await comparisonReadiness(c,plan,{group:g,approval});
-      await rejectComparisonReplay(c,g.operations);await claims(c,g.operations);
+      await readiness(c,plan,{group:g,approval});
+      await rejectReplay(c,g.operations);await claims(c,g.operations);
       await c.query(`INSERT INTO youtube_discovery_test_runs(id,owner,scope_sha256,cap_cents,status)
         VALUES($1,$2,$3,$4,'running')`,[g.id,owner,digest({group:g,approval,runtimeFiles:plan.runtimeFiles}),g.maximumSpendCents]);
     });},
     async admit(g,op){assert.deepEqual(g.operations.find(o=>o.key===op.key),op);
       await transaction(async c=>{
-        await locked(c,g);const rows=await comparisonReadiness(c,plan,{group:g,approval,own:true});
+        await locked(c,g);const rows=await readiness(c,plan,{group:g,approval,own:true});
         assert.equal(rows.length,g.operations.findIndex(o=>o.key===op.key));
-        await rejectComparisonReplay(c,[op]);await claims(c,[op]);
+        await rejectReplay(c,[op],g.id);await claims(c,[op]);
         await c.query(`INSERT INTO youtube_bounded_test_admissions
           (run_id,operation_key,profile_id,kind,input_sha256,reserved_cents) VALUES($1,$2,$3,'model',$4,2)`,
         [g.id,op.key,op.profileId,op.inputSha256]);
@@ -112,7 +113,7 @@ export function boundedComparisonGate({pool,plan,approval,owner,checkCatalog}){
       });
     },
     async returned(g,op,receipt,raw){await transaction(async c=>{
-      await locked(c,g);await comparisonReadiness(c,plan,{group:g,approval,own:true,returningOp:op});
+      await locked(c,g);await readiness(c,plan,{group:g,approval,own:true,returningOp:op});
       await claims(c,[op]);assert.equal(receipt.rawBodySha256,digest(raw));
       for(const [key,v] of Object.entries({runId:g.id,parentId:plan.id,planSha256:digest(g),
         approvalSha256:digest(approval),operationKey:op.key,profileId:op.profileId,cmArtist:op.cmArtist,
@@ -127,7 +128,7 @@ export function boundedComparisonGate({pool,plan,approval,owner,checkCatalog}){
       await transaction(async c=>{
         await locked(c,g);
         if(status==='completed'){
-          const rows=await comparisonReadiness(c,plan,{group:g,approval,own:true});
+          const rows=await readiness(c,plan,{group:g,approval,own:true});
           assert.equal(rows.length,g.operations.length);
         }
         assert.equal((await c.query('UPDATE youtube_discovery_test_runs SET status=$2 WHERE id=$1 AND owner=$3',
