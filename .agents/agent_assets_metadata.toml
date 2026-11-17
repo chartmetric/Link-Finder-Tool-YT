@@ -2884,3 +2884,17 @@ mtime_ms = 1794959040610
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/9293549d-1361-4585-8dd3-3498a98ff1d2/a3fac1ce-37c0-4cf3-91cb-ff8bf97acc42"
 storage_version_token = "1794959046122461"
 content_type = "text/csv"
+
+[[outputs]]
+id = "pybePfHQIZMUUGadepOdn"
+uri = "file://generated-artifacts/youtube-coverage-recovery-75-2026-11-17/coverage-recovery.csv"
+type = "table"
+title = "75-artist YouTube coverage recovery"
+description = "Saved-lead inventory for the 75 artists without suggestions. Preparation only: no new searches or accepted links."
+logical_id = "0f0a7f19-7f08-4244-ba53-33e579ce7299"
+content_hash = "sha256:889c793e48479a5e6e51b04e633e7e26ad996e038cb417167989d0fd8e04c3f3"
+size = 5974
+mtime_ms = 1794959627686
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/0f0a7f19-7f08-4244-ba53-33e579ce7299/8064dcdd-87f1-4772-a4e4-ae0c95c73e57"
+storage_version_token = "1794959646753511"
+content_type = "text/csv"
