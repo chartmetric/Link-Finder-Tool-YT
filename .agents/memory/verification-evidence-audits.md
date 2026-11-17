@@ -18,6 +18,20 @@ available corroboration separately from missing evidence and policy holds.
 Future explanation capture needs an explicit returned field, separately tested
 and approved; it cannot be backfilled as an original model rationale.
 
+When a comparison adds a reason category as another acceptance condition,
+report changes in the original questions separately from that new condition.
+Do not call an unchanged final hold proof that the model's answers did not improve.
+
+**Why:** Revised YouTube requests produced favorable identity and artist-owned
+answers while the new explanation category still said control was uncertain.
+The experimental consistency guard held these contradictory answers, whereas
+the earlier verdict-and-role condition alone would have allowed suggestions.
+
+**How to apply:** Preserve the contradictory answers and explicit experimental
+hold. Distinguish wording effects, added decision conditions and verified
+ownership. Do not drop the reason safeguard after seeing results or describe
+an old-policy counterfactual as a newly accepted link.
+
 No direct channel candidate is not the same as no YouTube evidence.
 
 **Why:** A saved YouTube pilot contained music-video search results while its
