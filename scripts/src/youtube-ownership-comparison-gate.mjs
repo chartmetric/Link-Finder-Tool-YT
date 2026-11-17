@@ -127,8 +127,8 @@ export function boundedComparisonGate({pool,plan,approval,owner,checkCatalog,
       assert.deepEqual(receipt.request,op.request);
       assert.equal((await c.query(`UPDATE youtube_bounded_test_admissions SET status='returned',
         receipt_sha256=$5,http_status=200 WHERE run_id=$1 AND operation_key=$2 AND profile_id=$3
-        AND input_sha256=$4 AND kind='model' AND status='admitted'`,
-      [g.id,op.key,op.profileId,op.inputSha256,digest(receipt)])).rowCount,1);
+        AND input_sha256=$4 AND kind=$6 AND status='admitted'`,
+      [g.id,op.key,op.profileId,op.inputSha256,digest(receipt),op.kind])).rowCount,1);
     });},
     async finish(g,status){assert.ok(['stopped','completed'].includes(status));
       await transaction(async c=>{

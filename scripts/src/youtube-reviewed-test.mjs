@@ -5,6 +5,8 @@ import {immutableValidationCache} from './youtube-immutable-validation-cache.mjs
 import {youtubeVerificationInput} from './youtube-ownership-policy.mjs';
 import {normalizeYoutubeChannel} from './youtube-ownership-transport.mjs';
 import {boundedComparisonGate,boundedExperimentReadiness} from './youtube-ownership-comparison-gate.mjs';
+import {MIXED_PARENT} from './youtube-mixed-capture-readiness.mjs';
+import {durableIdentityFile} from './youtube-video-identity-execution.mjs';
 
 export const REVIEWED_TEST_POLICY='reviewed-youtube-transport-only-captures-v1';
 function noFeedback(value){
@@ -86,6 +88,7 @@ export const reviewedCapturePlan=immutableValidationCache(function(p){
   for(const [f,sha] of Object.entries(p.runtimeFiles)){
     assert.match(f,/^runtime\/[\w-]+\.mjs$/);assert.match(sha,/^[a-f0-9]{64}$/);
   }
+  if(p.recovery)validateReviewedRecovery(p);
   return {...p,groups:[{id:p.id+'-part-1',groupIndex:0,operations:p.operations,
     maximumCalls:p.operations.length,maximumSpendCents:p.maximumSpendCents}],
     cohortSummary:cohort.summary,executionEnabled:false,requiresFreshSpendingApproval:true,
@@ -97,7 +100,8 @@ export function approveReviewedCaptures(plan,{planSha256,capCents,approvedAt}){
   assert.equal(capCents,plan.maximumSpendCents);assert.ok(Date.parse(approvedAt)>=Date.parse(plan.preparedAt));
   return {id:plan.id,policy:plan.version,planSha256,capCents,approvedAt,explicitApproval:true,
     runtimeSha256:digest(plan.runtimeFiles),operationsSha256:digest(plan.operations),
-    scope:'Exact named channel metadata only for a historical user-feedback diagnostic. No models, searches, retries, ownership claims, grading-label refresh, policy activation or catalog writes. Model requests require separate preparation and approval.'};
+    scope:(plan.recovery?'Recover only the exact saved successful metadata response, acknowledge its transport and retire the stopped source run’s unused allowance before the untouched suffix. Combined source reservation and new allowance must stay within the original allowance. ':'')+
+      'Exact named channel metadata only for a historical user-feedback diagnostic. No models, searches, retries, ownership claims, grading-label refresh, policy activation or catalog writes. Model requests require separate preparation and approval.'};
 }
 export async function rejectReviewedCaptureReplay(c,operations,ownRun=''){
   for(const op of operations){
@@ -113,7 +117,7 @@ export async function rejectReviewedCaptureReplay(c,operations,ownRun=''){
 }
 export function reviewedCaptureGate({pool,plan,approval,owner,checkCatalog}){
   return boundedComparisonGate({pool,plan,approval,owner,
-    readiness:boundedExperimentReadiness,rejectReplay:rejectReviewedCaptureReplay,
+    readiness:reviewedCaptureReadiness,rejectReplay:rejectReviewedCaptureReplay,
     // These are intentionally correct AND incorrect artist/channel associations.
     // Validate the catalog identity, not ownership; persist no channel claims.
     checkClaims:async(c,ops)=>{for(const op of ops)await checkCatalog(op);}});
@@ -132,4 +136,91 @@ export function reviewedCaptureResult(plan,op,receipt,raw){
   return {profileId:op.profileId,cmArtist:op.cmArtist,channelId:op.channelId,youtubeUrl:op.targetUrl,capture,
     transportOnly:true,ownershipAccepted:false,importEligible:false,catalogWritten:false,
     reviewLabelsChanged:false,channelClaimsWritten:false};
+}
+export function validateReviewedRecovery(plan){
+  const r=plan.recovery,source=r.sourcePlan;
+  assert.equal(source.recovery,undefined,'Nested recoveries require a separately prepared policy');
+  assert.deepEqual(reviewedCapturePlan(source),source);
+  assert.deepEqual(approveReviewedCaptures(source,r.sourceApproval),r.sourceApproval);
+  assert.equal(r.sourceRoot,'generated-artifacts/'+source.id);
+  const group=source.groups[0],op=source.operations[0],raw=Buffer.from(r.rawBodyBase64,'base64');
+  assert.equal(r.receipt.approvalSha256,digest(r.sourceApproval));
+  assert.equal(r.receipt.rawPath,'receipts/'+digest(op.key)+'.raw');
+  const result=reviewedCaptureResult(source,op,r.receipt,raw);
+  assert.deepEqual(r.sourceRun,{id:group.id,status:'stopped',
+    scope_sha256:digest({group,approval:r.sourceApproval,runtimeFiles:source.runtimeFiles}),
+    cap_cents:source.maximumSpendCents,reserved_cents:2});
+  assert.deepEqual(r.sourceAdmission,{run_id:group.id,operation_key:op.key,profile_id:op.profileId,
+    kind:'metadata',input_sha256:op.inputSha256,reserved_cents:2,status:'admitted',
+    receipt_sha256:null,http_status:null});
+  assert.deepEqual(plan.operations,source.operations.slice(1),'Only the untouched suffix may be sent');
+  assert.equal(plan.maximumSpendCents+2,source.maximumSpendCents,'No additional allowance beyond the original total');
+  assert.deepEqual(plan.grading,source.grading,'Recovery does not change user feedback');
+  const receiptPath=r.sourceRoot+'/part-1/receipts/'+digest(op.key)+'.json';
+  const rawPath=r.sourceRoot+'/part-1/'+r.receipt.rawPath;
+  assert.deepEqual(plan.inputs,source.inputs.map(i=>i.profileId!==op.profileId?i:
+    reviewedInput({...i,capture:result.capture,sourceRefs:[...i.sourceRefs,receiptPath,rawPath]})));
+  return {run:{...r.sourceRun,cap_cents:2},
+    admission:{...r.sourceAdmission,status:'returned',receipt_sha256:digest(r.receipt),http_status:200},
+    capture:result.capture};
+}
+async function recoverySnapshot(c,r,{lock=false}={}){
+  const suffix=lock?' FOR UPDATE':'';
+  const runs=(await c.query(`SELECT id,status,scope_sha256,cap_cents,reserved_cents
+    FROM youtube_discovery_test_runs WHERE id=$1${suffix}`,[r.sourceRun.id])).rows;
+  const admissions=(await c.query(`SELECT run_id,operation_key,profile_id,kind,input_sha256,reserved_cents,
+    status,receipt_sha256,http_status FROM youtube_bounded_test_admissions
+    WHERE run_id=$1 ORDER BY operation_key${suffix}`,[r.sourceRun.id])).rows;
+  return {runs,admissions};
+}
+export async function reviewedRecoveryReadiness(c,plan){
+  validateReviewedRecovery(plan);
+  const r=plan.recovery,snapshot=await recoverySnapshot(c,r);
+  assert.deepEqual(snapshot,{runs:[r.sourceRun],admissions:[r.sourceAdmission]});
+  assert.equal((await c.query('SELECT status FROM youtube_link_campaigns WHERE id=$1',[MIXED_PARENT])).rows[0]?.status,'stopped');
+  for(const table of ['youtube_link_campaigns','youtube_video_stage_runs','youtube_video_identity_runs','youtube_discovery_test_runs'])
+    assert.equal((await c.query(`SELECT count(*)::int n FROM ${table} WHERE status='running'`)).rows[0].n,0);
+  for(const table of ['youtube_link_campaign_admissions','youtube_video_stage_admissions','youtube_video_identity_admissions'])
+    assert.equal((await c.query(`SELECT count(*)::int n FROM ${table} WHERE status='admitted'`)).rows[0].n,0);
+  assert.equal((await c.query(`SELECT count(*)::int n FROM youtube_bounded_test_admissions
+    WHERE status='admitted' AND NOT (run_id=$1 AND operation_key=$2)`,
+  [r.sourceRun.id,r.sourceAdmission.operation_key])).rows[0].n,0);
+}
+export async function reviewedCaptureReadiness(c,plan,options={}){
+  const rows=await boundedExperimentReadiness(c,plan,options);
+  if(plan.recovery){
+    const expected=validateReviewedRecovery(plan),actual=await recoverySnapshot(c,plan.recovery);
+    assert.deepEqual(actual,{runs:[expected.run],admissions:[expected.admission]},
+      'Saved response recovery and retirement must precede further spending');
+  }
+  return rows;
+}
+export async function recoverReviewedResponse({root,plan,approval,pool,assertFrozen}){
+  assert.deepEqual(approveReviewedCaptures(plan,approval),approval);
+  const expected=validateReviewedRecovery(plan),r=plan.recovery;
+  await assertFrozen();
+  await durableIdentityFile(root+'/recovery-started.json',JSON.stringify({
+    planSha256:digest(plan),approvalSha256:digest(approval),sourceRunId:r.sourceRun.id}));
+  const c=await pool.connect();
+  try{
+    await c.query('BEGIN');
+    assert.equal((await c.query('SELECT status FROM youtube_link_campaigns WHERE id=$1 FOR UPDATE',
+      [MIXED_PARENT])).rows[0]?.status,'stopped');
+    await recoverySnapshot(c,r,{lock:true});await reviewedRecoveryReadiness(c,plan);
+    const a=r.sourceAdmission;
+    assert.equal((await c.query(`UPDATE youtube_bounded_test_admissions SET status='returned',
+      receipt_sha256=$5,http_status=200 WHERE run_id=$1 AND operation_key=$2 AND profile_id=$3
+      AND input_sha256=$4 AND kind='metadata' AND status='admitted'`,
+    [a.run_id,a.operation_key,a.profile_id,a.input_sha256,digest(r.receipt)])).rowCount,1);
+    assert.equal((await c.query(`UPDATE youtube_discovery_test_runs SET cap_cents=reserved_cents
+      WHERE id=$1 AND status='stopped' AND scope_sha256=$2 AND cap_cents=$3 AND reserved_cents=2`,
+    [r.sourceRun.id,r.sourceRun.scope_sha256,r.sourceRun.cap_cents])).rowCount,1);
+    await reviewedCaptureReadiness(c,plan);
+    await c.query('COMMIT');
+  }catch(error){await c.query('ROLLBACK');throw error;}finally{c.release();}
+  await durableIdentityFile(root+'/recovery.json',JSON.stringify({sourceRunId:r.sourceRun.id,
+    sourceOperationKey:r.sourceAdmission.operation_key,receiptSha256:digest(r.receipt),
+    recoveredResponses:1,providerCalls:0,sourceCapCents:expected.run.cap_cents,
+    newAllowanceCents:plan.maximumSpendCents,combinedAllowanceCents:r.sourceRun.cap_cents,
+    ownershipAccepted:false,channelClaimWrites:0,catalogWrites:0},null,2));
 }

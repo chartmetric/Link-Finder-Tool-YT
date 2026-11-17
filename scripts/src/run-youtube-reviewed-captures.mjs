@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 import {fileURLToPath} from 'node:url';
 import {randomUUID} from 'node:crypto';
 import {digest} from './youtube-video-discovery-offline.mjs';
-import {reviewedCapturePlan,approveReviewedCaptures,reviewedCaptureResult,reviewedCaptureGate} from './youtube-reviewed-test.mjs';
+import {reviewedCapturePlan,approveReviewedCaptures,reviewedCaptureResult,reviewedCaptureGate,
+  recoverReviewedResponse} from './youtube-reviewed-test.mjs';
 import {readSavedJson} from './run-youtube-saved-model-checks.mjs';
 import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
 import {deepFreeze} from './run-youtube-channel-fast-continuation.mjs';
@@ -93,6 +94,7 @@ async function main(){
   check=await reviewedFrozen(root,plan,{[root+'/approval.json']:digest(await fs.readFile(root+'/approval.json'))});
   const pool=await connectSavedBatchPool();
   try{
+    if(plan.recovery)await recoverReviewedResponse({root,plan,approval,pool,assertFrozen:check});
     const gate=reviewedCaptureGate({pool,plan,approval,owner:randomUUID(),checkCatalog:reviewedCatalogCheck(plan)});
     console.log(JSON.stringify(await executeReviewedCaptures({root,plan,approval,gate,assertFrozen:check,
       credential:process.env.SCRAPECREATORS_API_KEY})));

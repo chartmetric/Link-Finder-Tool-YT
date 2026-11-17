@@ -275,6 +275,20 @@ failed artist outcomes were deliberately preserved.
 
 **How to apply:** Bind the stopped owner, full ledger snapshot, request and
 receipt hashes, original approval and sealed continuation before any write.
-Update only the approved receipt-status fields transactionally; never fabricate
-responses, refund reservations, reset failed artists, or treat finding a local
-receipt alone as authorization to continue.
+Under a receipt-only approval, update only approved receipt-status fields.
+Retiring unused allowance and assigning it to a continuation requires explicit
+reconciliation scope of its own. Never fabricate responses, refund reservations,
+reset failed artists, or treat finding a local receipt alone as authorization to
+continue.
+
+Stateful paid-work test doubles must enforce the real update predicates, not
+just find an operation by its key.
+
+**Why:** A permissive fake can acknowledge metadata despite a model-only
+completion predicate. The provider then charges successfully while the actual
+coordinator matches zero rows and must stop as uncertain.
+
+**How to apply:** Enforce request kind, run and operation, profile, input hash and
+prior status when simulating acknowledgment; return zero matched rows on a
+mismatch. Test metadata and model paths, transaction rollback, exact saved-response
+recovery and source-allowance retirement before any untouched continuation.

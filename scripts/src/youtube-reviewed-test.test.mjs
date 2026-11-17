@@ -5,7 +5,8 @@ import os from 'node:os';
 import {digest} from './youtube-video-discovery-offline.mjs';
 import {normalizeYoutubeChannel} from './youtube-ownership-transport.mjs';
 import {reviewedInput,reviewedCohort,reviewedCaptureOperation,reviewedCapturePlan,
-  approveReviewedCaptures,reviewedCaptureResult,reviewedCaptureGate,REVIEWED_TEST_POLICY} from './youtube-reviewed-test.mjs';
+  approveReviewedCaptures,reviewedCaptureResult,reviewedCaptureGate,REVIEWED_TEST_POLICY,
+  validateReviewedRecovery,recoverReviewedResponse} from './youtube-reviewed-test.mjs';
 import {executeReviewedCaptures} from './run-youtube-reviewed-captures.mjs';
 import {boundedComparisonSchema} from './youtube-ownership-comparison-gate.mjs';
 
@@ -115,9 +116,10 @@ test('failed capture preserves the charged response, stops and never retries',as
     assert.equal((await fs.readdir(root+'/part-1/receipts')).length,2);
   }finally{await fs.rm(root,{recursive:true,force:true});}
 });
-function metadataCoordinator(){
-  let runs=[],rows=[],before;const writes=[];
+function metadataCoordinator(initial={}){
+  let runs=structuredClone(initial.runs??[]),rows=structuredClone(initial.rows??[]),before;const writes=[];
   const c={release(){},async query(sql,a=[]){
+    sql=sql.replace(/\s+/g,' ').trim();
     if(sql==='BEGIN'){before=structuredClone({runs,rows});return {};}
     if(sql==='COMMIT')return {};
     if(sql==='ROLLBACK'){({runs,rows}=before);return {};}
@@ -136,9 +138,18 @@ function metadataCoordinator(){
       return {rows:[{n}]};
     }
     if(sql.startsWith('SELECT * FROM youtube_discovery_test_runs'))return {rows:runs.filter(r=>r.id===a[0])};
+    if(sql.startsWith('SELECT id,status,scope_sha256,cap_cents,reserved_cents FROM youtube_discovery_test_runs'))
+      return {rows:runs.filter(r=>r.id===a[0]).map(({id,status,scope_sha256,cap_cents,reserved_cents})=>
+        ({id,status,scope_sha256,cap_cents,reserved_cents}))};
     if(sql.includes('FROM youtube_bounded_test_admissions WHERE run_id=$1'))
       return {rows:rows.filter(r=>r.run_id===a[0]).sort((x,y)=>x.operation_key.localeCompare(y.operation_key))};
     writes.push(sql);
+    if(sql.startsWith('UPDATE youtube_discovery_test_runs SET cap_cents=reserved_cents')){
+      if(initial.failRetirement)return {rowCount:0};
+      const r=runs.find(r=>r.id===a[0]&&r.scope_sha256===a[1]&&r.cap_cents===a[2]&&
+        r.reserved_cents===2&&r.status==='stopped');
+      if(!r)return {rowCount:0};r.cap_cents=r.reserved_cents;return {rowCount:1};
+    }
     if(sql.startsWith('INSERT INTO youtube_discovery_test_runs')){
       runs.push({id:a[0],owner:a[1],scope_sha256:a[2],cap_cents:a[3],reserved_cents:0,status:'running'});return {rowCount:1};}
     if(sql.includes('INSERT INTO youtube_bounded_test_admissions')){
@@ -147,7 +158,10 @@ function metadataCoordinator(){
     if(sql.includes('SET reserved_cents=reserved_cents+2')){
       const r=runs.find(r=>r.id===a[0]);assert.ok(r.reserved_cents+2<=r.cap_cents);r.reserved_cents+=2;return {rowCount:1};}
     if(sql.includes("UPDATE youtube_bounded_test_admissions SET status='returned'")){
-      const r=rows.find(r=>r.run_id===a[0]&&r.operation_key===a[1]);assert.ok(r);
+      const requiredKind=sql.match(/AND kind='([^']+)'/)?.[1]??a[5];
+      const r=rows.find(r=>r.run_id===a[0]&&r.operation_key===a[1]&&r.profile_id===a[2]&&
+        r.input_sha256===a[3]&&r.kind===requiredKind&&r.status==='admitted');
+      if(!r)return {rowCount:0};
       Object.assign(r,{status:'returned',receipt_sha256:a[4],http_status:200});return {rowCount:1};}
     if(sql.includes('UPDATE youtube_discovery_test_runs SET status=$2')){
       runs.find(r=>r.id===a[0]).status=a[1];return {rowCount:1};}
@@ -155,6 +169,78 @@ function metadataCoordinator(){
   }};
   return {c,pool:{connect:async()=>c},writes,state:()=>structuredClone({runs,rows})};
 }
+async function recoveryFixture(){
+  const schema=digest(await boundedComparisonSchema(metadataCoordinator().c));
+  const source=reviewedCapturePlan({...fixture().plan,coordinatorSchemaSha256:schema});
+  const sourceApproval=approveReviewedCaptures(source,{planSha256:digest(source),capCents:16,
+    approvedAt:'2026-11-17T01:00:00Z'});
+  const op=source.operations[0],raw=rawFor(op),packet={...receipt(source,op,raw),
+    approvalSha256:digest(sourceApproval),rawPath:'receipts/'+digest(op.key)+'.raw'};
+  const group=source.groups[0],sourceRoot='generated-artifacts/'+source.id;
+  const sourceRun={id:group.id,status:'stopped',
+    scope_sha256:digest({group,approval:sourceApproval,runtimeFiles:source.runtimeFiles}),
+    cap_cents:16,reserved_cents:2};
+  const sourceAdmission={run_id:group.id,operation_key:op.key,profile_id:op.profileId,kind:'metadata',
+    input_sha256:op.inputSha256,reserved_cents:2,status:'admitted',receipt_sha256:null,http_status:null};
+  const capture=reviewedCaptureResult(source,op,packet,raw).capture;
+  const inputs=source.inputs.map(i=>i.profileId!==op.profileId?i:reviewedInput({...i,capture,
+    sourceRefs:[...i.sourceRefs,sourceRoot+'/part-1/receipts/'+digest(op.key)+'.json',
+      sourceRoot+'/part-1/'+packet.rawPath]}));
+  const plan=reviewedCapturePlan({...source,id:source.id+'-continuation',maximumSpendCents:14,
+    inputs,operations:source.operations.slice(1),selections:source.selections.filter(s=>s.profileId!==op.profileId),
+    recovery:{sourceRoot,sourcePlan:source,sourceApproval,sourceRun,sourceAdmission,
+      receipt:packet,rawBodyBase64:raw.toString('base64')}});
+  const approval=approveReviewedCaptures(plan,{planSha256:digest(plan),capCents:14,approvedAt:'2026-11-17T02:00:00Z'});
+  return {plan,approval,sourceRun,sourceAdmission};
+}
+test('transport recovery binds the saved response, unchanged feedback and untouched suffix within the original total',async()=>{
+  const {plan}=await recoveryFixture();
+  const expected=validateReviewedRecovery(plan);
+  assert.equal(expected.run.cap_cents,2);assert.equal(expected.admission.status,'returned');
+  for(const change of [
+    p=>p.recovery.receipt.channelId='UC'+'z'.repeat(22),
+    p=>p.recovery.sourceAdmission.kind='model',
+    p=>p.grading[0].userFeedback='rejected',
+    p=>p.operations.shift(),
+    p=>p.maximumSpendCents+=2,
+    p=>p.recovery.rawBodyBase64=Buffer.from('{}').toString('base64')
+  ]){
+    const altered=structuredClone(plan);change(altered);assert.throws(()=>reviewedCapturePlan(altered));
+  }
+});
+test('saved transport is acknowledged once and the unused source allowance is retired before more admissions',async()=>{
+  const {plan,approval,sourceRun,sourceAdmission}=await recoveryFixture();
+  const db=metadataCoordinator({runs:[sourceRun],rows:[sourceAdmission]});
+  const gate=reviewedCaptureGate({pool:db.pool,plan,approval,owner:'new-owner',checkCatalog:async()=>{}});
+  await assert.rejects(gate.start(plan.groups[0]),{code:'ERR_ASSERTION',actual:1,expected:0});
+  const root=await fs.mkdtemp(os.tmpdir()+'/reviewed-recovery-');
+  try{
+    await recoverReviewedResponse({root,plan,approval,pool:db.pool,assertFrozen:async()=>{}});
+    assert.equal(db.state().runs[0].cap_cents,2);assert.equal(db.state().rows[0].status,'returned');
+    const summary=JSON.parse(await fs.readFile(root+'/recovery.json'));
+    assert.equal(summary.providerCalls,0);assert.equal(summary.combinedAllowanceCents,16);
+    assert.equal(summary.channelClaimWrites,0);assert.equal(summary.catalogWrites,0);
+    await assert.rejects(recoverReviewedResponse({root,plan,approval,pool:db.pool,assertFrozen:async()=>{}}));
+    const g=plan.groups[0],op=g.operations[0];await gate.start(g);await gate.admit(g,op);
+    const raw=rawFor(op);
+    await gate.returned(g,op,{...receipt(plan,op,raw),approvalSha256:digest(approval)},raw);
+    assert.equal(db.state().rows[1].kind,'metadata');assert.equal(db.state().rows[1].status,'returned');
+    await gate.finish(g,'stopped');
+    assert.ok(db.writes.every(s=>/^(INSERT INTO|UPDATE) youtube_(?:discovery_test_runs|bounded_test_admissions)/.test(s)));
+  }finally{await fs.rm(root,{recursive:true,force:true});}
+});
+test('failed source retirement rolls acknowledgment back, preserves uncertainty and cannot dispatch',async()=>{
+  const {plan,approval,sourceRun,sourceAdmission}=await recoveryFixture();
+  const db=metadataCoordinator({runs:[sourceRun],rows:[sourceAdmission],failRetirement:true});
+  const root=await fs.mkdtemp(os.tmpdir()+'/reviewed-recovery-rollback-');
+  try{
+    await assert.rejects(recoverReviewedResponse({root,plan,approval,pool:db.pool,assertFrozen:async()=>{}}));
+    assert.deepEqual(db.state(),{runs:[sourceRun],rows:[sourceAdmission]});
+    const gate=reviewedCaptureGate({pool:db.pool,plan,approval,owner:'new-owner',checkCatalog:async()=>{}});
+    await assert.rejects(gate.start(plan.groups[0]),{code:'ERR_ASSERTION',actual:1,expected:0});
+    assert.equal(db.state().runs.length,1);
+  }finally{await fs.rm(root,{recursive:true,force:true});}
+});
 test('real gate records metadata, blocks uncertain dispatch and never writes artist/channel claims',async()=>{
   const db=metadataCoordinator(),original=fixture().plan;
   const plan=reviewedCapturePlan({...original,coordinatorSchemaSha256:digest(await boundedComparisonSchema(db.c))});
