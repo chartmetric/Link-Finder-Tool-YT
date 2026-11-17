@@ -2758,3 +2758,17 @@ mtime_ms = 1794872278773
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/70839cf9-6f84-431b-934a-c83ac1a5c788/40922d2d-1b6a-4773-9655-df3fb69fe4fd"
 storage_version_token = "1794872337762107"
 content_type = "text/csv"
+
+[[outputs]]
+id = "JcMAwRRu6fTibLI8eABOw"
+uri = "file://generated-artifacts/youtube-reviewed-test-captures-ready-2026-11-17/examples.csv"
+type = "table"
+title = "Reviewed YouTube test examples"
+description = "14 artist/channel pairs: seven from the batch you said looked correct and seven explicit rejections. Includes IDs, tiers, channel URLs, feedback and saved-capture availability. Feedback is historical, not verified ownership."
+logical_id = "49c4dea0-1d7f-418f-b787-34c6d01c7563"
+content_hash = "sha256:ddc84ee4d7cd1fd6ca881072c91e0aa67c61aed12444b1b5aad248b16900868d"
+size = 2804
+mtime_ms = 1794944547911
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/49c4dea0-1d7f-418f-b787-34c6d01c7563/7c5c92d2-f196-4909-b3bc-50a58e32fc6c"
+storage_version_token = "1794944651081038"
+content_type = "text/csv"

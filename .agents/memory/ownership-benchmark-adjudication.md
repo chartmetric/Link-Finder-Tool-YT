@@ -17,6 +17,33 @@ holds separately from missing exact-link evidence. Before interpreting results,
 identify the label tier, reused accounts and prior exposure. No population or
 threshold claim follows from this convenience sample.
 
+User-feedback diagnostics must compare raw verifier assessments separately from
+production safeguards that already know the user's rejections.
+
+**Why:** Known rejected artist/channel pairs are also recorded in the production
+safety policy. Scoring the final guarded outcome would credit the verifier for
+answers supplied by that policy. Batch-level “looks correct” feedback also does
+not establish individually adjudicated channel management.
+
+**How to apply:** Keep feedback outside verifier evidence, report its strength
+and historical scope, and count uncertain answers separately from rejections.
+Describe agreement with user feedback, not ownership accuracy or held-out
+calibration. A later model stage needs its own exact approval.
+
+Do not substitute video-uploader information for a full channel capture in a
+reviewed-example comparison.
+
+**Why:** The reviewed correct examples had saved channel captures, while the
+rejected examples only had video-level uploader records. Treating those as
+equivalent would confound the test with missing evidence.
+
+**How to apply:** Preserve the distinction and obtain explicit capture approval
+for missing channel information. Diagnostic captures of intentionally incorrect
+pairs must remain transport-only: keep billing, resource-ID, replay and uncertain
+request protections, but never register those pairs as artist/channel ownership
+claims. Missing current eligibility is a deferral, not a reason to weaken
+campaign checks; shrink both sides when necessary to retain a balanced sample.
+
 Cross-artist synthetic challenges are not independently source-reviewed negative
 ownership labels, even when catalog IDs differ or saved model answers disagree.
 

@@ -35,7 +35,7 @@ export async function zeroSpendComparisonLaunch(c,proof){
   assert.equal((await c.query('SELECT count(*)::int n FROM youtube_video_identity_admissions WHERE run_id=$1',
     [proof.id])).rows[0].n,0);
 }
-export async function comparisonReadiness(c,plan,{group,approval,own=false,returningOp=null}={}){
+export async function boundedExperimentReadiness(c,plan,{group,approval,own=false,returningOp=null}={}){
   assert.equal(digest(await boundedComparisonSchema(c)),plan.coordinatorSchemaSha256);
   assert.equal((await c.query('SELECT status FROM youtube_link_campaigns WHERE id=$1',[MIXED_PARENT])).rows[0]?.status,'stopped');
   for(const table of ['youtube_link_campaigns','youtube_video_stage_runs','youtube_video_identity_runs'])
@@ -47,9 +47,6 @@ export async function comparisonReadiness(c,plan,{group,approval,own=false,retur
     assert.equal((await c.query(`SELECT count(*)::int n FROM ${table} WHERE status='admitted'`)).rows[0].n,0);
   assert.equal((await c.query("SELECT count(*)::int n FROM youtube_bounded_test_admissions WHERE status='admitted' AND run_id<>$1",
     [ownId])).rows[0].n,0);
-  await zeroSpendComparisonLaunch(c,plan.failedLaunch);
-  assert.deepEqual(await sourceChannelSnapshot(c,{groups:plan.baselineLedgerSnapshot.runs.map(r=>({id:r.id}))}),
-    plan.baselineLedgerSnapshot,'Historical baseline allocations changed');
   if(!group)return [];
   const run=(await c.query('SELECT * FROM youtube_discovery_test_runs WHERE id=$1',[group.id])).rows[0];
   const rows=(await c.query(`SELECT run_id,operation_key,profile_id,kind,input_sha256,reserved_cents,
@@ -62,7 +59,7 @@ export async function comparisonReadiness(c,plan,{group,approval,own=false,retur
   let pending=0;
   for(const row of rows){
     const op=group.operations.find(o=>o.key===row.operation_key);assert.ok(op);
-    for(const [key,v] of Object.entries({run_id:group.id,profile_id:op.profileId,kind:'model',
+    for(const [key,v] of Object.entries({run_id:group.id,profile_id:op.profileId,kind:op.kind,
       input_sha256:op.inputSha256,reserved_cents:2}))assert.equal(row[key],v);
     if(row.status==='admitted'){
       assert.equal(op.key,returningOp?.key,'Uncertain comparison blocks further spending');pending++;
@@ -73,8 +70,15 @@ export async function comparisonReadiness(c,plan,{group,approval,own=false,retur
   }
   assert.equal(pending,returningOp?1:0);return rows;
 }
+export async function comparisonReadiness(c,plan,options={}){
+  const rows=await boundedExperimentReadiness(c,plan,options);
+  await zeroSpendComparisonLaunch(c,plan.failedLaunch);
+  assert.deepEqual(await sourceChannelSnapshot(c,{groups:plan.baselineLedgerSnapshot.runs.map(r=>({id:r.id}))}),
+    plan.baselineLedgerSnapshot,'Historical baseline allocations changed');
+  return rows;
+}
 export function boundedComparisonGate({pool,plan,approval,owner,checkCatalog,
-  readiness=comparisonReadiness,rejectReplay=rejectComparisonReplay}){
+  readiness=comparisonReadiness,rejectReplay=rejectComparisonReplay,checkClaims=null}){
   const transaction=async fn=>{
     const c=await pool.connect();
     try{
@@ -91,6 +95,7 @@ export function boundedComparisonGate({pool,plan,approval,owner,checkCatalog,
     assert.equal(row.cap_cents,g.maximumSpendCents);return row;
   };
   const claims=async(c,ops)=>{
+    if(checkClaims)return checkClaims(c,ops);
     for(const op of ops){await checkCatalog(op);await mixedHistoricalClaims(c,savedModelClaims(op));}
   };
   return {
@@ -101,13 +106,14 @@ export function boundedComparisonGate({pool,plan,approval,owner,checkCatalog,
         VALUES($1,$2,$3,$4,'running')`,[g.id,owner,digest({group:g,approval,runtimeFiles:plan.runtimeFiles}),g.maximumSpendCents]);
     });},
     async admit(g,op){assert.deepEqual(g.operations.find(o=>o.key===op.key),op);
+      assert.ok(['model','metadata'].includes(op.kind));
       await transaction(async c=>{
         await locked(c,g);const rows=await readiness(c,plan,{group:g,approval,own:true});
         assert.equal(rows.length,g.operations.findIndex(o=>o.key===op.key));
         await rejectReplay(c,[op],g.id);await claims(c,[op]);
         await c.query(`INSERT INTO youtube_bounded_test_admissions
-          (run_id,operation_key,profile_id,kind,input_sha256,reserved_cents) VALUES($1,$2,$3,'model',$4,2)`,
-        [g.id,op.key,op.profileId,op.inputSha256]);
+          (run_id,operation_key,profile_id,kind,input_sha256,reserved_cents) VALUES($1,$2,$3,$5,$4,2)`,
+        [g.id,op.key,op.profileId,op.inputSha256,op.kind]);
         assert.equal((await c.query(`UPDATE youtube_discovery_test_runs SET reserved_cents=reserved_cents+2
           WHERE id=$1 AND reserved_cents+2<=cap_cents`,[g.id])).rowCount,1);
       });
@@ -117,7 +123,7 @@ export function boundedComparisonGate({pool,plan,approval,owner,checkCatalog,
       await claims(c,[op]);assert.equal(receipt.rawBodySha256,digest(raw));
       for(const [key,v] of Object.entries({runId:g.id,parentId:plan.id,planSha256:digest(g),
         approvalSha256:digest(approval),operationKey:op.key,profileId:op.profileId,cmArtist:op.cmArtist,
-        channelId:op.channelId,kind:'model',inputSha256:op.inputSha256,status:200}))assert.equal(receipt[key],v);
+        channelId:op.channelId,kind:op.kind,inputSha256:op.inputSha256,status:200}))assert.equal(receipt[key],v);
       assert.deepEqual(receipt.request,op.request);
       assert.equal((await c.query(`UPDATE youtube_bounded_test_admissions SET status='returned',
         receipt_sha256=$5,http_status=200 WHERE run_id=$1 AND operation_key=$2 AND profile_id=$3
