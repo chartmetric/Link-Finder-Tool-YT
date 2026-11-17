@@ -2870,3 +2870,17 @@ mtime_ms = 1794957413579
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/db53c3eb-0f0a-425d-b8b8-ab908a4608e0/e3470a07-9342-4d6f-9b4e-529eeb82c3f3"
 storage_version_token = "1794957455335498"
 content_type = "text/plain"
+
+[[outputs]]
+id = "hG81msrj0Hz8HZ7_fnFV0"
+uri = "file://generated-artifacts/youtube-test-100-review-repr-20261117-2245-cont1/youtube-suggestions.csv"
+type = "table"
+title = "YouTube suggestions from 100-artist test"
+description = "27 review-only channel suggestions across 25 artists. No catalog links were written."
+logical_id = "9293549d-1361-4585-8dd3-3498a98ff1d2"
+content_hash = "sha256:5bca99fe37152a2628ec898bdb1057fa366756d62c9dfee6b561c0ab68863124"
+size = 9148
+mtime_ms = 1794959040610
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/9293549d-1361-4585-8dd3-3498a98ff1d2/a3fac1ce-37c0-4cf3-91cb-ff8bf97acc42"
+storage_version_token = "1794959046122461"
+content_type = "text/csv"
