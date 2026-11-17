@@ -2730,3 +2730,31 @@ mtime_ms = 1794678556715
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/7eacc6dc-4dfe-4406-b5ad-93777d032c93/6a96dd06-eba1-4f59-b910-67f69ac0e5ae"
 storage_version_token = "1794865465718491"
 content_type = "text/csv"
+
+[[outputs]]
+id = "sMRnM9-daziHOei2R4byl"
+uri = "file://generated-artifacts/youtube-batch-uploaders-sparse-100-2026-11-16/proposed-uploader-requests.csv"
+type = "table"
+title = "Frozen uploader request proposal"
+description = "38 exact saved-video requests for 21 artists; proposed cap $0.76. Discovery only, not approved channels or spending."
+logical_id = "442c05a4-d633-4484-b070-f219d7dc0096"
+content_hash = "sha256:096bc209578e27e7bbc70be386193a1855aceee0f5778cd164b7dd6b2052c83e"
+size = 14478
+mtime_ms = 1794872278769
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/442c05a4-d633-4484-b070-f219d7dc0096/c28df114-3080-41c9-bbe3-44775595a0a8"
+storage_version_token = "1794872337145579"
+content_type = "text/csv"
+
+[[outputs]]
+id = "gG8yN-bn_W9xqmM_rRaiX"
+uri = "file://generated-artifacts/youtube-batch-uploaders-sparse-100-2026-11-16/all-video-dispositions.csv"
+type = "table"
+title = "Saved video evidence and deferrals"
+description = "All selected, deferred and held video evidence, including the original direct-capture exclusions. No ownership-approved imports."
+logical_id = "70839cf9-6f84-431b-934a-c83ac1a5c788"
+content_hash = "sha256:e81e3807f103ca9ff023837033bf795003672a7719e22d87dccdb2fbc4d42fca"
+size = 145604
+mtime_ms = 1794872278773
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/70839cf9-6f84-431b-934a-c83ac1a5c788/40922d2d-1b6a-4773-9655-df3fb69fe4fd"
+storage_version_token = "1794872337762107"
+content_type = "text/csv"
