@@ -35,3 +35,4 @@
 - [YouTube uploader budget boundary](youtube-video-budget-boundary.md) — resolving video uploaders needs new operation approval and replacement slots, not leftover completed-test funds.
 - [YouTube Topic links](youtube-topic-link-scope.md) — include supported Topic music-presence links, clearly labeled auto-generated and separate from artist-managed channels.
 - [YouTube reviewed corrections](youtube-reviewed-corrections.md) — user identifies MAXAM and Riogeovn channel matches as correct; keep them separate from archived uncertain model judgments.
+- [Mixed channel recovery boundary](mixed-channel-recovery-boundary.md) — generic recovery keeps conflicting metadata unresolved; specialized transport-only approvals are not transferable.

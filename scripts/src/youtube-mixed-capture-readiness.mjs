@@ -37,42 +37,15 @@ export async function mixedHistoricalClaims(c,claims,{identityInstalled=true}={}
     visit(r.candidates_json);assertNoNewIdentityClaims(claims,found);
   }
 }
-export async function mixedCaptureReadiness(c,plan,{ownRun=false,preparationOnly=false}={}){
-  const tables=(await c.query(`SELECT to_regclass('youtube_video_identity_runs') runs,
-    to_regclass('youtube_video_identity_admissions') admissions,to_regclass('youtube_video_identity_claims') claims`)).rows[0];
-  const installed=Boolean(tables.runs&&tables.admissions&&tables.claims);
-  if(!installed){
-    assert.ok(preparationOnly&&!tables.runs&&!tables.admissions&&!tables.claims,
-      'Identity coordinator missing or partly installed');
-  }
-  assert.equal((await c.query('SELECT status FROM youtube_link_campaigns WHERE id=$1',
-    [MIXED_PARENT])).rows[0]?.status,'stopped');
-  for(const table of ['youtube_discovery_test_runs','youtube_video_stage_runs','youtube_link_campaigns'])
-    assert.equal((await c.query(`SELECT count(*)::int n FROM ${table} WHERE status='running'`)).rows[0].n,0);
-  if(installed)assert.equal((await c.query(`SELECT count(*)::int n FROM youtube_video_identity_runs
-    WHERE status='running' AND id<>$1`,[ownRun?plan.id:''])).rows[0].n,0);
-  for(const table of ['youtube_link_campaign_admissions','youtube_bounded_test_admissions','youtube_video_stage_admissions'])
-    assert.equal((await c.query(`SELECT count(*)::int n FROM ${table} WHERE status='admitted'`)).rows[0].n,0);
-  if(installed)assert.equal((await c.query(`SELECT count(*)::int n FROM youtube_video_identity_admissions
-    WHERE status='admitted' AND run_id<>$1`,[ownRun?plan.id:''])).rows[0].n,0);
-  const profiles=plan.selections.map(s=>s.profileId),artists=plan.selections.map(s=>s.cmArtist);
-  const channels=plan.operations.map(o=>o.allocationChannelKey);
-  if(installed)assert.equal((await c.query(`SELECT count(*)::int n FROM youtube_video_identity_admissions
-    WHERE kind='metadata' AND run_id<>$1 AND
-    (profile_id=ANY($2::text[]) OR cm_artist=ANY($3::text[]) OR channel_id=ANY($4::text[]))`,
-  [ownRun?plan.id:'',profiles,artists,channels])).rows[0].n,0,'Previous identity-stage metadata allocation');
-  for(const table of ['youtube_link_campaign_admissions','youtube_bounded_test_admissions'])
-    assert.equal((await c.query(`SELECT count(*)::int n FROM ${table}
-      WHERE kind='metadata' AND profile_id=ANY($1::text[])`,[profiles])).rows[0].n,0,
-    'Previous campaign/test channel lookup');
-  const urls=plan.selections.map(s=>s.url.toLowerCase());
-  if(installed)assert.equal((await c.query(`SELECT count(*)::int n FROM youtube_video_identity_claims
-    WHERE lower(alias)=ANY($1::text[]) AND profile_id<>ALL($2::text[])`,[urls,profiles])).rows[0].n,0,
-  'Another artist has a historical channel claim');
+// Shared source-chain checks do not grant admission or exempt historical work.
+export async function mixedCaptureSourceReadiness(c,plan){
   // Verify every charge in the completed search and split uploader chain.
   const search=(await c.query('SELECT status,reserved_cents FROM youtube_discovery_test_runs WHERE id=$1',
     [plan.sourceSearchId])).rows[0];
   assert.equal(search?.status,'completed');assert.equal(search.reserved_cents,40);
+  await mixedCaptureSourceReceipts(c,plan);
+}
+async function mixedCaptureSourceReceipts(c,plan){
   const searchRows=(await c.query(`SELECT operation_key,profile_id,input_sha256,receipt_sha256,status,http_status
     FROM youtube_bounded_test_admissions WHERE run_id=$1 AND kind='search'`,[plan.sourceSearchId])).rows;
   assert.equal(searchRows.length,20);
@@ -111,6 +84,40 @@ export async function mixedCaptureReadiness(c,plan,{ownRun=false,preparationOnly
     assert.equal(original.operations.length,24);
     assert.ok(original.operations.every(o=>uploaderKeys.has(o.key)));
   }
+}
+export async function mixedCaptureReadiness(c,plan,{ownRun=false,preparationOnly=false}={}){
+  const tables=(await c.query(`SELECT to_regclass('youtube_video_identity_runs') runs,
+    to_regclass('youtube_video_identity_admissions') admissions,to_regclass('youtube_video_identity_claims') claims`)).rows[0];
+  const installed=Boolean(tables.runs&&tables.admissions&&tables.claims);
+  if(!installed){
+    assert.ok(preparationOnly&&!tables.runs&&!tables.admissions&&!tables.claims,
+      'Identity coordinator missing or partly installed');
+  }
+  assert.equal((await c.query('SELECT status FROM youtube_link_campaigns WHERE id=$1',
+    [MIXED_PARENT])).rows[0]?.status,'stopped');
+  for(const table of ['youtube_discovery_test_runs','youtube_video_stage_runs','youtube_link_campaigns'])
+    assert.equal((await c.query(`SELECT count(*)::int n FROM ${table} WHERE status='running'`)).rows[0].n,0);
+  if(installed)assert.equal((await c.query(`SELECT count(*)::int n FROM youtube_video_identity_runs
+    WHERE status='running' AND id<>$1`,[ownRun?plan.id:''])).rows[0].n,0);
+  for(const table of ['youtube_link_campaign_admissions','youtube_bounded_test_admissions','youtube_video_stage_admissions'])
+    assert.equal((await c.query(`SELECT count(*)::int n FROM ${table} WHERE status='admitted'`)).rows[0].n,0);
+  if(installed)assert.equal((await c.query(`SELECT count(*)::int n FROM youtube_video_identity_admissions
+    WHERE status='admitted' AND run_id<>$1`,[ownRun?plan.id:''])).rows[0].n,0);
+  const profiles=plan.selections.map(s=>s.profileId),artists=plan.selections.map(s=>s.cmArtist);
+  const channels=plan.operations.map(o=>o.allocationChannelKey);
+  if(installed)assert.equal((await c.query(`SELECT count(*)::int n FROM youtube_video_identity_admissions
+    WHERE kind='metadata' AND run_id<>$1 AND
+    (profile_id=ANY($2::text[]) OR cm_artist=ANY($3::text[]) OR channel_id=ANY($4::text[]))`,
+  [ownRun?plan.id:'',profiles,artists,channels])).rows[0].n,0,'Previous identity-stage metadata allocation');
+  for(const table of ['youtube_link_campaign_admissions','youtube_bounded_test_admissions'])
+    assert.equal((await c.query(`SELECT count(*)::int n FROM ${table}
+      WHERE kind='metadata' AND profile_id=ANY($1::text[])`,[profiles])).rows[0].n,0,
+    'Previous campaign/test channel lookup');
+  const urls=plan.selections.map(s=>s.url.toLowerCase());
+  if(installed)assert.equal((await c.query(`SELECT count(*)::int n FROM youtube_video_identity_claims
+    WHERE lower(alias)=ANY($1::text[]) AND profile_id<>ALL($2::text[])`,[urls,profiles])).rows[0].n,0,
+  'Another artist has a historical channel claim');
+  await mixedCaptureSourceReadiness(c,plan);
   await mixedHistoricalClaims(c,plan.selections.map(s=>({
     alias:s.url,channelId:s.channelId,profileId:s.profileId,cmArtist:s.cmArtist})),{identityInstalled:installed});
   return {identityCoordinatorInstalled:installed,requiresCoordinatorSetup:!installed};
