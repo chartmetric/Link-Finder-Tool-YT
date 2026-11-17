@@ -3,6 +3,21 @@ name: Verification evidence audits
 description: Distinguish original verifier inputs from reconstructions and synthetic fixtures.
 ---
 
+Separate a deterministic hold condition from the model's own explanation.
+A favorable identity verdict with an unknown channel role explains why policy
+held a result, not why the model assigned that role. Do not reconstruct written
+reasons from scores, labels, or the mere presence of evidence.
+
+**Why:** Saved YouTube decisions supplied identity scores, verdicts and roles
+but no written rationales, even though the general instructions asked for
+reasons. Some held requests already contained exact catalog Spotify links.
+Calling every hold a lack of evidence overstated what the audit established.
+
+**How to apply:** Audit the exact outgoing requests and returned answers; report
+available corroboration separately from missing evidence and policy holds.
+Future explanation capture needs an explicit returned field, separately tested
+and approved; it cannot be backfilled as an original model rationale.
+
 No direct channel candidate is not the same as no YouTube evidence.
 
 **Why:** A saved YouTube pilot contained music-video search results while its
