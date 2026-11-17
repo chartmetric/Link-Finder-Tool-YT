@@ -99,12 +99,16 @@ export async function speedReadiness(c,plan,approval,cutover,suffix,group,{ownRu
   await assertHoldHistory(c,plan.sourcePlan,true);
   await assertZeroOriginalChannelAttempt(c,plan.sourcePlan.predecessor.sourcePlan);
   assert.deepEqual(await sourceChannelSnapshot(c,plan.sourcePlan),cutover.snapshot);
+  await boundedHoldReadiness(c,{id:plan.id,groups:suffix.groups,priorReservedCents:cutover.priorReservedCents,
+    combinedCapCents:plan.combinedCapCents},group,g=>speedGroupApproval(plan,approval,cutover,g),{ownRun});
+}
+export async function boundedHoldReadiness(c,context,group,approvalFor,{ownRun=false}={}){
   await accountedChannelReadiness(c,group,{ownRun,holdIdentityConflicts:true});
-  const snapshot=await sourceChannelSnapshot(c,{groups:suffix.groups});
-  let spent=cutover.priorReservedCents;
+  const snapshot=await sourceChannelSnapshot(c,{groups:context.groups});
+  let spent=context.priorReservedCents;
   for(const run of snapshot.runs){
-    const g=suffix.groups.find(g=>g.id===run.id);assert.ok(g&&g.groupIndex<=group.groupIndex);
-    const a=speedGroupApproval(plan,approval,cutover,g),rows=snapshot.admissions.filter(r=>r.run_id===run.id);
+    const g=context.groups.find(g=>g.id===run.id);assert.ok(g&&g.groupIndex<=group.groupIndex);
+    const a=approvalFor(g),rows=snapshot.admissions.filter(r=>r.run_id===run.id);
     for(const [k,v] of Object.entries({plan_sha256:digest(g),approval_sha256:digest(a),
       execution_sha256:digest(g.runtimeFiles),cap_cents:g.maximumSpendCents,reserved_cents:rows.length*2}))
       assert.equal(run[k],v);
@@ -112,13 +116,13 @@ export async function speedReadiness(c,plan,approval,cutover,suffix,group,{ownRu
     if(g.groupIndex===group.groupIndex)assert.ok(ownRun&&run.status==='running');
     else{
       assert.equal(run.status,'completed');
-      await verifyCompletedHoldGroup({id:plan.id},g,rows);
+      await verifyCompletedHoldGroup({id:context.id},g,rows);
     }
   }
-  for(const g of suffix.groups.slice(0,group.groupIndex))assert.ok(snapshot.runs.some(r=>r.id===g.id&&r.status==='completed'));
-  assert.ok(spent<=plan.combinedCapCents);
+  for(const g of context.groups.slice(0,group.groupIndex))assert.ok(snapshot.runs.some(r=>r.id===g.id&&r.status==='completed'));
+  assert.ok(spent<=context.combinedCapCents);
   for(const row of snapshot.admissions){
-    const g=suffix.groups.find(g=>g.id===row.run_id),op=g?.operations.find(o=>o.key===row.operation_key);assert.ok(op);
+    const g=context.groups.find(g=>g.id===row.run_id),op=g?.operations.find(o=>o.key===row.operation_key);assert.ok(op);
     for(const [k,v] of Object.entries({profile_id:op.profileId,cm_artist:op.cmArtist,
       channel_id:op.allocationChannelKey,kind:'metadata',input_sha256:op.inputSha256,
       reserved_cents:2,status:'returned',http_status:200}))assert.equal(row[k],v);
