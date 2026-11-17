@@ -2800,3 +2800,17 @@ mtime_ms = 1794953366919
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/162eeb3c-6f0c-4d10-9ef0-2f3a6f9df945/d440a2ae-ddaa-4ac6-b1c7-49ffe79bde98"
 storage_version_token = "1794953400307468"
 content_type = "text/csv"
+
+[[outputs]]
+id = "_LWQPdf-rjgOYLILQErcA"
+uri = "file://generated-artifacts/youtube-held-28-evidence-review-2026-11-17/17-artists-youtube-verification.csv"
+type = "table"
+title = "17 artists — YouTube verification details"
+description = "One CSV for Claude: artist names, tiers and IDs; found channel URLs; known catalog accounts; saved descriptions, releases and bios; and the questions to verify. All links remain unconfirmed."
+logical_id = "976e511a-66be-4555-adb8-8b3f65b0bc32"
+content_hash = "sha256:c5e34c51039ed7c0a207687edcb3d13fbe4e03d2a475752f76e2e67f9d63ad8a"
+size = 68234
+mtime_ms = 1794953683831
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/976e511a-66be-4555-adb8-8b3f65b0bc32/40b7fd88-e87a-4051-98c4-513a10626a6b"
+storage_version_token = "1794953698388630"
+content_type = "text/csv"
