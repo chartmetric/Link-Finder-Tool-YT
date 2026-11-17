@@ -4,9 +4,9 @@ import assert from 'node:assert/strict';
 import {fileURLToPath} from 'node:url';
 import {randomUUID} from 'node:crypto';
 import {digest} from './youtube-video-discovery-offline.mjs';
-import {comparisonPlan,approveComparison,comparisonResult,rejectComparisonReplay} from './youtube-ownership-comparison.mjs';
+import {comparisonPlan,approveComparison,comparisonResult} from './youtube-ownership-comparison.mjs';
 import {executeSavedModels,readSavedJson,modelQuote,checkModelQuote,liveSavedModelCatalog} from './run-youtube-saved-model-checks.mjs';
-import {savedModelGate} from './youtube-saved-model-gate.mjs';
+import {boundedComparisonGate} from './youtube-ownership-comparison-gate.mjs';
 import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
 import {deepFreeze} from './run-youtube-channel-fast-continuation.mjs';
 import {frozenFileVerifier} from './youtube-frozen-file-cache.mjs';
@@ -41,8 +41,7 @@ async function main(){
   check=await comparisonFrozen(root,plan,{[root+'/approval.json']:digest(await fs.readFile(root+'/approval.json'))});
   const pool=await connectSavedBatchPool();
   try{
-    const gate=savedModelGate({pool,plan,source:{sourceLedgerSnapshot:plan.baselineLedgerSnapshot},
-      approval,owner:randomUUID(),checkCatalog:liveSavedModelCatalog(plan),rejectReplay:rejectComparisonReplay});
+    const gate=boundedComparisonGate({pool,plan,approval,owner:randomUUID(),checkCatalog:liveSavedModelCatalog(plan)});
     console.log(JSON.stringify(await executeSavedModels({root,plan,approval,gate,
       credential:process.env.OPENROUTER_API_KEY,assertFrozen:check,
       validateApproval:approveComparison,parseResult:comparisonResult})));

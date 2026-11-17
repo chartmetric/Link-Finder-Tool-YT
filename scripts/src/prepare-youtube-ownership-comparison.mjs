@@ -8,7 +8,8 @@ import {comparisonOperation,comparisonPlan,COMPARISON_POLICY,rejectComparisonRep
 import {prepareOwnershipClarity} from './prepare-youtube-ownership-clarity.mjs';
 import {modelQuote,checkModelQuote,readSavedJson,liveSavedModelCatalog} from './run-youtube-saved-model-checks.mjs';
 import {savedModelResult} from './youtube-saved-verification-execution.mjs';
-import {savedModelReadiness,savedModelClaims} from './youtube-saved-model-gate.mjs';
+import {savedModelClaims} from './youtube-saved-model-gate.mjs';
+import {boundedComparisonSchema,comparisonReadiness} from './youtube-ownership-comparison-gate.mjs';
 import {sourceChannelSnapshot} from './youtube-channel-fast-live.mjs';
 import {freezeLocalModules} from './seal-youtube-campaign-runtime.mjs';
 import {connectSavedBatchPool} from './instagram-saved-batch-gate.mjs';
@@ -20,7 +21,7 @@ import {catalogReadWithOneTimeoutRetry} from './youtube-catalog-read-retry.mjs';
 import {mixedHistoricalClaims} from './youtube-mixed-capture-readiness.mjs';
 
 export async function prepareComparison(){
-  const id='youtube-ownership-comparison-13-2026-11-17',root='generated-artifacts/'+id;
+  const id='youtube-ownership-comparison-13-bounded-2026-11-17',root='generated-artifacts/'+id;
   try{await fs.stat(root);assert.fail('Fresh preparation destination required');}catch(e){if(e.code!=='ENOENT')throw e;}
   const source='generated-artifacts/youtube-saved-model-checks-500-ready-2026-11-17';
   const sourceFiles={},read=async name=>{
@@ -30,6 +31,15 @@ export async function prepareComparison(){
   const summary=await read(source+'/summary.json'),approval=await read(source+'/approval.json');
   assert.equal(summary.status,'completed');assert.equal(summary.returnedCalls,baseline.operations.length);
   assert.equal(approval.planSha256,digest(baseline));
+  const failedSource='generated-artifacts/youtube-ownership-comparison-13-2026-11-17';
+  const failedPlan=await read(failedSource+'/plan.json'),failedApproval=await read(failedSource+'/approval.json');
+  const failedMarker=await read(failedSource+'/run-started.json');
+  assert.equal(failedApproval.planSha256,digest(failedPlan));
+  assert.equal(failedMarker.planSha256,digest(failedPlan));
+  assert.deepEqual(await read(failedSource+'/part-1/plan.json'),failedPlan.groups[0]);
+  assert.deepEqual(await fs.readdir(failedSource+'/part-1/receipts'),[]);
+  const failedLaunch={id:failedPlan.groups[0].id,scopeSha256:digest(failedPlan.groups[0]),
+    status:'stopped',reservedCents:0,admissions:0};
   const sourceDraft='generated-artifacts/youtube-ownership-clarity-13-ready-2026-11-17/proposal.json';
   const draft=await read(sourceDraft);
   // Fail rather than silently adopting question changes after the offline proposal.
@@ -47,7 +57,7 @@ export async function prepareComparison(){
     assertCurrentIdentityEligibility([refreshed],[row]);selections.push(refreshed);
   }
   const pool=await connectSavedBatchPool(),c=await pool.connect();
-  let baselineLedgerSnapshot;const operations=[];
+  let baselineLedgerSnapshot,coordinatorSchemaSha256;const operations=[];
   try{
     await c.query('BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
     await c.query("SET LOCAL statement_timeout='15000'");
@@ -80,15 +90,15 @@ export async function prepareComparison(){
     assert.ok(operations.length);
     operations.sort((a,b)=>selections.find(s=>s.profileId===a.profileId).tier-
       selections.find(s=>s.profileId===b.profileId).tier);
-    const sourceForGate={sourceLedgerSnapshot:baselineLedgerSnapshot};
-    await savedModelReadiness(c,{groups:[],maximumSpendCents:operations.length*2},sourceForGate);
+    coordinatorSchemaSha256=digest(await boundedComparisonSchema(c));
+    await comparisonReadiness(c,{baselineLedgerSnapshot,failedLaunch,coordinatorSchemaSha256});
     await rejectComparisonReplay(c,operations);
     const live=liveSavedModelCatalog({selections});
     for(const op of operations){
       const claims=savedModelClaims(op);assert.ok(claims.length);
       await mixedHistoricalClaims(c,claims);await live(op);
     }
-    assert.equal((await c.query('SELECT count(*)::int n FROM youtube_video_identity_runs WHERE id LIKE $1',
+    assert.equal((await c.query('SELECT count(*)::int n FROM youtube_discovery_test_runs WHERE id LIKE $1',
       [id+'-part-%'])).rows[0].n,0);
     await c.query('COMMIT');
   }catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();await pool.end();}
@@ -102,6 +112,7 @@ export async function prepareComparison(){
   }
   const plan=deepFreeze(comparisonPlan({version:COMPARISON_POLICY,id,preparedAt:new Date().toISOString(),
     operations,selections,deferred,baselineLedgerSnapshot,sourceFiles,runtimeFiles,pricing,
+    failedLaunch,coordinatorSchemaSha256,
     maximumSpendCents:operations.length*2,maximumRequestBytes:Math.max(...operations.map(o=>o.requestBytes))}));
   const save=(f,v)=>fs.writeFile(root+'/'+f,JSON.stringify(v,null,2),{flag:'wx'});
   await save('plan.json',plan);
@@ -112,6 +123,7 @@ export async function prepareComparison(){
     byteBasedPlanningEstimateUsd:bodyBytes*5*Number(pricing.promptUsdPerToken),
     estimateCaveat:'Five billed tokens per body byte is a conservative planning assumption for four questions, not a measured token count or a provider-enforced billing ceiling.',
     baselineReconstructedFromPaidReceipts:true,sourceFilesFrozen:true,oldApprovalsUnchanged:true,
+    failedLaunchConfirmedUnspent:true,existingBoundedCoordinator:true,schemaChanges:0,
     ledgerWrites:0,paidCalls:0,catalogWrites:0,providerEnforcedDollarCeiling:false,deferred,
     nextStep:'Fresh explicit approval of this exact comparison and spending allowance; do not rerun the historical baseline.'};
   await save('preparation.json',preparation);

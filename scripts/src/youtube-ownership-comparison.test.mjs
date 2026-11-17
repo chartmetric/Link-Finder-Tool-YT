@@ -9,6 +9,7 @@ import {savedModelResult} from './youtube-saved-verification-execution.mjs';
 import {comparisonOperation,comparisonPlan,approveComparison,rejectComparisonReplay,
   comparisonResult,COMPARISON_POLICY} from './youtube-ownership-comparison.mjs';
 import {executeSavedModels} from './run-youtube-saved-model-checks.mjs';
+import {boundedComparisonGate,boundedComparisonSchema} from './youtube-ownership-comparison-gate.mjs';
 
 function fixture(n=2){
   const operations=[],admissions=[],selections=[];
@@ -42,6 +43,9 @@ function fixture(n=2){
     maximumSpendCents:n*2,maximumRequestBytes:Math.max(...operations.map(o=>o.requestBytes)),
     baselineLedgerSnapshot:{runs:[{id:'synthetic-baseline-part-1',status:'completed'}],admissions},
     runtimeFiles:{'runtime/synthetic.mjs':digest('synthetic')},
+    coordinatorSchemaSha256:digest('synthetic-schema'),
+    failedLaunch:{id:'youtube-ownership-comparison-synthetic-failed-part-1',
+      scopeSha256:digest('synthetic-failed-scope'),status:'stopped',reservedCents:0,admissions:0},
     sourceFiles:{'generated-artifacts/synthetic/source.json':digest('source')},
     pricing:{id:'typesafe/jev-1.13',promptUsdPerToken:'0.000000042',completionUsdPerToken:'0',contextTokens:262144}});
   const approval=approveComparison(plan,{planSha256:digest(plan),capCents:n*2,approvedAt:'2026-11-17T03:00:00Z'});
@@ -148,4 +152,85 @@ test('a malformed reason stops after saving the paid response without retrying',
     assert.equal(calls,1);assert.equal(acknowledged,0);assert.equal(stopped,true);
     assert.equal((await fs.readdir(root+'/part-1/receipts')).length,2);
   }finally{await fs.rm(root,{recursive:true,force:true});}
+});
+
+function syntheticBoundedCoordinator(plan){
+  let runs=[],admissions=[],before=null;const writes=[];
+  const c={release(){},async query(sql,args=[]){
+    if(sql==='BEGIN'){before=structuredClone({runs,admissions});return {};}
+    if(sql==='COMMIT'){before=null;return {};}
+    if(sql==='ROLLBACK'){({runs,admissions}=before);before=null;return {};}
+    if(sql.includes('information_schema.columns'))return {rows:[
+      {table_name:'youtube_discovery_test_runs',column_name:'id',data_type:'text'},
+      {table_name:'youtube_bounded_test_admissions',column_name:'run_id',data_type:'text'}]};
+    if(sql.includes('FROM pg_constraint'))return {rows:[]};
+    if(sql.includes('FROM pg_indexes'))return {rows:[{tablename:'youtube_bounded_test_admissions',
+      indexname:'synthetic_pkey',indexdef:'CREATE UNIQUE INDEX synthetic_pkey ON youtube_bounded_test_admissions (run_id, operation_key)'}]};
+    if(sql.startsWith('SELECT status FROM youtube_link_campaigns'))return {rows:[{status:'stopped'}]};
+    if(sql.startsWith('SELECT id,status,reserved_cents,plan_sha256'))return {rows:[{
+      id:plan.failedLaunch.id,status:'stopped',reserved_cents:0,plan_sha256:plan.failedLaunch.scopeSha256}]};
+    if(sql.startsWith('SELECT id,status,reserved_cents,scope_sha256'))return {rows:[]};
+    if(sql.startsWith('SELECT id,owner,status,plan_sha256'))return {rows:structuredClone(plan.baselineLedgerSnapshot.runs)};
+    if(sql.includes('FROM youtube_video_identity_admissions')&&sql.includes('WHERE run_id=ANY'))
+      return {rows:structuredClone(plan.baselineLedgerSnapshot.admissions)};
+    if(sql.includes('FROM youtube_video_identity_admissions')&&sql.includes("WHERE kind='model'"))
+      return {rows:structuredClone(plan.baselineLedgerSnapshot.admissions.filter(a=>
+        a.profile_id===args[1]||a.cm_artist===args[2]||a.channel_id===args[3]))};
+    if(sql.startsWith('SELECT count')){
+      let n=0;
+      if(sql.includes('FROM youtube_discovery_test_runs'))n=runs.filter(r=>r.status==='running'&&r.id!==args[0]).length;
+      if(sql.includes('FROM youtube_bounded_test_admissions')){
+        if(sql.includes("status='admitted'"))n=admissions.filter(a=>a.status==='admitted'&&a.run_id!==args[0]).length;
+        else if(sql.includes("kind='model'"))n=admissions.filter(a=>a.profile_id===args[0]).length;
+      }
+      return {rows:[{n}]};
+    }
+    if(sql.startsWith('SELECT * FROM youtube_discovery_test_runs'))return {rows:runs.filter(r=>r.id===args[0])};
+    if(sql.includes('FROM youtube_bounded_test_admissions WHERE run_id=$1'))
+      return {rows:admissions.filter(a=>a.run_id===args[0]).sort((a,b)=>a.operation_key.localeCompare(b.operation_key))};
+    if(sql.startsWith('INSERT INTO youtube_discovery_test_runs')){
+      assert.ok(!runs.some(r=>r.id===args[0]));writes.push(sql);
+      runs.push({id:args[0],owner:args[1],scope_sha256:args[2],cap_cents:args[3],reserved_cents:0,status:'running'});
+      return {rowCount:1};
+    }
+    if(sql.includes('INSERT INTO youtube_bounded_test_admissions')){
+      assert.ok(!admissions.some(a=>a.run_id===args[0]&&a.operation_key===args[1]));writes.push(sql);
+      admissions.push({run_id:args[0],operation_key:args[1],profile_id:args[2],kind:'model',input_sha256:args[3],
+        reserved_cents:2,status:'admitted',receipt_sha256:null,http_status:null});return {rowCount:1};
+    }
+    if(sql.includes('SET reserved_cents=reserved_cents+2')){
+      const r=runs.find(r=>r.id===args[0]);assert.ok(r.reserved_cents+2<=r.cap_cents);r.reserved_cents+=2;
+      return {rowCount:1};
+    }
+    if(sql.includes("UPDATE youtube_bounded_test_admissions SET status='returned'")){
+      const a=admissions.find(a=>a.run_id===args[0]&&a.operation_key===args[1]&&a.status==='admitted');
+      assert.ok(a);Object.assign(a,{status:'returned',receipt_sha256:args[4],http_status:200});return {rowCount:1};
+    }
+    if(sql.includes('UPDATE youtube_discovery_test_runs SET status=$2')){
+      const r=runs.find(r=>r.id===args[0]&&r.owner===args[2]);assert.ok(r);r.status=args[1];return {rowCount:1};
+    }
+    if(sql.startsWith('SELECT'))return {rows:[]}; // No synthetic historical claims.
+    assert.fail('Unexpected coordinator write: '+sql);
+  }};
+  return {client:c,pool:{connect:async()=>c},writes,state:()=>structuredClone({runs,admissions})};
+}
+test('bounded coordinator keeps existing baseline identity rows intact and blocks uncertain or duplicate dispatch',async()=>{
+  const original=fixture().plan,db=syntheticBoundedCoordinator(original);
+  const plan=comparisonPlan({...original,coordinatorSchemaSha256:digest(await boundedComparisonSchema(db.client))});
+  const approval=approveComparison(plan,{planSha256:digest(plan),capCents:4,approvedAt:'2026-11-17T03:00:00Z'});
+  const gate=boundedComparisonGate({pool:db.pool,plan,approval,owner:'synthetic-owner',checkCatalog:async()=>{}});
+  const g=plan.groups[0];await gate.start(g);await gate.admit(g,g.operations[0]);
+  assert.equal(db.state().runs[0].reserved_cents,2);
+  await assert.rejects(gate.admit(g,g.operations[1]),/Uncertain/);
+  assert.equal(db.state().admissions.length,1);
+  const raw=Buffer.from(JSON.stringify(answer()));
+  const r=op=>({...receipt(plan,op,raw),approvalSha256:digest(approval)});
+  await gate.returned(g,g.operations[0],r(g.operations[0]),raw);
+  await assert.rejects(gate.finish(g,'completed'));
+  await gate.admit(g,g.operations[1]);await gate.returned(g,g.operations[1],r(g.operations[1]),raw);
+  await gate.finish(g,'completed');assert.equal(db.state().runs[0].status,'completed');
+  assert.equal(db.state().runs[0].reserved_cents,4);await assert.rejects(gate.start(g));
+  assert.equal(db.writes.filter(sql=>sql.includes('INSERT INTO youtube_bounded_test_admissions')).length,2);
+  assert.ok(db.writes.every(sql=>!sql.includes('youtube_video_identity')));
+  assert.equal(plan.baselineLedgerSnapshot.admissions.length,2);
 });

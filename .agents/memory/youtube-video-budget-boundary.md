@@ -19,6 +19,21 @@ uncertain model allocations, and bind a fresh one-shot allowance and executor.
 Keep new answer hashes distinct from historical policy inputs. Comparison
 support is experimental, not an accepted or importable artist link.
 
+Check global database uniqueness as well as per-run caps when preparing a
+comparison. A logically authorized baseline exception cannot override a
+database-wide once-per-profile/artist/channel identity allocation.
+
+**Why:** The first separately approved comparison was blocked by a global
+identity-admission index before spending. Its pure approval and mocked runner
+tests had not modeled that actual uniqueness constraint.
+
+**How to apply:** Preserve identity exclusions and the zero-spend failed launch.
+Use the existing bounded YouTube test ledger for an explicitly scoped comparison,
+with source-identity and replay checks, live schema fingerprinting, shared locks,
+and uncertain-admission stops. Do not drop indexes, reset history, invent artist
+IDs or mislabel the operation to make the comparison fit. A changed sealed
+coordinator needs fresh approval even when requests and the allowance are unchanged.
+
 Video-to-uploader resolution is a new paid operation, not an extra channel
 metadata call covered by a completed test's approval. Plan replacement slots
 inside the existing call/spending caps before proposing execution.

@@ -6,7 +6,7 @@ import {clarifiedOwnershipRequest} from './youtube-ownership-clarity.mjs';
 import {parseBoundYoutubeDecision} from './youtube-ownership-transport.mjs';
 import {evaluateYoutubeLink} from './youtube-topic-links.mjs';
 
-export const COMPARISON_POLICY='saved-youtube-ownership-comparison-v1';
+export const COMPARISON_POLICY='saved-youtube-ownership-comparison-bounded-v2';
 export function comparisonOperation(original,capture,result,row){
   const draft=clarifiedOwnershipRequest(original,capture);
   assert.ok(draft.matchingSpotifyIds.length,'Only the investigated exact-Spotify cohort');
@@ -33,6 +33,11 @@ export const comparisonPlan=immutableValidationCache(function(p){
   assert.equal(Number(p.pricing.completionUsdPerToken),0);
   assert.ok(p.pricing.contextTokens>=262144&&p.maximumRequestBytes<p.pricing.contextTokens);
   assert.ok(Object.keys(p.runtimeFiles).length&&Object.keys(p.sourceFiles).length);
+  assert.match(p.coordinatorSchemaSha256,/^[a-f0-9]{64}$/);
+  assert.equal(p.failedLaunch.status,'stopped');assert.equal(p.failedLaunch.reservedCents,0);
+  assert.equal(p.failedLaunch.admissions,0);
+  assert.match(p.failedLaunch.id,/^youtube-ownership-comparison-[a-z0-9-]+-part-1$/);
+  assert.match(p.failedLaunch.scopeSha256,/^[a-f0-9]{64}$/);
   for(const [f,sha] of Object.entries(p.runtimeFiles)){
     assert.match(f,/^runtime\/[\w-]+\.mjs$/);assert.match(sha,/^[a-f0-9]{64}$/);
   }
