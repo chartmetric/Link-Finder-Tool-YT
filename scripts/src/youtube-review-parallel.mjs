@@ -15,18 +15,18 @@ export const SNAPSHOT_SQL=`SELECT id,owner,scope_sha256,cap_cents,reserved_cents
 export const ADMISSIONS_SQL=`SELECT run_id,operation_key,profile_id,kind,input_sha256,reserved_cents,
   status,receipt_sha256,http_status,created_at::text FROM youtube_bounded_test_admissions
   WHERE run_id=$1 ORDER BY operation_key`;
-export async function sourceSnapshot(c){
-  return {run:(await c.query(SNAPSHOT_SQL,[SOURCE_ID])).rows[0],
-    admissions:(await c.query(ADMISSIONS_SQL,[SOURCE_ID])).rows};
+export async function sourceSnapshot(c,sourceId=SOURCE_ID){
+  return {run:(await c.query(SNAPSHOT_SQL,[sourceId])).rows[0],
+    admissions:(await c.query(ADMISSIONS_SQL,[sourceId])).rows};
 }
-export function validateSourceSnapshot(snapshot,plan){
+export function validateSourceSnapshot(snapshot,plan,sourceId=SOURCE_ID){
   const {run,admissions}=snapshot;
-  assert.equal(run.id,SOURCE_ID);assert.equal(run.status,'stopped');
+  assert.equal(run.id,sourceId);assert.equal(run.status,'stopped');
   assert.equal(run.scope_sha256,plan.scopeSha256);assert.equal(run.cap_cents,1000);
   assert.equal(run.reserved_cents,admissions.length*2);
   assert.ok(run.reserved_cents<=1000);assert.ok(admissions.length<=500);
   for(const op of admissions){
-    assert.equal(op.run_id,SOURCE_ID);assert.equal(op.status,'returned');
+    assert.equal(op.run_id,sourceId);assert.equal(op.status,'returned');
     assert.ok(op.http_status===200||(op.http_status>=500&&op.http_status<600));
     assert.equal(op.reserved_cents,2);
     assert.ok(plan.artists.some(a=>a.profile_id===op.profile_id));
@@ -67,21 +67,21 @@ export function parallelPlan(p){
   assert.ok(p.failedProfileIds.every(id=>!ids.includes(id)));
   return p;
 }
-export async function validatedSourcePackets(plan,{readFile=fs.readFile}={}){
+export async function validatedSourcePackets(plan,{readFile=fs.readFile,sourceId=SOURCE_ID,sourceRoot=SOURCE_ROOT}={}){
   const packets=new Map();
   for(const op of plan.sourceSnapshot.admissions){
-    const suffix=digest(op.operation_key),prefix=SOURCE_ROOT+'/receipts/'+suffix;
+    const suffix=digest(op.operation_key),prefix=sourceRoot+'/receipts/'+suffix;
     const receiptBytes=await readFile(prefix+'.json'),receipt=JSON.parse(receiptBytes);
     const raw=await readFile(prefix+'.raw');
     assert.equal(digest(receiptBytes),op.receipt_sha256);
     assert.equal(digest(raw),receipt.rawBodySha256);
-    assert.equal(receipt.runId,SOURCE_ID);assert.equal(receipt.operationKey,op.operation_key);
+    assert.equal(receipt.runId,sourceId);assert.equal(receipt.operationKey,op.operation_key);
     assert.equal(receipt.profileId,op.profile_id);assert.equal(receipt.kind,op.kind);
     assert.equal(receipt.inputSha256,op.input_sha256);assert.equal(digest(receipt.request),op.input_sha256);
     assert.equal(receipt.status,op.http_status);assert.equal(receipt.rawPath,'receipts/'+suffix+'.raw');
     const artist=plan.artists.find(a=>a.profile_id===op.profile_id);
     assert.equal(receipt.cmArtist,artist.cm_artist);
-    const saved=JSON.parse(await readFile(SOURCE_ROOT+'/inputs/'+suffix+'.json'));
+    const saved=JSON.parse(await readFile(sourceRoot+'/inputs/'+suffix+'.json'));
     assert.deepEqual(saved.request,receipt.request);
     assert.deepEqual(saved.op,{profileId:op.profile_id,kind:op.kind,key:op.operation_key,inputSha256:op.input_sha256});
     packets.set(op.operation_key,{...receipt,data:JSON.parse(raw),
@@ -129,6 +129,7 @@ export async function assertParallelWorld(c,ownId){
     WHERE status='admitted' AND run_id<>$1`,[ownId])).rows[0].n,0);
 }
 export function parallelGate({pool,plan,approval,owner}){
+  const sourceId=plan.sourceId??SOURCE_ID;
   const tx=coordinatorTransactions(pool),live=new Map();let closed=false;
   const close=()=>{closed=true;};
   return {close,live,
@@ -137,7 +138,7 @@ export function parallelGate({pool,plan,approval,owner}){
         assert.equal(closed,false);
         const parent=(await c.query('SELECT status FROM youtube_link_campaigns WHERE id=$1 FOR UPDATE',[plan.parentId])).rows[0];
         assert.equal(parent?.status,'stopped');
-        const source=(await c.query('SELECT * FROM youtube_discovery_test_runs WHERE id=$1 FOR UPDATE',[SOURCE_ID])).rows[0];
+        const source=(await c.query('SELECT * FROM youtube_discovery_test_runs WHERE id=$1 FOR UPDATE',[sourceId])).rows[0];
         assert.equal(source?.status,'stopped');assert.equal(source.owner,plan.sourceSnapshot.run.owner);
         assert.equal(source.reserved_cents,plan.sourceReservedCents);assert.equal(source.scope_sha256,plan.scopeSha256);
         const run=(await c.query('SELECT * FROM youtube_discovery_test_runs WHERE id=$1 FOR UPDATE',[plan.id])).rows[0];
@@ -146,7 +147,7 @@ export function parallelGate({pool,plan,approval,owner}){
           WHERE run_id=$1 AND status='admitted' ORDER BY operation_key`,[plan.id])).rows;
         const history=(await c.query(`SELECT operation_key,kind,status FROM youtube_bounded_test_admissions
           WHERE run_id=ANY($1::text[]) AND profile_id=$2 ORDER BY created_at,operation_key`,
-        [[SOURCE_ID,plan.id],op.profileId])).rows;
+        [[sourceId,plan.id],op.profileId])).rows;
         assertLiveParallel({plan:{...plan,approval},run,owner,pending,live,operation:op,artistHistory:history,closed});
         await c.query(`INSERT INTO youtube_bounded_test_admissions
           (run_id,operation_key,profile_id,kind,input_sha256,reserved_cents) VALUES($1,$2,$3,$4,$5,2)`,

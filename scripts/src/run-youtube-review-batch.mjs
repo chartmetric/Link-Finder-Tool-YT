@@ -27,7 +27,8 @@ export async function reviewBatchFrozen(root,plan,extras={}){
   for(const [f,sha] of Object.entries(plan.runtimeFiles))files[root+'/'+f]=sha;
   const check=frozenFileVerifier(files);await check();return check;
 }
-export async function reviewBatchRequest({root,plan,gate,assertFrozen,fetchImpl=fetch,credentials={
+export async function reviewBatchRequest({root,plan,gate,assertFrozen,fetchImpl=fetch,
+  modelAssessments=COMBINED_ASSESSMENTS,credentials={
   serper:process.env.SERPERDEV_API_KEY,scrapecreators:process.env.SCRAPECREATORS_API_KEY,
   openrouter:process.env.OPENROUTER_API_KEY}}){
   const byId=new Map(plan.artists.map(a=>[a.profile_id,a]));
@@ -90,7 +91,7 @@ export async function reviewBatchRequest({root,plan,gate,assertFrozen,fetchImpl=
       assert.ok(['typesafe/jev-1.13','typesafe/jev-1.13-20260917'].includes(data.model));
       assert.ok(Number.isFinite(data.usage?.cost)&&data.usage.cost>=0&&data.usage.cost<=.02);
       assert.deepEqual(Object.keys(data.answers??{}),['combined_assessment']);
-      assert.ok(Object.hasOwn(COMBINED_ASSESSMENTS,data.answers.combined_assessment?.choice));
+      assert.ok(Object.hasOwn(modelAssessments,data.answers.combined_assessment?.choice));
     }
     return packet;
   };

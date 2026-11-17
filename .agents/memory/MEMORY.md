@@ -36,3 +36,4 @@
 - [YouTube Topic links](youtube-topic-link-scope.md) — include supported Topic music-presence links, clearly labeled auto-generated and separate from artist-managed channels.
 - [YouTube reviewed corrections](youtube-reviewed-corrections.md) — exact user-reviewed matches and rejections stay separate from automated verdicts, ownership proof and import approval.
 - [Mixed channel recovery boundary](mixed-channel-recovery-boundary.md) — generic recovery keeps conflicting metadata unresolved; specialized transport-only approvals are not transferable.
+- [Saved evidence projections](saved-evidence-projections.md) — JSONB is not original receipt bytes; preserve historical Topic meanings and captured handle-to-channel bindings.

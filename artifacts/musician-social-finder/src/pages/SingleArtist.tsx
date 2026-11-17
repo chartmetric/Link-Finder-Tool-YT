@@ -8,6 +8,7 @@ import { Activity, Type, ArrowRight, ArrowUpRight, Check, ChevronDown, CircleAle
 import { SiInstagram, SiSpotify, SiTiktok, SiYoutube } from 'react-icons/si';
 import { getGetMusicianCoverageQueryKey, getListProfileInvestigationsQueryKey, searchProfiles, type ProfileInvestigation, type ProfileMatch, type ProfileSearchResponse } from '@workspace/api-client-react';
 import { MusicianCoverage } from '@/components/musician-coverage';
+import { ArtistPlatformCoverageOverview } from '@/components/artist-platform-coverage-overview';
 import { ArtistCampaignProgress } from '@/components/artist-campaign-progress';
 import { InvestigationHistory } from '@/components/investigation-history';
 import { EvidenceDelivery } from '@/components/evidence-delivery';
@@ -390,6 +391,7 @@ export default function SingleArtist() {
             </Form>
           </div>}
 
+          <ArtistPlatformCoverageOverview />
           <InvestigationHistory page={historyPage} onPageChange={setHistoryPage} onOpen={openSaved} activeId={result?.historyId ? result.historyId : undefined} disabled={status === 'pending'} />
           <ArchivedBulkEvidence />
 

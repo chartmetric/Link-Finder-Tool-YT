@@ -853,6 +853,7 @@ components:
         campaignStatus: { type: string, nullable: true }
         campaignIncluded: { type: boolean }
         campaignError: { type: string, nullable: true }
+        testObservedAt: { type: [string, "null"], description: Latest saved YouTube batch evidence timestamp, separate from the catalog computation time. }
         tiers:
           type: array
           items:
@@ -864,6 +865,8 @@ components:
               catalogUrls: { type: number }
               supportedResearchUrls: { type: number }
               campaignLikelyUrls: { type: number, description: Additional unique artists with a current campaign likely match, excluding catalog and supported research overlap. Review suggestions, not catalog links. }
+              testLikelyUrls: { type: number, description: Additional unique artists with a saved non-Topic YouTube batch suggestion. Review only; excludes catalog, supported research and campaign overlap. }
+              testTopicUrls: { type: number, description: Additional unique artists with only supported auto-generated Topic suggestions in saved YouTube batches. Disjoint from other coverage categories; not artist-managed channels. }
               unresolvedCandidates: { type: number }
               noSupportedMatch: { type: number }
               failed: { type: number }

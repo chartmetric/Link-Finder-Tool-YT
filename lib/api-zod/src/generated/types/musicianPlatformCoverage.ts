@@ -20,5 +20,10 @@ export interface MusicianPlatformCoverage {
   campaignStatus?: string | null;
   campaignIncluded?: boolean;
   campaignError?: string | null;
+  /**
+     * Latest saved YouTube batch evidence timestamp
+     * @nullable
+     */
+  testObservedAt?: string | null;
   tiers: MusicianPlatformCoverageTiersItem[];
 }

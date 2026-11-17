@@ -8,6 +8,8 @@ import {normalizeYoutubeChannel,youtubeDecisionRequest} from './youtube-ownershi
 import {youtubeVerificationInput} from './youtube-ownership-policy.mjs';
 import {revisedContextRequest} from './youtube-context-revision.mjs';
 import {parseCombinedResponse} from './youtube-combined-ownership.mjs';
+import {REPRESENTATION_VERSION,artistRepresentationRequest,parseArtistRepresentationResponse}
+  from './youtube-artist-representation.mjs';
 
 export const REVIEW_BATCH_POLICY='fresh-youtube-review-hundred-end-to-end-v1';
 export function reviewBatchPlan(p){
@@ -59,7 +61,9 @@ export function uploaderContext(packet,clue){
   assert.deepEqual(packet.request,proposedUploaderRequest(clue.url));
   assert.equal(raw.success,true);assert.equal(raw.id,clue.videoId);
   const id=raw.channel?.id;assert.match(id??'',/^UC[A-Za-z0-9_-]{22}$/);
-  for(const owner of [raw.uploader,raw.ownerByline])if(owner?.channelId)assert.equal(owner.channelId,id);
+  for(const owner of [raw.uploader,raw.ownerByline])if(owner?.channelId&&owner.channelId!==id){
+    const e=new Error('Conflicting provider uploader channel IDs');e.code='YOUTUBE_UPLOADER_CONFLICT';throw e;
+  }
   return {videoId:clue.videoId,videoUrl:clue.url,channelId:id,
     title:typeof raw.title==='string'?raw.title:'',description:typeof raw.description==='string'?raw.description:null,
     uploaderDisplayName:raw.channel.title??null,capturedAt:packet.at,
@@ -67,7 +71,9 @@ export function uploaderContext(packet,clue){
       requestSha256:digest(packet.request),operationKey:packet.operationKey,runId:packet.runId},
     establishesOwnership:false};
 }
-export async function reviewBatchArtist({artist,tier,request,conflicts,maximumModelRequestBytes=64000}){
+export async function reviewBatchArtist({artist,tier,request,conflicts,maximumModelRequestBytes=64000,
+  verificationPolicy=REVIEW_BATCH_POLICY}){
+  assert.ok([REVIEW_BATCH_POLICY,REPRESENTATION_VERSION].includes(verificationPolicy));
   const searchPlan=youtubeSearchPlan(artist);
   const search=await request(artist.profileId,'search','search-'+artist.profileId+'-0',
     {method:'POST',url:'https://google.serper.dev/search',body:searchPlan.request});
@@ -80,7 +86,16 @@ export async function reviewBatchArtist({artist,tier,request,conflicts,maximumMo
   if(!selected.length&&videoPlan.resolutionQueue.length){
     const clue=videoPlan.resolutionQueue[0],packet=await request(artist.profileId,'metadata',
       'metadata-'+artist.profileId+'-video-'+clue.videoId,proposedUploaderRequest(clue.url));
-    const context=uploaderContext(packet,clue);videoContexts=[context];
+    let context;
+    try{context=uploaderContext(packet,clue);}
+    catch(e){
+      if(verificationPolicy!==REPRESENTATION_VERSION||e.code!=='YOUTUBE_UPLOADER_CONFLICT')throw e;
+      return {artist,tier,searchPlan,discovery,videoPlan,videoContexts:[],
+        candidates:[{status:'held',reason:'Conflicting provider uploader channel IDs; no artist-channel link accepted',
+          sourceUrl:clue.url,sourceReceipt:packet.sourcePath}],
+        status:'held',ownershipAccepted:false,importEligible:false};
+    }
+    videoContexts=[context];
     selected=[{url:'https://www.youtube.com/channel/'+context.channelId,
       title:context.uploaderDisplayName??'',snippet:context.title,
       sourceUrl:clue.url,source:'bound_video_uploader',verified:false}];
@@ -106,16 +121,21 @@ export async function reviewBatchArtist({artist,tier,request,conflicts,maximumMo
       cmArtist:artist.cmArtist,channelId,request:prepared.request,inputSha256:prepared.inputSha256,
       policyInputSha256:input.inputSha256,requestBytes:prepared.bytes,
       requestBodySha256:digest(Buffer.from(JSON.stringify(prepared.request.body))),proposedReservationCents:2};
-    const draft=revisedContextRequest(template,candidate.capture,videoContexts.filter(c=>c.channelId===channelId));
+    const contexts=videoContexts.filter(c=>c.channelId===channelId);
+    const representation=verificationPolicy===REPRESENTATION_VERSION;
+    const draft=representation
+      ?artistRepresentationRequest(template,candidate.capture,contexts,maximumModelRequestBytes)
+      :revisedContextRequest(template,candidate.capture,contexts);
     candidate.modelInputSha256=draft.requestSha256;
     if(draft.requestBytes>maximumModelRequestBytes){
       candidate.status='held';candidate.reason='Full evidence exceeds the request-size limit; not truncated';continue;
     }
     const response=await request(artist.profileId,'model','model-'+artist.profileId+'-'+channelId,draft.request);
-    const result=parseCombinedResponse({...draft,originalOperation:template,originalCapture:candidate.capture,
-      stateSha256:digest({policy:REVIEW_BATCH_POLICY,state:draft.request.body.state})},response);
+    const result=representation?parseArtistRepresentationResponse(draft,response):
+      parseCombinedResponse({...draft,originalOperation:template,originalCapture:candidate.capture,
+        stateSha256:digest({policy:REVIEW_BATCH_POLICY,state:draft.request.body.state})},response);
     candidate.assessment=result;
-    candidate.status=['experimental_artist_support','experimental_topic_support'].includes(result.decision.status)
+    candidate.status=['experimental_artist_support','experimental_topic_support','experimental_review_support'].includes(result.decision.status)
       ?'review_suggestion':['third_party_channel','different_artist'].includes(result.modelAssessment.category)
         ?'not_a_match':'uncertain';
     candidate.reason=result.modelAssessment.label;

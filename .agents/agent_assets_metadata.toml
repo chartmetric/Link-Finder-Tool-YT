@@ -2828,3 +2828,45 @@ mtime_ms = 1794955048967
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/cbe52c58-c29d-4e94-a4f5-16100b7a9e90/631e7536-3b90-4a66-ae25-1f066a4a50d3"
 storage_version_token = "1794955271425180"
 content_type = "text/csv"
+
+[[outputs]]
+id = "354_FsaTFzAyKIrg4F7bR"
+uri = "file://generated-artifacts/youtube-test-100-review-repr-20261117-2245-cont1/youtube-review.csv"
+type = "table"
+title = "YouTube batch results — 100 new artists"
+description = "All 100 artists processed. Suggested channels for 25 artists: 27 URLs, with Topic channels clearly labeled. Includes held and nonmatching results. Review only; no live links changed."
+logical_id = "ceb34329-4886-42e1-a41e-15dbb479a096"
+content_hash = "sha256:de22b104ee8051c2f4a5309829a2ac8524e4ac01f4c699589c989e4b7527884c"
+size = 35856
+mtime_ms = 1794956054427
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/ceb34329-4886-42e1-a41e-15dbb479a096/280803ed-9f3e-42c4-9b41-af37eba16ac0"
+storage_version_token = "1794956128537385"
+content_type = "text/csv"
+
+[[outputs]]
+id = "doJ2UMiprVy7DxrW-4H50"
+uri = "file://generated-artifacts/youtube-57-artists-claude-review-2026-11-17/57-artists-channel-evidence.csv"
+type = "table"
+title = "The 57 held artists — channel evidence"
+description = "All 57 artists with names, tiers, IDs, candidate channels, saved artist/channel information and hold reasons. 70 rows: 69 distinct artist-channel pairs and one unresolved uploader-conflict row. No links accepted or changed."
+logical_id = "7e6a5da4-0813-43b2-8bad-1cbe30a72b91"
+content_hash = "sha256:59d2b8f82966faf22bde3c8d8b3d5eda555c44cb12a7f62bfa52c2880c221e1a"
+size = 371828
+mtime_ms = 1794957413575
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/7e6a5da4-0813-43b2-8bad-1cbe30a72b91/992de360-566a-4c71-abef-49dc6e9f66ee"
+storage_version_token = "1794957454553336"
+content_type = "text/csv"
+
+[[outputs]]
+id = "-kC-AA7-ExpQQc2csVsvl"
+uri = "file://generated-artifacts/youtube-57-artists-claude-review-2026-11-17/claude-troubleshooting-prompt-and-artist-list.txt"
+type = "text"
+title = "Ready-to-send Claude troubleshooting prompt"
+description = "Copy this prompt into Claude and attach the CSV. Includes the complete 57-artist roster, sourcing process, metadata used, known false matches, evidence rules, reporting limits and requested diagnosis."
+logical_id = "db53c3eb-0f0a-425d-b8b8-ab908a4608e0"
+content_hash = "sha256:9457ea05d5228320144d56a40f7f70a3bd84b393c4bd1843fc3f57a28f8a71a6"
+size = 25858
+mtime_ms = 1794957413579
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/db53c3eb-0f0a-425d-b8b8-ab908a4608e0/e3470a07-9342-4d6f-9b4e-529eeb82c3f3"
+storage_version_token = "1794957455335498"
+content_type = "text/plain"

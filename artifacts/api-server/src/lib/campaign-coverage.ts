@@ -4,9 +4,9 @@ import { musicianTierSnapshotStatus } from "./musician-instagram-research-covera
 import { logger } from "./logger";
 
 type Platform = "instagram" | "youtube";
-type State = "catalog" | "supported" | "candidates" | "no_match" | "failed" | "pending" | "not_searched";
+type State = "catalog" | "supported" | "test_likely" | "test_topic" | "candidates" | "no_match" | "failed" | "pending" | "not_searched";
 export type CoverageProfile = { profile_id: string; cm_artist: string; tier: number; state: State };
-type Membership = { platform: Platform; snapshotAt: string | null; generatedAt: string; profiles: CoverageProfile[] };
+type Membership = { platform: Platform; snapshotAt: string | null; generatedAt: string; testObservedAt?: string | null; profiles: CoverageProfile[] };
 export type CampaignCoverage = {
   status: string | null; observedAt: string | null; artists: { profile_id: string; cm_artist: string }[];
 };
@@ -59,6 +59,7 @@ export function combineCampaignCoverage(base: Membership, campaign: CampaignCove
     let row = tiers.find(t => t.tier === tier);
     if (!row) {
       row = { tier, totalProfiles: 0, catalogUrls: 0, supportedResearchUrls: 0, campaignLikelyUrls: 0,
+        testLikelyUrls: 0, testTopicUrls: 0,
         unresolvedCandidates: 0, noSupportedMatch: 0, failed: 0, pending: 0, notSearched: 0 };
       tiers.push(row);
     }
@@ -68,6 +69,8 @@ export function combineCampaignCoverage(base: Membership, campaign: CampaignCove
     if (p.state === "catalog") row.catalogUrls++;
     else if (p.state === "supported") row.supportedResearchUrls++;
     else if (likely.has(`${p.profile_id}:${p.cm_artist}`)) row.campaignLikelyUrls!++;
+    else if (p.state === "test_likely") row.testLikelyUrls!++;
+    else if (p.state === "test_topic") row.testTopicUrls!++;
     else if (p.state === "candidates") row.unresolvedCandidates++;
     else if (p.state === "no_match") row.noSupportedMatch++;
     else if (p.state === "failed") row.failed++;
@@ -79,6 +82,7 @@ export function combineCampaignCoverage(base: Membership, campaign: CampaignCove
     && now.getTime() - Date.parse(campaign.observedAt) > 120_000;
   return { platform: base.platform, snapshotAt: base.snapshotAt, snapshotStatus,
     generatedAt: now.toISOString(), catalogGeneratedAt: base.generatedAt,
+    testObservedAt: base.testObservedAt ?? null,
     campaignIncluded: campaign !== null, campaignObservedAt: campaign?.observedAt ?? null,
     campaignStatus: campaign?.status ?? null,
     campaignError: campaign === null ? "Campaign results unavailable; percentages exclude current campaign matches."

@@ -4,14 +4,14 @@ import {digest} from './youtube-video-discovery-offline.mjs';
 import {parallelGate,boundedParallelArtists,reuseSourcePackets,validatedSourcePackets,
   validateSourceSnapshot,SOURCE_ID,SOURCE_ROOT,TARGET_ID} from './youtube-review-parallel.mjs';
 const hash='a'.repeat(64),receiptHash='b'.repeat(64);
-function fixture(){
+function fixture(sourceId=SOURCE_ID){
   let rows=[],ownReserved=0,before;const queries=[];
   const approval={scopeSha256:hash,artists:Array.from({length:100},(_,i)=>({profile_id:String(i+1)})),
     maxCalls:500,explicitApproval:true,approvalStatus:'approved',proposedCapCents:1000,
     userCapCents:1000,operationalCapCents:1000};
-  const source={id:SOURCE_ID,owner:'old-owner',status:'stopped',reserved_cents:320,scope_sha256:hash,cap_cents:1000};
+  const source={id:sourceId,owner:'old-owner',status:'stopped',reserved_cents:320,scope_sha256:hash,cap_cents:1000};
   const own={id:TARGET_ID,owner:'new-owner',status:'running',scope_sha256:hash,cap_cents:1000};
-  const plan={id:TARGET_ID,parentId:'parent',parallelism:16,sourceReservedCents:320,
+  const plan={id:TARGET_ID,sourceId,parentId:'parent',parallelism:16,sourceReservedCents:320,
     sourceSnapshot:{run:source},scopeSha256:hash,artists:approval.artists};
   const c={release(){},async query(q,a=[]){
     q=q.replace(/\s+/g,' ').trim();queries.push([q,a]);
@@ -21,7 +21,7 @@ function fixture(){
     if(q.startsWith('SET LOCAL'))return {};
     if(q.startsWith('SELECT status FROM youtube_link_campaigns'))return {rows:[{status:'stopped'}]};
     if(q.startsWith('SELECT * FROM youtube_discovery_test_runs'))
-      return {rows:[a[0]===SOURCE_ID?{...source}:{...own,reserved_cents:ownReserved}]};
+      return {rows:[a[0]===sourceId?{...source}:{...own,reserved_cents:ownReserved}]};
     if(q.startsWith('SELECT count(*)'))return {rows:[{n:q.includes('youtube_bounded_test_admissions')
       ?rows.filter(r=>r.status==='admitted'&&r.run_id!==a[0]).length:0}]};
     if(q.startsWith('SELECT operation_key,profile_id,kind,input_sha256'))return {rows:rows.filter(r=>
@@ -50,6 +50,13 @@ function fixture(){
     setRows:r=>{rows=r;},setReserved:n=>{ownReserved=n;}};
 }
 const op=id=>({profileId:String(id),kind:'search',key:'search-'+id+'-0',inputSha256:hash});
+test('a newly approved source ID remains bound to its stopped owner and shared original budget',async()=>{
+  const id='youtube-test-100-review-repr-synthetic-source',f=fixture(id);
+  await f.gate.admit(op(1));await f.gate.returned(op(1),receiptHash,200);
+  assert.equal(f.spent(),2);
+  assert.ok(f.queries.some(([q,a])=>q.includes('FROM youtube_discovery_test_runs WHERE id=$1 FOR UPDATE')&&a[0]===id));
+  assert.ok(f.queries.some(([q,a])=>q.startsWith('SELECT operation_key,kind,status')&&a[0].includes(id)));
+});
 test('sixteen live requests are allowed, a seventeenth is fenced, and already-sent receipts still drain',async()=>{
   const f=fixture();await Promise.all(Array.from({length:16},(_,i)=>f.gate.admit(op(i+1))));
   assert.equal(f.gate.live.size,16);assert.equal(f.spent(),32);assert.equal(f.rows().length,16);

@@ -356,6 +356,10 @@ export type MusicianPlatformCoverageTiersItem = {
   supportedResearchUrls: number;
   /** Additional unique artists with a current campaign likely match */
   campaignLikelyUrls?: number;
+  /** Additional unique artists with a saved non-Topic YouTube batch suggestion. Review only; excludes catalog */
+  testLikelyUrls?: number;
+  /** Additional unique artists with only supported auto-generated Topic suggestions in saved YouTube batches. Disjoint from other coverage categories; not artist-managed channels. */
+  testTopicUrls?: number;
   unresolvedCandidates: number;
   noSupportedMatch: number;
   failed: number;
@@ -374,6 +378,11 @@ export interface MusicianPlatformCoverage {
   campaignStatus?: string | null;
   campaignIncluded?: boolean;
   campaignError?: string | null;
+  /**
+     * Latest saved YouTube batch evidence timestamp
+     * @nullable
+     */
+  testObservedAt?: string | null;
   tiers: MusicianPlatformCoverageTiersItem[];
 }
 

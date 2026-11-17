@@ -15,6 +15,8 @@
 .mpc-seg.catalog, .mpc-legend i.catalog { background: #176b62; }
 .mpc-seg.research, .mpc-legend i.research { background: #467fb2; }
 .mpc-seg.campaign, .mpc-legend i.campaign { background: #b7791f; }
+.mpc-seg.batch, .mpc-legend i.batch { background: #E98E2E; }
+.mpc-seg.topic, .mpc-legend i.topic { background: #9267C6; }
 .mpc-seg.nomatch, .mpc-legend i.nomatch { background: repeating-linear-gradient(45deg, #b9a46a 0 3px, #e3d6ad 3px 6px); }
 .mpc-pct { font: 700 14px var(--app-font-mono); text-align: right; }
 .mpc-count { color: #4a6177; font: 11px var(--app-font-mono); text-align: right; }
