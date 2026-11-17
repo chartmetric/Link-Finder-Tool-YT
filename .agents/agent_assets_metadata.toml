@@ -2814,3 +2814,17 @@ mtime_ms = 1794953683831
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/976e511a-66be-4555-adb8-8b3f65b0bc32/40b7fd88-e87a-4051-98c4-513a10626a6b"
 storage_version_token = "1794953698388630"
 content_type = "text/csv"
+
+[[outputs]]
+id = "EYHZ_H-dJ9g-13xXrazD_"
+uri = "file://generated-artifacts/youtube-artist-representation-offline-2026-11-17/source-review.csv"
+type = "table"
+title = "Revised YouTube checker — offline review"
+description = "Checks 28 saved artist/channel pairs without making new model calls. Shows available catalog references, missing evidence, your separate manual feedback and unchanged original decisions. Not an approved-links export."
+logical_id = "cbe52c58-c29d-4e94-a4f5-16100b7a9e90"
+content_hash = "sha256:0e96da5c0608165cdcf8e551c1d8d2bf52fe9bb3ad73c1e949a0accc949d54a2"
+size = 11713
+mtime_ms = 1794955048967
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/cbe52c58-c29d-4e94-a4f5-16100b7a9e90/631e7536-3b90-4a66-ae25-1f066a4a50d3"
+storage_version_token = "1794955271425180"
+content_type = "text/csv"

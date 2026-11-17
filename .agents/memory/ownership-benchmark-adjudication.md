@@ -3,6 +3,21 @@ name: Ownership benchmark adjudication
 description: Independence and exposure limits for source-reviewed artist ownership examples
 ---
 
+Keep artist-facing channel representation distinct from proof of channel
+management, including in future request definitions and review labels.
+
+**Why:** User-reviewed channels were being held because the checker demanded
+management support even when the practical goal was an artist's channel URL.
+This does not make name-only matches or candidate-outbound catalog links alone
+sufficient, nor does manual approval add missing facts to a saved model request.
+
+**How to apply:** A new representation route must remain review-only and leave
+management explicitly unverified. Preserve exact-identity, third-party, Topic,
+shared-channel and contradictory-source safeguards. Keep old nine-category
+answers unchanged; version the new request contract separately and compare it
+on exposed reviewed examples before considering bulk use. Offline gate tests
+do not demonstrate improved model recall or authorize policy activation.
+
 Keep source-reviewed ownership labels separate from user corrections, music-ID
 connections, verifier judgments and unresolved candidates.
 
