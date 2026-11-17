@@ -2786,3 +2786,17 @@ mtime_ms = 1794952326987
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/384df76b-c4d2-4e73-ab3b-914c6aaeb5b1/17df9a35-35c3-4dc9-b740-823dd2f42a1a"
 storage_version_token = "1794952374947659"
 content_type = "text/csv"
+
+[[outputs]]
+id = "f3yhIBMaO9ZVs6J0V6MrG"
+uri = "file://generated-artifacts/youtube-held-28-evidence-review-2026-11-17/held-28-review.csv"
+type = "table"
+title = "Review of 28 held YouTube matches"
+description = "11 stronger candidates with exact catalog cross-links; 17 still need more evidence. Includes artist IDs, channel URLs, evidence, cautions and original statuses. No links were approved or changed."
+logical_id = "162eeb3c-6f0c-4d10-9ef0-2f3a6f9df945"
+content_hash = "sha256:bf0dc5da41480d677f59d96a6a195df5033e27a1f5579fee4aff10810e0423fa"
+size = 22428
+mtime_ms = 1794953366919
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:b4a18dd7-0f2c-46e8-8a0b-c612ac5c9a08/162eeb3c-6f0c-4d10-9ef0-2f3a6f9df945/d440a2ae-ddaa-4ac6-b1c7-49ffe79bde98"
+storage_version_token = "1794953400307468"
+content_type = "text/csv"
