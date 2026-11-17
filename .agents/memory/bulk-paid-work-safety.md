@@ -292,3 +292,20 @@ coordinator matches zero rows and must stop as uncertain.
 prior status when simulating acknowledgment; return zero matched rows on a
 mismatch. Test metadata and model paths, transaction rollback, exact saved-response
 recovery and source-allowance retirement before any untouched continuation.
+
+The user has given standing permission for small paid YouTube validation and
+comparison runs like the reviewed-example comparison; do not ask again for each
+such run.
+
+**Why:** On 2026-11-17 the user explicitly said “with these kinds of requests; no
+need to ask for my permission,” referring to a small paid comparison of revised
+YouTube verification, rather than a large sourcing run.
+
+**How to apply:** Prepare and record each exact bounded scope and allowance,
+preserve receipts and non-replay protections, and report the spend without a
+repetitive approval card for comparable small diagnostics. The reference example
+was 14 saved-evidence checks with a 28-cent allowance; it is not an unlimited
+campaign budget or permission to split large work into small approvals. Ask
+before materially larger spending, bulk sourcing, or live-link changes. Standing
+permission does not waive uncertain-charge recovery safeguards or permit paid
+retries.

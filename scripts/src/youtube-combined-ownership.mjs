@@ -72,6 +72,13 @@ export function combinedOwnershipRequest(originalOperation,originalCapture){
 
 export function parseCombinedOwnership(proposal,packet,safetyOptions={}){
   assert.deepEqual(proposal,combinedOwnershipRequest(proposal.originalOperation,proposal.originalCapture));
+  return parseCombinedResponse(proposal,packet,safetyOptions);
+}
+
+// Callers must validate their exact experiment proposal first. This shared
+// interpreter binds the response to that request, never to a historical input.
+export function parseCombinedResponse(proposal,packet,safetyOptions={}){
+  assert.equal(proposal.requestSha256,digest(proposal.request));
   assert.equal(packet.kind,'model');assert.equal(packet.status,200);
   assert.deepEqual(packet.request,proposal.request);assert.equal(packet.inputSha256,proposal.requestSha256);
   const data=packet.data;assert.ok(data&&!data.error);
