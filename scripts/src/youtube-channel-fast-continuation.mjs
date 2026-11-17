@@ -1,9 +1,10 @@
 // A narrowly bounded switch: only the untouched suffix of the already known
 // exact requests may run, and old plus new reservations cannot exceed the cap.
 import assert from 'node:assert/strict';
+import {immutableValidationCache} from './youtube-immutable-validation-cache.mjs';
 import {digest} from './youtube-video-discovery-offline.mjs';
 import {approveAccountedGroups,groupApproval} from './youtube-accounted-channel-groups.mjs';
-export function fastChannelPlan(input){
+export const fastChannelPlan=immutableValidationCache(function(input){
   assert.match(input.id,/^youtube-channel-fast-continuation-[a-z0-9-]{4,60}$/);
   assert.ok(Number.isFinite(Date.parse(input.preparedAt)));
   assert.deepEqual(approveAccountedGroups(input.sourcePlan,input.sourceApproval),input.sourceApproval);
@@ -45,7 +46,7 @@ export function fastChannelPlan(input){
     safety:{everyFileIdentityCheckedBeforeEachRequest:true,unchangedContentHashesCached:true,
       groupStartChecksAllSelectedArtists:true,eachRequestAndReturnChecksItsArtist:true,
       everyAdmissionReservesBeforeDispatch:true,everyResponseSavedBeforeAcknowledgment:true}};
-}
+});
 export function approveFastChannels(plan,{planSha256,combinedCapCents,approvedAt}){
   assert.deepEqual(fastChannelPlan(plan),plan);assert.equal(planSha256,digest(plan));
   assert.equal(combinedCapCents,plan.combinedMaximumSpendCents);
@@ -53,7 +54,7 @@ export function approveFastChannels(plan,{planSha256,combinedCapCents,approvedAt
   return {id:plan.id,version:plan.version,planSha256,combinedCapCents,approvedAt,explicitApproval:true,
     scope:plan.scope,noAdditionalBudget:true};
 }
-export function channelSuffix(plan,snapshot){
+export const channelSuffix=immutableValidationCache(function(plan,snapshot){
   const source=plan.sourcePlan,operations=source.groups.flatMap(g=>g.operations);
   const runs=new Map(snapshot.runs.map(r=>[r.id,r]));
   assert.equal(runs.size,snapshot.runs.length);
@@ -105,7 +106,7 @@ export function channelSuffix(plan,snapshot){
   for(const group of groups)assert.equal(group.selections.length,group.operations.length);
   return {paidCount,priorReservedCents:total,pendingCount:pending.length,
     maximumRemainingCents:pending.length*2,groups};
-}
+});
 export function fastGroupApproval(plan,approval,cutover,group){
   assert.equal(approval.planSha256,digest(plan));assert.equal(approval.explicitApproval,true);
   assert.deepEqual(channelSuffix(plan,cutover.snapshot).groups[group.groupIndex],group);

@@ -1,6 +1,7 @@
 // Group the unchanged approved requests within the coordinator's unchanged
 // twenty-operation / forty-cent per-run limit. No historical scope is widened.
 import assert from 'node:assert/strict';
+import {immutableValidationCache} from './youtube-immutable-validation-cache.mjs';
 import {digest} from './youtube-video-discovery-offline.mjs';
 import {approveAccountedChannels} from './youtube-accounted-channel-plan.mjs';
 import {accountedChannelReadiness} from './youtube-accounted-channel-readiness.mjs';
@@ -44,13 +45,13 @@ export function accountedChannelGroups(input){
     allowedKinds:['metadata'],explicitApproval:false,executionEnabled:false,
     noRetries:true,noCatalogWrites:true,stopOnGroupFailure:true,sequentialGroups:true,modelCalls:0,uploaderCalls:0};
 }
-export function approveAccountedGroups(plan,{planSha256,capCents,approvedAt}){
+export const approveAccountedGroups=immutableValidationCache(function(plan,{planSha256,capCents,approvedAt}){
   assert.deepEqual(accountedChannelGroups(plan),plan);
   assert.equal(planSha256,digest(plan));assert.equal(capCents,plan.maximumSpendCents);
   assert.ok(Date.parse(approvedAt)>=Date.parse(plan.preparedAt));
   return {id:plan.id,version:plan.version,planSha256,capCents,approvedAt,explicitApproval:true,
     scope:'unchanged_exact_channel_requests_in_bounded_groups_no_retries_or_catalog_writes'};
-}
+});
 export function groupApproval(plan,approval,group){
   assert.deepEqual(approveAccountedGroups(plan,approval),approval);
   assert.deepEqual(plan.groups[group.groupIndex],group);

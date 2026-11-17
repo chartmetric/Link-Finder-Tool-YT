@@ -101,7 +101,7 @@ export async function applyHoldRecovery(pool,plan,root,assertFrozen){
 }
 export async function holdFrozenCheck(root,plan,extras={}){
   assert.equal(path.dirname(fileURLToPath(import.meta.url)),path.resolve(root,'runtime'),'Use sealed runtime');
-  assert.deepEqual(holdChannelPlan(plan),plan);deepFreeze(plan);
+  deepFreeze(plan);assert.deepEqual(holdChannelPlan(plan),plan);
   const files={...plan.sourceFiles,...extras,[root+'/plan.json']:digest(await fs.readFile(root+'/plan.json'))};
   assert.deepEqual(await read(root+'/plan.json'),plan);
   for(const [file,sha] of Object.entries(plan.runtimeFiles))files[root+'/'+file]=sha;

@@ -1,5 +1,6 @@
 // A fixed, exact-request continuation after two honestly stopped source stages.
 import assert from 'node:assert/strict';
+import {immutableValidationCache} from './youtube-immutable-validation-cache.mjs';
 import {digest} from './youtube-video-discovery-offline.mjs';
 import {fastChannelPlan,approveFastChannels,channelSuffix,fastGroupApproval,recoveredChannelSnapshot} from './youtube-channel-fast-continuation.mjs';
 import {HOLD_CHANNEL_CONFLICTS} from './youtube-identity-conflict-hold.mjs';
@@ -45,7 +46,7 @@ export function projectHeldReceipt(snapshot,recovery){
   Object.assign(row,{status:'returned',http_status:200,receipt_sha256:recovery.receiptSha256,raw_sha256:recovery.rawSha256});
   return after;
 }
-export function holdChannelPlan(input){
+export const holdChannelPlan=immutableValidationCache(function(input){
   const {predecessor:p,predecessorApproval:a,cutover,recovery:r}=input;
   assert.match(input.id,/^youtube-channel-hold-continuation-[a-z0-9-]{4,60}$/);
   assert.ok(Number.isFinite(Date.parse(input.preparedAt)));
@@ -90,17 +91,17 @@ export function holdChannelPlan(input){
     scope:'Recover the exact saved receipt as transport only; hold identity conflicts and check only the untouched channel requests',
     identityConflictPolicy:HOLD_CHANNEL_CONFLICTS,explicitApproval:false,executionEnabled:false,
     noRetries:true,noCatalogWrites:true,modelCalls:0,uploaderCalls:0};
-}
+});
 export function approveHoldChannels(plan,{planSha256,capCents,approvedAt}){
   assert.deepEqual(holdChannelPlan(plan),plan);assert.equal(planSha256,digest(plan));
   assert.equal(capCents,plan.maximumSpendCents);assert.ok(Date.parse(approvedAt)>=Date.parse(plan.preparedAt));
   return {id:plan.id,planSha256,capCents,combinedCapCents:plan.combinedCapCents,approvedAt,
     scope:plan.scope,explicitApproval:true};
 }
-export function holdGroupApproval(plan,approval,group){
+export const holdGroupApproval=immutableValidationCache(function(plan,approval,group){
   assert.deepEqual(approveHoldChannels(plan,approval),approval);
   assert.deepEqual(plan.groups[group.groupIndex],group);
   return {id:group.id,parentId:plan.id,planSha256:digest(group),parentPlanSha256:digest(plan),
     parentApprovalSha256:digest(approval),capCents:group.maximumSpendCents,scope:plan.scope,
     approvedAt:approval.approvedAt,explicitApproval:true};
-}
+});

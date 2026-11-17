@@ -340,3 +340,18 @@ Keep conflicting captures out of usable-channel rows, preserve their evidence,
 and count them separately from successful captures and completed no-matches.
 Only explicitly structured identity conflicts may be held; eligibility changes,
 provider failures, unknown billing and lost acknowledgments still stop dispatch.
+
+Reuse successful pure policy validation only when every input is deeply frozen
+plain JSON. Rebuilding nested historical approvals per request can dominate
+channel gathering even when the provider is fast.
+
+**Why:** Timing an actual batch found repeated group-approval validation taking
+about 84 seconds; reusing validated immutable inputs removed that repeated delay.
+The earlier file-hash optimization did not address this separate bottleneck.
+
+**How to apply:** Measure the actual repeated path before claiming throughput
+improvement. Refuse cache reuse for mutable graphs, accessors or mutable special
+objects; never cache failed checks. Continue checking file identities, current
+eligibility, spending ledgers and conflicting claims live. Changes still require
+a freshly sealed and approved executor, with a zero-inflight, owner-fenced
+handover that subtracts completed work and cannot regress the prepared paid prefix.
