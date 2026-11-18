@@ -3164,3 +3164,45 @@ mtime_ms = 1794972655598
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/c40f7112-c0ca-4bd3-8861-fd1106bddb97/a58bfa3e-b287-42c8-8e45-f537cb5c40ac"
 storage_version_token = "1794972784988122"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "P8vpuRVlVPKEW3uQCWxEX"
+uri = "file://generated-artifacts/youtube-tiers1-3-20261118/trial-200/eligible-artists.csv"
+type = "table"
+title = "Eligible artists — 17,213 profiles"
+description = "Full frozen eligible list with profile_id, cm_artist, artist_name and tier. Not just the trial sample."
+logical_id = "9eb452ed-2e64-4f5f-976e-2a7dbfd39560"
+content_hash = "sha256:71c1022a4fa2df778c0be24d8055277648b63f01e98e80e4d03ebf173b8b4c22"
+size = 661083
+mtime_ms = 1794975151314
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/9eb452ed-2e64-4f5f-976e-2a7dbfd39560/274b0926-b0d9-4696-92ca-95e4ecbc29c5"
+storage_version_token = "1794975158547235"
+content_type = "text/csv"
+
+[[outputs]]
+id = "em1X4X5aO1JcBwEVj1ti3"
+uri = "file://generated-artifacts/youtube-tiers1-3-20261118/trial-200/eligible-artists-count-note.md"
+type = "text"
+title = "Eligible count — selector filters"
+description = "Tier totals, snapshot and link filters, and what is—and is not—established about the difference from 29,779."
+logical_id = "b1abe2df-3f91-4e06-9ec7-e7082170ebbf"
+content_hash = "sha256:5dde997e43b5adcfebbc1e25fb54a392a04ecf1a50acd4443dbceabd0e5b3aa2"
+size = 2465
+mtime_ms = 1794975151314
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/b1abe2df-3f91-4e06-9ec7-e7082170ebbf/ed0d996f-1d58-41a1-8345-e52a852b4085"
+storage_version_token = "1794975159359941"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "v7fZahXSYoajLZFdvjcnc"
+uri = "file://generated-artifacts/youtube-tiers1-3-20261118/trial-200/eligible-artists-download.zip"
+type = "unspecified"
+title = "Eligible artists and count note"
+description = "ZIP containing eligible-artists.csv (17,213 profiles) and eligible-artists-count-note.txt."
+logical_id = "3d2f8099-cf7e-4d73-b7db-382f31ed3f66"
+content_hash = "sha256:d8f610ad77ac8f2e31a012a68e7c0f7414b161c73f8f2dae73dbcdd4bc55fe23"
+size = 308763
+mtime_ms = 1794975270634
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/3d2f8099-cf7e-4d73-b7db-382f31ed3f66/d49d466c-5281-48f6-b0e5-e65b0ce8c100"
+storage_version_token = "1794975274583997"
+content_type = "application/octet-stream"

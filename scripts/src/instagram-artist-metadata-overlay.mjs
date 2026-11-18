@@ -207,7 +207,8 @@ export function metadataCsv(overlay) {
 }
 
 export async function select(query,{params={}}={}) {
-  if(!/^(?:SELECT|WITH)\b/.test(query))throw Error('Read-only SELECT or WITH query only.');
+  if(query!=='SHOW DATABASES'&&!/^(?:SELECT|WITH)\b/.test(query))
+    throw Error('Read-only SELECT, WITH or exact SHOW DATABASES query only.');
   for(const [key,value] of Object.entries(params))
     if(!/^[a-zA-Z_][a-zA-Z_0-9]*$/.test(key)||!Array.isArray(value)||value.length>5000
       ||value.some(id=>!Number.isInteger(id)||id<0||id>4294967295))
