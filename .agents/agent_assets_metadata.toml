@@ -3038,3 +3038,17 @@ mtime_ms = 1794965674921
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/9ec55194-a950-46e5-a658-28391ac73eb2/d98f0950-395e-44b5-af9b-4a6d33ebd442"
 storage_version_token = "1794965724442848"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "bZuHYk2RydgGtn5Wag9JG"
+uri = "file://generated-artifacts/youtube-58-phase1-2026-11-18/chartmetric-api-access-check.md"
+type = "text"
+title = "Chartmetric API access check"
+description = "No existing API credentials, client, or connected integration found. Earlier catalog fields came from the existing ClickHouse reader; no database or provider requests were made."
+logical_id = "e36a81b1-979c-4077-bd00-863b6a8ecfff"
+content_hash = "sha256:a5d8dc9c81f907f801dd3d8eed53269246b570e98289639a0d0c6d31b1a1a8d3"
+size = 2496
+mtime_ms = 1794966074913
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/e36a81b1-979c-4077-bd00-863b6a8ecfff/00157ef0-05ce-48e7-9bb8-156415107464"
+storage_version_token = "1794966085385724"
+content_type = "text/markdown"

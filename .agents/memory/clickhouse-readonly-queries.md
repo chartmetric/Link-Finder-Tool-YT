@@ -26,3 +26,13 @@ ClickHouse account already held.
 permission-denied evidence from absent events. Use only existing authorized
 access; do not broaden application permissions to investigate. Successful
 selected-row writes do not prove that the producer selected its intended universe.
+
+The project's PostgreSQL database is not the Chartmetric catalog.
+
+**Why:** The user explicitly clarified this when a supplied Chartmetric-schema
+query could not run against the project's PostgreSQL connection.
+
+**How to apply:** Do not assume Chartmetric tables exist in the project's
+PostgreSQL database, add those tables, or treat an approved Chartmetric API route
+as permission to query a different catalog service. Keep source authorization
+explicit.
