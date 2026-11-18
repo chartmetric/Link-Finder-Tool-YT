@@ -3458,3 +3458,143 @@ mtime_ms = 1794993590074
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/aa5e5a14-dce5-4180-b364-f4426efd9752/767fda54-adf6-4732-ab47-5301db9cffcf"
 storage_version_token = "1794993890528068"
 content_type = "text/csv"
+
+[[outputs]]
+id = "iuNVxMltqR9ku3IoRzgoD"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/track-a-final-de/catalog-ready-submit.csv"
+type = "table"
+title = "Track A — 7,785 submission links"
+description = "Frozen final-submit rows; excludes Tier 3 artist-declared hold links and invalidated provisional highs."
+logical_id = "e63818cd-f4d2-4807-a2e5-2c0c14eea5d0"
+content_hash = "sha256:cb63890ac4800a709d906528d39a951010b2eb5c33a502cc696670ecec1ef5ad"
+size = 9736591
+mtime_ms = 1795022540322
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/e63818cd-f4d2-4807-a2e5-2c0c14eea5d0/d8660e5a-fc62-4ea2-8392-4b65be49f59d"
+storage_version_token = "1795022761628555"
+content_type = "text/csv"
+
+[[outputs]]
+id = "zdnKsXaBaIB80ROj67STP"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/track-a-final-de/catalog-ready-hold.csv"
+type = "table"
+title = "Track A — 1,416 links on hold"
+description = "Frozen Tier 3 artist-declared links for saved-evidence rechecking in Track B."
+logical_id = "55777465-455e-4d3e-8a80-f95902b993d3"
+content_hash = "sha256:77a13e44c8e704db1534ffd31c3a28103354d3619cb6d1ed61def5e883f93105"
+size = 1387691
+mtime_ms = 1795022540362
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/55777465-455e-4d3e-8a80-f95902b993d3/5a111678-9027-4c77-b426-6cf79bc8ff9d"
+storage_version_token = "1795022763157063"
+content_type = "text/csv"
+
+[[outputs]]
+id = "1Lh-0l4EUmx54FFQDAixH"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/track-a-final-de/sample-30-submit.csv"
+type = "table"
+title = "Track A — random submission sample"
+description = "Thirty submission links with Chartmetric and YouTube links and evidence side by side."
+logical_id = "f1c082b5-cd5f-4697-9118-fa4a22af6aa5"
+content_hash = "sha256:7f9293596490c5d4a9c57f7788f3a657321e5e05bd188f4c69d3ffe3ee7e830b"
+size = 35380
+mtime_ms = 1795022553298
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/f1c082b5-cd5f-4697-9118-fa4a22af6aa5/3c6d35ac-c83f-47e8-97c8-005d440afd78"
+storage_version_token = "1795022764336630"
+content_type = "text/csv"
+
+[[outputs]]
+id = "aHZXZm2jO5AR6uuku3iro"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/track-a-final-de/track-a-report.md"
+type = "text"
+title = "Track A — final report"
+description = "Submission verification, corrected tier accuracy and frozen-output policy."
+logical_id = "22bf9a6c-80b6-450b-baf8-8192e8dd3c08"
+content_hash = "sha256:307808e812398462488f11c6ad9bce726c6ecd72f17a4304e30300e5875c21b8"
+size = 1191
+mtime_ms = 1795022750042
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/22bf9a6c-80b6-450b-baf8-8192e8dd3c08/f26ee05e-1f5d-4ba5-9f26-b73f77da899e"
+storage_version_token = "1795022764945255"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "vNe6f5CIkgezoasxIQw-z"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/round2/strong-single-candidates.csv"
+type = "table"
+title = "B1 — 5,079 strong single-release medium links"
+description = "4,747 profiles; title, date and label jointly match, with exact name and first artist credit. No promotions."
+logical_id = "2f117013-366b-4304-84d0-7e5daa882e34"
+content_hash = "sha256:9e9b154ca398cce170b5028be7ca1324b54ee34d086763202d1a6e197d3eb275"
+size = 14314233
+mtime_ms = 1795022908211
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/2f117013-366b-4304-84d0-7e5daa882e34/add4d7bb-e61b-45a2-8a77-ac6c61927ee6"
+storage_version_token = "1795022981734871"
+content_type = "text/csv"
+
+[[outputs]]
+id = "rE3Zo-aUKtvYR9rWtABze"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/round2/sample-30-strong-single.csv"
+type = "table"
+title = "B1 — 30 single-release links for review"
+description = "Random sample with matched evidence included."
+logical_id = "b37f988e-6fba-496e-8d15-4bdde8a0e884"
+content_hash = "sha256:9f3ba45875f6a7670e84ae802f4a3ce879f04015e83735573a353b63dffc452c"
+size = 88928
+mtime_ms = 1795022908219
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/b37f988e-6fba-496e-8d15-4bdde8a0e884/a54b9dcf-a73c-4936-97b4-9e5ca1499c82"
+storage_version_token = "1795022982463859"
+content_type = "text/csv"
+
+[[outputs]]
+id = "rVyi9z0cyMthOvkihzWYc"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/round2/hold-recheck.csv"
+type = "table"
+title = "B2 — all 1,416 held links rechecked"
+description = "None have a saved qualifying release on the same channel; all remain on hold."
+logical_id = "0ad1e0fa-59c7-466b-b569-4cc91433d6f6"
+content_hash = "sha256:41cc0dc01dd6d56ec1a1d33ed71bbb51c47344530f49b5d1165d9a0190d02c62"
+size = 1146216
+mtime_ms = 1795022908235
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/0ad1e0fa-59c7-466b-b569-4cc91433d6f6/f5a5575a-aa28-40cf-9946-33562f3d35ab"
+storage_version_token = "1795022984187471"
+content_type = "text/csv"
+
+[[outputs]]
+id = "oEzgwGhpf59DiyDUKxBqF"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/track-a-evidence-companion/sample-30-submit.csv"
+type = "table"
+title = "Track A — same 30 rows with full evidence"
+description = "Evidence companion reconstructed from raw saved captures. Original frozen Track A files remain unchanged."
+logical_id = "7a327b5c-6f68-4287-8e2f-08352c473d7b"
+content_hash = "sha256:9dd9f3c092b492accd9f4232796d522e776b8640352e245ed63d2ab6336ca65d"
+size = 107908
+mtime_ms = 1795022955424
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/7a327b5c-6f68-4287-8e2f-08352c473d7b/38eab6ac-ad5e-4f85-84b9-2f78694009b8"
+storage_version_token = "1795022985281248"
+content_type = "text/csv"
+
+[[outputs]]
+id = "fIF375Kn5zK7y2aRvAMQE"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/qa-evidence-for-de/qa-evidence-for-de.csv"
+type = "table"
+title = "QA evidence for DE"
+description = "247 profile-check records covering 246 distinct profiles, with evidence, reviewer attribution and frozen-submission membership."
+logical_id = "7e435910-1cf0-46a5-b82b-3cb13f9fadf0"
+content_hash = "sha256:6f8bad9751f0a0c869c45b1d0464073355dafe0386403d89b5d8092df8594536"
+size = 774678
+mtime_ms = 1795023827338
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/7e435910-1cf0-46a5-b82b-3cb13f9fadf0/46373b33-3f9e-418e-9ed9-0fa620388036"
+storage_version_token = "1795023862665253"
+content_type = "text/csv"
+
+[[outputs]]
+id = "Yhd50G61BZGxtQvd10NoI"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/qa-evidence-for-de/qa-summary-for-de.md"
+type = "text"
+title = "QA summary for DE"
+description = "One-page summary of all four checks and Tier 1–2 known-answer accuracy."
+logical_id = "8dcd061d-ea56-407f-a8e9-688e1bd34a51"
+content_hash = "sha256:1f1dc7ffa5e740cf1f1eb9a1a0e4e2f6fd5f5976711dcec9f1f6483195506994"
+size = 2441
+mtime_ms = 1795023827342
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/8dcd061d-ea56-407f-a8e9-688e1bd34a51/28143a43-c3c4-4903-beb2-c06853463167"
+storage_version_token = "1795023863543321"
+content_type = "text/markdown"

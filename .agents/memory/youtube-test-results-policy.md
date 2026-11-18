@@ -81,3 +81,40 @@ whereas missing-channel sourcing predominantly relied on release evidence.
 **How to apply:** Report evidence mix, source coverage and tier-specific results
 alongside the confidence interval. Fresh consistency checks test whether
 captured metadata remains present, not independent artist-identity accuracy.
+
+Final DE submission outputs are immutable. Separate Tier 3 artist-declared
+high links from the submission; they need at least one same-channel release
+match (title plus date or label) to qualify for a later batch. Never amend the
+already-submitted run to add coverage-round results.
+
+**Why:** The user explicitly requested a frozen first submission, a separate
+hold list, and later coverage work without changing first-submission files or
+rows.
+
+**How to apply:** Use independent output directories and new `final_submit` and
+`round2` run IDs; verify frozen output hashes before and after later work.
+If a frozen sample lacks detail, add a clearly labeled companion for the same
+sample rather than rewriting it. The unchanged table has no run-type column;
+record type in the run ID and an external manifest, without altering the schema.
+
+The authorized coverage-round continuation stops at $490 cumulative reserved
+spend, including earlier sourcing and QA. It is not a new $75 allowance.
+
+**Why:** The user described roughly $75 remaining but explicitly required
+stopping additional no-candidate track searches at $490 total.
+
+**How to apply:** Reserve against the shared ledger transactionally; use at most
+three additional primary-credit titles beyond the original searches, and retain
+all prior failed/uncertain admissions. Strict single-release review exports must
+count medium rows only, not low rows with an annotation.
+
+Reconstruct detailed evidence from saved raw candidates and the frozen artist
+catalog, not from compact checkpoint candidate summaries.
+
+**Why:** Operational checkpoints deliberately retain only short verdict summaries;
+reading absent match fields as empty produced an incorrect zero-count draft and
+an incomplete sample.
+
+**How to apply:** Re-evaluate raw captures offline under the sealed matcher for
+evidence exports. Treat missing detailed fields as a signal to reconstruct or
+fail explicitly, never as evidence that no tracks matched.
