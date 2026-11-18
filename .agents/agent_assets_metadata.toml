@@ -3654,3 +3654,101 @@ mtime_ms = 1795025805354
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/e7c46638-1410-4e34-b5b0-93a466ea7ada/0e20103c-ba2c-488b-8660-eab88c4d55b8"
 storage_version_token = "1795025905503276"
 content_type = "text/csv"
+
+[[outputs]]
+id = "9LvtA3XitIV_vms-PRcd8"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/casper-recovery-analysis/casper-recovery-report.md"
+type = "text"
+title = "Casper recovery comparison report"
+description = "Earlier request: original-batch agreement 81.63% where Casper has channels; 1,843 two-source links across 1,759 profiles; uploads-only estimates $15.47 for recommended/Topic leads or $41.57 for all leads. No spending or promotions."
+logical_id = "d1944ff4-6de4-4c80-b8ad-74f90eeabd61"
+content_hash = "sha256:2981a3197a9efd3dc673c79f29572dd23a929773f050a6069c61f057c48cf3fd"
+size = 7448
+mtime_ms = 1795026869667
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/d1944ff4-6de4-4c80-b8ad-74f90eeabd61/7cecb648-3de9-44e5-8081-57c1851bb280"
+storage_version_token = "1795026895104935"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "mU4JUkJekdAlE5T7Z7noq"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/casper-recovery-analysis/casper-disagreements.csv"
+type = "table"
+title = "casper-disagreements.csv"
+description = "3,404 original-batch and 2,144 batch-2 non-agreements, with missing channel data distinguished from actual ID disagreements."
+logical_id = "4a6808b1-9955-4834-bea5-374d7d4ff906"
+content_hash = "sha256:bf9b75e33c70a90198e7f5a4043d75d9f5028438f1f7feba3c91ae111ace5dfe"
+size = 1578009
+mtime_ms = 1795026178935
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/4a6808b1-9955-4834-bea5-374d7d4ff906/9905ef0b-1c20-4828-95ad-ced35895bb86"
+storage_version_token = "1795026896260484"
+content_type = "text/csv"
+
+[[outputs]]
+id = "9m3rxsQgCrslXSee3AkGA"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/casper-recovery-analysis/two-source-candidates.csv"
+type = "table"
+title = "two-source-candidates.csv"
+description = "1,843 medium/low review links across 1,759 profiles; Casper recommended/Topic matches passing the required checks. Not promoted."
+logical_id = "e824771a-e6d0-43da-ac80-9585f5c96c96"
+content_hash = "sha256:d11adfccec529cd1d71fc420867c92b3f08281d5f32ee49711cdc9cd6a66fd1a"
+size = 2038877
+mtime_ms = 1795026345503
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/e824771a-e6d0-43da-ac80-9585f5c96c96/cbf8c19c-7c42-4ce1-a3c2-9ebfaad49ca2"
+storage_version_token = "1795026896963300"
+content_type = "text/csv"
+
+[[outputs]]
+id = "mMchHdflHhtneCJr-DYX_"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/casper-recovery-analysis/sample-30-two-source.csv"
+type = "table"
+title = "sample-30-two-source.csv"
+description = "Thirty distinct profiles for manual review, with channel links and saved evidence."
+logical_id = "38fbb351-c962-430c-8647-db1de0e45caa"
+content_hash = "sha256:5efa059f0dff938697cfc9ce44af5f3bc16ad259c29e885022fee6713661f376"
+size = 32534
+mtime_ms = 1795026345675
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/38fbb351-c962-430c-8647-db1de0e45caa/1b5c95b7-a7ca-40a6-9101-39ba2a52f5dd"
+storage_version_token = "1795026897667580"
+content_type = "text/csv"
+
+[[outputs]]
+id = "DEDoYIpvSJ04xLQCDL423"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/batch1-disagreement-breakdown/sample-20-disagreements.csv"
+type = "table"
+title = "sample-20-disagreements.csv"
+description = "Twenty random batch-1 disagreements, with both channel links, our saved song/date/label evidence, and Casper’s artist-video counts. Two artist-declared rows show cross-links because matched-song metadata was not saved."
+logical_id = "51352d84-cb61-414b-8d1c-bc96c1207bbf"
+content_hash = "sha256:176f42196c841cf69ccb10329647acd671676c37f091841137dbcf6510a22397"
+size = 15336
+mtime_ms = 1795027171462
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/51352d84-cb61-414b-8d1c-bc96c1207bbf/3289b91e-3b1a-4d84-963d-491fedfafd45"
+storage_version_token = "1795027333324045"
+content_type = "text/csv"
+
+[[outputs]]
+id = "woiM49KF5DYJr2q53tGHW"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/batch1-disagreement-breakdown/disagreement-breakdown.md"
+type = "text"
+title = "Breakdown of the 986 disagreements"
+description = "Counts for all four categories, name comparisons, saved-song findings and limitations. No paid requests or submission changes."
+logical_id = "a0d4af1c-d3fb-458a-ae24-967e24a0c1cf"
+content_hash = "sha256:8a6531721a4bd5d13da1cfd3dc896c6a877f8d84bc49139f13b25d9419c4adbb"
+size = 2951
+mtime_ms = 1795027307726
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/a0d4af1c-d3fb-458a-ae24-967e24a0c1cf/315aa9c5-5a53-47bf-9c4c-74611be46bbf"
+storage_version_token = "1795027334063318"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "z0mS6Lu6g3aSQ8uUA-ZAe"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/batch1-disagreement-breakdown/topic-channel-comparisons.csv"
+type = "table"
+title = "Saved Topic-channel comparisons"
+description = "878 primary and alternate Topic comparisons across 661 profiles, including names, saved-song overlaps, missing-data flags and receipt references."
+logical_id = "54793ef6-2755-496d-8d1c-851d1b1e9d98"
+content_hash = "sha256:5dcbfb7086f0872fa603442869a1d0964d1a10f7b153214fe1c11fabe26f5a81"
+size = 402703
+mtime_ms = 1795027171502
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/54793ef6-2755-496d-8d1c-851d1b1e9d98/af88e682-6943-4f71-b20e-5e0750fd781b"
+storage_version_token = "1795027334704609"
+content_type = "text/csv"

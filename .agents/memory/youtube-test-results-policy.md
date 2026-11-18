@@ -134,3 +134,20 @@ other candidates to a separate review export. Insert only selected real highs
 under a new run ID, with `catalog_ready` status; preserve batch 1 and all frozen
 files. Report combined batch-1/batch-2 distinct-profile coverage against the
 frozen eligible denominator, not against all provisional or held highs.
+
+DE sent-submission history is append-only and distinct from candidate/result
+history. Before every future final batch, exclude any row whose profile_id
+**or** channel_id occurs in any confirmed submission, not merely the latest
+result run. Use a separate final_submit_batchN run type for every later batch.
+
+**Why:** The user explicitly requested that neither an artist/profile nor a
+channel ever be sent to DE twice.
+
+**How to apply:** Gate preparation and recheck before result insertion and DE
+sending; a stale prepared payload must fail closed rather than overwrite frozen
+files. Record a batch in the submission ledger only after the user explicitly
+confirms that particular batch was sent to DE. Promotion, result insertion and
+CSV delivery are not send confirmation. The original first-batch backfill was
+explicitly authorized with its original creation timestamp. Never automatically
+register pending later batches. Read the ledger across all sent batches and
+reconcile uncertain append acknowledgments without resending.
