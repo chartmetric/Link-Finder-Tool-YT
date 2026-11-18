@@ -206,13 +206,8 @@ export function metadataCsv(overlay) {
   return [columns,...rows].map(row=>row.map(csvCell).join(',')).join('\n')+'\n';
 }
 
-export async function select(query,{params={}}={}) {
-  if(query!=='SHOW DATABASES'&&!/^(?:SELECT|WITH)\b/.test(query))
-    throw Error('Read-only SELECT, WITH or exact SHOW DATABASES query only.');
-  for(const [key,value] of Object.entries(params))
-    if(!/^[a-zA-Z_][a-zA-Z_0-9]*$/.test(key)||!Array.isArray(value)||value.length>5000
-      ||value.some(id=>!Number.isInteger(id)||id<0||id>4294967295))
-      throw Error('Catalog parameters must be bounded UInt32 arrays.');
+export async function select(query) {
+  if(!query.startsWith('SELECT'))throw Error('SELECT only.');
   const env=process.env;
   if(!env.CLICKHOUSE_VERT_HOST||!env.CLICKHOUSE_USERNAME||!env.CLICKHOUSE_PASSWORD)
     throw Error('ClickHouse configuration unavailable.');
@@ -220,19 +215,10 @@ export async function select(query,{params={}}={}) {
   if(u.protocol!=='https:'||u.username||u.password||u.search||u.hash||u.pathname!=='/')
     throw Error('Invalid secure catalog endpoint.');
   u.searchParams.set('readonly','1');u.searchParams.set('max_execution_time','30');
-  for(const [key,value] of Object.entries(params))
-    u.searchParams.set('param_'+key,JSON.stringify(value));
   const r=await fetch(u,{method:'POST',redirect:'error',signal:AbortSignal.timeout(40000),
     headers:{'X-ClickHouse-User':env.CLICKHOUSE_USERNAME,'X-ClickHouse-Key':env.CLICKHOUSE_PASSWORD},
     body:`${query} FORMAT JSON`});
-  if(!r.ok){
-    const detail=(await r.text()).slice(0,16384);
-    const catalogCode=detail.match(/\bCode:\s*(\d+)/)?.[1]??null;
-    const catalogException=detail.match(/\(([A-Z][A-Z_]+)\)/)?.[1]??null;
-    const error=new Error(`Catalog metadata HTTP ${r.status}${catalogCode?`; code ${catalogCode}`:''}${catalogException?`; ${catalogException}`:''}; no retry.`);
-    error.httpStatus=r.status;error.catalogCode=catalogCode;error.catalogException=catalogException;
-    throw error;
-  }
+  if(!r.ok)throw Error(`Catalog metadata HTTP ${r.status}; no retry.`);
   const rows=(await r.json()).data;
   if(!Array.isArray(rows))throw Error('Invalid metadata response.');
   return rows;

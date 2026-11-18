@@ -4,6 +4,7 @@ import csv
 import json
 import sys
 from collections import Counter, defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -31,6 +32,7 @@ sys.addaudithook(prohibit_network)
 BOOL_FIELDS = {
     "scrapecreators_is_business", "raw_capture_receipt_available",
     "normalized_capture_available", "original_model_state_available",
+    "capture_provider_error_flag",
 }
 INT_FIELDS = {
     "tier", "serper_rank_among_candidates", "serper_organic_position",
@@ -45,6 +47,7 @@ scrapecreators_full_name scrapecreators_biography scrapecreators_external_urls_j
 scrapecreators_bio_link_urls_json scrapecreators_bio_link_page_urls_json
 scrapecreators_category scrapecreators_is_business scrapecreators_followers capture_status
 capture_status_detail capture_timestamp capture_evidence_source raw_capture_receipt_available
+capture_provider_error_flag capture_provider_error_code
 normalized_capture_available link_capture_status jev_verdict jev_rationale_text
 jev_rationale_status jev_model jev_requested_model jev_timestamp jev_same_identity_probability
 jev_verdict_label_confidence jev_verdict_probabilities_json catalog_country
@@ -95,6 +98,47 @@ def serper_position(profile_id, selected):
     return min(positions) if positions else None
 
 
+def load_saved_artist(selected, baseline, indexes):
+    """Parallel local-file reads; return projected fields, not large raw profiles."""
+    pid, cm = selected["profile_id"], selected["cm_artist"]
+    path = ROOT / "artists" / (pid + ".json")
+    if path.exists():
+        artist_bytes = path.read_bytes()
+        result, source = json.loads(artist_bytes), str(ROOT)
+    else:
+        result = baseline[pid]
+        artist_bytes = json_text(result).encode()
+        source = result["source"]
+        path = ROOT / "baseline.json"
+    assert str(result["profileId"]) == pid and str(result["cmArtist"]) == cm
+    matches = [c for c in result.get("candidates", [])
+               if handle(c.get("url")) == handle(selected["instagram_url"])
+               and (c.get("reviewSuggestion") is True
+                    or c.get("review", {}).get("reviewSuggestion") is True)]
+    assert len(matches) == 1, ("selected URL must resolve to exactly one positive finding", pid)
+    candidate = matches[0]
+    answer = candidate.get("recordedAnswer", {})
+    assert answer.get("verdict") == selected["verdict"]
+    probability = answer.get("sameIdentityProbability", answer.get("score"))
+    assert str(probability) == selected["score"], ("selected score changed", pid)
+    model, capture, request, state, model_path, capture_path = resolve_receipts(pid, candidate, source, indexes)
+    capture_data, gaps = capture_fields(capture, candidate)
+    context_data = catalog_fields(state, cm)
+    position = serper_position(pid, selected["instagram_url"]) if source == str(ROOT) else None
+    return (result, source, path, candidate, answer, probability, model,
+            True if capture is not None else None, request, state, model_path, capture_path,
+            capture_data, gaps, context_data, position, sha_bytes(artist_bytes))
+
+
+def saved_artists_in_order(selection, baseline, indexes):
+    # Bound in-flight data and keep the exact selection order. Threads only read
+    # local files; the network-denying audit hook applies to every worker.
+    with ThreadPoolExecutor(max_workers=12) as executor:
+        for start in range(0, len(selection), 96):
+            group = selection[start:start + 96]
+            yield from executor.map(lambda row: load_saved_artist(row, baseline, indexes), group)
+
+
 def write_readme(summary):
     groups = summary["batch_rules"]
     lines = [
@@ -113,10 +157,14 @@ def write_readme(summary):
         f"- No saved raw ScrapeCreators receipt found: {summary['raw_capture_receipts_missing']:,}.",
         f"- No saved capture evidence of any kind: {summary['no_saved_capture_evidence']:,}.",
         f"- No usable saved capture (capture_status is empty or failed): {summary['no_usable_capture']:,}.",
+        f"- Returned profiles with an accompanying provider error flag: {summary.get('capture_provider_error_flag_rows', 0):,}.",
         f"- Status counts: {json_text(summary['capture_status_counts'])}.",
         "ok = usable saved profile; empty = saved successful response with no usable profile object;",
         "failed = recorded failure, or absent capture with an explicit detail. Evidence-source columns distinguish these.",
         "A normalized-only capture remains distinguishable from an original raw receipt.",
+        "When HTTP 200 + success=true includes a bound profile AND an error flag, status is ok",
+        "for profile availability; the contradictory provider flag/code and a warning are preserved.",
+        "This does not certify account ownership or that every captured field is complete.",
         "Blank biography, no websites, or missing provider fields do NOT establish that a visible account lacks them.",
         "scrapecreators_bio_link_urls_json lists the provider's actual bio_links URLs when recoverable.",
         "bio_link_page_urls_json is a convenience subset of captured URLs on recognized link-page hosts,",
@@ -151,6 +199,11 @@ def write_readme(summary):
         "The JSON rules manifest preserves each distinct saved rule payload and available frozen runtime hashes.",
         "Approval/runtime metadata describes archived configurations; it does not prove every row used a later config.",
         "No current policy has been retroactively attributed to historical rows.",
+        "All selected rows recorded catalog-bound-likely-review-v1: a likely/verified model verdict",
+        "plus the saved binding and observed-conflict checks; no new numeric cutoff was applied.",
+        "The saved prompt required combined identity evidence, not a name/title alone. The final",
+        "review gate did not independently require an exact music-account cross-link.",
+        "No selected row recorded the later targeted_title_guard policy.",
         "",
         "| Source batch | Recorded policy | Selected rows | Raw capture missing |",
         "|---|---|---:|---:|",
@@ -161,6 +214,10 @@ def write_readme(summary):
     lines += [
         "",
         "## Missing-field totals",
+        f"- Discovery confidence not recorded: {summary['null_counts'].get('serper_confidence', 0):,} rows.",
+        f"- Discovery signals not recorded: {summary['null_counts'].get('serper_signals_json', 0):,} rows.",
+        f"- Country absent from the original supplied context: {summary['null_counts'].get('catalog_country', 0):,} rows.",
+        f"- Written JEV rationale not stored: {summary['null_counts'].get('jev_rationale_text', 0):,} rows.",
         "See export-summary.json for per-column null counts, evidence gaps, source selection hash and checks.",
         "The CSV (if included) has UTF-8 BOM and protects formula-leading text with an apostrophe.",
         "Parquet preserves original text without spreadsheet-escaping prefixes.",
@@ -180,7 +237,11 @@ def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
     parquet_path = OUTPUT / "instagram-selected-48333-full-evidence.parquet"
     csv_path = OUTPUT / "instagram-selected-48333-full-evidence.csv"
-    assert not parquet_path.exists() and not csv_path.exists(), "Use a fresh output directory"
+    if parquet_path.exists() or csv_path.exists():
+        previous = read_json(OUTPUT / "export-summary.json")
+        assert previous["selection_sha256"] == sha_bytes(source_bytes)
+    staging_parquet = OUTPUT / "building.parquet"
+    staging_csv = OUTPUT / "building.csv"
     summary = {
         "created_at": datetime.now(timezone.utc).isoformat(), "cohort": 48333,
         "selection_source": str(SELECTION), "selection_sha256": sha_bytes(source_bytes),
@@ -188,41 +249,23 @@ def main():
         "capture_status_counts": Counter(), "capture_source_counts": Counter(),
         "raw_capture_receipts_found": 0, "raw_capture_receipts_missing": 0,
         "no_saved_capture_evidence": 0, "no_usable_capture": 0,
+        "capture_provider_error_flag_rows": 0,
         "model_receipts_missing": 0, "rationale_status_counts": Counter(),
         "null_counts": Counter(), "evidence_gap_counts": Counter(),
     }
     groups = defaultdict(Counter)
     rule_payloads = {}
     pending = []
-    with pq.ParquetWriter(parquet_path, schema(), compression="zstd") as writer, \
-            csv_path.open("w", encoding="utf-8-sig", newline="") as csv_stream:
+    with pq.ParquetWriter(staging_parquet, schema(), compression="zstd") as writer, \
+            staging_csv.open("w", encoding="utf-8-sig", newline="") as csv_stream:
         csv_writer = csv.writer(csv_stream)
         csv_writer.writerow(FIELDS)
-        for index, selected in enumerate(selection):
+        prepared = saved_artists_in_order(selection, baseline, indexes)
+        for index, (selected, loaded) in enumerate(zip(selection, prepared, strict=True)):
             pid, cm = selected["profile_id"], selected["cm_artist"]
-            path = ROOT / "artists" / (pid + ".json")
-            if path.exists():
-                artist_bytes = path.read_bytes()
-                result, source = json.loads(artist_bytes), str(ROOT)
-            else:
-                result = baseline[pid]
-                artist_bytes = json_text(result).encode()
-                source = result["source"]
-                path = ROOT / "baseline.json"
-            assert str(result["profileId"]) == pid and str(result["cmArtist"]) == cm
-            matches = [c for c in result.get("candidates", [])
-                       if handle(c.get("url")) == handle(selected["instagram_url"])
-                       and (c.get("reviewSuggestion") is True
-                            or c.get("review", {}).get("reviewSuggestion") is True)]
-            assert len(matches) == 1, ("selected URL must resolve to exactly one positive finding", pid)
-            candidate = matches[0]
-            answer = candidate.get("recordedAnswer", {})
-            assert answer.get("verdict") == selected["verdict"]
-            probability = answer.get("sameIdentityProbability", answer.get("score"))
-            assert str(probability) == selected["score"], ("selected score changed", pid)
-            model, capture, request, state, model_path, capture_path = resolve_receipts(pid, candidate, source, indexes)
-            capture_data, gaps = capture_fields(capture, candidate)
-            context_data = catalog_fields(state, cm)
+            (result, source, path, candidate, answer, probability, model, capture,
+             request, state, model_path, capture_path, capture_data, gaps,
+             context_data, organic_position, artist_record_sha) = loaded
             decision = candidate.get("decision") or candidate.get("review") or {}
             guard = candidate.get("guard") or decision.get("guard")
             rules = {"policy": decision.get("policy"),
@@ -263,7 +306,7 @@ def main():
                 "serper_signals_json": json_text(candidate["signals"]) if "signals" in candidate else None,
                 "serper_rank_among_candidates": ranks[0] if ranks else None,
                 "serper_rank_basis": "saved_candidate_list_order" if ranks else "not_recorded",
-                "serper_organic_position": serper_position(pid, selected["instagram_url"]) if source == str(ROOT) else None,
+                "serper_organic_position": organic_position,
                 "serper_evidence_json": json_text(evidence) if evidence is not None else None,
                 **capture_data, **context_data,
                 "jev_verdict": answer.get("verdict"), "jev_rationale_text": rationale,
@@ -282,7 +325,7 @@ def main():
                 "evidence_rules_used_json": json_text(rules["evidenceRules"]) if rules["evidenceRules"] is not None else None,
                 "original_request_sha256": candidate.get("requestSha256"),
                 "original_model_state_available": state is not None,
-                "artist_record_source_path": str(path), "artist_record_sha256": sha_bytes(artist_bytes),
+                "artist_record_source_path": str(path), "artist_record_sha256": artist_record_sha,
                 "capture_receipt_source_path": capture_path, "model_receipt_source_path": model_path,
                 "evidence_gaps_json": json_text(gaps),
             }
@@ -298,6 +341,7 @@ def main():
             summary["raw_capture_receipts_missing"] += int(raw_missing)
             summary["no_saved_capture_evidence"] += int(none)
             summary["no_usable_capture"] += int(unusable)
+            summary["capture_provider_error_flag_rows"] += int(row["capture_provider_error_flag"])
             summary["model_receipts_missing"] += int(model is None)
             summary["rationale_status_counts"][rationale_status] += 1
             summary["evidence_gap_counts"].update(gaps)
@@ -307,6 +351,7 @@ def main():
             group["raw_capture_receipts_missing"] += int(raw_missing)
             group["no_saved_capture_evidence"] += int(none)
             group["no_usable_capture"] += int(unusable)
+            group["capture_provider_error_flag_rows"] += int(row["capture_provider_error_flag"])
             if len(pending) == 500:
                 writer.write_table(pa.Table.from_pylist(pending, schema=schema()))
                 pending.clear()
@@ -314,6 +359,9 @@ def main():
                 print(json_text({"exported": index + 1, "raw_capture_missing": summary["raw_capture_receipts_missing"]}), flush=True)
         if pending:
             writer.write_table(pa.Table.from_pylist(pending, schema=schema()))
+    assert pq.ParquetFile(staging_parquet).metadata.num_rows == 48333
+    staging_parquet.replace(parquet_path)
+    staging_csv.replace(csv_path)
     summary["batch_rules"] = [
         {"source_batch_id": source, "rules_version": policy, "rules_fingerprint_sha256": fingerprint, **counts}
         for (source, policy, fingerprint), counts in sorted(groups.items())

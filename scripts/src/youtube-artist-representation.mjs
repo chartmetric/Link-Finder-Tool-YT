@@ -7,15 +7,6 @@ import {boundYoutubeCapture} from './youtube-ownership-policy.mjs';
 import {evaluateYoutubeLink} from './youtube-topic-links.mjs';
 
 export const REPRESENTATION_VERSION='youtube-artist-representation-proposal-v1';
-// Deliberately separate from REPRESENTATION_VERSION: existing workers and
-// historical proposals must keep their exact request and interpretation.
-export const CHANNEL_IDENTITY_VERSION='youtube-channel-identity-offline-proposal-v1';
-export const CHANNEL_IDENTITY_RULES=[
-  'Channel identity is not recording participation. Featured, co-primary, composer, producer and other collaboration credits establish a recording association only; credit order does not assign the uploader channel to every credited artist.',
-  'For Topic support, identify the artist represented by the captured channel itself, then corroborate its exact catalog identity. A matching song, a co-credit, a search snippet or a candidate-outbound account link alone cannot overcome a different channel identity. Do not infer an alias from a collaboration.',
-  'A genuine primary-artist Topic channel can remain supported when channel identity and exact catalog corroboration agree, even when its recordings feature other artists. Label this Topic — auto-generated, never artist-managed. Missing corroboration is a hold, not proof that no channel exists.',
-  'For artist-facing channels, use channel-level identity and representation evidence rather than credit position. An artist may publish collaborations, lyrics or covers on their own channel. Preserve shared-channel, contradictory-capture and conflicting music-ID holds.',
-].join('\n');
 export const REPRESENTATION_ASSESSMENTS=Object.freeze({
   ...COMBINED_ASSESSMENTS,
   artist_representation_supported:Object.freeze({
@@ -119,51 +110,6 @@ export function artistRepresentationRequest(originalOperation,originalCapture,co
     ownershipAccepted:false,importEligible:false};
 }
 
-// Preparation only. No existing executor imports this opt-in contract.
-export function channelIdentityRequest(originalOperation,originalCapture,contexts=[],maximumRequestBytes=24576){
-  const proposal=artistRepresentationRequest(originalOperation,originalCapture,contexts,maximumRequestBytes);
-  proposal.version=CHANNEL_IDENTITY_VERSION;
-  proposal.request.body.state.evidenceRules+='\n\n'+CHANNEL_IDENTITY_RULES;
-  proposal.request.body.state.evidenceNavigation.version=CHANNEL_IDENTITY_VERSION;
-  proposal.requestSha256=digest(proposal.request);
-  proposal.requestBytes=Buffer.byteLength(JSON.stringify(proposal.request.body));
-  proposal.stateSha256=digest({policy:CHANNEL_IDENTITY_VERSION,state:proposal.request.body.state});
-  proposal.readyForComparison=proposal.requestBytes<=maximumRequestBytes;
-  return proposal;
-}
-
-const channelArtistName=value=>String(value??'').normalize('NFKC').toLowerCase()
-  .replace(/\s*[-–—]\s*topic\s*$/iu,'').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
-
-// This gate never extracts identity from video credits or discovery snippets.
-// It consumes the same bound sources as the request, leaving model answers intact.
-export function channelIdentityReviewGate(proposal,category,safetyOptions={}){
-  const s=proposal.request.body.state;
-  const bound=boundYoutubeCapture(s.candidate.url,proposal.originalCapture);
-  if(!bound)return {eligible:false,reason:'unbound_channel_capture'};
-  assert.deepEqual(s.artist,proposal.originalOperation.request.body.state.artist);
-  assert.equal(digest(s.candidate.channelCapture.body),proposal.originalCapture.bodySha256);
-  assert.equal(s.candidate.url,proposal.originalOperation.request.body.state.candidate.url);
-  if(safetyOptions.sharedChannel||safetyOptions.contradictoryPair)
-    return {eligible:false,reason:'shared_or_conflicting_channel'};
-  const safety=evaluateYoutubeLink(s.artist,{url:s.candidate.url,capture:proposal.originalCapture,
-    ...s.candidate.searchEvidence},safetyOptions);
-  if(!['needs_identity_check','likely_artist_owned','supported_topic','related_catalog_channel'].includes(safety.status))
-    return {eligible:false,reason:safety.reason};
-  if(category==='topic_identity_supported'){
-    if(safety.channelType!=='topic')return {eligible:false,reason:'topic_requires_captured_topic_channel'};
-    const capturedName=channelArtistName(bound.body.displayName);
-    const agrees=[s.artist.name,...(s.artist.aliases??[])].some(a=>
-      channelArtistName(a)&&channelArtistName(a)===capturedName);
-    if(!agrees)return {eligible:false,reason:'topic_channel_identity_not_catalog_artist'};
-    if(safety.status!=='supported_topic'&&!exactCatalogLinks(s).length)
-      return {eligible:false,reason:'topic_channel_identity_needs_catalog_corroboration'};
-    return {eligible:true,reason:'topic_channel_identity_and_catalog_reference_available'};
-  }
-  if(safety.channelType==='topic')return {eligible:false,reason:'topic_requires_separate_category'};
-  return representationReviewGate(proposal,safetyOptions);
-}
-
 // This is the additional review-only support route, not an ownership gate.
 export function representationReviewGate(proposal,safetyOptions={}){
   const s=proposal.request.body.state;
@@ -184,15 +130,7 @@ export function representationReviewGate(proposal,safetyOptions={}){
 }
 
 export function parseArtistRepresentationResponse(proposal,packet,safetyOptions={}){
-  return parseRepresentationResponse(proposal,packet,safetyOptions,artistRepresentationRequest);
-}
-
-export function parseChannelIdentityResponse(proposal,packet,safetyOptions={}){
-  return parseRepresentationResponse(proposal,packet,safetyOptions,channelIdentityRequest);
-}
-
-function parseRepresentationResponse(proposal,packet,safetyOptions,buildRequest){
-  assert.deepEqual(proposal,buildRequest(proposal.originalOperation,
+  assert.deepEqual(proposal,artistRepresentationRequest(proposal.originalOperation,
     proposal.originalCapture,proposal.contexts,proposal.maximumRequestBytes));
   assert.equal(proposal.readyForComparison,true,'Full evidence exceeds the request-size limit');
   assert.equal(packet.kind,'model');assert.equal(packet.status,200);
@@ -216,17 +154,15 @@ function parseRepresentationResponse(proposal,packet,safetyOptions,buildRequest)
   const route=representationReviewGate(proposal,safetyOptions);
   const representation=answer.choice==='artist_representation_supported';
   const positive=representation||['artist_managed_supported','topic_identity_supported'].includes(answer.choice);
-  const identityRoute=proposal.version===CHANNEL_IDENTITY_VERSION&&positive
-    ?channelIdentityReviewGate(proposal,answer.choice,safetyOptions):null;
-  const blocked=identityRoute?!identityRoute.eligible:representation?!route.eligible:assessment.artistOwned===true?!artistSafe:
+  const blocked=representation?!route.eligible:assessment.artistOwned===true?!artistSafe:
     answer.choice==='topic_identity_supported'?!topicSafe:false;
-  return {version:proposal.version,profileId:s.artist.profileId,cmArtist:s.artist.cmArtist,
+  return {version:REPRESENTATION_VERSION,profileId:s.artist.profileId,cmArtist:s.artist.cmArtist,
     youtubeUrl:'https://www.youtube.com/channel/'+proposal.originalOperation.channelId,
     modelAssessment:assessment,
     modelAnswer:{requestSha256:proposal.requestSha256,rawAnswers:structuredClone(data.answers),
       resolvedModel:data.model,providerReportedUsd:data.usage.cost,receiptSha256:digest(packet)},
     decision:{status:blocked?'experimental_safety_hold':positive?'experimental_review_support':'experimental_hold',
-      reason:blocked?(identityRoute?identityRoute.reason:representation?route.reason:safety.reason):answer.choice,
+      reason:blocked?(representation?route.reason:safety.reason):answer.choice,
       reviewSuggestion:positive&&!blocked,verified:false,liveLinkAccepted:false},
     channelTypeLabel:safety.channelType==='topic'||assessment.channelType==='topic'?'Topic — auto-generated':
       representation?'Artist-facing — management unverified':assessment.channelType,

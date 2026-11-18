@@ -6,15 +6,13 @@ import {normalizeYoutubeChannel,youtubeDecisionRequest} from './youtube-ownershi
 import {revisedContextRequest} from './youtube-context-revision.mjs';
 import {reviewedVerificationFixture} from './youtube-reviewed-verification-fixture.mjs';
 import {artistRepresentationRequest,parseArtistRepresentationResponse,representationReviewGate,
-  catalogReferenceKey,exactCatalogLinks,REPRESENTATION_RULES,channelIdentityRequest,
-  parseChannelIdentityResponse,CHANNEL_IDENTITY_VERSION,CHANNEL_IDENTITY_RULES} from './youtube-artist-representation.mjs';
+  catalogReferenceKey,exactCatalogLinks,REPRESENTATION_RULES} from './youtube-artist-representation.mjs';
 
 const spotify='https://open.spotify.com/artist/3UvBjnS0xNdifivRctkxok';
 function fixture({accounts=true,links=[spotify],profileId='123',cmArtist='456',
-  channelId='UC'+'z'.repeat(22),name='Distinct Artist',artistName=name,aliases=[],
-  declarations=[],description='My music project.'}={}){
+  channelId='UC'+'z'.repeat(22),name='Distinct Artist',description='My music project.'}={}){
   const url='https://www.youtube.com/channel/'+channelId;
-  const artist={profileId,cmArtist,name:artistName,aliases,declarations,catalogProfile:{profile_id:profileId,cm_artist:cmArtist},
+  const artist={profileId,cmArtist,name,catalogProfile:{profile_id:profileId,cm_artist:cmArtist},
     accounts:accounts?[{profile_id:profileId,cm_artist:cmArtist,account_id:'789',
       platform:'spotify',account_url:spotify,is_active:1,disconnected_at:null}]:[],releases:[]};
   const request={method:'GET',url:'https://api.scrapecreators.com/v1/youtube/channel?'+new URLSearchParams({url})};
@@ -148,133 +146,5 @@ test('the exposed synthetic reviewed examples still retain their original single
     assert.equal(Object.keys(op.request.body.questions.combined_assessment.criteria).length,9);
     assert.equal(Object.keys(p.request.body.questions.combined_assessment.criteria).length,10);
     assert.equal(p.request.body.state.evidenceNavigation.exactCatalogLinks.length,0);
-  }
-});
-
-function identityFixture(options={},description='Recording · Guest Artist · Primary Artist'){
-  const f=fixture(options);
-  const context={videoId:'abcdefghijk',videoUrl:'https://www.youtube.com/watch?v=abcdefghijk',
-    channelId:f.original.channelId,title:'Shared Recording',description,
-    uploaderDisplayName:options.name??'Distinct Artist',capturedAt:'2026-11-17T23:00:00Z',
-    provenance:{rawBodySha256:'a'.repeat(64),receiptSha256:'b'.repeat(64),requestSha256:'c'.repeat(64)},
-    establishesOwnership:false};
-  return {...f,context,identity:channelIdentityRequest(f.original,f.capture,[context])};
-}
-test('collaborator Topic channels are held despite featured or co-primary recording credits and positive model answers',()=>{
-  // Exposed development cases from the review, not a held-out accuracy measure.
-  const cases=[
-    {artistName:'Trendy Boy',name:'DJ Save - Topic',profileId:'3813704',cmArtist:'15911385',
-      channelId:'UCx4SGzlJQNiYtonugf61HAg',credit:'DJ Save · featuring Trendy Boy and Jade'},
-    {artistName:'Section Five',name:'Balcony Mix Africa - Topic',profileId:'3902228',cmArtist:'3635226',
-      channelId:'UCtQq215xCsF02K6SNLQCpmw',credit:'Section Five · Balcony Mix Africa · Artwork Sounds'},
-    {artistName:'New Guest',name:'Other Primary - Topic',credit:'New Guest · Other Primary'},
-    {artistName:'New Guest',name:'Other Primary - Topic',credit:'Other Primary · New Guest'},
-  ];
-  for(const {credit,...options} of cases){
-    const {identity:p}=identityFixture(options,credit),before=structuredClone(p);
-    for(const choice of ['topic_identity_supported','artist_representation_supported','artist_managed_supported']){
-      const r=parseChannelIdentityResponse(p,response(p,choice));
-      assert.equal(r.decision.status,'experimental_safety_hold');
-      assert.equal(r.decision.reviewSuggestion,false);
-      assert.equal(r.modelAssessment.category,choice); // Never rewrite the model.
-      assert.equal(r.modelAnswer.rawAnswers.combined_assessment.choice,choice);
-    }
-    assert.equal(parseChannelIdentityResponse(p,response(p,'topic_identity_supported')).decision.reason,
-      'topic_channel_identity_not_catalog_artist');
-    assert.deepEqual(p,before);
-  }
-});
-test('primary Topic identity survives collaborations, Unicode names and explicit catalog aliases',()=>{
-  for(const options of [
-    {artistName:'Primary Artist',name:'Primary Artist - Topic'},
-    {artistName:'Primary Artist',name:'ＰＲＩＭＡＲＹ ＡＲＴＩＳＴ — Topic'},
-    {artistName:'Primary Artist',name:'Known Alias – Topic',aliases:['Known Alias']},
-  ]){
-    const {identity:p}=identityFixture(options,'Guest Artist · Primary Artist · Shared Recording');
-    const r=parseChannelIdentityResponse(p,response(p,'topic_identity_supported'));
-    assert.equal(r.decision.reviewSuggestion,true);
-    assert.equal(r.channelTypeLabel,'Topic — auto-generated');
-    assert.equal(r.modelAssessment.artistOwned,false);
-    for(const flag of [r.policyActivated,r.ownershipAccepted,r.catalogWritten,r.importEligible,
-      r.decision.verified,r.decision.liveLinkAccepted])assert.equal(flag,false);
-    assert.equal(parseChannelIdentityResponse(p,response(p,'artist_managed_supported')).decision.reviewSuggestion,false);
-  }
-});
-test('matching names and recording credits without a catalog bridge remain uncertain, not no-channel findings',()=>{
-  for(const options of [{accounts:false},{links:[]}]) {
-    const {identity:p}=identityFixture({name:'Primary Artist - Topic',artistName:'Primary Artist',...options},
-      'Primary Artist · Matching Catalog Song');
-    const r=parseChannelIdentityResponse(p,response(p,'topic_identity_supported'));
-    assert.equal(r.decision.reviewSuggestion,false);
-    assert.equal(r.decision.reason,'topic_channel_identity_needs_catalog_corroboration');
-    assert.equal(r.modelAssessment.category,'topic_identity_supported');
-  }
-});
-test('captured declarations still support genuine Topic music presence without an outgoing link',()=>{
-  const {original}=fixture(),url=original.request.body.state.candidate.url;
-  const body={sourceUrl:spotify,declaredLinks:[url]};
-  const declaration={requestedUrl:spotify,status:200,capturedAt:'2026-11-17',body,bodySha256:digest(body)};
-  for(const valid of [true,false]){
-    const {identity:p}=identityFixture({name:'Primary Artist - Topic',artistName:'Primary Artist',links:[],
-      declarations:[valid?declaration:{...declaration,bodySha256:'0'.repeat(64)}]});
-    assert.equal(parseChannelIdentityResponse(p,response(p,'topic_identity_supported')).decision.reviewSuggestion,valid);
-  }
-});
-test('artist-facing collaboration channels retain representation support but cannot be mislabeled Topic',()=>{
-  const {identity:p}=identityFixture({name:'Primary Artist'},'Guest Artist · Primary Artist');
-  for(const choice of ['artist_representation_supported','artist_managed_supported'])
-    assert.equal(parseChannelIdentityResponse(p,response(p,choice)).decision.reviewSuggestion,true);
-  assert.equal(parseChannelIdentityResponse(p,response(p)).channelTypeLabel,'Artist-facing — management unverified');
-  const r=parseChannelIdentityResponse(p,response(p,'topic_identity_supported'));
-  assert.equal(r.decision.reviewSuggestion,false);
-  assert.equal(r.decision.reason,'topic_requires_captured_topic_channel');
-});
-test('shared Villager SA/Mokgaetse channel and conflicting identities remain held across all positive categories',()=>{
-  for(const options of [
-    {artistName:'Villager SA',profileId:'3783654',cmArtist:'7006976'},
-    {artistName:'Mokgaetse',profileId:'4152222',cmArtist:'16284853'},
-  ]){
-    const {identity:p}=identityFixture({...options,name:options.artistName+' - Topic',
-      channelId:'UCtXS5ljfO4NG94I6ResVFKg'});
-    for(const safety of [{sharedChannel:true},{contradictoryPair:true}])
-      for(const choice of ['topic_identity_supported','artist_representation_supported','artist_managed_supported']){
-        const r=parseChannelIdentityResponse(p,response(p,choice),safety);
-        assert.equal(r.decision.reviewSuggestion,false);
-        assert.equal(r.decision.reason,'shared_or_conflicting_channel');
-      }
-  }
-  const {identity:p}=identityFixture({name:'Primary Artist - Topic',artistName:'Primary Artist',
-    links:[spotify,'https://open.spotify.com/artist/'+'A'.repeat(22)]});
-  assert.equal(parseChannelIdentityResponse(p,response(p,'topic_identity_supported')).decision.reason,
-    'different_observed_spotify_artist_id');
-});
-test('new channel-identity contract is isolated from archived proposals, answers and executable defaults',async()=>{
-  const {original,capture,proposal:old,identity:p}=identityFixture({
-    artistName:'Guest Artist',name:'Other Primary - Topic'});
-  const before=structuredClone({original,capture,old});
-  assert.equal(parseArtistRepresentationResponse(old,response(old,'topic_identity_supported')).decision.reviewSuggestion,true);
-  assert.equal(parseChannelIdentityResponse(p,response(p,'topic_identity_supported')).decision.reviewSuggestion,false);
-  assert.equal(p.version,CHANNEL_IDENTITY_VERSION);
-  assert.notEqual(p.requestSha256,old.requestSha256);
-  assert.deepEqual(p.request.body.state.artist,old.request.body.state.artist);
-  assert.deepEqual(p.request.body.state.candidate,old.request.body.state.candidate);
-  assert.match(CHANNEL_IDENTITY_RULES,/co-primary/);
-  assert.match(CHANNEL_IDENTITY_RULES,/credit order/);
-  assert.equal(p.executionEnabled,false);assert.equal(p.policyActivated,false);
-  assert.equal(p.requiresFreshSpendingApproval,true);
-  assert.equal(p.requestBytes,Buffer.byteLength(JSON.stringify(p.request.body)));
-  assert.throws(()=>parseChannelIdentityResponse(p,response(old)));
-  assert.throws(()=>parseArtistRepresentationResponse(p,response(p)));
-  assert.throws(()=>parseChannelIdentityResponse(old,response(old)));
-  const tampered=structuredClone(p);tampered.contexts[0].description='changed';
-  assert.throws(()=>parseChannelIdentityResponse(tampered,response(tampered)));
-  const over=channelIdentityRequest(original,capture,[],100);
-  assert.equal(over.readyForComparison,false);
-  assert.throws(()=>parseChannelIdentityResponse(over,response(over)));
-  assert.deepEqual({original,capture,old},before);
-  const {readFile}=await import('node:fs/promises');
-  for(const path of ['youtube-review-batch.mjs','youtube-coverage-execution.mjs','youtube-fresh-review.mjs']){
-    const source=await readFile(new URL(path,import.meta.url),'utf8');
-    assert.doesNotMatch(source,/\b(?:channelIdentityRequest|parseChannelIdentityResponse|CHANNEL_IDENTITY_VERSION)\b/);
   }
 });

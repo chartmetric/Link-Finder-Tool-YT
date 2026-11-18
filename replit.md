@@ -45,10 +45,6 @@ YouTube investigations retain metadata-confirmed handle and channel-ID URLs unde
 
 Search by any public name with optional location and country hints, inspect the best Instagram, TikTok, and YouTube matches, copy URLs, and export results.
 
-YouTube sourcing success is measured as the share of suggested channel URLs later confirmed correct in review; the target is at least 65%. Unreviewed suggestions do not count as confirmed.
-
-Prioritize YouTube coverage first: increase the number of artists receiving a usable channel suggestion, then address accuracy in parallel or afterward. Keep artist-level coverage separate from reviewed-link precision; do not treat the 65% precision target as a coverage target.
-
 ## User preferences
 
 ## Bulk profiles
