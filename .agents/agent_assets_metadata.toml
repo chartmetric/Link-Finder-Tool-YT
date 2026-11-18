@@ -3561,14 +3561,14 @@ content_type = "text/csv"
 id = "oEzgwGhpf59DiyDUKxBqF"
 uri = "file://generated-artifacts/youtube-v3-unattended-20261118/track-a-evidence-companion/sample-30-submit.csv"
 type = "table"
-title = "Track A — same 30 rows with full evidence"
-description = "Evidence companion reconstructed from raw saved captures. Original frozen Track A files remain unchanged."
+title = "30 artists for manual review"
+description = "The same 30 artists listed above, with YouTube and Chartmetric links and saved evidence."
 logical_id = "7a327b5c-6f68-4287-8e2f-08352c473d7b"
 content_hash = "sha256:9dd9f3c092b492accd9f4232796d522e776b8640352e245ed63d2ab6336ca65d"
 size = 107908
 mtime_ms = 1795022955424
-storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/7a327b5c-6f68-4287-8e2f-08352c473d7b/38eab6ac-ad5e-4f85-84b9-2f78694009b8"
-storage_version_token = "1795022985281248"
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/7a327b5c-6f68-4287-8e2f-08352c473d7b/8edbf322-2219-4377-927b-ea8affe85fed"
+storage_version_token = "1795024115783448"
 content_type = "text/csv"
 
 [[outputs]]
