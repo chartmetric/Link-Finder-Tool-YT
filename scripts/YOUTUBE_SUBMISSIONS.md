@@ -8,6 +8,18 @@ to DE.
 
 ## Preparing a new batch
 
+All future batches must count **distinct base songs**, not version titles.
+Use `applyBaseSongCounting` from `scripts/src/youtube-base-song-policy.mjs`
+after the evidence matcher, or the campaign's separate future-batch rules
+adapter. Slowed/sped-up, nightcore, remixes, instrumental, extended/radio edits,
+live/acoustic and comparable version suffixes count as the same composition.
+Apply this to title thresholds, release thresholds and candidate ranking.
+Do not alter the frozen historical matchers or prior submission results.
+The submission gate independently rejects title/release highs with too few
+base songs; release highs additionally require the new release-count proof in
+their serialized confidence reasons. Counting must not weaken ownership,
+credit, date or label requirements or automatically promote a medium result.
+
 1. Give each batch its own run type: `final_submit_batch2`,
    `final_submit_batch3`, and so on. Generate a fresh, never-reused run ID.
    The historical first batch is `final_submit`.

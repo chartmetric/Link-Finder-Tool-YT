@@ -3766,3 +3766,31 @@ mtime_ms = 1795027448430
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/f72971dc-726b-4e18-abf4-33063e6129f2/a1ff893e-cc3d-4e9d-be0d-65c8d9f0f8b2"
 storage_version_token = "1795027455363768"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "B0GoOYMmYSQJ03tcvVHK0"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/batch1-base-song-audit-final/below-three-distinct-base-songs.csv"
+type = "table"
+title = "Batch-1 links below three distinct base songs"
+description = "41 affected titles-level links, with original matched titles and the version groups that collapse to the same base song. Informational only; no submitted rows changed."
+logical_id = "0339a5d7-27e3-4fa1-963a-6ab0a4622e35"
+content_hash = "sha256:443d594385d32de2a74fbd626e1561c7f5850e114ced9f9f4b710eeb072d892f"
+size = 22643
+mtime_ms = 1795028125274
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/0339a5d7-27e3-4fa1-963a-6ab0a4622e35/3645852a-329e-4851-bef8-58395b5ee809"
+storage_version_token = "1795028203798893"
+content_type = "text/csv"
+
+[[outputs]]
+id = "29RedmT8tTJR6PAw6kmyG"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/batch1-base-song-audit-final/base-song-audit-report.md"
+type = "text"
+title = "Distinct-base-song rule and audit report"
+description = "Future counting policy and audit of all 482 batch-1 titles-level links: 17 have one base song, 24 have two, and 441 retain three. No paid requests or database writes."
+logical_id = "3102d23d-8450-43eb-9ac4-464deaaf8ffb"
+content_hash = "sha256:0fd27b49328c0b19e044e2f25fbaf68d125ca5df38174cea6ecb8fb15675571c"
+size = 1712
+mtime_ms = 1795028125278
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/3102d23d-8450-43eb-9ac4-464deaaf8ffb/510ed2dd-436b-49db-82ab-a7d73cb18011"
+storage_version_token = "1795028204567375"
+content_type = "text/markdown"

@@ -27,6 +27,14 @@ test('future gate reads the current ledger and validates batch-specific type',as
   assert.equal(calls,1);assert.equal(result.eligible.length,1);
   await assert.rejects(gateFutureSubmission({rows:[row(2)],batchNumber:3,query}),/Wrong run type/);
 });
+test('future gate excludes variant-inflated highs before any result insertion',async()=>{
+  const result=await gateFutureSubmission({batchNumber:2,query:async()=>[],rows:[
+    {...row(1),confidence:'high',evidence_level:'titles',matched_titles:['Home','Home (Live)','Home (Remix)']},
+    {...row(2),confidence:'high',evidence_level:'titles',matched_titles:['One','Two','Three']},
+  ]});
+  assert.deepEqual(result.eligible.map(r=>r.profile_id),[2]);
+  assert.deepEqual(result.excluded[0].reasons,['insufficient_distinct_base_songs']);
+});
 test('recording is impossible without explicit DE-send confirmation',()=>{
   assert.throws(()=>confirmedSubmissionRows({
     rows:[row(1)],batchNumber:2,submittedAt:'2026-11-18 17:22:19.728113',

@@ -151,3 +151,16 @@ CSV delivery are not send confirmation. The original first-batch backfill was
 explicitly authorized with its original creation timestamp. Never automatically
 register pending later batches. Read the ledger across all sent batches and
 reconcile uncertain append acknowledgments without resending.
+
+For every future batch, count distinct base songs for title and release
+thresholds and candidate ranking. Strip version suffixes such as slowed,
+sped up, ultra slowed, nightcore, remix, instrumental, extended, radio edit,
+live, acoustic and similar variants before counting.
+
+**Why:** The user explicitly requested this rule so multiple versions of one
+composition cannot satisfy a multi-song threshold.
+
+**How to apply:** Count date/label-supported release matches separately from
+title-only matches, but deduplicate both by base song. Retain the version-level
+evidence for review. Preserve the historical final_submit; retrospective counts
+are informational only, not authorization to rewrite or downgrade submitted rows.

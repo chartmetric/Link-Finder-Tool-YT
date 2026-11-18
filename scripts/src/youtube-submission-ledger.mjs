@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {select} from './instagram-artist-metadata-overlay.mjs';
+import {baseSongSubmissionExclusion,BASE_SONG_POLICY} from './youtube-base-song-policy.mjs';
 
 export const SUBMISSIONS_TABLE='poc_new_verticals.youtube_link_submissions';
 export const SUBMISSION_COLUMNS=['profile_id','cm_artist','channel_id','channel_url','batch','run_id','submitted_at'];
@@ -48,7 +49,12 @@ export async function gateFutureSubmission({rows,batchNumber,query=select}){
   assert.ok(rows.every(r=>r.run_id.includes('_'+type+'_')),'Wrong run type for this submission batch');
   const ledger=await readSubmissionLedger({query});
   const result=excludePreviouslySubmitted(rows,ledger);
-  return {...result,run_type:type,ledger_rows:ledger.length};
+  const eligible=[],excluded=[...result.excluded];
+  for(const row of result.eligible){
+    const reason=baseSongSubmissionExclusion(row);
+    if(reason)excluded.push({row,reasons:[reason]});else eligible.push(row);
+  }
+  return {eligible,excluded,run_type:type,ledger_rows:ledger.length,base_song_policy:BASE_SONG_POLICY};
 }
 export function confirmedSubmissionRows({rows,batchNumber,submittedAt,confirmedSentToDE=false,confirmationNote}){
   assert.equal(confirmedSentToDE,true,'Do not record a batch until the user confirms it was sent to DE');
