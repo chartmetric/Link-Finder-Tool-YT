@@ -2968,3 +2968,59 @@ mtime_ms = 1794961064396
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/b02ad319-5e7a-4d75-ab5f-0f2b96fe13f8/3f48b625-e3fd-4146-bb23-ee2c5695bdf3"
 storage_version_token = "1794961080954581"
 content_type = "text/csv"
+
+[[outputs]]
+id = "X42wtYr2JfBzbpIw79gZw"
+uri = "file://generated-artifacts/youtube-58-phase0-/phase0-report.md"
+type = "text"
+title = "Phase 0 report — offline, $0"
+description = "Grades, precision ranges, catalog coverage, evidence limitations, and the unexecuted Phase 1 plan."
+logical_id = "b21898f9-73c3-44c6-9cf2-a490412f87a6"
+content_hash = "sha256:6477980c5cf6f63de6d70021deb6546249639a3b6f64753b7ccf2f9ece621258"
+size = 18036
+mtime_ms = 1794964825457
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/b21898f9-73c3-44c6-9cf2-a490412f87a6/fd5c3293-a333-4cea-a01f-78e742e78201"
+storage_version_token = "1794964874307179"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "ptqhqtmtL3-BDhg1n7THG"
+uri = "file://generated-artifacts/youtube-58-phase0-/phase0-pairs.csv"
+type = "table"
+title = "Phase 0 pair-by-pair results"
+description = "All 58 original pairs plus two separately marked shared holds, with rules and exact evidence citations."
+logical_id = "adb50c50-e559-45b1-8a49-e7e83afefae2"
+content_hash = "sha256:5d69027ae50fbb2fe4c8623c0ef746a4b62badc0d48997f51630b57db7526253"
+size = 81729
+mtime_ms = 1794964825457
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/adb50c50-e559-45b1-8a49-e7e83afefae2/7676f563-6306-42a2-a07e-e103ea9f273e"
+storage_version_token = "1794964874885031"
+content_type = "text/csv"
+
+[[outputs]]
+id = "GHO2kTupXVkF-PUVNlUuy"
+uri = "file://generated-artifacts/youtube-58-phase0-/catalog-anchors.json"
+type = "unspecified"
+title = "Saved catalog anchors for 56 artists"
+description = "135 deduplicated saved recordings, with ISRCs, available release metadata, and catalog provenance. Not a fresh catalog query."
+logical_id = "5f6d0f5d-ef07-4aec-b832-eb4769f95e24"
+content_hash = "sha256:17155771b71e45eb808c8832596751bf1548c8d2e901d571a822d27f824b11bb"
+size = 193221
+mtime_ms = 1794964825437
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/5f6d0f5d-ef07-4aec-b832-eb4769f95e24/e97e4012-b9f9-4d3f-ae32-decaa7f4a038"
+storage_version_token = "1794964875462859"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "feI2FvuhcXvfo0ruRGpdt"
+uri = "file://generated-artifacts/youtube-58-phase0-/phase1-request-plan.json"
+type = "unspecified"
+title = "Phase 1 request plan — not approved or executed"
+description = "47 channel scopes, deterministic dependent requests, conditional pricing, cap proposal, and execution blockers."
+logical_id = "9b6962fd-df97-4d5e-83b9-b35befeb3a3e"
+content_hash = "sha256:2f14c6d15e846f7bff441b9c03fab0e9a16c8ec546bfc384c52a9dd3de526c22"
+size = 386226
+mtime_ms = 1794964825449
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/9b6962fd-df97-4d5e-83b9-b35befeb3a3e/602652ca-2620-4fa2-9ade-9c9666b97536"
+storage_version_token = "1794964876013167"
+content_type = "application/octet-stream"
