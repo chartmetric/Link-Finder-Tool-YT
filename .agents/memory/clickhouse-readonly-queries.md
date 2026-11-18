@@ -69,3 +69,15 @@ physical engine name need not be textually identical.
 **How to apply:** Preserve the submitted statement, report both engine names,
 and verify the actual columns and sorting key. Do not alter, drop or recreate
 an authorized table merely to force the metadata label to match.
+
+An immediate read after an acknowledged sandbox insert can temporarily return
+no rows. Do not resend the insert because of that empty readback.
+
+**Why:** Campaign batches initially had empty readbacks, then reconciled exactly
+through later SELECTs without any resend; distinct profile/channel keys were
+preserved.
+
+**How to apply:** Persist an outbox admission before sending, claim each logical
+row once, and reconcile uncertain outcomes with read-only checks. Keep the
+original payload and its hash; never use eventual visibility as an excuse to
+create duplicate batches.

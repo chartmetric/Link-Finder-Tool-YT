@@ -3234,3 +3234,227 @@ mtime_ms = 1794978687514
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/668e2cb9-4b54-47f0-9a97-fd496375e135/a512163b-3d24-4180-94b5-048428016b75"
 storage_version_token = "1794978820112190"
 content_type = "text/csv"
+
+[[outputs]]
+id = "ZkzBIrDMZiqfZ9M38VBpY"
+uri = "file://generated-artifacts/youtube-tiers1-3-20261118-v3-trial/eligible-artists-v3.csv"
+type = "table"
+title = "Reconciled eligible artists v3"
+description = "29,061 eligible profiles after checking both link sources; v2 preserved unchanged."
+logical_id = "22000313-bc66-417f-9837-d14a836adae8"
+content_hash = "sha256:0d96532696667900acba5cc45c6fa7fc6ccf0699e048e2403101dae8a339f35e"
+size = 1587505
+mtime_ms = 1794980233034
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/22000313-bc66-417f-9837-d14a836adae8/e9488ff3-8872-442d-b67a-f3d3778011eb"
+storage_version_token = "1794980446603702"
+content_type = "text/csv"
+
+[[outputs]]
+id = "ine0yj-m7EXvGR9Nckxcx"
+uri = "file://generated-artifacts/youtube-tiers1-3-20261118-v3-trial/already-has-channel-noncanonical.csv"
+type = "table"
+title = "Noncanonical channel URLs for cleanup"
+description = "166 excluded profiles with /channel/<handle>-style URLs, including the source link identifiers."
+logical_id = "076886b0-59f7-4efa-8d3e-64f7534ec5eb"
+content_hash = "sha256:3aa0f9095281e1b2d90601f867f60b7010cb972479ce3e50ad62e87d33245680"
+size = 20721
+mtime_ms = 1794980233038
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/076886b0-59f7-4efa-8d3e-64f7534ec5eb/9027d390-06ad-410d-b68e-60f6586ec736"
+storage_version_token = "1794980447326811"
+content_type = "text/csv"
+
+[[outputs]]
+id = "-cPN_XK4UCRcZ0oKXl6P4"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/run-status.md"
+type = "text"
+title = "Unattended run: progress and stop controls"
+description = "How the job stays alive, resumes from checkpoints, reports progress, and stops safely."
+logical_id = "19d40f64-aa4f-4c9b-a9d4-bac45a22c32f"
+content_hash = "sha256:e5597b286c2597eb6924ef3c0f727c11a6be61dc309e44e0ad272745aa8ecc17"
+size = 2433
+mtime_ms = 1794983187054
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/19d40f64-aa4f-4c9b-a9d4-bac45a22c32f/6a4d8bcf-aa03-450a-b42b-71da678ade33"
+storage_version_token = "1794983277736045"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "VfB7isYYWSE0YREhvZX7n"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/trial/trial-report.md"
+type = "text"
+title = "200-artist trial report"
+description = "Coverage, confidence counts, source splits, spending and limitations."
+logical_id = "b8cf013a-19b9-4538-847c-4b20d450a054"
+content_hash = "sha256:00da6775d05bdfefb82feaac36c0e617449dffc3818f3c4eaddf26bf5c19f0bf"
+size = 2408
+mtime_ms = 1794983435635
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/b8cf013a-19b9-4538-847c-4b20d450a054/2b88e334-a631-4a79-81b7-070c36dd53ad"
+storage_version_token = "1794983469235215"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "TLCnmRex_QsxlGrzdomTC"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/trial/trial-sample-30.csv"
+type = "table"
+title = "trial-sample-30.csv"
+description = "30 real candidate links, including 10 high and 10 medium, with evidence and reasons."
+logical_id = "8449cf2f-d786-4630-8fe4-c6f3fe449952"
+content_hash = "sha256:4f012c47959946b9df7fe2a6e84d87664ad21257115f628d8282b4b5755a6e91"
+size = 120975
+mtime_ms = 1794983434282
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/8449cf2f-d786-4630-8fe4-c6f3fe449952/1436b38e-26bb-46de-9e56-644833ea3f3e"
+storage_version_token = "1794983469849190"
+content_type = "text/csv"
+
+[[outputs]]
+id = "QDntYDAmc4iPacyDnv_Q0"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/trial/trial-results.csv"
+type = "table"
+title = "All trial candidate results"
+description = "222 real candidate rows, inserted into the sandbox and verified by read-back."
+logical_id = "2821b8e7-c013-49d1-94fd-19eb50093bf5"
+content_hash = "sha256:774c35f4802051eaece87b6fc78c4219fc40fcd7127dee66f15805a8f8d33d21"
+size = 259767
+mtime_ms = 1794983434258
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/2821b8e7-c013-49d1-94fd-19eb50093bf5/4d2a09ec-5d63-4d30-b65f-626ce2f52737"
+storage_version_token = "1794983471345940"
+content_type = "text/csv"
+
+[[outputs]]
+id = "bp4B1i0auZHsbhjoxkUSd"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/headless-pilot-1794984516606/headless-test-report.md"
+type = "text"
+title = "20-page headless test report"
+description = "0/20 channels; timings, zero provider charges, and the decision to keep Pass 1 paused."
+logical_id = "ec5b8f50-46e9-4085-a65a-fcdbfad3be8f"
+content_hash = "sha256:d21c620fbc0bd7222a69e9ec501c06a3aea6a3113b45d28a4c136607732f3c67"
+size = 1826
+mtime_ms = 1794984683132
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/ec5b8f50-46e9-4085-a65a-fcdbfad3be8f/b5013396-4a19-4ce4-93f5-6ae0381f33c0"
+storage_version_token = "1794984724247062"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "ZBhDDqJxCmS2wTUAGJhMR"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/headless-pilot-1794984516606/headless-test-20.csv"
+type = "table"
+title = "Headless test: all 20 artists"
+description = "Artist-page URLs, channel counts, HTTP status and elapsed seconds."
+logical_id = "e9017ed1-6227-458d-9df7-6016ff782d57"
+content_hash = "sha256:c8e07437b62729ba6f63d003829c53211d868fc99db6686005e14e7384e95a3a"
+size = 3331
+mtime_ms = 1794984683132
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/e9017ed1-6227-458d-9df7-6016ff782d57/bbb00614-a587-4b99-9ca5-1864dda9ee00"
+storage_version_token = "1794984724888135"
+content_type = "text/csv"
+
+[[outputs]]
+id = "_aFvG8vncFIqoNdDWSFPJ"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/headless-pilot-1794984516606/15748786.png"
+type = "image"
+title = "Rendered page evidence"
+description = "The inspected artist page displayed a Google reCAPTCHA challenge instead of an artist channel."
+logical_id = "f42f0f97-57a1-4d01-aabc-075690e97906"
+content_hash = "sha256:43c9a5f2a9bae28144f288cd98e7c53245f8fb2c4f7b40f58cc9a038f5c7d2c9"
+size = 296595
+mtime_ms = 1794984528922
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/f42f0f97-57a1-4d01-aabc-075690e97906/c2d65e29-afb2-4c28-ab91-2348732cf480"
+storage_version_token = "1794984725517826"
+content_type = "image/png"
+
+[[outputs]]
+id = "8cs56EYikMPoRCyuxgBct"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/qa-report.md"
+type = "text"
+title = "Final YouTube QA report"
+description = "Known-answer precision, 95% intervals, all comparison failures, fresh checks and the important release-evidence coverage limitation."
+logical_id = "ba80b2c2-ee1e-4c29-b1e5-5b3a2d762c32"
+content_hash = "sha256:5425b89a53bb4ce30a72bc4e4808185ebd2fc39e51e58366754fcbde8070a69e"
+size = 11380
+mtime_ms = 1794993750762
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/ba80b2c2-ee1e-4c29-b1e5-5b3a2d762c32/c33eedee-c3f1-41df-a2b4-3089166b985b"
+storage_version_token = "1794993889203842"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "bRFQFrR3Z02AuiGBMcddd"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/qa-audit.json"
+type = "unspecified"
+title = "Final rule audit and concentration flags"
+description = "Complete issue lists, including earlier provisional-batch conflicts and low/review candidates; no current final-high rule violations."
+logical_id = "2cc4f88b-bbf1-45c0-a172-bfe8b611c96c"
+content_hash = "sha256:5ae3d52283252a7e7d8aef437ffb55487b66d15bfcf49935ead2b186c7f344db"
+size = 2435913
+mtime_ms = 1794993750758
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/2cc4f88b-bbf1-45c0-a172-bfe8b611c96c/746ac6fd-ff68-42ac-82cf-a3a7a2f97b0a"
+storage_version_token = "1794993891213591"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "nTRDi6zcesejwzTCwIfQ1"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/full/catalog-ready.csv"
+type = "table"
+title = "High-confidence YouTube candidates — QA pending"
+description = "9,201 high-confidence candidates after final cross-artist checks. Accuracy validation is running; this is not approval to import into production."
+logical_id = "8d6f582b-cd46-4434-b73a-a0feb0132719"
+content_hash = "sha256:42461a8afefa4a5c6d89e9f8eeaa3075a15097a406256d4d550a9cc8888e0a6b"
+size = 11416984
+mtime_ms = 1794991734346
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/8d6f582b-cd46-4434-b73a-a0feb0132719/1db9bd8d-0514-48b9-9c3b-68cb5b45a3d3"
+storage_version_token = "1794991917523973"
+content_type = "text/csv"
+
+[[outputs]]
+id = "W4G1gZk4rA8jg_XYFB4pU"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/full/trial-results.csv"
+type = "table"
+title = "Full sourcing candidate results"
+description = "All 35,643 candidate rows, including high, medium and low confidence, from the completed 29,061-artist run."
+logical_id = "bd9e781f-bf88-476e-89b9-0006d4a5b70e"
+content_hash = "sha256:e69a45b87e3f9081d9b1b0eb36c870f536fca029188fb8cdc9f21520116ee756"
+size = 42772418
+mtime_ms = 1794991734238
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/bd9e781f-bf88-476e-89b9-0006d4a5b70e/3b4ac7a5-2acc-4e5c-9d2a-d399c53891cc"
+storage_version_token = "1794991919542335"
+content_type = "text/csv"
+
+[[outputs]]
+id = "qb-bSoXqyxZxj3TKkv1yx"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/full/run-report.md"
+type = "text"
+title = "Completed sourcing report"
+description = "Final sourcing coverage, tier breakdown and conservative reserved cost. Known-answer accuracy QA is still running."
+logical_id = "5e06473e-204f-4f3e-844e-b228b318e13a"
+content_hash = "sha256:b5a8b91251dac8185622ac348b5f8a326fad1697360df50e80ed9c503c7ae82f"
+size = 2419
+mtime_ms = 1794991738618
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/5e06473e-204f-4f3e-844e-b228b318e13a/405fb7b6-59bd-43e7-98bd-4598b65792c5"
+storage_version_token = "1794991920132404"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "AhIzrXuEezdVa8Olu-CHe"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/qa-wrong-cases.csv"
+type = "table"
+title = "All 11 known-answer comparison failures"
+description = "Each predicted channel alongside known channel links, the artist and tier, and the strict-comparison failure reason."
+logical_id = "1df3f76c-a9bb-4e16-9bd0-53482c4b5f1b"
+content_hash = "sha256:0fd8165f5be945610564d72250b9306ff9e4a7404eeae15b25fcb2e726b8ad4e"
+size = 5009
+mtime_ms = 1794993137497
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/1df3f76c-a9bb-4e16-9bd0-53482c4b5f1b/16bf0874-2ecc-4952-9864-6d1dad8a9024"
+storage_version_token = "1794993889908527"
+content_type = "text/csv"
+
+[[outputs]]
+id = "9LoxKW2ZncK7LVvlp079g"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/qa-fresh-results.csv"
+type = "table"
+title = "Fresh checks for 100 sampled high links"
+description = "All 100 confirmed. Includes 201 matched-track comparisons on 76 links; 24 had channel/name checks only."
+logical_id = "aa5e5a14-dce5-4180-b364-f4426efd9752"
+content_hash = "sha256:6af2d1c85291aee3f316b8c2c3f31422b8f6efe2cafb57461fe9acf0772b18fc"
+size = 54780
+mtime_ms = 1794993590074
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/aa5e5a14-dce5-4180-b364-f4426efd9752/767fda54-adf6-4732-ab47-5301db9cffcf"
+storage_version_token = "1794993890528068"
+content_type = "text/csv"

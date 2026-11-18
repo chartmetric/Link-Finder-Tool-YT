@@ -31,6 +31,19 @@ profiles kept by a freeze built from account links alone. Other legacy rows
 used noncanonical `/channel/<handle>` URLs and need separate treatment.
 
 **How to apply:** Reconcile current authorized link sources and preserve
-profile/Chartmetric identity bindings. Distinguish standard channel IDs and
-handle URLs from malformed channel paths. If a prompt requires an existing
-freeze unchanged, report conflicts and get permission before rebuilding it.
+profile/Chartmetric identity bindings. For eligibility, the user explicitly
+requires treating `/channel/<handle>` paths as channel links too: exclude their
+profiles and list those noncanonical URLs separately for later cleanup.
+Do not silently repair them into canonical IDs or rewrite source links.
+If a prompt requires an existing freeze unchanged, report conflicts and get
+permission before rebuilding it; a corrected freeze is a separate version.
+
+Do not require the earlier Kid Reverie / “Haunt Me” control check for the v3
+campaign. Source validation was accepted from the full Casper coverage counts.
+
+**Why:** The user explicitly removed that check because the control artist is
+outside eligible-artists-v3 and therefore correctly absent from the supplied files.
+
+**How to apply:** Do not delay this campaign for another source control. Log
+source anomalies and keep affected links in review while continuing eligible work;
+retain all budget, no-retry and stop safeguards.

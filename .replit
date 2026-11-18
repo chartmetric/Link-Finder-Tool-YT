@@ -24,6 +24,10 @@ args = "Artist campaign progress observer"
 task = "workflow.run"
 args = "YouTube campaign progress observer"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "YouTube v3 background sourcing"
+
 [[workflows.workflow]]
 name = "Artist campaign progress observer"
 author = "agent"
@@ -39,6 +43,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "pnpm --filter @workspace/api-server run youtube:publish-campaign --publish --run-id=full-tiers-1-5-no-youtube-uncapped --watch"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "YouTube v3 background sourcing"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node generated-artifacts/youtube-v3-unattended-20261118/supervisor.mjs"
 
 [workflows.workflow.metadata]
 outputType = "console"
