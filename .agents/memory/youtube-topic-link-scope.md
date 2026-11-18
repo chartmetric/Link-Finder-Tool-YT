@@ -20,3 +20,14 @@ uncertainty about channel type, not a definitive collection classification.
 **How to apply:** Distinguish URL alias binding, artist identity and channel
 type. Do not let search wording or auto-generation badges settle all three.
 Keep any proposed correction separate from historical suggestion labels.
+
+For the Topic release-bridge experiment, catalog credit `ordering = 0` means
+the primary artist; `1` and higher mean featured or co-credited artists.
+
+**Why:** The user explicitly supplied these catalog semantics. A featured
+catalog credit must not establish that another artist's Topic channel is the
+featured artist's recording home.
+
+**How to apply:** Require primary-credit agreement in both catalog tracks and
+YouTube art-track credits when applying the approved experiment's release
+bridge. This does not activate the experimental matcher in sourcing paths.

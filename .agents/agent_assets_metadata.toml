@@ -3024,3 +3024,17 @@ mtime_ms = 1794964825449
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/9b6962fd-df97-4d5e-83b9-b35befeb3a3e/602652ca-2620-4fa2-9ade-9c9666b97536"
 storage_version_token = "1794964876013167"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "5T7Y90R4JNmOoXU_vKnHr"
+uri = "file://generated-artifacts/youtube-58-phase1-2026-11-18/phase1-report.md"
+type = "text"
+title = "Phase 1 report — blocked at catalog access"
+description = "The exact read-only PostgreSQL query failed because the required Chartmetric relation is unavailable. No paid requests or subsequent steps were attempted."
+logical_id = "9ec55194-a950-46e5-a658-28391ac73eb2"
+content_hash = "sha256:39d3c26a2de08741ac4b835efb4e49a44d87f2e370b778daae487e4b5d18eb27"
+size = 3426
+mtime_ms = 1794965674921
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/9ec55194-a950-46e5-a658-28391ac73eb2/d98f0950-395e-44b5-af9b-4a6d33ebd442"
+storage_version_token = "1794965724442848"
+content_type = "text/markdown"
