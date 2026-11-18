@@ -38,3 +38,4 @@
 - [Mixed channel recovery boundary](mixed-channel-recovery-boundary.md) — generic recovery keeps conflicting metadata unresolved; specialized transport-only approvals are not transferable.
 - [Saved evidence projections](saved-evidence-projections.md) — JSONB is not original receipt bytes; preserve historical Topic meanings and captured handle-to-channel bindings.
 - [Channel identity proposal boundary](channel-identity-proposal-boundary.md) — isolate offline safeguards from executable representation defaults until explicit activation approval.
+- [YouTube test result runs](youtube-test-results-policy.md) — real results only; every run and re-run needs a new, never-reused run_id; readers use the latest run.

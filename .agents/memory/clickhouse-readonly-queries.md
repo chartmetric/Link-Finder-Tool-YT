@@ -59,3 +59,13 @@ scalar response. Distinguish privilege denial from malformed introspection.
 Before an explicitly authorized insert/read/delete setup check, verify cleanup
 permission as well as creation, insertion and reading; stop before writes if
 the test row could not be removed.
+
+This server can expose a table as `SharedMergeTree` in `system.tables` after
+accepting a literal `ENGINE = MergeTree` creation statement.
+
+**Why:** Server-side engine mapping means the requested SQL and reported
+physical engine name need not be textually identical.
+
+**How to apply:** Preserve the submitted statement, report both engine names,
+and verify the actual columns and sorting key. Do not alter, drop or recreate
+an authorized table merely to force the metadata label to match.
