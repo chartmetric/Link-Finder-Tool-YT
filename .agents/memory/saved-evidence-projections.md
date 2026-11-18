@@ -35,3 +35,14 @@ continuation. Reading the index as a response or rebasing it loses provenance.
 **How to apply:** Follow the receipt's original ownership and bounded raw-file
 reference, verify the original byte hash and requested resource/artist bindings,
 and only then extract evidence. Never substitute a similarly named response.
+
+Keep normalized packet digests distinct from original provider-byte digests.
+
+**Why:** A normalized capture may hash a reconstructed packet containing parsed
+data and archive provenance, rather than the original receipt file or provider
+response bytes. Those hashes legitimately differ; searching raw files for a
+packet digest can incorrectly suggest the evidence is missing.
+
+**How to apply:** Resolve the original receipt by artist, requested resource and
+observation time, then verify its own raw-byte reference. Report which boundary
+each digest authenticates; do not claim packet-hash equality proves byte identity.

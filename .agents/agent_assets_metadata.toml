@@ -2940,3 +2940,31 @@ mtime_ms = 1794960370578
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/c9607f0b-43ac-449f-bfbd-ea0dd990099c/11b69a2e-e5c6-45fa-b71e-9f69013a19c0"
 storage_version_token = "1794960494212504"
 content_type = "text/csv"
+
+[[outputs]]
+id = "SsDLLrNmR2Ct0bwYWwfa-"
+uri = "file://generated-artifacts/youtube-58-accuracy-review-20261118/review.html"
+type = "html"
+title = "YouTube accuracy review — all 58 pairs"
+description = "3 correct, 2 wrong, 53 unsure. Separate Topic and artist-facing results, review rationale and saved evidence for every pair."
+logical_id = "fc0f900f-0bf7-4a9d-afe0-73dbc7cc77e8"
+content_hash = "sha256:1ec73ec00d5443e66dc4e08e56eff3d5f337de2360a2fe0d29b31cac00e623d5"
+size = 275063
+mtime_ms = 1794961064412
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/fc0f900f-0bf7-4a9d-afe0-73dbc7cc77e8/b9f2dacd-dc53-4818-8429-fdbbf9cfc2e4"
+storage_version_token = "1794961080316715"
+content_type = "text/html"
+
+[[outputs]]
+id = "c708qjGUV6cEeoijbP7dr"
+uri = "file://generated-artifacts/youtube-58-accuracy-review-20261118/reviewed-pairs.csv"
+type = "table"
+title = "Reviewed YouTube pairs"
+description = "All 58 exact artist/channel pairs with independent review labels, evidence references, capture times and historical model assessments kept separate."
+logical_id = "b02ad319-5e7a-4d75-ab5f-0f2b96fe13f8"
+content_hash = "sha256:a482540b7c0e6cbc906c80c45fa4a096e0e659a38d0fb28790675509bf2d4839"
+size = 58651
+mtime_ms = 1794961064396
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/b02ad319-5e7a-4d75-ab5f-0f2b96fe13f8/3f48b625-e3fd-4146-bb23-ee2c5695bdf3"
+storage_version_token = "1794961080954581"
+content_type = "text/csv"
