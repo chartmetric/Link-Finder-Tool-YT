@@ -3136,3 +3136,31 @@ mtime_ms = 1794972221379
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/c3b5b7be-94cf-466b-bb3a-397a7bffb34d/f025fba0-6f36-4a94-bd77-adab25c71d65"
 storage_version_token = "1794972251971798"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "x32cc2jttuZN6NTZ0m-JW"
+uri = "file://generated-artifacts/youtube-tiers1-3-20261118/trial-report.md"
+type = "text"
+title = "Trial report: gate fixed, catalog check failed"
+description = "Documents 24 passing gate tests, the live Kid Reverie source failure, and zero paid discovery."
+logical_id = "1d6239a1-b2e1-4ca2-9d8d-8f937a08ee75"
+content_hash = "sha256:e5bf24d28aeb6798b92a4755bf314c279ad2c2aa188d18ce14d2521933427d71"
+size = 6410
+mtime_ms = 1794972762618
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/1d6239a1-b2e1-4ca2-9d8d-8f937a08ee75/d0168722-18d9-4335-b61e-1e4e2b3cff20"
+storage_version_token = "1794972784250026"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "blyYmfZ4pLmDZASc8YhHy"
+uri = "file://generated-artifacts/youtube-tiers1-3-20261118/catalog-source-check.json"
+type = "unspecified"
+title = "Kid Reverie catalog-source check"
+description = "Exact source-check outcome, returned titles, field limitations, and two free query records."
+logical_id = "c40f7112-c0ca-4bd3-8861-fd1106bddb97"
+content_hash = "sha256:2963b153e517f402127b5fc440037cdfe618de19bed31bf6378b20d5c7227ece"
+size = 3157
+mtime_ms = 1794972655598
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/c40f7112-c0ca-4bd3-8861-fd1106bddb97/a58bfa3e-b287-42c8-8e45-f537cb5c40ac"
+storage_version_token = "1794972784988122"
+content_type = "application/octet-stream"

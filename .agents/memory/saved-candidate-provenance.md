@@ -78,11 +78,14 @@ Identify the scope and observation separately, and label spending from an
 interrupted checkpoint as an observation that can precede newer admissions,
 not as a reconciled invoice or permission to resume.
 
-A recent-title catalog export is positive matching evidence, not a complete
-discography or proof that an artist has no primary-credit releases.
+A recent-title or context-only catalog projection is positive matching evidence,
+not a complete discography or proof that an artist has no primary-credit releases.
 
-**Why:** A title-limited export can omit older corroborating recordings or primary
-credits. Treating an omitted row or artist as an empty catalog creates false rejections.
+**Why:** Limited exports and legacy context sources can omit corroborating
+recordings or primary credits. A successful source query is not proof that its
+discography is complete. Treating omitted rows as an empty catalog creates false rejections.
 
-**How to apply:** Preserve the export's stated coverage. Report absent fields and
+**How to apply:** Preserve the source's stated coverage. Report absent fields and
 omissions separately; require affirmative credit/channel evidence for a Wrong verdict.
+Missing primary-credit evidence or an unavailable source is a source limitation,
+not a verified no_catalog_songs outcome.
