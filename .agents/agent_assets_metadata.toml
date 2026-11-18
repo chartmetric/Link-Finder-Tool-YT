@@ -3598,3 +3598,31 @@ mtime_ms = 1795023827342
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/8dcd061d-ea56-407f-a8e9-688e1bd34a51/28143a43-c3c4-4903-beb2-c06853463167"
 storage_version_token = "1795023863543321"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "IRsB0AQiMnn4eAZ7hZXzn"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/de-handoff-files/de-qa-checked-artists.csv"
+type = "table"
+title = "de-qa-checked-artists.csv"
+description = "59 checked artists: sample 1 has 29, sample 2 has 30. All 59 are in final_submit; 7 opened by hand and 52 catalog checks."
+logical_id = "9e3892a0-d0bb-4577-b304-7dfdf0cf9672"
+content_hash = "sha256:b15070519e8cb1d3683d14aeea832abb9490c3ccbfe503b6a415ad4bc63f86fb"
+size = 23297
+mtime_ms = 1795025110562
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/9e3892a0-d0bb-4577-b304-7dfdf0cf9672/27a84ff6-607c-4b08-b2e9-e2dab721a4a2"
+storage_version_token = "1795025136800216"
+content_type = "text/csv"
+
+[[outputs]]
+id = "DMw7dz8LE1ui9IV3ZScG6"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/de-handoff-files/de-youtube-links-high-confidence.csv"
+type = "table"
+title = "de-youtube-links-high-confidence.csv"
+description = "All 7,785 final_submit profiles, exactly one row each, with readable matched evidence."
+logical_id = "72258775-034b-4026-8a29-1854fbbcd481"
+content_hash = "sha256:c36e6d492577f1e0601274c8e4d0c5b01766c978846a1fdd66a7651297bfb694"
+size = 2673861
+mtime_ms = 1795025110586
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/72258775-034b-4026-8a29-1854fbbcd481/650900c7-cc67-43e1-bac6-b58f78d80ccc"
+storage_version_token = "1795025137773287"
+content_type = "text/csv"
