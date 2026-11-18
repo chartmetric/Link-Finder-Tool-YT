@@ -164,3 +164,20 @@ composition cannot satisfy a multi-song threshold.
 title-only matches, but deduplicate both by base song. Retain the version-level
 evidence for review. Preserve the historical final_submit; retrospective counts
 are informational only, not authorization to rewrite or downgrade submitted rows.
+
+The finalization continuation has a $495 cumulative hard ceiling. Stop for
+explicit approval if a step would exceed $50, a batch quality gate fails for
+more than 5%, counts differ from expectations by more than 20%, more than a
+handful of first-submission links appear wrong, new access is required, or an
+action would change the submission ledger, the original final submission, or
+write outside the sandbox results table.
+
+**Why:** The user explicitly replaced unattended discretion with these
+escalation conditions for finalization.
+
+**How to apply:** Run saved-evidence preflight before new writes or paid work.
+Record decisions in the final report and preserve historical snapshots. A
+single-release flag based on one album can contain several distinct base songs;
+separate evidence-classification failures from actual artist-identity errors.
+For common names shared by five or more distinct catalog artists, require two
+date/label-supported base songs or an artist-declared cross-link for high.

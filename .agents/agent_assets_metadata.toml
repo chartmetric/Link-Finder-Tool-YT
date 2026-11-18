@@ -3794,3 +3794,17 @@ mtime_ms = 1795028125278
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/3102d23d-8450-43eb-9ac4-464deaaf8ffb/510ed2dd-436b-49db-82ab-a7d73cb18011"
 storage_version_token = "1795028204567375"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "3r63LnNOJSnkb8hcDGhhB"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/finalization-quality-gate-package.zip"
+type = "unspecified"
+title = "Finalization quality-gate report and evidence"
+description = "Escalation package: report, all 4,349 batch-2 checks, six withdrawn-profile rechecks and immutable-input verification. No new final batches or paid work."
+logical_id = "602bafb4-efe2-4307-8f4c-a86f9ee159f3"
+content_hash = "sha256:8c2fb340984aa79f773eb1d6ead566ba53d6149ab19d2ad32065682311ae27fc"
+size = 1422112
+mtime_ms = 1795031645998
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/602bafb4-efe2-4307-8f4c-a86f9ee159f3/b1ad3f7e-5c0a-401e-a1b1-95c37668c4ce"
+storage_version_token = "1795031653937558"
+content_type = "application/octet-stream"
