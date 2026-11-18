@@ -3752,3 +3752,17 @@ mtime_ms = 1795027171502
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/54793ef6-2755-496d-8d1c-851d1b1e9d98/af88e682-6943-4f71-b20e-5e0750fd781b"
 storage_version_token = "1795027334704609"
 content_type = "text/csv"
+
+[[outputs]]
+id = "6gqjkKsvc6B7P8Wl7Jt7s"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/batch1-disagreements-complete.zip"
+type = "unspecified"
+title = "Complete disagreement evidence package"
+description = "ZIP containing all five files: the random 20-artist sample, all 986 classified disagreements, 878 saved Topic comparisons, explanations and summary counts."
+logical_id = "f72971dc-726b-4e18-abf4-33063e6129f2"
+content_hash = "sha256:9f930489641d282d5106bbc2d7ea4bec1733ec7e8e1b193d7220b1bbb2ed45cb"
+size = 243916
+mtime_ms = 1795027448430
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/f72971dc-726b-4e18-abf4-33063e6129f2/a1ff893e-cc3d-4e9d-be0d-65c8d9f0f8b2"
+storage_version_token = "1795027455363768"
+content_type = "application/octet-stream"
