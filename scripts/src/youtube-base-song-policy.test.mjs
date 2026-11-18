@@ -59,3 +59,11 @@ test('submission gate fails closed for insufficient base songs and missing relea
     confidence_reasons:'base_song_policy = distinct_base_songs_v1; distinct_base_release_songs = 2'}),null);
   assert.equal(baseSongSubmissionExclusion({...row,evidence_level:'releases_single_exact'}),null);
 });
+test('approved multi-release classification still requires two supported base songs',()=>{
+  const row={confidence:'high',evidence_level:'releases_multi',matched_titles:['Home','Home - Live'],
+    confidence_reasons:'base_song_policy = distinct_base_songs_v1; distinct_base_release_songs = 2'};
+  assert.equal(baseSongSubmissionExclusion(row),'insufficient_distinct_base_songs');
+  assert.equal(baseSongSubmissionExclusion({...row,matched_titles:['Home','Away'],confidence_reasons:''}),
+    'missing_base_song_release_count_proof');
+  assert.equal(baseSongSubmissionExclusion({...row,matched_titles:['Home','Away']}),null);
+});

@@ -101,11 +101,11 @@ export function applyBaseSongCounting(result){
 export function baseSongSubmissionExclusion(row){
   if(row.confidence!=='high')return null;
   const level=row.evidence_level;
-  if(!['titles','releases','releases_single_exact'].includes(level))return null;
+  if(!['titles','releases','releases_multi','releases_single_exact'].includes(level))return null;
   const titles=Array.isArray(row.matched_titles)?row.matched_titles:JSON.parse(row.matched_titles);
   const count=groupBaseSongs(titles).length;
-  if(count<(level==='titles'?3:level==='releases'?2:1))return 'insufficient_distinct_base_songs';
-  if(level==='releases'){
+  if(count<(level==='titles'?3:['releases','releases_multi'].includes(level)?2:1))return 'insufficient_distinct_base_songs';
+  if(['releases','releases_multi'].includes(level)){
     const reasons=String(row.confidence_reasons??'');
     if(!reasons.includes('base_song_policy = '+BASE_SONG_POLICY))return 'missing_base_song_release_count_proof';
     const proof=reasons.match(/distinct_base_release_songs = (\d+)/);
