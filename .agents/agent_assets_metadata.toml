@@ -3626,3 +3626,31 @@ mtime_ms = 1795025110586
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/72258775-034b-4026-8a29-1854fbbcd481/650900c7-cc67-43e1-bac6-b58f78d80ccc"
 storage_version_token = "1795025137773287"
 content_type = "text/csv"
+
+[[outputs]]
+id = "zmeNhMVufOIVjDoPG_sQ-"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/final-submit-batch2/catalog-ready-submit-batch2.csv"
+type = "table"
+title = "Batch 2 — 4,349 promoted links"
+description = "Verified sandbox insert: one high link per profile, evidence_level releases_single_exact, status catalog_ready."
+logical_id = "1e12e474-fa95-4c47-93cf-fc65429072af"
+content_hash = "sha256:b5f5db0d2ff9dd892d054fb74e58bdb8450c8d48895b81685b9df63b38089f19"
+size = 6346904
+mtime_ms = 1795025805338
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/1e12e474-fa95-4c47-93cf-fc65429072af/215e77c1-da6f-448c-b924-9319ee0bb3e8"
+storage_version_token = "1795025904610589"
+content_type = "text/csv"
+
+[[outputs]]
+id = "E3cKYL9OyEzTTIVhgVwts"
+uri = "file://generated-artifacts/youtube-v3-unattended-20261118/final-submit-batch2/batch2-review.csv"
+type = "table"
+title = "Batch 2 — 730 excluded candidate rows"
+description = "405 already-high profile candidates, 2 conflicting channel claims, and 323 alternate links. Not inserted."
+logical_id = "e7c46638-1410-4e34-b5b0-93a466ea7ada"
+content_hash = "sha256:492d302339cbf56ab67aa4c59f76b8b3ae1b2d34118cb9ff2fa14710187816ae"
+size = 853969
+mtime_ms = 1795025805354
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/e7c46638-1410-4e34-b5b0-93a466ea7ada/0e20103c-ba2c-488b-8660-eab88c4d55b8"
+storage_version_token = "1795025905503276"
+content_type = "text/csv"

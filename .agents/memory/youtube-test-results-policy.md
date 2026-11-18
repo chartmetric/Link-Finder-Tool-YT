@@ -118,3 +118,19 @@ an incomplete sample.
 **How to apply:** Re-evaluate raw captures offline under the sealed matcher for
 evidence exports. Treat missing detailed fields as a signal to reconstruct or
 fail explicitly, never as evidence that no tracks matched.
+
+The user explicitly authorized a separate `final_submit_batch2` promotion of the
+frozen strict single-release medium candidates. This is an exception for that
+submission, not permission to change the automatic matcher's medium-only rule.
+
+**Why:** After reviewing the strong-single sample, the user requested promotion
+with evidence level `releases_single_exact`, leaving the original submission
+unchanged.
+
+**How to apply:** Exclude profiles with an existing valid high result, reject
+foreign catalog ownership and cross-artist channel claims, and keep only the
+candidate with the most distinct matching song titles per profile. Send the
+other candidates to a separate review export. Insert only selected real highs
+under a new run ID, with `catalog_ready` status; preserve batch 1 and all frozen
+files. Report combined batch-1/batch-2 distinct-profile coverage against the
+frozen eligible denominator, not against all provisional or held highs.
