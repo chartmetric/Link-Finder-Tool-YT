@@ -3533,14 +3533,14 @@ content_type = "text/csv"
 id = "rE3Zo-aUKtvYR9rWtABze"
 uri = "file://generated-artifacts/youtube-v3-unattended-20261118/round2/sample-30-strong-single.csv"
 type = "table"
-title = "B1 — 30 single-release links for review"
-description = "Random sample with matched evidence included."
+title = "sample-30-strong-single.csv"
+description = "30 sampled strong single-release candidates with matched evidence. These remain medium-confidence and have not been promoted."
 logical_id = "b37f988e-6fba-496e-8d15-4bdde8a0e884"
 content_hash = "sha256:9f3ba45875f6a7670e84ae802f4a3ce879f04015e83735573a353b63dffc452c"
 size = 88928
 mtime_ms = 1795022908219
-storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/b37f988e-6fba-496e-8d15-4bdde8a0e884/a54b9dcf-a73c-4936-97b4-9e5ca1499c82"
-storage_version_token = "1795022982463859"
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/b37f988e-6fba-496e-8d15-4bdde8a0e884/2f2ff6e7-a6b5-46be-b56d-a5c2a7968745"
+storage_version_token = "1795025472283692"
 content_type = "text/csv"
 
 [[outputs]]
