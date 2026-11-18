@@ -47,3 +47,15 @@ that the raw catalog contains duplicate rows.
 **How to apply:** For authorized raw-catalog exports, use bounded typed artist-ID
 parameters and filtered link/track/album CTEs. Do not replace a failed scoped
 read with a full-table join or remove read-only protections.
+
+On this ClickHouse server, `CHECK GRANT` returns a scalar `0` or `1` and does
+not accept a trailing `FORMAT JSON`.
+
+**Why:** Adding the SELECT-style output clause caused a syntax error rather
+than a permission decision. That error must not be reported as access denied.
+
+**How to apply:** Omit the output clause for permission checks and parse the
+scalar response. Distinguish privilege denial from malformed introspection.
+Before an explicitly authorized insert/read/delete setup check, verify cleanup
+permission as well as creation, insertion and reading; stop before writes if
+the test row could not be removed.
