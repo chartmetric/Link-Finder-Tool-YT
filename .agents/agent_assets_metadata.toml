@@ -2898,3 +2898,45 @@ mtime_ms = 1794959627686
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/0f0a7f19-7f08-4244-ba53-33e579ce7299/8064dcdd-87f1-4772-a4e4-ae0c95c73e57"
 storage_version_token = "1794959646753511"
 content_type = "text/csv"
+
+[[outputs]]
+id = "m2U_Xa-PP9ExYPhDSDtYJ"
+uri = "file://generated-artifacts/youtube-test-100-coverage-75-20261117-recovery-cont1/newly-recovered-suggestions.csv"
+type = "table"
+title = "32 newly recovered artist suggestions"
+description = "32 review-only channel links for newly covered artists: 31 Topic pages and one artist-facing channel. No catalog additions."
+logical_id = "f36cfdae-2ee2-4f6f-a13b-0becb810d902"
+content_hash = "sha256:ccf1848c32bf19036b6fb3944e83a1f7f16e5ac185fc5469ea0a1843825dac1e"
+size = 10181
+mtime_ms = 1794960443330
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/f36cfdae-2ee2-4f6f-a13b-0becb810d902/87c10aad-2ff8-42f0-872a-e642a610ee20"
+storage_version_token = "1794960479186684"
+content_type = "text/csv"
+
+[[outputs]]
+id = "FIQQck57-Ulk9nZm4JoiJ"
+uri = "file://generated-artifacts/youtube-test-100-coverage-75-20261117-recovery-cont1/youtube-suggestions.csv"
+type = "table"
+title = "Combined YouTube suggestions for 56 artists"
+description = "58 review-only channel links across 56 of the original 100 artists: 52 Topic pages and six artist-facing channels. Includes current shared-channel holds."
+logical_id = "d77ebd11-faae-4e6a-b56c-d669501b967f"
+content_hash = "sha256:d141bde7b13b31a69736dd069054b5dac511bf307ea521c6c942119ed8430a8e"
+size = 20175
+mtime_ms = 1794960370674
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/d77ebd11-faae-4e6a-b56c-d669501b967f/29fc74de-3f79-49e8-adb3-94469de1aabe"
+storage_version_token = "1794960480061675"
+content_type = "text/csv"
+
+[[outputs]]
+id = "YPTQrDbvM1pDDIExmbzCZ"
+uri = "file://generated-artifacts/youtube-test-100-coverage-75-20261117-recovery-cont1/youtube-review.csv"
+type = "table"
+title = "Full 100-artist recovery results"
+description = "All artist outcomes and candidate decisions, including unresolved candidates, nonmatches, and the newly held shared-channel conflict."
+logical_id = "c9607f0b-43ac-449f-bfbd-ea0dd990099c"
+content_hash = "sha256:a70ed53e8478afc0fdb0afae5100729c9680ac20bb3fa7e4fece1648519ac31e"
+size = 80167
+mtime_ms = 1794960370578
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/c9607f0b-43ac-449f-bfbd-ea0dd990099c/11b69a2e-e5c6-45fa-b71e-9f69013a19c0"
+storage_version_token = "1794960494212504"
+content_type = "text/csv"
