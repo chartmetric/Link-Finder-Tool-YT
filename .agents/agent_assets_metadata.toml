@@ -3066,3 +3066,59 @@ mtime_ms = 1794966596925
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/d4f2c762-4d48-477c-bd2a-fe0e5408f7b2/d5693577-abb6-4a66-b5ce-2b5025f4fc54"
 storage_version_token = "1794966617038744"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "9G2m29rLMN8DDQirbJsxk"
+uri = "file://generated-artifacts/youtube-58-phase1-20261118/phase1-report.md"
+type = "text"
+title = "Phase 1 findings and blocker"
+description = "Grade counts, precision ranges, source limitations, and the stopped one-request feasibility check."
+logical_id = "10e27d8f-bc42-45c5-8ff9-bc6094797227"
+content_hash = "sha256:5abc3a3f1789061ff3b57d421fbe24aabda77629a983addef52370e67481e103"
+size = 7504
+mtime_ms = 1794967942169
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/10e27d8f-bc42-45c5-8ff9-bc6094797227/d0ae13ce-e01b-4dd7-83a3-956e2957f5c3"
+storage_version_token = "1794967956094857"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "rg_ZylLdR-OX6AL3AjcVd"
+uri = "file://generated-artifacts/youtube-58-phase1-20261118/phase1-pairs.csv"
+type = "table"
+title = "Phase 1 pair-by-pair results"
+description = "All 58 original pairs plus two separately marked shared holds, with evidence citations."
+logical_id = "4b226817-153b-41c2-99af-310c06d8aa0d"
+content_hash = "sha256:bca864101f953ba0e81827f2ee8ce44781c5b664f721d0dfe8405d8ef34aa43e"
+size = 46915
+mtime_ms = 1794967942173
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/4b226817-153b-41c2-99af-310c06d8aa0d/b5a968ae-6d3e-4bfa-9b02-958b04325171"
+storage_version_token = "1794967956754817"
+content_type = "text/csv"
+
+[[outputs]]
+id = "yOmFUtHOQ8rJlKzdAEERm"
+uri = "file://generated-artifacts/youtube-58-phase1-20261118/catalog-anchors.json"
+type = "unspecified"
+title = "Parsed catalog anchors"
+description = "46 artists and 895 supplied track rows, with source lines and missing fields preserved."
+logical_id = "05652ce0-8dbe-4daf-9f0f-a5d429c5fb2d"
+content_hash = "sha256:3e50b404bc990cc7aed5c6259eee67724f9db1ea0faf04b6fe9b818385571f57"
+size = 427468
+mtime_ms = 1794967717397
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/05652ce0-8dbe-4daf-9f0f-a5d429c5fb2d/3f61a59d-7f54-4d74-b409-b66424719ebe"
+storage_version_token = "1794967957325813"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "O5FfwpzDV9bpX2CTAhJiz"
+uri = "file://generated-artifacts/youtube-58-phase1-20261118/feasibility.md"
+type = "text"
+title = "Request feasibility and cost"
+description = "The single permitted probe returned no videos; conditional plans and exact spending are documented."
+logical_id = "d1d10967-b1e6-405b-a221-e6951d937c9b"
+content_hash = "sha256:015904e1ddd6a8777963a20f5c623d8d694905fa1845be7861faf781bd1a62a7"
+size = 2035
+mtime_ms = 1794967942121
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/d1d10967-b1e6-405b-a221-e6951d937c9b/b95c0fc4-48ff-4925-93f3-cfb1e8c00cb4"
+storage_version_token = "1794967957932153"
+content_type = "text/markdown"

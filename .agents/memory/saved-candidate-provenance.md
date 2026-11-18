@@ -77,3 +77,12 @@ earlier review, while refusing every later snapshot would hide the final result.
 Identify the scope and observation separately, and label spending from an
 interrupted checkpoint as an observation that can precede newer admissions,
 not as a reconciled invoice or permission to resume.
+
+A recent-title catalog export is positive matching evidence, not a complete
+discography or proof that an artist has no primary-credit releases.
+
+**Why:** A title-limited export can omit older corroborating recordings or primary
+credits. Treating an omitted row or artist as an empty catalog creates false rejections.
+
+**How to apply:** Preserve the export's stated coverage. Report absent fields and
+omissions separately; require affirmative credit/channel evidence for a Wrong verdict.
