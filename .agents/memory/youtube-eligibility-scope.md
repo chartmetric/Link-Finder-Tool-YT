@@ -22,3 +22,15 @@ of the selected tier computation. Export unique Chartmetric IDs separately.
 Report profile rows and unique artist IDs separately, including the number of
 profiles sharing an ID with another profile. Do not infer eligibility from a
 generic nonempty YouTube-platform URL.
+
+Do not infer channel absence from only the account/link representation when
+another catalog link representation is also in scope.
+
+**Why:** An audit found active standard channel URLs in `profile_links` for
+profiles kept by a freeze built from account links alone. Other legacy rows
+used noncanonical `/channel/<handle>` URLs and need separate treatment.
+
+**How to apply:** Reconcile current authorized link sources and preserve
+profile/Chartmetric identity bindings. Distinguish standard channel IDs and
+handle URLs from malformed channel paths. If a prompt requires an existing
+freeze unchanged, report conflicts and get permission before rebuilding it.

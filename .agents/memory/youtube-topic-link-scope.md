@@ -50,3 +50,16 @@ biographies rather than multiple qualifying release matches.
 
 **How to apply:** Re-evaluate every catalog-ready candidate under all currently
 approved gates; reuse old receipts as evidence, not old grades as ground truth.
+
+For the revised Tier 1–3 trial, title-only evidence needs at least three
+distinct qualifying titles for high confidence; two titles qualify only for
+medium confidence. Release evidence needs at least two qualifying releases
+for high confidence, or exactly one for medium. High still requires all shared
+name, primary-credit, non-release-channel and cross-artist duplicate checks.
+
+**Why:** The user replaced the earlier trial prompt and its special two-title
+fallback with explicit high/medium confidence rules.
+
+**How to apply:** Do not reactivate the earlier Path 3 two-title high-confidence
+gate. Treat declared artist links and YouTube for Artist evidence according to
+the revised prompt, with no inherited experimental grades.
