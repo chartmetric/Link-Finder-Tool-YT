@@ -89,3 +89,17 @@ discography is complete. Treating omitted rows as an empty catalog creates false
 omissions separately; require affirmative credit/channel evidence for a Wrong verdict.
 Missing primary-credit evidence or an unavailable source is a source limitation,
 not a verified no_catalog_songs outcome.
+
+Missing expected table layouts do not establish that the entire catalog's song
+lists are inaccessible. Inspect existing context projections and visible schema
+relationships before drawing that conclusion.
+
+**Why:** A source audit found an additional artist-to-track cache after a legacy
+projection had been treated as the available song universe. Cached track IDs
+also overstated usable evidence because many lacked corresponding named tracks
+in the visible mirror.
+
+**How to apply:** Distinguish legacy-source coverage, cached artist/track
+associations, and successfully joined nonempty song titles. Report unresolved
+track IDs as metadata gaps, not absent songs or usable title anchors. Keep any
+paid run paused while its source assumptions are being reconsidered.
