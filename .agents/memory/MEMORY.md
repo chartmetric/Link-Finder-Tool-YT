@@ -39,3 +39,4 @@
 - [Saved evidence projections](saved-evidence-projections.md) — JSONB is not original receipt bytes; preserve historical Topic meanings and captured handle-to-channel bindings.
 - [Channel identity proposal boundary](channel-identity-proposal-boundary.md) — isolate offline safeguards from executable representation defaults until explicit activation approval.
 - [YouTube test result runs](youtube-test-results-policy.md) — real results only; every run and re-run needs a new, never-reused run_id; readers use the latest run.
+- [YouTube sourcing eligibility](youtube-eligibility-scope.md) — each profile's own latest musician/global tier; exclude active channels, not charts.youtube.com artist pages.

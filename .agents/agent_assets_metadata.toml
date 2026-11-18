@@ -3206,3 +3206,31 @@ mtime_ms = 1794975270634
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/3d2f8099-cf7e-4d73-b7db-382f31ed3f66/d49d466c-5281-48f6-b0e5-e65b0ce8c100"
 storage_version_token = "1794975274583997"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "INKUGneRSr4DwxZ_Bd2p-"
+uri = "file://generated-artifacts/youtube-eligible-artists-v2-2026-11-18T05-09-23-745Z/eligible-artists-v2.csv"
+type = "table"
+title = "Frozen eligible artists v2"
+description = "29,270 profiles. Includes each profile’s own latest tier date and the YouTube for Artist URL column."
+logical_id = "09399be9-6662-48dd-baa1-434db71f5eaf"
+content_hash = "sha256:7ac514c1ba5b009e03381756a680c4991820b6a4e5999991a5135d2bacda79bd"
+size = 1598570
+mtime_ms = 1794978687510
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/09399be9-6662-48dd-baa1-434db71f5eaf/09413758-7086-476b-a674-ad1cd3184161"
+storage_version_token = "1794978819444728"
+content_type = "text/csv"
+
+[[outputs]]
+id = "QXjohedlFGDWG40zqTkEs"
+uri = "file://generated-artifacts/youtube-eligible-artists-v2-2026-11-18T05-09-23-745Z/cm-artists-for-casper.csv"
+type = "table"
+title = "Chartmetric artist IDs for Casper"
+description = "Single cm_artist column containing 29,270 unique IDs from the frozen eligible artist list."
+logical_id = "668e2cb9-4b54-47f0-9a97-fd496375e135"
+content_hash = "sha256:206c0839e0ca58433c774d3c087ff3e17df641d702ea10bc656e52300914e562"
+size = 337794
+mtime_ms = 1794978687514
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/668e2cb9-4b54-47f0-9a97-fd496375e135/a512163b-3d24-4180-94b5-048428016b75"
+storage_version_token = "1794978820112190"
+content_type = "text/csv"
