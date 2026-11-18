@@ -3122,3 +3122,17 @@ mtime_ms = 1794967942121
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/d1d10967-b1e6-405b-a221-e6951d937c9b/b95c0fc4-48ff-4925-93f3-cfb1e8c00cb4"
 storage_version_token = "1794967957932153"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "ZDYUXW-1L5Bzm3YehyEBg"
+uri = "file://generated-artifacts/youtube-tiers1-3-2026-11-18/run-report.md"
+type = "text"
+title = "YouTube trial preflight: compatibility blocker"
+description = "Documents the required pre-discovery stop, two acceptance-rule gaps, zero new spending, and the post-trial approval requirement."
+logical_id = "c3b5b7be-94cf-466b-bb3a-397a7bffb34d"
+content_hash = "sha256:9f66923ff5e293ee02046a10a05346b04be10a0104cd3025f3af83e391ab0038"
+size = 4053
+mtime_ms = 1794972221379
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/c3b5b7be-94cf-466b-bb3a-397a7bffb34d/f025fba0-6f36-4a94-bd77-adab25c71d65"
+storage_version_token = "1794972251971798"
+content_type = "text/markdown"

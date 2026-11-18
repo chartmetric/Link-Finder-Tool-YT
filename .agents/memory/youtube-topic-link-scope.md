@@ -31,3 +31,22 @@ featured artist's recording home.
 **How to apply:** Require primary-credit agreement in both catalog tracks and
 YouTube art-track credits when applying the approved experiment's release
 bridge. This does not activate the experimental matcher in sourcing paths.
+
+The Tier 1–3 catalog-ready YouTube campaign must stop after its 200-artist trial
+and wait for explicit user approval before a full run, even when projected costs
+fit the approved budget.
+
+**Why:** The user requires the trial sample to be checked by hand first and
+explicitly removed automatic continuation.
+
+**How to apply:** Deliver the trial report and trial-sample-30.csv, then wait.
+Do not interpret the overall spending cap as full-run approval.
+
+Historical experimental Confirmed grades are not exemptions from a newer
+catalog-ready acceptance gate.
+
+**Why:** Earlier experiments preserved some confirmations based on channel
+biographies rather than multiple qualifying release matches.
+
+**How to apply:** Re-evaluate every catalog-ready candidate under all currently
+approved gates; reuse old receipts as evidence, not old grades as ground truth.
