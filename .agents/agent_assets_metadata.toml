@@ -3052,3 +3052,17 @@ mtime_ms = 1794966074913
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/e36a81b1-979c-4077-bd00-863b6a8ecfff/00157ef0-05ce-48e7-9bb8-156415107464"
 storage_version_token = "1794966085385724"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "Mk2SukJBBeYNgbPo90fZy"
+uri = "file://generated-artifacts/youtube-58-phase1-2026-11-18/clickhouse-step1-report.md"
+type = "text"
+title = "ClickHouse Step 1 report — raw tables not visible"
+description = "The supplied 58-artist export returned HTTP 500. A separate read-only check found none of the four required raw tables visible through the existing reader. Zero paid spending."
+logical_id = "d4f2c762-4d48-477c-bd2a-fe0e5408f7b2"
+content_hash = "sha256:ead19ab7f05baf8e9dfe4fae1792149dcff84eeb80c8c0137087bb631c5453c8"
+size = 2996
+mtime_ms = 1794966596925
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:a4904b16-20e2-4e18-b4c3-ecd3a37d60db/d4f2c762-4d48-477c-bd2a-fe0e5408f7b2/d5693577-abb6-4a66-b5ce-2b5025f4fc54"
+storage_version_token = "1794966617038744"
+content_type = "text/markdown"

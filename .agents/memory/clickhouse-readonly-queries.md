@@ -36,3 +36,14 @@ query could not run against the project's PostgreSQL connection.
 PostgreSQL database, add those tables, or treat an approved Chartmetric API route
 as permission to query a different catalog service. Keep source authorization
 explicit.
+
+Raw Chartmetric artist-track exports must filter the artist links first,
+restrict tracks and albums to those linked IDs before joining, and deduplicate
+the final rows with `SELECT DISTINCT`.
+
+**Why:** The user warned that joining the full raw tables exhausts memory and
+that the raw catalog contains duplicate rows.
+
+**How to apply:** For authorized raw-catalog exports, use bounded typed artist-ID
+parameters and filtered link/track/album CTEs. Do not replace a failed scoped
+read with a full-table join or remove read-only protections.
